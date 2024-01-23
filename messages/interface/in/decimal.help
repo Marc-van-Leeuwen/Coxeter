@@ -1,0 +1,4 @@
+
+The "decimal" command in input mode sets the input symbols to the decimal
+sequence "1", "2", ... It doesn't change prefix, postfix or separator (you
+can of course change these yourself separately.)

@@ -1,0 +1,3 @@
+
+The separator command allows you to reset the output separator. This may be an
+arbitrary string.

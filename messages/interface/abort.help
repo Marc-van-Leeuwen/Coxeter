@@ -1,0 +1,3 @@
+
+The "abort" command quits input modification mode without changing the
+interface. Use this when you get confused or wish to start again.
