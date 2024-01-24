@@ -6,18 +6,25 @@ program was developed under Linux, using only free software, mostly from
 GNU. The author wishes to express his appreciation to all the people who
 have contributed to give these systems to the world.
 
+This main author having died in 2006, mainenance of the program was
+resumed in 2024 by Marc van Leeuwen, Universite de Poitiers
+
 Current address :
 
-	Institut Girard Desargues
-	Universite Lyon-I, bat. Jean Braconnier
-	69622 Villeurbanne Cedex
+	Universite de Poitiers
+	Laboratoire de Mathématiques et Applications
+	UMR 7348 du CNRS
+	SP2MI - Site du Futuroscope, Bât. H3
+	11 Boulevard Marie et Pierre Curie
+	TSA 61125
+	86073 POITIERS CEDEX 9
 	FRANCE
 
-	ducloux@igd.univ-lyon1.fr
-	http://igd.univ-lyon1.fr/home/ducloux/coxeter.html
+	Marc.van-Leeuwen@math.univ-potiers.fr
+	https://github.com/Marc-van-Leeuwen/Coxeter
 
 A large part of the development work on this program was done while the
-author was visiting the Centre de Recherches Mathematiques, Montreal,
-and the University of British Columbia, Vancouver. Many thanks to both
-institutions for their hospitality and in particular to Bill Casselman
-who was the driving force in arranging both visits.
+original author was visiting the Centre de Recherches Mathematiques,
+Montreal, and the University of British Columbia, Vancouver. Many thanks
+to both institutions for their hospitality and in particular to Bill
+Casselman who was the driving force in arranging both visits.

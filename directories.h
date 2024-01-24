@@ -8,6 +8,8 @@
 #ifndef DIRECTORIES_H  /* guard against multiple inclusions */
 #define DIRECTORIES_H
 
+#include <string>
+
 /*
   This file tells where the directories can be found which contain some
   auxiliary files used by the program. The following directories are defined :
@@ -24,9 +26,13 @@
 */
 
 namespace directories {
-  const char* const COXMATRIX_DIR = "/usr/local/coxeter/coxeter_matrices";
-  const char* const HEADER_DIR = "/usr/local/coxeter/headers";
-  const char* const MESSAGE_DIR = "/usr/local/coxeter/messages";
+  static const std::string root(".");
+  static const std::string coxmatrix_dir = root + "/coxeter_matrices";
+  static const std::string header_dir = root + "/headers";
+  static const std::string message_dir = root + "/messages";
+  static const char* const COXMATRIX_DIR = coxmatrix_dir.c_str();
+  static const char* const HEADER_DIR = header_dir.c_str();
+  static const char* const MESSAGE_DIR = message_dir.c_str();
 };
 
 #endif
