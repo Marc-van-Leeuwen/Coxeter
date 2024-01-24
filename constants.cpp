@@ -46,7 +46,7 @@ void initConstants()
   static unsigned d_firstbit[1<<CHAR_BIT];
   firstbit = d_firstbit;
 
-  for (Ulong j = 1; j < (1 << CHAR_BIT-1); ++j)
+  for (Ulong j = 1; j < (1 << (CHAR_BIT-1)); ++j)
     firstbit[2*j] = firstbit[j]+1;
 
   firstbit[0] = CHAR_BIT;

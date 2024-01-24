@@ -22,8 +22,9 @@ namespace {
   using namespace interface;
 
   const char *alphabet = "abcdefghijklmnopqrstuvwxyz";
+#if 0
   const char *affine = "abcdefg";
-
+#endif
   const Token not_token = RANK_MAX+1;
   const Token prefix_token = RANK_MAX+2;
   const Token postfix_token = RANK_MAX+3;

@@ -1342,7 +1342,7 @@ const CoxWord& MinTable::power(CoxWord& g, const Ulong& m) const
 */
 
 {
-  static Ulong hi_bit = (Ulong)1 << BITS(Ulong) - 1;
+  static Ulong hi_bit = (Ulong)1 << (BITS(Ulong)-1);
 
   if (m == 0) { /* result is identity */
     g.reset();

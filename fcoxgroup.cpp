@@ -34,7 +34,9 @@ namespace {
     ParNbr *rdcw_arr() {return d_rdcw_arr.ptr();}
   };
 
+#if 0
   void fillLongest(FiniteCoxGroup *W);
+#endif
   CoxSize order(FiniteCoxGroup *W);
   Workspace& workspace();
 };
@@ -277,7 +279,7 @@ const CoxArr& FiniteCoxGroup::powerArr(CoxArr& a, const Ulong& m) const
 */
 
 {
-  static Ulong hi_bit = (Ulong)1 << BITS(Ulong) - 1;
+  static Ulong hi_bit = (Ulong)1 << (BITS(Ulong)-1);
   static List<ParNbr> buf(0);
 
   if (m == 0) {
@@ -1256,7 +1258,6 @@ int SmallCoxGroup::prodD(DenseArray& x, const CoxWord& g) const
 
 namespace {
 
-void fillLongest(FiniteCoxGroup *W)
 
 /*
   Initializes the following constants :
@@ -1265,10 +1266,12 @@ void fillLongest(FiniteCoxGroup *W)
     - W->longest_coxword : string form of the longest element in W;
 
 */
-
+#if 0 // this was never implemented, nor used
+void fillLongest(FiniteCoxGroup *W)
 {
   return;
 }
+#endif
 
 
 CoxSize order(FiniteCoxGroup *W)

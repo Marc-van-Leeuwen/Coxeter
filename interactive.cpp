@@ -537,19 +537,18 @@ const Type& getType()
 }
 
 
+
+// Read the entry |i,j| of a Coxeter matrix from the file |inputfile|.
 CoxEntry readCoxEntry(const Rank& i, const Rank& j, FILE *inputfile)
-
-/*
-  Reads the entry i,j of a Coxeter matrix from the file inputfile.
-*/
-
 {
   Ulong m;
 
-  fscanf(inputfile,"%lu",&m);
+  if (fscanf(inputfile,"%lu",&m)!=1)
+    ERRNO = WRONG_COXETER_ENTRY;
+  else
+    checkCoxEntry(i,j,m);
 
-  checkCoxEntry(i,j,m);
-  if (ERRNO) {
+  if (ERRNO!=0) {
     Error(ERRNO,i,j,m);
     ERRNO = ABORT;
     return 1;

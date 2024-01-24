@@ -85,7 +85,9 @@ namespace {
   void lwgraph_f();
   void matrix_f();
   void mu_f();
+#if 0
   void not_implemented_f();
+#endif
   void pol_f();
   void q_f();
   void qq_f();
@@ -1922,17 +1924,16 @@ void matrix_f()
   return;
 }
 
+#if 0 // currently this is never called
+
+// Provide meager response for not (yet) implemented commands.
 void not_implemented_f()
-
-/*
-  Response for not (yet) implemented commands.
-*/
-
 {
   fprintf(stderr,"Sorry, not implemented yet\n");
   return;
 
 }
+#endif
 
 void mu_f()
 

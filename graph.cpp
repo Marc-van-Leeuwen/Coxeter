@@ -84,7 +84,7 @@ CoxGraph::CoxGraph(const Type& x, const Rank& l)
 
   if (l <= MEDRANK_MAX)
     {
-      d_S = (LFlags)1 << d_rank-1;
+      d_S = (LFlags)1 << (d_rank-1);
       d_S += d_S - 1;
       makeStar(d_star,d_matrix,d_rank);
     }
@@ -871,18 +871,16 @@ bool isLoop(CoxGraph& G, LFlags I)
 }
 
 
-bool isSimplyLaced(CoxGraph& G, LFlags I)
-
 /*
-  Returns true if the Coxeter graph restricted to I is simply laced (i.e., all
-  edges have label 3), false otherwise.
+  Return whether the Coxeter graph restricted to I is simply laced (i.e., all
+  edges have label 3).
 */
-
+bool isSimplyLaced(CoxGraph& G, LFlags I)
 {
   for (LFlags fs = I; fs; fs &= fs-1)
     {
       Generator s = firstBit(fs);
-      for (LFlags ft = fs & fs-1; ft; ft &= ft-1)
+      for (LFlags ft = fs & (fs-1); ft; ft &= ft-1)
 	{
 	  Generator t = firstBit(ft);
 	  if ((G.M(s,t) == 0) || (G.M(s,t) > 3))
@@ -947,7 +945,7 @@ const Type& irrType(CoxGraph& G, LFlags I)
   if (bitCount(I) == 2)
     {
       Generator s = firstBit(I);
-      Generator t = firstBit(I & I-1);
+      Generator t = firstBit(I & (I-1));
       CoxEntry m = G.M(s,t);
 
       switch (m)

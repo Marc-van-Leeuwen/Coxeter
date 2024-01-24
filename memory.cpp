@@ -211,7 +211,7 @@ Ulong Arena::allocSize(Ulong n, Ulong m) const
     return 0;
   if (n*m <= ABYTES)
     return ABYTES/m;
-  return ((1 << lastBit(n*m-1)-lastbit[ABYTES]+1)*ABYTES)/m;
+  return ((1 << (lastBit(n*m-1)-lastbit[ABYTES]+1))*ABYTES)/m;
 }
 
 Ulong Arena::byteSize(Ulong n, Ulong m) const
@@ -226,7 +226,7 @@ Ulong Arena::byteSize(Ulong n, Ulong m) const
     return 0;
   if (n*m <= ABYTES)
     return ABYTES;
-  return (1 << lastBit(n*m-1)-lastbit[ABYTES]+1)*ABYTES;
+  return (1 << (lastBit(n*m-1)-lastbit[ABYTES]+1))*ABYTES;
 }
 
 void *memory::Arena::realloc(void *ptr, size_t old_size, size_t new_size)

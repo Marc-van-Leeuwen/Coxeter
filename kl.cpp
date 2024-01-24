@@ -142,12 +142,14 @@ namespace {
     const KLPol* operator()(const KLPol* pol) {return pol;}
   };
 
+  MuData* find(MuRow& row, const CoxNbr& x);
+#if 0
   void allocExtrRow(KLContext& kl, ExtrRow& row, const CoxNbr& y);
   void appendStar(String& str, const KLContext& kl, const CoxNbr& x,
 		  const KLPol& pol, const Length& l);
-  MuData* find(MuRow& row, const CoxNbr& x);
   void printStar(FILE* file, const KLContext& kl, const CoxNbr& x,
 		 const KLPol& pol, const Length& l);
+#endif
   KLPol& safeAdd(KLPol& p, const KLPol& q, const Degree& n);
   KLPol& safeSubtract(KLPol& p, const KLPol& q, const KLCoeff& mu,
 		      const Length& h);
@@ -3122,13 +3124,13 @@ void cBasis(HeckeElt& h, const CoxNbr& y, KLContext& kl)
 
 namespace {
 
-void allocExtrRow(KLContext& kl, ExtrRow& row, const CoxNbr& y)
 
 /*
   This function does the allocation of the extremal row for y, but in row
   instead of in kl.extrList(y).
 */
-
+#if 0
+void allocExtrRow(KLContext& kl, ExtrRow& row, const CoxNbr& y)
 {
   const SchubertContext& p = kl.schubert();
   BitMap b(kl.size());
@@ -3146,14 +3148,12 @@ void allocExtrRow(KLContext& kl, ExtrRow& row, const CoxNbr& y)
   return;
 
 }
+#endif
 
+// Append a star to the string if mu != 0.
+#if 0
 void appendStar(String& str, const KLContext& kl, const CoxNbr& x,
 		const KLPol& pol, const Length& l)
-
-/*
-  Appends a star to the string if mu != 0.
-*/
-
 {
   if (l != undef_length) {
     const SchubertContext& p = kl.schubert();
@@ -3164,6 +3164,7 @@ void appendStar(String& str, const KLContext& kl, const CoxNbr& x,
 
   return;
 }
+#endif
 
 MuData* find(MuRow& row, const CoxNbr& x)
 
@@ -3203,13 +3204,12 @@ const KLPol& one()
 
 namespace {
 
-void printStar(FILE* file, const KLContext& kl, const CoxNbr& x,
-	       const KLPol& pol, const Length& l)
-
 /*
   Like appendStar, but with output to a file.
 */
-
+#if 0
+void printStar(FILE* file, const KLContext& kl, const CoxNbr& x,
+	       const KLPol& pol, const Length& l)
 {
   if (l != undef_length) {
     const SchubertContext& p = kl.schubert();
@@ -3220,6 +3220,7 @@ void printStar(FILE* file, const KLContext& kl, const CoxNbr& x,
 
   return;
 }
+#endif
 
 KLPol& safeAdd(KLPol& p, const KLPol& q, const Degree& n)
 

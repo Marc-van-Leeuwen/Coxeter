@@ -10,6 +10,7 @@
 
 #include "globals.h"
 #include <limits.h>
+#include <algorithm>
 
 namespace list {
   using namespace globals;
@@ -51,6 +52,7 @@ template <class T> class List {
   T* d_ptr;
   Ulong d_size;
   Ulong d_allocated;
+
  public:
   typedef T eltType;
 /* constructors and destructors */
@@ -120,13 +122,13 @@ inline void List<T>::setData(const T* source, Ulong r)
 template<class T> void List<T>::setSizeValue(const Ulong& n)
   {d_size = n;}
 template<class T> inline void List<T>::setZero(Ulong first, Ulong r)
-  {memset(d_ptr+first,0,r*sizeof(T));}
+  { std::fill(d_ptr+first,d_ptr+first+r,static_cast<T>(0));}
 template<class T> inline void List<T>::setZero(Ulong r) {setZero(0,r);}
 template<class T> inline void List<T>::setZero() {setZero(0,d_size);}
 template<class T> inline void List<T>::shallowCopy(const List<T>& w)
-  {memmove(this,&w,sizeof(List<T>));}
+  { d_ptr = w.d_ptr; d_size=w.d_size; d_allocated=w.d_allocated; }
 template<class T> inline void List<T>::shiftPtr(const long& d)
-  {d_ptr += d; d_size -= d; d_allocated -= d;}
+  { d_ptr += d; d_size -= d; d_allocated -= d;}
 template<class T> Ulong& List<T>::size() {return d_size;}
 
 /* accessors */

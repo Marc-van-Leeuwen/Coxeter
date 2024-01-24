@@ -6,6 +6,8 @@
 */
 
 #include <new>
+#include <algorithm> // for |std::copy|
+#include <cassert>
 
 #include "error.h"
 
@@ -212,27 +214,23 @@ const List<T>& List<T>::operator= (const List<T>& r)
   return *this;
 }
 
-template <class T> void List<T>::append(const T& x)
-
+// Append one element to the list, resizing if necessary.
 /*
-  Appends one element to the list, resizing if necessary.
-
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
 */
-
+template <class T> void List<T>::append(const T& x)
 {
-  // we have to be careful in case x points into the structure being
-  // resized! calling setSize directly could invalidate x.
+  // we have to be careful in case |x| points into the structure being
+  // resized! calling |setSize| directly could invalidate |x|.
 
   Ulong c = d_size;
 
-  if (d_allocated < c+1) {
-    Ulong old_size = c*sizeof(T);
-    Ulong new_size = (c+1)*sizeof(T);
-    T* new_ptr = static_cast<T*> (arena().alloc(new_size));
-    if (ERRNO) /* overflow */
-      return;
-    memcpy(new_ptr,d_ptr,old_size);
+  if (d_allocated < c+1)
+  {
+    T* new_ptr = static_cast<T*> (arena().alloc((c+1)*sizeof(T)));
+    if (new_ptr==nullptr) /* overflow */
+      { assert(ERRNO!=0); return; }
+    std::copy(d_ptr,d_ptr+c,new_ptr); // copy the whole old range of values
     new_ptr[c] = x;
     arena().free(d_ptr,d_allocated*sizeof(T));
     d_ptr = new_ptr;
@@ -322,28 +320,29 @@ template <class T> void List<T>::setSize(Ulong n)
 }
 
 
-template <class T>
-void List<T>::setData(const T *source, Ulong first, Ulong r)
-
 /*
-  After resizing if necessary, moves the first r entries of source to the
-  list, starting at first.
+  After resizing if necessary, move the first |r| entries of |source| to the
+  list, after its |first| elements (and discarding the remaining ones).
+
+  Although |source| could point into our current List, this function should
+  not be called in such a manner that it would cause some entries to be
+  duplicated, namely with |d_ptr<=source<d_ptr+first|
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set.
 */
-
+template <class T>
+void List<T>::setData(const T *source, Ulong first, Ulong r)
 {
-  // we have to be careful in case source points into the structure being
-  // resized! calling setSize directly would invlaidate source.
+  // we have to be careful in case |source| points into the structure being
+  // resized! calling |setSize| directly would invalidate source.
 
-  if (d_allocated < first+r) {
-    Ulong old_size = first*sizeof(T);
-    Ulong new_size = (first+r)*sizeof(T);
-    T* new_ptr = static_cast<T*> (arena().alloc(new_size));
-    if (ERRNO) /* overflow */
-      return;
-    memcpy(new_ptr,d_ptr,first*sizeof(T));
-    memcpy(new_ptr+first,source,r*sizeof(T));
+  if (d_allocated < first+r)
+  {
+    T* new_ptr = static_cast<T*> (arena().alloc((first+r)*sizeof(T)));
+    if (new_ptr==nullptr) /* overflow */
+      { assert(ERRNO!=0); return; }
+    std::copy(d_ptr,d_ptr+first,new_ptr); // copy initial part from |*this|
+    std::copy(source,source+r,new_ptr+first); // add final part from |source|
     arena().free(d_ptr,d_allocated*sizeof(T));
     d_ptr = new_ptr;
     d_allocated = arena().allocSize(first+r,sizeof(T));
@@ -356,7 +355,7 @@ void List<T>::setData(const T *source, Ulong first, Ulong r)
   if (d_size < first+r)
     setSize(first+r);
 
-  memmove(d_ptr+first,source,r*sizeof(T));
+  std::copy(source,source+r,d_ptr+first); // add final part from |source|
 
   return;
 }
