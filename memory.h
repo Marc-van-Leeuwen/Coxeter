@@ -9,6 +9,7 @@
 #define MEMORY_H
 
 #include "globals.h"
+#include "constants.h"
 
 namespace memory {
   using namespace globals;
@@ -19,7 +20,6 @@ namespace memory {
 namespace memory {
   union Align;
   class Arena;
-  class FixArena;
 };
 
 /******** function declarations *********************************************/
@@ -28,50 +28,43 @@ void* operator new (size_t size, memory::Arena& a);
 void* operator new[] (size_t size, memory::Arena& a);
 
 namespace memory {
-  Arena& arena();
-  void pause();
+  Arena& arena(); // get a reference to our unique static root |Arena| object
+  void pause(); // do nothing; presumably for setting break point in debugging
 };
 
 /******** Type definitions **************************************************/
-
-#include "constants.h"
-
-namespace memory {
-  using namespace constants;
-};
 
 union memory::Align {
   Ulong d_ulong;
   void *d_voidptr;
 };
 
-class memory::FixArena {
- public:
-};
+class memory::Arena
+{
+  struct MemBlock { MemBlock *next; }; // basis, actual memory block follows
 
-class memory::Arena {
-  struct MemBlock {
-    MemBlock *next;
-  };
-  MemBlock* d_list[sizeof(Ulong)*CHAR_BIT];
-  Ulong d_used[sizeof(Ulong)*CHAR_BIT];
-  Ulong d_allocated[sizeof(Ulong)*CHAR_BIT];
-  unsigned d_bsBits;
-  unsigned d_count;
-  void newBlock(unsigned b);
+  // the following data are separated by size |2^i| of blocks; |x[i]| is:
+  MemBlock* d_list[BITS(Ulong)]; // linked list of free size |2^i| blocks
+  Ulong d_used[BITS(Ulong)]; // number of size |2^i| blocks in actual use
+  Ulong d_allocated[BITS(Ulong)]; // total number of size |2^i| blocks allocated
+
+  unsigned d_bsBits; // minimal power of 2 for which we buy memory chunks
+  unsigned d_count; // total number of words that were ever |calloc|ed
+  void newBlock(unsigned b); // ensure a bloick of size |2^b| is available
+
  public:
 /* constructors and destructors */
-  void operator delete(void* ptr)
-    {arena().free(ptr,sizeof(Arena));}
-  Arena(Ulong bsBits);
+  Arena(Ulong bsBits); // create empty |Arena|; |bsBits| only sets its |d_bsBits|
   ~Arena();
+
 /* modifiers */
   void *alloc(size_t n);
   void *realloc(void *ptr, size_t old_size, size_t new_size);
   void free(void *ptr, size_t n);
+
 /* accessors */
-  Ulong allocSize(Ulong n, Ulong m) const;
-  Ulong byteSize(Ulong n, Ulong m) const;
+  static Ulong allocSize(Ulong n, Ulong m);
+  static Ulong byteSize(Ulong n, Ulong m);
   void print(FILE* file) const;
 };
 

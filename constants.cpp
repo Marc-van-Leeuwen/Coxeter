@@ -31,7 +31,7 @@ void initConstants()
   static Ulong d_lmask[BITS(Ulong)];
   static Ulong d_leqmask[BITS(Ulong)];
 
-  lmask = d_lmask;
+  lmask = d_lmask; // point pointer to that static array
   leqmask = d_leqmask;
 
   leqmask[0] = 1L;
@@ -44,51 +44,54 @@ void initConstants()
     }
 
   static unsigned d_firstbit[1<<CHAR_BIT];
-  firstbit = d_firstbit;
-
-  for (Ulong j = 1; j < (1 << (CHAR_BIT-1)); ++j)
-    firstbit[2*j] = firstbit[j]+1;
-
-  firstbit[0] = CHAR_BIT;
-
   static unsigned d_lastbit[1<<CHAR_BIT];
-  lastbit = d_lastbit;
-  lastbit[0] = CHAR_BIT;
+  firstbit = d_firstbit; // point pointer to that static array
+  lastbit = d_lastbit; // point pointer to that static array
 
-  for (Ulong j = 2; j < (1 << CHAR_BIT); ++j)
-    lastbit[j] = lastbit[j>>1]+1;
+  d_firstbit[0] = CHAR_BIT; // "out of range" value: no such set bit
+  d_firstbit[0] = 0; // basis for recursive propagation below
 
-  return;
+  d_lastbit[0] = CHAR_BIT; // "out of range" value: no such set bit
+  d_lastbit[1] = 0; // basis for recursive propagation below
+
+  for (unsigned j = 1; j < (1 << (CHAR_BIT-1)); ++j)
+  {
+    d_firstbit[2*j]   = d_firstbit[j]+1; // even number is its half, shifted
+    d_firstbit[2*j+1] = 0; // first set bit for any odd number is 1
+    d_lastbit[2*j]   = d_lastbit[j]+1; // even number is its half, shifted
+    d_lastbit[2*j+1] = d_lastbit[j]+1; // odd number has same last bit
+  }
+
 }
 
-unsigned firstBit(Ulong f)
-
-/*
-  Returns the bit position of the first set bit in f.
-*/
-
+unsigned firstBit(Ulong f) // bit position of the first set bit in |f|
 {
   if (f == 0)
-    return BITS(Ulong);
+    return BITS(Ulong); // "out of range" value: no such set bit
 
-  if (f&CHARFLAGS)
-    return firstbit[f&CHARFLAGS];
-  else
-    return firstBit(f>>CHAR_BIT)+CHAR_BIT;
+  unsigned shifted = 0;
+  while ((f&CHARFLAGS)==0)
+  {
+    shifted += CHAR_BIT;
+    f >>= CHAR_BIT;
+  }
+  return shifted + firstbit[f&CHARFLAGS];
 }
 
 
-unsigned lastBit(Ulong f)
-
-/*
-  Returns the bit position of the last set bit in f.
-*/
-
+unsigned lastBit(Ulong f) // bit position of the first set bit in |f|
 {
-  if (f >> CHAR_BIT)
-    return lastBit(f>>CHAR_BIT)+CHAR_BIT;
-  else
-    return lastbit[f];
+  if (f == 0)
+    return BITS(Ulong); // "out of range" value: no such set bit
+
+  unsigned shifted = 0;
+  while ((f&~CHARFLAGS)!=0)
+  {
+    shifted += CHAR_BIT;
+    f >>= CHAR_BIT;
+  }
+
+  return shifted + lastbit[f];
 }
 
 };

@@ -61,7 +61,7 @@ template <class T> class List {
     {return arena().free(ptr,sizeof(List<T>));}
   void* operator new(size_t, void* ptr) {return ptr;}
   void operator delete(void* ptr, void* placement) {};
-  List() {memset(this,0,sizeof(List<T>));} // guarantee clean memory
+  List() : d_ptr(nullptr), d_size(0), d_allocated(0) {}
   List(const Ulong& n);
   List(const List<T>& r);
   List(const T* p, const Ulong& n);

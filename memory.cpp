@@ -7,6 +7,8 @@
 
 #include "memory.h"
 #include <limits.h>
+#include <cstring> // for |memcpy|, |memset|
+#include <cassert>
 
 #include "error.h"
 
@@ -67,13 +69,14 @@ Arena& arena()
 namespace memory {
 
 Arena::Arena(Ulong bsBits)
-
+  : d_bsBits(bsBits), d_count(0)
 {
-  memset(d_list,0,BITS(Ulong)*sizeof(void *));
-  memset(d_used,0,BITS(Ulong)*sizeof(Ulong));
-  memset(d_allocated,0,BITS(Ulong)*sizeof(Ulong));
-  d_bsBits = bsBits;
-  d_count = 0;
+  for (unsigned i=0; i<BITS(Ulong); ++i)
+  {
+    d_list[i] = nullptr;
+    d_used[i] = 0;
+    d_allocated[i] = 0;
+  }
 }
 
 Arena::~Arena()
@@ -84,60 +87,72 @@ Arena::~Arena()
 
 {}
 
-void Arena::newBlock(unsigned b)
-
 /*
-  Provides a new block of size 2^{b}. It looks first of a block of
-  size > 2^b is available; if yes, it splits the required block up
-  from that one. If not, it requests from the system a block of size
-  2^d_bsBits, if b <= d_bsBits, and of size 2^b otherwise (the
-  unit here is always ABYTES.)
+  Provide a possibly new block of size |2^b| (this is only called when
+  none are directly available, i.e., when |d_list[b]==nullptr|). We look
+  first whether a free block of larger size is available; if so, we
+  split that one up, leaving two blocks of size |2^b| in |d_list[b]|
+  If no such free block is found, we request through |calloc| a block of
+  size |2^b| if that is large enough, or otherwise one of the minimal size
+  |2^d_bsBits|, wich is then split up as before.
+  (All sizes are in units of |ABYTES|, the effective word size for us.)
 
   Note that this is the only place where we can run out of memory.
   In that case, the error OUT_OF_MEMORY is set, and the corresponding
   error function run. In most cases, this will terminate the program.
 
-  In case of failure, returns a null pointer.
+  There is no return value, but if no |OUT_OF_MEMORY| error occurs,
+  |d_list[b]| will point to a list of at least one block of size |2^b|.
+  The caller must test that |ERRNO==0| before using the provided block.
 
   NOTE : as this function will be heavily used, it should be rewritten
   using a bitmap of available blocks.
 */
-
+void Arena::newBlock(unsigned b)
 {
   for (unsigned j = b+1; j < BITS(Ulong); ++j) {
-    if (d_list[j]) /* split this block up */
+    if (d_list[j]!=nullptr) /* split this block up */
       {
-	Align *ptr = reinterpret_cast<Align *> (d_list[j]);
+	Align *ptr = reinterpret_cast<Align*> (d_list[j]);
 	d_list[j] = d_list[j]->next;
 	d_allocated[j]--;
 	for (unsigned i = b; i < j; ++i) {
-	  d_list[i] = reinterpret_cast<MemBlock *> (ptr + (1L<<i));
+	  assert(d_list[i]==nullptr); // tested before we came here
+	  d_list[i] = reinterpret_cast<MemBlock*> (ptr + (1L<<i));
+	  assert(d_list[i]->next==nullptr); // since free blocks are 0-filled
 	  d_allocated[i]++;
 	}
-	d_list[b]->next = reinterpret_cast<MemBlock *> (ptr);
-	d_list[b]->next->next = 0;
+	d_list[b]->next = reinterpret_cast<MemBlock*> (ptr); // link @0 after @1
+	d_list[b]->next->next = nullptr; // this one element was not 0-filled
 	d_allocated[b]++;
 	return;
       }
   }
 
-  /* if we get here we need more memory from the system */
+  /* If we get here we need more memory from the system.
+     When |Error| is called, it may or may not invoke |exit(0)|, depending
+     on |CATCH_MEMORY_OVERFLOW|; the caller must therefore be aware and
+     always test that |ERRNO==0| before using |d_list[b]|
+ */
 
   if (b >= d_bsBits) { /* get block directly */
-    if (d_count > MEMORY_MAX-(1L<<b)) {
-      Error(OUT_OF_MEMORY);
+    if (d_count > MEMORY_MAX-(1L<<b)) // total memory would exceed 2^64 words
+    {
+      Error(OUT_OF_MEMORY); // actually out of compiled-in limit
       return;
     }
     d_list[b] = static_cast<MemBlock *> (calloc(1L<<b,ABYTES));
-    if (d_list[b] == 0) {
+    if (d_list[b] == nullptr) // the system failed to honor the request
+    {
       Error(OUT_OF_MEMORY);
       return;
     }
-    d_count += 1L<<b;
+    d_count += 1L<<b; // record the number of words bought from system
     d_allocated[b]++;
     return;
   }
 
+  // now we are asking for a very small block, and it needs fresh allocation
   if (d_count > MEMORY_MAX-(1L<<d_bsBits)) {
     Error(OUT_OF_MEMORY);
     return;
@@ -162,77 +177,70 @@ void Arena::newBlock(unsigned b)
   return;
 }
 
-void* Arena::alloc(size_t n)
-
 /*
-  Returns a pointer to a block of 2^m.ABYTES bytes, where m is the
-  smallest integer such that 2^m.ABYTES >= n.
+  Return a pointer to a block of |2^m.ABYTES| bytes, where |m| is the
+  smallest integer such that |2^m.ABYTES >= n|.
 
-  It is assumed that ABYTES is a power of 2.
+  It is assumed that |ABYTES| is a power of 2.
 
   The memory is zero-initialized.
 */
-
+void* Arena::alloc(size_t n)
 {
+  using namespace constants; // for |lastBit|
   if (n == 0)
-    return 0;
+    return nullptr; // silly request, silly reply
 
   /* compute size of block */
 
-  unsigned b = 0;
-  if (n > ABYTES)
-    b = lastBit(n-1)-lastbit[ABYTES]+1;
+  unsigned b = 0; // default to |2^0==1| word
+  if (n > ABYTES) // but if more is asked for, request chunck of |2^b| words
+    b = lastBit(n-1)-lastBit(ABYTES)+1; // with |b| large enough
+  // the conditional above ensures we never set |b<0|, or call |lastBit(0)|
 
-  if (d_list[b] == 0) { /* need to make a new block */
+  if (d_list[b] == nullptr) { /* need to make a new block */
     newBlock(b);
-    if (ERRNO)
-      return 0;
+    if (ERRNO!=0)
+      return nullptr; // kick the error bucket down the road
   }
 
   /* take block off from list */
 
   MemBlock *block = d_list[b];
-  d_list[b] = d_list[b]->next;
-  block->next = 0;
+  assert(block != nullptr); // because we called |newBlock| and tested |ERRNO|
+
+  d_list[b] = d_list[b]->next; // pop off now used first block from the list
+  block->next = nullptr; // and clear up that pointer so whole block is zero
   d_used[b]++;
 
-  return static_cast<void *> (block);
+  return static_cast<void*> (block);
 }
 
-Ulong Arena::allocSize(Ulong n, Ulong m) const
-
 /*
-  Returns the size of the actual memory allocation provided on a request
-  of n nodes of size m, in units of m
+  Return the size of the actual memory allocation provided on a request
+  of |n| nodes of size |m|, in units of |m| (so result is at least |n|)
 */
-
+Ulong Arena::allocSize(Ulong n, Ulong m)
 {
-  if (n == 0)
-    return 0;
-  if (n*m <= ABYTES)
-    return ABYTES/m;
-  return ((1 << (lastBit(n*m-1)-lastbit[ABYTES]+1))*ABYTES)/m;
+  return byteSize(n,m)/m;
 }
 
-Ulong Arena::byteSize(Ulong n, Ulong m) const
-
 /*
-  Returns the actual number of bytes of the memory allocation (as opposed
+  Return the actual number of bytes of the memory allocation (as opposed
   to allocSize, which rounds the allocation to the largest multiple of m.)
 */
-
+Ulong Arena::byteSize(Ulong n, Ulong m)
 {
+  using namespace constants; // for |lastBit| and friends
   if (n == 0)
     return 0;
   if (n*m <= ABYTES)
     return ABYTES;
-  return (1 << (lastBit(n*m-1)-lastbit[ABYTES]+1))*ABYTES;
+  return (1 << (lastBit(n*m-1)-lastBit(ABYTES)+1))*ABYTES;
 }
 
-void *memory::Arena::realloc(void *ptr, size_t old_size, size_t new_size)
-
 /*
-  Resizes ptr to size new_size. This involves getting the larger block,
+  Resize |ptr| to size new_size. This involves getting the larger block,
   copying the contents of ptr to it, and freeing ptr; we never try to
   fuse smaller adjacent blocks together.
 
@@ -242,27 +250,30 @@ void *memory::Arena::realloc(void *ptr, size_t old_size, size_t new_size)
   NOTE : equivalent to alloc if old_size = 0.
 */
 
+void *memory::Arena::realloc(void *ptr, size_t old_size, size_t new_size)
 {
+  assert(old_size<new_size); // this is only for growing, not shrinking
   void *new_ptr = alloc(new_size);
-  if (ERRNO) /* overflow */
-    return 0;
-  if (old_size) {
-    memcpy(new_ptr,ptr,old_size);
+  if (new_ptr==nullptr) /* memory overflow occurred */
+    return nullptr; // kick the error bucket down the road
+  if (old_size>0) // move contents of smaller old block into new block
+  {
+    std::memcpy(new_ptr,ptr,old_size);
     free(ptr,old_size);
   }
 
   return new_ptr;
 }
 
-void Arena::free(void *ptr, size_t n)
-
 /*
-  Returns the memory block allocated to ptr to the free list. In order to
-  know to which list the pointer should be appended (it will in fact be
-  prepended), we need to pass the size to which ptr was allocated.
+  Return the memory block allocated to |ptr| to the free list. In order to
+  know to which list the pointer should be pushed (it will in fact be
+  prepended), we need to pass the size |n| to which |ptr| was allocated.
+  Actually |n| can be the size that was asked for, actual size is power of 2
 */
-
+void Arena::free(void *ptr, size_t n)
 {
+  using namespace constants; // for |lastBit|
   if (ptr == 0)
     return;
   if (n == 0)
@@ -270,24 +281,19 @@ void Arena::free(void *ptr, size_t n)
 
   unsigned b = 0;
   if (n > ABYTES)
-    b = lastBit(n-1)-lastbit[ABYTES]+1;
+    b = lastBit(n-1)-lastBit(ABYTES)+1;
 
-  memset(ptr,0,(1L<<b)*ABYTES);
-  MemBlock *block = (MemBlock *)ptr;
-  block->next = d_list[b];
-  d_list[b] = block;
+  memset(ptr,0,(1L<<b)*ABYTES); // erase full contents of allocted block
+  MemBlock *block = static_cast<MemBlock*>(ptr); // prepare to link in free list
+  block->next = d_list[b]; // push to list (uses one pointer insize the block)
+  d_list[b] = block; // set the list to start with this freed block
   d_used[b]--;
-
-  return;
 }
 
+// Print information about given out memory, to |file|
 void Arena::print(FILE *file) const
-/*
-  Prints information about the memory arena.
-*/
-
 {
-  fprintf(file,"%-10s%10s/%-10s\n","size : 2^","used","allocated");
+  fprintf(file,"%-10s%10s/%-10s\n","size : 2^","used","allocated"); // header
 
   Ulong used_count = 0;
 

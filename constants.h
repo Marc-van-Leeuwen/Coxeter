@@ -19,15 +19,15 @@ namespace constants {
 
 namespace constants {
 
-  const Ulong CHARFLAGS = ~(Ulong)0 >> CHAR_BIT*(sizeof(Ulong)-1);
+  const Ulong CHARFLAGS = ((Ulong)1 << CHAR_BIT)-1; // |0xFF| as |Ulong|
 
-  extern Ulong *lmask;
-  extern Ulong *leqmask;
-  extern unsigned *firstbit;
+  extern Ulong *lmask; // bit posistion |==i| masks, for |i| up to |BITS(Ulong)|
+  extern Ulong *leqmask; // same for bit position |<=i| masks
+  extern unsigned *firstbit; // |2^CHAR_BIT| "lowest set bit" positions
   extern unsigned *lastbit;
 
   unsigned firstBit(Ulong f);
-  void initConstants();
+  void initConstants(); // set up pointers above, pointing into static arrays
   unsigned lastBit(Ulong f);
 };
 

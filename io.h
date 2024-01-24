@@ -9,6 +9,7 @@
 #define IO_H
 
 #include "globals.h"
+#include <string.h>
 
 namespace io {
   using namespace globals;

@@ -107,17 +107,16 @@ template <class T> List<T>::List(const T* p, const Ulong& n)
   d_size = n;
 }
 
-template <class T> template <class I>
-List<T>::List(const I& first, const I& last)
 
 /*
   A list constructor taking iterators as parameters. It is assumed that
-  the value-type of I may be allocated to T.
+  the value-type of |I| may be allocated to |T|.
 */
 
+template <class T> template <class I>
+List<T>::List(const I& first, const I& last)
+: d_ptr(nullptr), d_size(0), d_allocated(0)
 {
-  memset(this,0,sizeof(List<T>));
-
   for (I i = first; i != last; ++i) {
     append(*i);
   }
@@ -230,9 +229,12 @@ template <class T> void List<T>::append(const T& x)
     T* new_ptr = static_cast<T*> (arena().alloc((c+1)*sizeof(T)));
     if (new_ptr==nullptr) /* overflow */
       { assert(ERRNO!=0); return; }
-    std::copy(d_ptr,d_ptr+c,new_ptr); // copy the whole old range of values
+    if (d_ptr!=nullptr)
+    {
+      std::copy(d_ptr,d_ptr+c,new_ptr); // copy the whole old range of values
+      arena().free(d_ptr,d_allocated*sizeof(T));
+    }
     new_ptr[c] = x;
-    arena().free(d_ptr,d_allocated*sizeof(T));
     d_ptr = new_ptr;
     d_allocated = arena().allocSize(c+1,sizeof(T));
     d_size = c+1;

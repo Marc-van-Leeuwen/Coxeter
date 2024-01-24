@@ -307,7 +307,7 @@ namespace commands {
   parameters for the k-l functions; this is in fact a sort of duplicate
   main mode.
 
-  Command completion is implemented to the extend that incomplete commands
+  Command completion is implemented to the extent that incomplete commands
   are recognized when non-ambiguous.
 
  *****************************************************************************/
@@ -1201,12 +1201,9 @@ CommandTree* uneqCommandTree()
 
 namespace {
 
+
+// Print a message about the author.
 void author_f()
-
-/*
-  Prints a message about the author.
-*/
-
 {
   printFile(stderr,"author.mess",MESSAGE_DIR);
   return;

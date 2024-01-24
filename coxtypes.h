@@ -15,6 +15,7 @@
 #define COXTYPES_H
 
 #include "globals.h"
+#include "constants.h"
 #include <limits.h>
 
 #include "io.h"
@@ -50,9 +51,9 @@ namespace coxtypes {
 
   // const Rank RANK_MAX = 255;          /* to enable string representations */
   // MEDRANK_MAX bits should fit in a LFlags
-  const Rank MEDRANK_MAX = CHAR_BIT*sizeof(Ulong);
+  const Rank MEDRANK_MAX = BITS(Ulong);
   // 2*SMALLRANK_MAX bits should fit in a LFlags
-  const Rank SMALLRANK_MAX = CHAR_BIT*sizeof(Ulong)/2;
+  const Rank SMALLRANK_MAX = BITS(Ulong)/2;
   const Rank RANK_MAX = SMALLRANK_MAX;              /* temporary restriction */
   const Generator GENERATOR_MAX = RANK_MAX-1;       /* top value is reserved */
   const Generator undef_generator = RANK_MAX;
