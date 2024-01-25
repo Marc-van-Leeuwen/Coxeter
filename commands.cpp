@@ -41,11 +41,11 @@ namespace {
   CoxGroup* W = 0;
 
   void activate(CommandTree* tree);
-  void ambigAction(CommandTree* tree, const String& str);
+  void ambigAction(CommandTree* tree, const std::string& str);
   CommandData* ambigCommand();
   void cellCompletion(DictCell<CommandData>* cell);
   void commandCompletion(DictCell<CommandData>* cell);
-  void empty_error(char* str);
+  void empty_error(const char* str);
   CommandTree* emptyCommandTree();
   template<class C> CommandTree* initCommandTree();
   void printCommandTree(FILE* file, DictCell<CommandData>* cell);
@@ -343,7 +343,7 @@ void run()
 */
 
 {
-  static String name(0);
+  static std::string name;
 
   activate(emptyCommandTree());
 
@@ -358,7 +358,7 @@ void run()
     getInput(stdin,name);
     CommandData* cd = tree->find(name);
     if (cd == 0) {
-      tree->error(name.ptr());
+      tree->error(name.c_str());
       continue;
     }
     if (cd == ambigCommand()) {
@@ -377,12 +377,9 @@ void run()
   }
 }
 
-void default_error(char* str)
 
-/*
-  Default response to an unknown command.
-*/
-
+// Default response to an unknown command.
+void default_error(const char* str)
 {
   Error(COMMAND_NOT_FOUND,str);
   return;
@@ -412,7 +409,7 @@ void activate(CommandTree* tree)
   return;
 }
 
-void ambigAction(CommandTree* tree, const String& str)
+void ambigAction(CommandTree* tree, const std::string& str)
 
 /*
   Response to ambiguous commands. Prints a warning and the list of possible
@@ -420,20 +417,20 @@ void ambigAction(CommandTree* tree, const String& str)
 */
 
 {
-  static String name(0);
+  static std::string name;
   bool b = true;
 
   print(stderr,str);
   fprintf(stderr," : ambiguous (");
   DictCell<CommandData>* cell = tree->findCell(str);
-  new(&name) String(str);
-  printExtensions(stderr,cell->left,name,b);
+  name = str; // copy string to static variable
+  dictionary::printExtensions(stderr,cell->left,name,b);
   fprintf(stderr,")\n");
 
   return;
 }
 
-void empty_error(char* str)
+void empty_error(const char* str)
 
 {
   CommandTree* tree = mainCommandTree();
@@ -543,7 +540,7 @@ namespace commands {
 CommandTree::CommandTree(const char* prompt,
 			 void (*a)(),
 			 void (*entry)(),
-			 void (*error)(char*),
+			 void (*error)(const char*),
 			 void (*exit)(),
 			 void (*h)())
   :d_prompt(prompt), d_entry(entry), d_error(error), d_exit(exit)
@@ -588,18 +585,18 @@ void CommandTree::prompt() const
 
 /******** manipulators ******************************************************/
 
-void CommandTree::add(const char* name, const char* tag, void (*a)(),
-		      void (*h)(), bool rep)
 
 /*
   This function adds a new command to the tree, adding new cells as
   necessary.
 */
 
+void CommandTree::add(const char* name, const char* tag, void (*a)(),
+		      void (*h)(), bool rep)
 {
   CommandData *cd = new CommandData(name,tag,a,h,rep);
 
-  insert(name,cd);
+  insert(std::string(name),cd);
   if (d_help && h) { /* add help functionality */
     d_help->add(name,tag,h,0,false);
   }
@@ -3032,25 +3029,24 @@ void interface::permutation_f()
   return;
 }
 
-void interface::symbol_f()
 
 /*
-  Resets a symbol in in_buf (this will become either an input or an output
+  Reset a symbol in |in_buf| (this will become either an input or an output
   symbol).
 */
-
+void interface::symbol_f()
 {
-  static String buf(0);
+  static std::string buf;
 
   const Interface& I = W->interface();
   Generator s = undef_generator;
-  reset(buf);
+  buf.clear();
 
   do {
     if (ERRNO)
       Error(ERRNO);
     printf("enter the generator symbol you wish to change, ? to abort:\n");
-    getInput(stdin,buf,0);
+    io::getInput(stdin,buf,0);
     if (buf[0] == '?')
       return;
     io::skipSpaces(buf,0);
@@ -3097,7 +3093,7 @@ void interface::in::alphabetic_f()
 */
 
 {
-  const String* alpha = alphabeticSymbols(in_buf->symbol.size());
+  const std::string* alpha = alphabeticSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = alpha[j];
@@ -3135,7 +3131,7 @@ void interface::in::decimal_f()
 */
 
 {
-  const String* dec = decimalSymbols(in_buf->symbol.size());
+  const std::string* dec = decimalSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = dec[j];
@@ -3178,7 +3174,7 @@ void interface::in::hexadecimal_f()
 */
 
 {
-  const String* hex = hexSymbols(in_buf->symbol.size());
+  const std::string* hex = hexSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = hex[j];
@@ -3218,7 +3214,7 @@ void interface::in::postfix_f()
 
 {
   printf("Enter the new input postfix (finish with a carriage return):\n");
-  String buf(0);
+  std::string buf(0);
   getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
   return;
@@ -3232,7 +3228,7 @@ void interface::in::prefix_f()
 
 {
   printf("Enter the new input prefix (finish with a carriage return):\n");
-  String buf(0);
+  std::string buf(0);
   getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
   return;
@@ -3246,7 +3242,7 @@ void interface::in::separator_f()
 
 {
   printf("Enter the new input separator (finish with a carriage return):\n");
-  String buf(0);
+  std::string buf(0);
   getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
   return;
@@ -3272,7 +3268,7 @@ void interface::out::alphabetic_f()
 */
 
 {
-  const String* alpha = alphabeticSymbols(in_buf->symbol.size());
+  const std::string* alpha = alphabeticSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = alpha[j];
@@ -3321,7 +3317,7 @@ void interface::out::decimal_f()
 */
 
 {
-  const String* dec = decimalSymbols(in_buf->symbol.size());
+  const std::string* dec = decimalSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = dec[j];
@@ -3373,7 +3369,7 @@ void interface::out::hexadecimal_f()
 */
 
 {
-  const String* hex = hexSymbols(in_buf->symbol.size());
+  const std::string* hex = hexSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = hex[j];
@@ -3418,7 +3414,7 @@ void interface::out::postfix_f()
 
 {
   printf("enter the new output postfix (finish with a carriage return):\n");
-  String buf(0);
+  std::string buf(0);
   getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
   return;
@@ -3432,7 +3428,7 @@ void interface::out::prefix_f()
 
 {
   printf("Enter the new output prefix (finish with a carriage return):\n");
-  String buf(0);
+  std::string buf(0);
   getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
   return;
@@ -3446,7 +3442,7 @@ void interface::out::separator_f()
 
 {
   printf("Enter the new output separator (finish with a carriage return):\n");
-  String buf(0);
+  std::string buf(0);
   getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
   return;
@@ -3620,7 +3616,7 @@ void interface::in_exit()
   /* at this point in_buf holds the full putative new interface; we
    need to check for reserved or repeated non-empty symbols */
 
-  const String* str = checkLeadingWhite(*in_buf);
+  const std::string* str = checkLeadingWhite(*in_buf);
 
   if (str) {
     Error(LEADING_WHITESPACE,in_buf,&W->interface().inInterface(),&a,str);

@@ -661,24 +661,24 @@ void StandardSchubertContext::setSize(const Ulong& n)
 
 /******** input/output ****************************************************/
 
-String& StandardSchubertContext::append(String& str, const CoxNbr& x)
+std::string& StandardSchubertContext::append(std::string& str, const CoxNbr& x)
   const
 
 {
   if (x == undef_coxnbr)
-    io::append(str,undef_str);
+    str.append(undef_str);
   else
     coxtypes::append(str,x);
 
   return str;
 }
 
-String& StandardSchubertContext::append(String& str, const CoxNbr& x,
+std::string& StandardSchubertContext::append(std::string& str, const CoxNbr& x,
 				     const Interface& I) const
 
 {
   if (x == undef_coxnbr)
-    return io::append(str,undef_str);
+    return str.append(undef_str);
   else {
     CoxWord g(0);
     normalForm(g,x,I.order());

@@ -71,12 +71,11 @@ String::~String()
 
 namespace io {
 
-String& append(String& l, const char c)
 
 /*
-  Appends c to the varstring l, resizing l as necessary.
+  Appends c to the varstring l, resizing l as necessary (this is old)
 */
-
+String& append(String& l, const char c)
 {
   l[l.length()] = c;
   l.setLength(l.length()+1);
@@ -114,37 +113,29 @@ String& append(String& l1, const String& l2)
 }
 
 
-String& append(String& str, const Ulong& n)
-
+std::string& append(std::string& str, const Ulong& n)
 {
-  static String cs(digits(ULONG_MAX,10));
-
-  cs.setLength(sprintf(cs.ptr(),"%lu",n));
-  append(str,cs);
-  return str;
+  return str.append(std::to_string(n));
 }
 
 
-String& append(String& str, const long& m)
-
+std::string& append(std::string& str, const long& m)
 {
-  static String cs(digits(LONG_MAX,10)+1);
-
-  cs.setLength(sprintf(cs.ptr(),"%ld",m));
-  append(str,cs);
-  return str;
+  return str.append(std::to_string(m));
 }
 
 
-String& append(String& l, const int *v, const Ulong& n)
 
+#if 0
 /*
-  Appends to l the string representation of the n first elements pointed
+  Append to |l| the string representation of the |n| first elements pointed
   by v, as a comma-separated and square-bracket-enclosed list.
-*/
 
+  This function was and is broken; it never uses |l|, and never returns |buf|
+*/
+std::string& append(std::string& l, const int *v, const Ulong& n)
 {
-  static String buf(0);
+  static std::string buf(0);
 
   reset(buf);
 
@@ -160,17 +151,11 @@ String& append(String& l, const int *v, const Ulong& n)
 
   return l;
 }
+#endif
 
-
-String& append(String& str, const int& n)
-
+std::string& append(std::string& str, const int& n)
 {
-  static String cs(digits(INT_MAX,10)+1);
-
-  cs.setLength(sprintf(cs.ptr(),"%d",n));
-  append(str,cs);
-
-  return str;
+  return str += std::to_string(n);
 }
 
 
@@ -186,12 +171,12 @@ String& append(String& str, const unsigned& n)
 }
 
 
-String& erase(String&l, const Ulong& n)
 
 /*
   Erases the last n letters from the string l (everything if n >= length)
 */
-
+#if 0
+String& erase(String&l, const Ulong& n)
 {
   if (n >= l.length()) /* erase everything */
     return reset(l);
@@ -201,28 +186,19 @@ String& erase(String&l, const Ulong& n)
 
   return l;
 }
+#endif
 
 
-String& pad(String& l, const Ulong& n)
-
-/*
-  Pads the string with white spaces to length n.
-
-  NOTE : zero-termination is automatic because we get clean memory on resize.
-*/
-
+// Pads the string with white spaces to length n.
+std::string& pad(std::string& l, const Ulong& n)
 {
   if (n <= l.length()) /* do nothing */
     return l;
 
-  int a = l.length();
-  l.setLength(n);
-  sprintf(l.ptr()+a,"%*s",static_cast<int>(n-a),"");
-
-  return l;
+  return l.append(n-l.length(),' ');
 }
 
-
+#if 0
 String& reset(String& l)
 
 /*
@@ -235,6 +211,7 @@ String& reset(String& l)
 
   return l;
 }
+#endif
 
 String& setString(String& l, const String& s, const Ulong& first,
 		     const Ulong& r)
@@ -251,13 +228,13 @@ String& setString(String& l, const String& s, const Ulong& first,
   return l;
 }
 
-const String& String::undefined()
 
 /*
   This function returns an impossible string, namely the one corresponding
-  to a list of zero characters. Its length would be -1.
+  to a an empty list of characters (no terminating '\0'.
+  Its length would be -1.
 */
-
+const String& String::undefined()
 {
   static String str; /* uses private default constructor */
   return str;
@@ -286,74 +263,72 @@ const String& String::undefined()
 
 namespace io {
 
-void foldLine(FILE* file, const String& str, const Ulong& ls,
-	      const Ulong& h, const char* hyphens)
 
 /*
-  This function breaks up the string str into lines of at most ls characters
+  This function breaks up the string str into lines of at most |ls| characters
   to improve output of long lines. It outputs the extra lines with an
-  indentation of h white spaces. It chooses a breakpoint just before one of
-  the characters in the string hyphens, whenever possible; otherwise it
-  breaks the line brutally.
+  indentation of |h| white spaces. It chooses a breakpoint just before one of
+  the characters in the string |hyphens|, whenever possible; otherwise it
+  breaks the line brutally where it must.
 */
-
+void foldLine(FILE* file, const std::string& str, const Ulong& ls,
+	      const Ulong& h, const char* hyphens)
 {
-  String buf(0);
-
   if (str.length() <= ls) { /* str fits on one line */
-    print(file,str);
+    io::print(file,str);
     return;
   }
 
   /* search for hyphenation point */
 
-  Ulong bp = 0;
+  Ulong bp = 0; // break point
 
-  for (Ulong j = 0; j < ls; j += strcspn(str.ptr()+j,hyphens)) {
+  for (Ulong j = 0; j < ls; j += // distance to next |hyphen|, or '\0'
+	 std::strcspn(str.c_str()+j,hyphens))
+  {
     bp = j;
-    j++;
+    ++j; // skip over |hyphen| charcater before searching again
   }
 
-  if (bp == 0) /* break brutally */
-    bp = ls;
+  if (bp == 0) // no |hyphen| found
+    bp = ls; // then break brutally
 
-  setString(buf,str,0,bp);
-  print(file,buf);
+  print(file,str.substr(0,bp)); // initial part of |str|
 
   /* print continuation lines */
 
-  Ulong p = bp;
+  Ulong p = bp; // continue where we left off
 
-  for (; p < str.length()-ls+h; p += bp) {
-    bp = 0;
-    for (Ulong j = 0; j < ls-h; j += strcspn(str.ptr()+p+j,hyphens)) {
+  while (p < str.length()-ls+h)
+  {
+    bp = 0; // repeat previous computation, from position |p|, targeting |ls-h|
+    for (Ulong j = 0; j < ls-h; j += strcspn(str.c_str()+p+j,hyphens)) {
       bp = j;
       j++;
     }
     if (bp == 0)
       bp = ls-h;
-    setString(buf,str,p,bp);
-    fprintf(file,"\n%*s",static_cast<int>(h),"");
-    print(file,buf);
+    fprintf(file,"\n%*s",static_cast<int>(h),""); // spaces
+    print(file,str.substr(p,bp)); // line between two break points
+    p += bp;
   }
 
   /* print last line */
 
-  setString(buf,str,p,str.length()-p);
-  fprintf(file,"\n%*s",static_cast<int>(h),"");
-  print(file,buf);
+  fprintf(file,"\n%*s",static_cast<int>(h),""); // spaces
+  print(file,str.substr(p)); // remainder of |str|
 
   return;
 }
 
 
-void print(FILE *file, const int* const& v, const Ulong& n)
 
 /*
-  Appends to l the string representation of the n first elements pointed
-  by v, as a comma-separated and square-bracket-enclosed list.
+  Print to |file| the string representation of the first |n| elements pointed
+  by |v|, as a comma-separated and square-bracket-enclosed list.
 */
 
+void print(FILE *file, const int* const& v, const Ulong& n)
 {
   fprintf(file,"[");
 
@@ -369,27 +344,21 @@ void print(FILE *file, const int* const& v, const Ulong& n)
   return;
 }
 
+
+// Print to |file| the contents of another file named |dir_name|/|name|
 void printFile(FILE* file, const char *name, const char *dir_name)
-
-/*
-  Prints the contents of the file with the name dir_name/name on the file.
-*/
-
 {
-  static String buf(0);
-
-  reset(buf);
-  append(buf,dir_name);
-  append(buf,"/");
-  append(buf,name);
+  std::string buf = dir_name;
+  buf.push_back('/');
+  buf.append(name);
 
   FILE* inputfile;
   char c;
 
-  inputfile = fopen(buf.ptr(),"r");
+  inputfile = fopen(buf.c_str(),"r");
 
   if (inputfile == 0) {
-    Error(FILE_NOT_FOUND,buf.ptr());
+    Error(FILE_NOT_FOUND,buf.c_str());
     return;
   }
 
@@ -397,16 +366,10 @@ void printFile(FILE* file, const char *name, const char *dir_name)
     putc(c,file);
 
   fclose(inputfile);
-
-  return;
 }
 
+// Print to |file| the contents of another file named |name|
 void printFile(FILE* file, const char *name)
-
-/*
-  Prints the contents of the file with the given name, onto file.
-*/
-
 {
   FILE* inputfile;
   char c;
@@ -422,8 +385,6 @@ void printFile(FILE* file, const char *name)
     putc(c,file);
 
   fclose(inputfile);
-
-  return;
 }
 
 };
@@ -443,27 +404,24 @@ void printFile(FILE* file, const char *name)
 
 namespace io {
 
-char* getInput(FILE *inputfile, String& buf, Ulong len)
-
 /*
-  Reads from the inputfile until either EOF or a newline is reached;
-  appends the result to buf starting from position len; resizes buf as
-  it reads, so that it can keep writing. The newline is not written
-  on the string.
+  Read from |inputfile| until either |EOF| or a newline is reached;
+  append the result to |buf| starting at position |len|; resize |buf|
+  as needed while writing. The newline is not written on the |buf|.
 */
 
+const char* getInput(FILE *inputfile, std::string& buf, Ulong len)
 {
-  for (Ulong a = len;; a++) {
+  buf.resize(len);
+  while(true)
+  {
     int c = getc(inputfile);
-    buf.setLength(a);
-    if ((c == EOF) || (c == '\n')) {
-      buf[a] = '\0';
+    if ((c == EOF) || (c == '\n'))
       break;
-    }
-    buf[a] = c;
+    buf.push_back(c);
   }
 
-  return buf.ptr();
+  return buf.c_str();
 }
 
 };
@@ -520,20 +478,19 @@ int digits(Ulong c, Ulong b)
   return j;
 }
 
-Ulong skipSpaces(const String& l, Ulong p)
 
 /*
-  Skips from character position p over white space (characters recognized
-  by isspace())
+  Skips from character position |p| over white space (characters recognized
+  by |isspace|), return number of places advanced
 */
-
+Ulong skipSpaces(const std::string& l, Ulong p)
 {
-  Ulong j = 0;
+  Ulong j = p;
 
-  for (; isspace(l[p+j]); ++j)
-    ;
+  while (j<l.length() and isspace(l[j]))
+    ++j;
 
-  return j;
+  return j-p;
 }
 
 };

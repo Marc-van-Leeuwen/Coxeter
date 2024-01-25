@@ -45,7 +45,7 @@ template <class T> Dictionary<T>::~Dictionary()
   delete d_root;
 }
 
-template <class T> DictCell<T>* Dictionary<T>::findCell(const String& str)
+template <class T> DictCell<T>* Dictionary<T>::findCell(const std::string& str)
   const
 
 /*
@@ -75,7 +75,7 @@ template <class T> DictCell<T>* Dictionary<T>::findCell(const String& str)
   return cell;
 }
 
-template <class T> T* Dictionary<T>::find(const String& str) const
+template <class T> T* Dictionary<T>::find(const std::string& str) const
 
 {
   DictCell<T>* dc = findCell(str);
@@ -86,7 +86,7 @@ template <class T> T* Dictionary<T>::find(const String& str) const
     return 0;
 }
 
-template <class T> void Dictionary<T>::insert(const String& str,
+template <class T> void Dictionary<T>::insert(const std::string& str,
 					      T* const value)
 
 /*
@@ -154,7 +154,7 @@ template <class T> void Dictionary<T>::insert(const String& str,
     }
 }
 
-template <class T> void Dictionary<T>::remove(const String& str)
+template <class T> void Dictionary<T>::remove(const std::string& str)
 
 /*
   Not implemented.
@@ -200,9 +200,6 @@ template <class T> void DictCell<T>::operator delete(void* ptr, size_t size)
 
 namespace dictionary {
 
-template <class T>
-  void printExtensions(FILE* file, DictCell<T>* cell, String& name,
-		       bool &first, const char* sep)
 
 /*
   This function prints all the possible extensions of the prefix corresponding
@@ -210,7 +207,9 @@ template <class T>
   ambiguities. It is assumed that name contains the name of the parent of the
   string.
 */
-
+template <class T>
+  void printExtensions(FILE* file, DictCell<T>* cell, std::string& name,
+		       bool &first, const char* sep)
 {
   if (cell == 0)
     return;
@@ -220,10 +219,11 @@ template <class T>
       first = false;
     else
       fprintf(file,"%s",sep);
-    fprintf(file,"%s",name.ptr());
+    fprintf(file,"%s",name.c_str());
   }
   printExtensions(file,cell->left,name,first,sep);
-  erase(name,1);
+  if (not name.empty())
+    name.pop_back(); // remove last character from |name|
   printExtensions(file,cell->right,name,first,sep);
 }
 

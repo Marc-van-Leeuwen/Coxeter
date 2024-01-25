@@ -84,7 +84,7 @@ namespace coxtypes {
   bool operator== (const CoxWord& g, const CoxWord& h);
   bool operator< (const CoxWord& g, const CoxWord& h);
   bool operator> (const CoxWord& g, const CoxWord& h);           /* inlined */
-  String& append(String& str, const CoxNbr& x);
+  std::string& append(std::string& str, const CoxNbr& x);
   void print(FILE *outputfile, CoxArr a, Rank l);
 };
 

@@ -46,7 +46,7 @@
 namespace files {
 
 template <class C>
-void appendCoefficient(String& str, const C& c, PolynomialTraits& traits)
+void appendCoefficient(std::string& str, const C& c, PolynomialTraits& traits)
 
 {
   io::append(str,c);
@@ -54,26 +54,23 @@ void appendCoefficient(String& str, const C& c, PolynomialTraits& traits)
 }
 
 template <class E>
-void appendExponent(String& str, const E& e, PolynomialTraits& traits)
 
-/*
-  Appends the exponent e*d+m according to the traits.
-*/
-
+// Append the exponent e*d+m according to the traits.
+void appendExponent(std::string& str, const E& e, PolynomialTraits& traits)
 {
   if (!traits.printExponent)
     return;
 
-  io::append(str,traits.exponent);
-  io::append(str,traits.expPrefix);
-  io::append(str,static_cast<long>(e));
-  io::append(str,traits.expPostfix);
+  str.append(traits.exponent);
+  str.append(traits.expPrefix);
+  str += static_cast<long>(e);
+  str.append(traits.expPostfix);
 
   return;
 }
 
 template <class M>
-void appendHeckeMonomial(String& str, const M& m, const SchubertContext& p,
+void appendHeckeMonomial(std::string& str, const M& m, const SchubertContext& p,
 			 const Interface& I, HeckeTraits& hTraits,
 			 PolynomialTraits& pTraits, const Length& l)
 {
@@ -85,7 +82,7 @@ void appendHeckeMonomial(String& str, const M& m, const SchubertContext& p,
 
   Ulong d = 1;
   long q = 0;
-  String indeterminate = pTraits.indeterminate; // back up
+  std::string indeterminate = pTraits.indeterminate; // back up
 
   if ((l != undef_length) && hTraits.doShift) { // set shift parameters
     d = 2;
@@ -93,20 +90,20 @@ void appendHeckeMonomial(String& str, const M& m, const SchubertContext& p,
     pTraits.indeterminate = pTraits.sqrtIndeterminate;
   }
 
-  io::append(str,hTraits.monomialPrefix);
+  str.append(hTraits.monomialPrefix);
 
   if (hTraits.reversePrint) {
     appendPolynomial(str,m.pol(),pTraits,d,q);
-    io::append(str,hTraits.monomialSeparator);
+    str.append(hTraits.monomialSeparator);
     p.append(str,m.x(),I);
   }
   else {
     p.append(str,m.x(),I);
-    io::append(str,hTraits.monomialSeparator);
+    str.append(hTraits.monomialSeparator);
     appendPolynomial(str,m.pol(),pTraits,d,q);
   }
 
-  io::append(str,hTraits.monomialPostfix);
+  str.append(hTraits.monomialPostfix);
 
   if ((ptype == KLPOL) && (l != undef_length))
     appendMuMark(str,m,p,l,hTraits);
@@ -117,7 +114,7 @@ void appendHeckeMonomial(String& str, const M& m, const SchubertContext& p,
 }
 
 template <class C>
-void appendMonomial(String& str, const C& c, const Ulong& e,
+void appendMonomial(std::string& str, const C& c, const Ulong& e,
 		    PolynomialTraits& traits, const Ulong& d,
 		    const long& m)
 
@@ -132,14 +129,14 @@ void appendMonomial(String& str, const C& c, const Ulong& e,
     appendCoefficient(str,c,traits);
   else {
     if (c == 1)
-      io::append(str,traits.one);
+      str.append(traits.one);
     else if (-c == 1)
-      io::append(str,traits.negOne);
+      str.append(traits.negOne);
     else {
       appendCoefficient(str,c,traits);
-      io::append(str,traits.product);
+      str.append(traits.product);
     }
-    io::append(str,traits.indeterminate);
+    str.append(traits.indeterminate);
     if (e_s != 1) {
       appendExponent(str,e_s,traits);
     }
@@ -149,7 +146,7 @@ void appendMonomial(String& str, const C& c, const Ulong& e,
 }
 
 template <class M>
-void appendMuMark(String& str, const M& m, const SchubertContext& p,
+void appendMuMark(std::string& str, const M& m, const SchubertContext& p,
 		  const Length& l, HeckeTraits& traits)
 
 /*
@@ -161,25 +158,25 @@ void appendMuMark(String& str, const M& m, const SchubertContext& p,
   Length lx = p.length(m.x());
 
   if (static_cast<long>(2*m.pol().deg()) == static_cast<long>(l-lx-1))
-    io::append(str,traits.muMark);
+    str.append(traits.muMark);
 
   return;
 }
 
 template <class P>
-void appendPolynomial(String& str, const P& p, PolynomialTraits& traits,
+void appendPolynomial(std::string& str, const P& p, PolynomialTraits& traits,
 		      const Ulong& d, const long& m)
 
 {
   if (p.isZero()) {
-    io::append(str,traits.zeroPol);
+    str.append(traits.zeroPol);
     return;
   }
 
   if (traits.printModifier)
     appendModifier(str,d,m,traits);
 
-  io::append(str,traits.prefix);
+  str.append(traits.prefix);
 
   bool firstTerm = true;
 
@@ -190,14 +187,14 @@ void appendPolynomial(String& str, const P& p, PolynomialTraits& traits,
       firstTerm = false;
     else { // append separator
       if (p[j] > 0)
-	io::append(str,traits.posSeparator);
+	str.append(traits.posSeparator);
       else
-	io::append(str,traits.negSeparator);
+	str.append(traits.negSeparator);
     }
     appendMonomial(str,p[j],j,traits,d,m);
   }
 
-  io::append(str,traits.postfix);
+  str.append(traits.postfix);
 
   return;
 }
@@ -466,7 +463,7 @@ template <class H>
 */
 
 {
-  String buf(0);
+  std::string buf(0);
 
   bool oldTS = setTwoSided(h,a,p,I,hTraits,pTraits,l);
 
@@ -478,10 +475,10 @@ template <class H>
       appendSeparator(buf,j,hTraits);
     pad(buf,j,hTraits);
     if (hTraits.lineSize)
-      foldLine(file,buf,hTraits.lineSize,hTraits.indent,hTraits.hyphens.ptr());
+      foldLine(file,buf,hTraits.lineSize,hTraits.indent,hTraits.hyphens.c_str());
     else
       io::print(file,buf);
-    reset(buf);
+    buf.clear();
   }
 
   io::print(file,hTraits.postfix);
@@ -645,7 +642,7 @@ template <class KL>
   }
 
   io::print(file,traits.eltListPostfix);
-  io::print(file,traits.closeString);
+  io::print(file,traits.close_string);
   fprintf(file,"\n");
 
   // print graph
@@ -694,7 +691,7 @@ template <class KL>
   }
 
   io::print(file,traits.eltListPostfix);
-  io::print(file,traits.closeString);
+  io::print(file,traits.close_string);
   fprintf(file,"\n");
 
   // print graph
@@ -880,7 +877,7 @@ template <class KL>
   }
 
   io::print(file,traits.eltListPostfix);
-  io::print(file,traits.closeString);
+  io::print(file,traits.close_string);
   fprintf(file,"\n");
 
   // print graph
@@ -925,7 +922,7 @@ template <class KL>
     io::print(file,traits.compCountPrefix);
     fprintf(file,"%lu",hs.size());
     io::print(file,traits.compCountPostfix);
-    io::print(file,traits.closeString);
+    io::print(file,traits.close_string);
     fprintf(file,"\n");
   }
 
@@ -964,7 +961,7 @@ template <class KL>
     io::print(file,traits.compCountPrefix);
     fprintf(file,"%lu",hs.size());
     io::print(file,traits.compCountPostfix);
-    io::print(file,traits.closeString);
+    io::print(file,traits.close_string);
     fprintf(file,"\n");
   }
 
@@ -1053,7 +1050,7 @@ bool setTwoSided(const H& h, const Permutation& a, const SchubertContext& p,
 
   // if we get here, *traits.twoSided is true
 
-  String buf(0);
+  std::string buf;
 
   for (Ulong j = 0; j < h.size(); ++j) {
     appendHeckeMonomial(buf,h[a[j]],p,I,hTraits,pTraits,l);
@@ -1071,7 +1068,7 @@ bool setTwoSided(const H& h, const Permutation& a, const SchubertContext& p,
 	break;
       }
     }
-    reset(buf);
+    buf.clear();
   }
 
   return true;

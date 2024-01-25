@@ -6,6 +6,7 @@
 */
 
 #include "bits.h"
+#include "io.h"
 
 #include <limits.h>
 
@@ -1168,43 +1169,30 @@ void bits::memSet(void *dest, void *source, Ulong size, Ulong count)
   This section contains i/o functions for the classes defined in this
   module :
 
-   - append(l,map) : appends the BitMap map to the string l;
+   - append(l,map) : append the BitMap map to the string l;
    - print(file,map) : prints the map to the file;
 
  *****************************************************************************/
 
 namespace bits {
 
-String& append(String& l, const BitMap& map)
 
-/*
-  Appends the map to the string. Uses a representation in terms of zeroes
-  and ones.
-*/
-
+// append to |l| a string on the alphabet |{0.1}| for the bitmap
+std::string& append(std::string& l, const BitMap& map)
 {
-  for (Ulong j = 0; j < map.size(); ++j) {
-    if (map.getBit(j)) /* bit is set */
-      append(l,"1");
-    else
-      append(l,"0");
-  }
+  for (Ulong j = 0; j < map.size(); ++j)
+    l.push_back(map.getBit(j) ? '1' : '0');
 
   return l;
 }
 
 void print(FILE* file, const BitMap& map)
-
-/*
-  Prints the map to the file. Uses append.
-*/
-
 {
-  static String buf(0);
+  static std::string buf;
 
-  reset(buf);
+  buf.clear();
   append(buf,map);
-  print(file,buf);
+  io::print(file,buf);
 
   return;
 }

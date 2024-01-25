@@ -53,13 +53,13 @@ namespace {
 namespace {
   void checkCoxElement(CoxGroup *W, CoxWord g);
   void checkCoxEntry(Rank i, Rank j, Ulong m);
-  void checkFilename(char *s);
+  void checkFilename(const char *s);
   void checkLength(const long& l);
   void checkRank(const Rank& l, const Type& type);
-  void checkType(String& buf);
-  void getCoxFileName(String& buf);
-  Ulong parse(const Interface& I, Generator &s, const String& line);
-  Ulong parse(const Interface& I, Generator &s, const String& line,
+  void checkType(std::string& buf);
+  void getCoxFileName(std::string& buf);
+  Ulong parse(const Interface& I, Generator &s, const std::string& line);
+  Ulong parse(const Interface& I, Generator &s, const std::string& line,
 		const LFlags& f);
   void printADiagram(FILE* file, const CoxGroup* W);
   void printBDiagram(FILE* file, const CoxGroup* W);
@@ -87,7 +87,7 @@ namespace interactive {
 OutputFile::OutputFile()
 
 {
-  static String buf(0);
+  static std::string buf;
 
   printf("Name an output file (hit return for stdout):\n");
   interactive::getInput(stdin,buf);
@@ -95,7 +95,7 @@ OutputFile::OutputFile()
   if (buf[0] == '\0')
     d_file = stdout;
   else
-    d_file = fopen(buf.ptr(),"w");
+    d_file = fopen(buf.c_str(),"w");
 }
 
 
@@ -225,7 +225,7 @@ CoxEntry getCoxEntry(const Rank& i, const Rank& j)
 */
 
 {
-  static String buf(0);
+  static std::string buf;
   Ulong m = undef_coxentry;
 
   do {
@@ -237,7 +237,7 @@ CoxEntry getCoxEntry(const Rank& i, const Rank& j)
       ERRNO = BAD_COXENTRY;
       return undef_coxentry;
     }
-    m = strtol(buf.ptr(),NULL,0);
+    m = strtol(buf.c_str(),NULL,0);
     checkCoxEntry(i,j,m);
   }
   while (ERRNO);
@@ -249,31 +249,30 @@ CoxEntry getCoxEntry(const Rank& i, const Rank& j)
 
 namespace {
 
-void getCoxFileName(String& str)
 
 /*
-  This function gets from the user the name of the file containing the
-  coxeter matrix. It is called if the type is set to X. It checks if
-  the given name corresponds to a file under coxeter_matrices. As usual,
-  it prompts until it gets a valid name or a carriage return,
-  taking the latter to mean an instruction to abort the procedure.
+  Get from the user the name of the file containing the coxeter matrix. This
+  function is called if the type is set to X. It checks if the given name
+  corresponds to a file under coxeter_matrices. As usual, it prompts until it
+  gets a valid name or a carriage return, taking the latter to mean an
+  instruction to abort the procedure.
 */
-
+void getCoxFileName(std::string& str)
 {
-  static String buf(0);
+  static std::string buf;
   using directories::COXMATRIX_DIR;
 
-  reset(buf);
-  append(buf,COXMATRIX_DIR);
-  append(buf,"/");
+  buf.clear();
+  buf.append(COXMATRIX_DIR);
+  buf.push_back('/');
   Ulong c = buf.length();
 
   do {
     if (ERRNO) {
-      Error(ERRNO,buf.ptr());
-      reset(buf);
-      append(buf,COXMATRIX_DIR);
-      append(buf,"/");
+      Error(ERRNO,buf.c_str());
+      buf.clear();
+      buf.append(COXMATRIX_DIR);
+      buf.push_back('/');
     }
     printf("\nFile name : %s/",COXMATRIX_DIR);
     getInput(stdin,buf,buf.length());
@@ -281,16 +280,11 @@ void getCoxFileName(String& str)
       ERRNO = ABORT;
       return;
     }
-    checkFilename(buf.ptr());
+    checkFilename(buf.c_str());
   }
   while (ERRNO);
 
-  str.setLength(buf.length()-c+1);
-  str[0] = 'X';
-  str.setData(buf.ptr()+c,1,buf.length()-c);
-  str[str.length()] = '\0';
-
-  return;
+  str = "X" + buf.substr(c);
 }
 
 };
@@ -313,7 +307,7 @@ const CoxWord& getCoxWord(CoxGroup *W)
   do {
     if (ERRNO) {
       P.str[P.offset] = '\0';
-      Error(ERRNO,P.str.ptr());
+      Error(ERRNO,P.str.c_str());
     }
     getInput(stdin,P.str,P.offset);
     if (P.str[P.offset] == '?') {
@@ -341,18 +335,18 @@ Generator getGenerator(CoxGroup* W)
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   const Interface& I = W->interface();
   Generator s = undef_generator;
 
   Ulong r = 0;
-  reset(buf);
+  buf.clear();
 
   do {
     if (ERRNO) {
       buf[r] = '\0';
-      Error(ERRNO,buf.ptr());
+      Error(ERRNO,buf.c_str());
     }
     getInput(stdin,buf,r);
     if (buf[r] == '?') {
@@ -373,18 +367,18 @@ Generator getGenerator(CoxGroup* W, const LFlags& f)
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   const Interface& I = W->interface();
   Generator s = undef_generator;
 
   Ulong r = 0;
-  reset(buf);
+  buf.clear();
 
   do {
     if (ERRNO) {
       buf[r] = '\0';
-      Error(ERRNO,buf.ptr());
+      Error(ERRNO,buf.c_str());
     }
     getInput(stdin,buf,r);
     if (buf[r] == '?') {
@@ -413,7 +407,7 @@ void getLength(List<Length>& L, const CoxGraph& G, const Interface& I)
 
 {
   List<LFlags> cl(0);
-  static String buf(0);
+  static std::string buf;
 
   getConjugacyClasses(cl,G);
 
@@ -443,7 +437,7 @@ void getLength(List<Length>& L, const CoxGraph& G, const Interface& I)
 	ERRNO = ABORT;
 	return;
       }
-    l = strtol(buf.ptr(),NULL,0);
+    l = strtol(buf.c_str(),NULL,0);
     checkLength(l);
     } while (ERRNO);
 
@@ -469,7 +463,7 @@ Rank getRank(const Type& type)
 */
 
 {
-  static String buf(0);
+  static std::string buf;
   Rank l;
   int ignore_error;
 
@@ -482,7 +476,7 @@ Rank getRank(const Type& type)
     }
 
   ignore_error = 0;
-  reset(buf);
+  buf.clear();
 
   do {
     if (ERRNO)
@@ -495,7 +489,7 @@ Rank getRank(const Type& type)
       ERRNO = ERROR_WARNING;
       return 0;
     }
-    l = (Rank)strtol(buf.ptr(),NULL,0);
+    l = (Rank)strtol(buf.c_str(),NULL,0);
     checkRank(l,type);
   }
   while (ERRNO);
@@ -517,8 +511,8 @@ const Type& getType()
 {
   static Type buf("");
 
-  String& name = buf.name();
-  reset(name);
+  std::string& name = buf.name();
+  name.clear(); // clear |buf|
 
   do {
     if (ERRNO)
@@ -687,13 +681,12 @@ void checkCoxEntry(Rank i, Rank j, Ulong m)
   return;
 }
 
-void checkFilename(char *s)
 
 /*
-  Checks if s is the name of a file in the current directory, by
-  attempting to open it. Does not check the contents of the file.
+  Check if |s| is the name of a file in the current directory, by
+  attempting to open it. Do not check the contents of the file.
 */
-
+void checkFilename(const char *s)
 {
   FILE *f;
 
@@ -814,10 +807,9 @@ void checkRank(const Rank& l, const Type& type)
 }
 
 
-void checkType(String& str)
 
 /*
-  Checks if the string s is a valid type for a Coxeter group. Currently
+  Check if the string s is a valid type for a Coxeter group. Currently
   the valid types are one-letter strings (this might change, for instance
   if non-irreducible groups are permitted).
 
@@ -832,7 +824,7 @@ void checkType(String& str)
   that the type will then be an actual string. It is assumed that
   the string holds at least a character.
 */
-
+void checkType(std::string& str)
 {
   if (str.length() > 1) { /* string too long */
     ERRNO = WRONG_TYPE;
@@ -1291,7 +1283,7 @@ int interactive::endOfLine(FILE *f)
 
 namespace {
 
-Ulong parse(const Interface& I, Generator &s, const String& line)
+Ulong parse(const Interface& I, Generator &s, const std::string& line)
 
 /*
   This function parses a generator from the line.
@@ -1306,7 +1298,7 @@ Ulong parse(const Interface& I, Generator &s, const String& line)
 
   Ulong q = io::skipSpaces(line,0);
 
-  const char* str = line.ptr()+q;
+  const char* str = line.c_str()+q;
   Ulong strsize = line.length()-q;
 
   if (strsize == 0) { /* default generator */
@@ -1332,7 +1324,7 @@ Ulong parse(const Interface& I, Generator &s, const String& line)
 
   q += io::skipSpaces(line,q);
 
-  str = line.ptr()+q;
+  str = line.c_str()+q;
   Ulong p = I.symbolTree().find(str,0,tok);
   if (tokenType(tok) != interface::generator_type) { /* error */
     ERRNO = PARSE_ERROR;
@@ -1345,7 +1337,7 @@ Ulong parse(const Interface& I, Generator &s, const String& line)
   return q;
 }
 
-Ulong parse(const Interface& I, Generator &s, const String& line,
+Ulong parse(const Interface& I, Generator &s, const std::string& line,
 	      const LFlags& f)
 
 /*
@@ -1362,7 +1354,7 @@ Ulong parse(const Interface& I, Generator &s, const String& line,
 
   Ulong q = io::skipSpaces(line,0);
 
-  const char* str = line.ptr()+q;
+  const char* str = line.c_str()+q;
   Ulong strsize = line.length()-q;
 
   if (strsize == 0) { /* default generator */
@@ -1388,7 +1380,7 @@ Ulong parse(const Interface& I, Generator &s, const String& line,
 
   q += io::skipSpaces(line,q);
 
-  str = line.ptr()+q;
+  str = line.c_str()+q;
   strsize = line.length()-q;
 
   Ulong p = I.symbolTree().find(str,0,tok);
@@ -1411,14 +1403,11 @@ Ulong parse(const Interface& I, Generator &s, const String& line,
 
 namespace interactive {
 
+
+// Gets a yes or a no from the user.
 bool yesNo()
-
-/*
-  Gets a yes or a no from the user.
-*/
-
 {
-  String buf(0);
+  std::string buf;
 
   do {
     if (ERRNO) {

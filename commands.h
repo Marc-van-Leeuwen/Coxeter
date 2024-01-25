@@ -8,6 +8,7 @@
 #ifndef COMMANDS_H  /* guard against multiple inclusions */
 #define COMMANDS_H
 
+#include <string>
 #include "globals.h"
 
 namespace commands {
@@ -33,7 +34,7 @@ namespace commands {
 
 namespace commands {
   coxgroup::CoxGroup* currentGroup();
-  void default_error(char* str);
+  void default_error(const char* str);
   void execute();
   CommandTree* interfaceCommandTree();
   CommandTree* mainCommandTree();
@@ -79,7 +80,7 @@ class CommandTree:public Dictionary<CommandData> {
   String d_prompt;
   CommandTree* d_help;
   void (*d_entry)();
-  void (*d_error)(char* str);
+  void (*d_error)(const char* str);
   void (*d_exit)();
  public:
 /* constructors and destructors */
@@ -87,7 +88,7 @@ class CommandTree:public Dictionary<CommandData> {
   void operator delete(void* ptr)
     {return arena().free(ptr,sizeof(CommandTree));}
   CommandTree(const char *str, void (*action)(), void (*entry)() = &relax_f,
-	      void (*error)(char*) = &default_error,
+	      void (*error)(const char*) = &default_error,
 	      void (*exit)() = &relax_f, void (*h)() = 0);
   ~CommandTree();
 /* modifiers */
@@ -99,7 +100,7 @@ class CommandTree:public Dictionary<CommandData> {
 /* accessors */
   void prompt() const;
   void entry() const;                                            /* inlined */
-  void error(char *str) const;                                   /* inlined */
+  void error(const char *str) const;                             /* inlined */
   void exit() const;                                             /* inlined */
   CommandTree* helpMode() const;                                 /* inlined */
 };
@@ -112,7 +113,7 @@ namespace commands {
 
 inline void CommandTree::setEntry(void (*a)()) {d_entry = a;}
 inline void CommandTree::entry() const {return d_entry();}
-inline void CommandTree::error(char *str) const {return d_error(str);}
+inline void CommandTree::error(const char *str) const {return d_error(str);}
 inline void CommandTree::exit() const {return d_exit();}
 inline CommandTree* CommandTree::helpMode() const {return d_help;}
 

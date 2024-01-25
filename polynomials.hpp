@@ -298,7 +298,7 @@ bool operator>= (const Polynomial<T>& p, const Polynomial<T>& q)
 namespace polynomials {
 
 template <class T>
-String& append(String& str, const Polynomial<T> &p, const char *x)
+std::string& append(std::string& str, const Polynomial<T> &p, const char *x)
 
 /*
   Appends the string representation of p to l, using the string x to
@@ -307,7 +307,7 @@ String& append(String& str, const Polynomial<T> &p, const char *x)
 
 {
   if (p.isZero()) {
-    io::append(str,"0");
+    str.append("0");
     return str;
   }
 
@@ -322,17 +322,17 @@ String& append(String& str, const Polynomial<T> &p, const char *x)
       firstcoeff = 0;
     else
       if (p[j] > 0)
-	append(str,"+");
+	str.append("+");
     switch (j)
       {
       case 0:
-	append(str,p[j]);
+	io::append(str,p[j]);
 	break;
       default:
 	if ((p[j] != 1) && (p[j] != (T)(-1)))
-	  append(str,p[j]);
+	  io::append(str,p[j]);
 	else if (p[j] == (T)(-1))
-	  append(str,"-");
+	  str.append("-");
 	break;
       };
     switch (j)
@@ -340,12 +340,12 @@ String& append(String& str, const Polynomial<T> &p, const char *x)
       case 0:
 	break;
       case 1:
-	append(str,x);
+	str.append(x);
 	break;
       default:
-	append(str,x);
-	append(str,"^");
-	append(str,j);
+	str.append(x);
+	str.append("^");
+	io::append(str,j);
 	break;
       };
   }
@@ -354,7 +354,7 @@ String& append(String& str, const Polynomial<T> &p, const char *x)
 }
 
 template <class T>
-String& append(String& str, const LaurentPolynomial<T> &p, const char *x)
+std::string& append(std::string& str, const LaurentPolynomial<T> &p, const char *x)
 
 /*
   Appends the string representation of p to l, using the string x to
@@ -363,7 +363,7 @@ String& append(String& str, const LaurentPolynomial<T> &p, const char *x)
 
 {
   if (p.isZero()) {
-    io::append(str,"0");
+    str.append("0");
     return str;
   }
 
@@ -376,17 +376,17 @@ String& append(String& str, const LaurentPolynomial<T> &p, const char *x)
       firstcoeff = 0;
     else
       if (p[j] > 0)
-	append(str,"+");
+	str.append("+");
     switch (j)
       {
       case 0:
-	append(str,p[j]);
+	io::append(str,p[j]);
 	break;
       default:
 	if ((p[j] != 1) && (p[j] != (T)(-1)))
-	  append(str,p[j]);
+	  io::append(str,p[j]);
 	else if (p[j] == (T)(-1))
-	  append(str,"-");
+	  str.append("-");
 	break;
       };
     switch (j)
@@ -394,12 +394,12 @@ String& append(String& str, const LaurentPolynomial<T> &p, const char *x)
       case 0:
 	break;
       case 1:
-	append(str,x);
+	str.append(x);
 	break;
       default:
-	append(str,x);
-	append(str,"^");
-	append(str,j);
+	str.append(x);
+	str.append("^");
+	io::append(str,j);
 	break;
       };
    }
@@ -408,7 +408,7 @@ String& append(String& str, const LaurentPolynomial<T> &p, const char *x)
 }
 
 template <class T>
-String& append(String& str, const Polynomial<T> &p, const Degree& d,
+std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
 	       const long& m, const char *x)
 
 /*
@@ -419,7 +419,7 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
 
 {
   if (p.deg() == undef_degree) {
-    io::append(str,"0");
+    str.append("0");
     return str;
   }
 
@@ -434,7 +434,7 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
       firstcoeff = 0;
     else
       if (p[j] > 0)
-	append(str,"+");
+	str.append("+");
     long a = j*d + m;
     switch (a) {
     case 0:
@@ -444,19 +444,19 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
       if ((p[j] != (T)1) && (p[j] != (T)(-1)))
 	append(str,p[j]);
       else if (p[j] == (T)(-1))
-	append(str,"-");
+	str.append("-");
       break;
     };
     switch (a) {
     case 0:
       break;
     case 1:
-      append(str,x);
+      str.append(x);
       break;
     default:
-      append(str,x);
-      append(str,"^");
-      append(str,a);
+      str.append(x);
+      str.append("^");
+      io::append(str,a);
       break;
     };
   }
@@ -465,7 +465,7 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
 }
 
 template <class T>
-String& append(String& str, const Polynomial<T> &p, const Degree& d,
+std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
 	       const long& m, const char *x, GAP)
 
 /*
@@ -479,7 +479,7 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
 
 {
   if (p.deg() == undef_degree) {
-    io::append(str,"0");
+    str.append("0");
     return str;
   }
 
@@ -494,7 +494,7 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
       firstcoeff = 0;
     else
       if (p[j] > 0)
-	append(str,"+");
+	str.append("+");
     long a = j*d + m;
     switch (a) {
     case 0:
@@ -503,22 +503,22 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
     default:
       if ((p[j] != (T)1) && (p[j] != (T)(-1))) {
 	append(str,p[j]);
-	append(str,"*");
+	str.append("*");
       }
       else if (p[j] == (T)(-1))
-	append(str,"-");
+	str.append("-");
       break;
     };
     switch (a) {
     case 0:
       break;
     case 1:
-      append(str,x);
+      str.append(x);
       break;
     default:
-      append(str,x);
-      append(str,"^");
-      append(str,a);
+      str.append(x);
+      str.append("^");
+      io::append(str,a);
       break;
     };
   }
@@ -527,7 +527,7 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
 }
 
 template <class T>
-String& append(String& str, const Polynomial<T> &p, const Degree& d,
+std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
 	       const long& m, const char *x, Terse)
 
 /*
@@ -543,27 +543,27 @@ String& append(String& str, const Polynomial<T> &p, const Degree& d,
 
 {
   if (p.deg() == undef_degree) {
-    io::append(str,"()");
+    str.append("()");
     return str;
   }
 
   if ((d != 1) || (m != 0)) {
-    io::append(str,"(");
+    str.append("(");
     io::append(str,d);
-    io::append(str,",");
+    str.append(",");
     io::append(str,m);
-    io::append(str,")");
+    str.append(")");
   }
 
-  io::append(str,"(");
+  str.append("(");
 
   for (Ulong j = 0; j <= p.deg(); ++j) {
-    io::append(str,p[j]);
+    str.append(p[j]);
     if ((j+1) <= p.deg()) /* there is more to come */
-      io::append(str,",");
+      str.append(",");
   }
 
-  io::append(str,")");
+  str.append(")");
 
   return str;
 }
@@ -572,11 +572,11 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 			      const char* x)
 
 {
-  static String buf(0);
+  static std::string buf;
 
-  reset(buf);
+  buf.clear();
   append(buf,p,x);
-  print(file,buf);
+  io::print(file,buf);
 
   return;
 }
@@ -585,11 +585,11 @@ template <class T> void print(FILE* file, const LaurentPolynomial<T>& p,
 			      const char* x)
 
 {
-  static String buf(0);
+  static std::string buf;
 
-  reset(buf);
+  buf.clear();
   append(buf,p,x);
-  print(file,buf);
+  io::print(file,buf);
 
   return;
 }
@@ -603,11 +603,11 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
-  reset(buf);
+  buf.clear();
   append(buf,p,d,m,x);
-  print(file,buf);
+  io::print(file,buf);
 
   return;
 }
@@ -622,11 +622,11 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
-  reset(buf);
+  buf.clear();
   append(buf,p,d,m,x,GAP());
-  print(file,buf);
+  io::print(file,buf);
 
   return;
 }
@@ -640,11 +640,11 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
-  reset(buf);
+  buf.clear();
   append(buf,p,d,m,x,Terse());
-  print(file,buf);
+  io::print(file,buf);
 
   return;
 }

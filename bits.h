@@ -12,6 +12,7 @@
 
 #include <limits.h>
 #include <new>
+#include <string>
 
 #include "list.h"
 
@@ -39,11 +40,6 @@ namespace bits {
 #include "io.h"
 
 namespace bits {
-  using namespace io;
-};
-
-namespace bits {
-  String& append(String& l, const BitMap& map);
   unsigned bitCount(const LFlags& f);
   bool isRefinement(const Partition& pi1, const Partition& pi2);
   void memSet(void *dest, void *source, Ulong size, Ulong count);

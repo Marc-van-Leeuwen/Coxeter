@@ -74,18 +74,18 @@ namespace interface {
 /******** function declarations **********************************************/
 
 namespace interface {
-  const String* alphabeticSymbols(Ulong n);
-  String& append(String& str, const CoxWord& g, const GroupEltInterface& GI);
-  String& append(String& buf, const LFlags& f, const Interface& I);
-  String& appendSymbol(String& str, const Generator& s, const Interface& I);
-  String& appendTwosided(String& buf, const LFlags& f, const Interface& I);
-  const String* checkLeadingWhite(const GroupEltInterface& GI);
+  const std::string* alphabeticSymbols(Ulong n);
+  std::string& append(std::string& str, const CoxWord& g, const GroupEltInterface& GI);
+  std::string& append(std::string& buf, const LFlags& f, const Interface& I);
+  std::string& appendSymbol(std::string& str, const Generator& s, const Interface& I);
+  std::string& appendTwosided(std::string& buf, const LFlags& f, const Interface& I);
+  const std::string* checkLeadingWhite(const GroupEltInterface& GI);
   bool checkRepeated(const GroupEltInterface& GI);
-  const String* checkReserved(const GroupEltInterface& GI, const Interface& I);
-  const String* decimalSymbols(Ulong n);
+  const std::string* checkReserved(const GroupEltInterface& GI, const Interface& I);
+  const std::string* decimalSymbols(Ulong n);
   Ulong descentWidth(const LFlags& f, const Interface& I);
-  const String* hexSymbols(Ulong n);
-  const String* hexSymbolsFromZero(Ulong n);
+  const std::string* hexSymbols(Ulong n);
+  const std::string* hexSymbolsFromZero(Ulong n);
   const Permutation& identityOrder(Ulong n);
   bool isBeginGroup(const Token& tok);
   bool isContextNbr(const Token& tok);
@@ -107,7 +107,7 @@ namespace interface {
                                                                  /* inlined */
   CoxNbr readCoxNbr(ParseInterface& P, Ulong size);
   Letter tokenType(const Token& tok);
-  const String* twohexSymbols(Ulong n);
+  const std::string* twohexSymbols(Ulong n);
 };
 
 /******** type definitions ***************************************************/
@@ -115,7 +115,7 @@ namespace interface {
 namespace interface {
 
 struct ParseInterface {
-  String str;
+  std::string str;
   Ulong nestlevel;
   List<CoxWord> a;
   CoxWord c;
@@ -149,20 +149,20 @@ class TokenTree {
   TokenTree(TokenCell *cell):d_root(cell) {};
   ~TokenTree();
 /* manipulators */
-  void insert(const String& str, const Token& val);
+  void insert(const std::string& str, const Token& val);
 /* accessors */
-  Ulong find(String& str, Token& val) const;
-  Ulong find(const String& str, const Ulong& n, Token& val) const;
+  Ulong find(std::string& str, Token& val) const;
+  Ulong find(const std::string& str, const Ulong& n, Token& val) const;
   TokenCell *root() {return d_root;}
 };
 
 struct DescentSetInterface {
-  String prefix;
-  String postfix;
-  String separator;
-  String twosidedPrefix;
-  String twosidedPostfix;
-  String twosidedSeparator;
+  std::string prefix;
+  std::string postfix;
+  std::string separator;
+  std::string twosidedPrefix;
+  std::string twosidedPostfix;
+  std::string twosidedSeparator;
   void* operator new(size_t size) {return arena().alloc(size);}
   void* operator new(size_t size, void* ptr) {return ptr;}
   void operator delete(void* ptr)
@@ -171,19 +171,19 @@ struct DescentSetInterface {
   DescentSetInterface();
   DescentSetInterface(GAP);
   ~DescentSetInterface();
-  void setPostfix(const String& str);
-  void setPrefix(const String& str);
-  void setSeparator(const String& str);
-  void setTwosidedPrefix(const String& str);
-  void setTwosidedPostfix(const String& str);
-  void setTwosidedSeparator(const String& str);
+  void setPostfix(const std::string& str);
+  void setPrefix(const std::string& str);
+  void setSeparator(const std::string& str);
+  void setTwosidedPrefix(const std::string& str);
+  void setTwosidedPostfix(const std::string& str);
+  void setTwosidedSeparator(const std::string& str);
 };
 
 struct GroupEltInterface {
-  List<String> symbol;
-  String prefix;
-  String postfix;
-  String separator;
+  List<std::string> symbol;
+  std::string prefix;
+  std::string postfix;
+  std::string separator;
   void* operator new(size_t size) {return arena().alloc(size);}
   void operator delete(void* ptr)
     {return arena().free(ptr,sizeof(GroupEltInterface));}
@@ -199,21 +199,21 @@ struct GroupEltInterface {
   GroupEltInterface(const Rank& l, Hexadecimal);
   GroupEltInterface(const Rank& l, HexadecimalFromZero);
   ~GroupEltInterface();
-  void setPostfix(const String& a);
-  void setPrefix(const String& a);
-  void setSeparator(const String& a);
-  void setSymbol(const Generator& s, const String& a);
+  void setPostfix(const std::string& a);
+  void setPrefix(const std::string& a);
+  void setSeparator(const std::string& a);
+  void setSymbol(const Generator& s, const std::string& a);
   void print(FILE* file) const;
 };
 
 struct ReservedSymbols {
-  String beginGroup;
-  String endGroup;
-  String longest;
-  String inverse;
-  String power;
-  String contextnbr;
-  String densearray;
+  std::string beginGroup;
+  std::string endGroup;
+  std::string longest;
+  std::string inverse;
+  std::string power;
+  std::string contextnbr;
+  std::string densearray;
   ReservedSymbols();
   ReservedSymbols(Default);
   ~ReservedSymbols();
@@ -226,15 +226,15 @@ class Interface {
   GroupEltInterface* d_in;
   GroupEltInterface* d_out;
   DescentSetInterface* d_descent;
-  String d_beginGroup;
-  String d_endGroup;
-  String d_longest;
-  String d_inverse;
-  String d_power;
-  String d_contextNbr;
-  String d_denseArray;
-  String d_parseEscape;
-  List<String> d_reserved;
+  std::string d_beginGroup;
+  std::string d_endGroup;
+  std::string d_longest;
+  std::string d_inverse;
+  std::string d_power;
+  std::string d_contextNbr;
+  std::string d_denseArray;
+  std::string d_parseEscape;
+  List<std::string> d_reserved;
   Rank d_rank;
  public:
 /* constructors and destructors */
@@ -249,39 +249,39 @@ class Interface {
   void setDescent(Default);
   void setDescent(GAP);
   virtual void setIn(const GroupEltInterface& i);                /* inlined */
-  void setInPostfix(const String& a);                            /* inlined */
-  void setInPrefix(const String& a);                             /* inlined */
-  void setInSeparator(const String& a);                          /* inlined */
-  void setInSymbol(const Generator& s, const String& a);         /* inlined */
+  void setInPostfix(const std::string& a);                            /* inlined */
+  void setInPrefix(const std::string& a);                             /* inlined */
+  void setInSeparator(const std::string& a);                          /* inlined */
+  void setInSymbol(const Generator& s, const std::string& a);         /* inlined */
   void setOrder(const Permutation& gen_order);
   virtual void setOut(const GroupEltInterface& i);               /* inlined */
-  void setOutPostfix(const String& a);                           /* inlined */
-  void setOutPrefix(const String& a);                            /* inlined */
-  void setOutSeparator(const String& a);                         /* inlined */
-  void setOutSymbol(const Generator& s, const String& a);        /* inlined */
+  void setOutPostfix(const std::string& a);                           /* inlined */
+  void setOutPrefix(const std::string& a);                            /* inlined */
+  void setOutSeparator(const std::string& a);                         /* inlined */
+  void setOutSymbol(const Generator& s, const std::string& a);        /* inlined */
 /* accessors */
   const DescentSetInterface& descentInterface() const;           /* inlined */
   Ulong getToken(ParseInterface& P, Token& tok) const;         /* inlined */
   Ulong in(const Ulong& j) const;                            /* inlined */
   const GroupEltInterface& inInterface() const;                  /* inlined */
-  const String& inPostfix() const;                               /* inlined */
-  const String& inPrefix() const;                                /* inlined */
-  const String& inSeparator() const;                             /* inlined */
-  const String& inSymbol(const Generator& s) const;              /* inlined */
-  bool isReserved(const String& str) const;                      /* inlined */
+  const std::string& inPostfix() const;                               /* inlined */
+  const std::string& inPrefix() const;                                /* inlined */
+  const std::string& inSeparator() const;                             /* inlined */
+  const std::string& inSymbol(const Generator& s) const;              /* inlined */
+  bool isReserved(const std::string& str) const;                      /* inlined */
   const Permutation& order() const;                              /* inlined */
   Ulong out(const Ulong& j) const;                           /* inlined */
   const GroupEltInterface& outInterface() const;                 /* inlined */
-  const String& outPostfix() const;                              /* inlined */
-  const String& outPrefix() const;                               /* inlined */
-  const String& outSeparator() const;                            /* inlined */
-  const String& outSymbol(const Generator& s) const;             /* inlined */
+  const std::string& outPostfix() const;                              /* inlined */
+  const std::string& outPrefix() const;                               /* inlined */
+  const std::string& outSeparator() const;                            /* inlined */
+  const std::string& outSymbol(const Generator& s) const;             /* inlined */
   bool parseCoxWord(ParseInterface& P, const MinTable& T) const;
   Rank rank() const;                                             /* inlined */
   bool readCoxElt(ParseInterface& P) const;
   const TokenTree& symbolTree() const;
 // i/o
-  virtual String& append(String& str, const CoxWord& g) const;
+  virtual std::string& append(std::string& str, const CoxWord& g) const;
   virtual void print(FILE* file, const CoxWord& g) const;
 };
 
@@ -291,11 +291,11 @@ class Interface {
 
 namespace interface {
 
-inline String& append(String& str, const CoxWord& g, const Interface& I)
+inline std::string& append(std::string& str, const CoxWord& g, const Interface& I)
   {return append(str,g,I.outInterface());}
-inline String& appendSymbol(String& str, const Generator& s,
+inline std::string& appendSymbol(std::string& str, const Generator& s,
 			    const Interface& I)
-  {return io::append(str,I.outSymbol(s));}
+  { return str.append(I.outSymbol(s)); }
 inline void print(FILE *file, const LFlags& f, const Interface& I)
   {return print(file,f,I.descentInterface(),I.outInterface());}
 inline void printSymbol(FILE *file, const Generator& s, const Interface& I)
@@ -304,8 +304,8 @@ inline void printTwosided(FILE *file, const LFlags& f, const Interface& I)
   {return printTwosided(file,f,I.descentInterface(),I.outInterface(),
 			I.rank());}
 
-inline Ulong TokenTree::find(String& str, Token& val) const
-  {return find(str.ptr(),str.length(),val);}
+inline Ulong TokenTree::find(std::string& str, Token& val) const
+  {return find(str.c_str(),str.length(),val);}
 
 inline const DescentSetInterface& Interface::descentInterface() const
   {return *d_descent;}
@@ -313,37 +313,37 @@ inline Ulong Interface::getToken(ParseInterface& P, Token& tok) const
   {return d_symbolTree.find(P.str,P.offset,tok);}
 inline const GroupEltInterface& Interface::inInterface() const
   {return *d_in;}
-inline const String& Interface::inPostfix() const {return d_in->postfix;}
-inline const String& Interface::inPrefix() const {return d_in->prefix;}
-inline const String& Interface::inSeparator() const {return d_in->separator;}
-inline const String& Interface::inSymbol(const Generator& s) const
+inline const std::string& Interface::inPostfix() const {return d_in->postfix;}
+inline const std::string& Interface::inPrefix() const {return d_in->prefix;}
+inline const std::string& Interface::inSeparator() const {return d_in->separator;}
+inline const std::string& Interface::inSymbol(const Generator& s) const
   {return d_in->symbol[s];}
-inline bool Interface::isReserved(const String& str) const
+inline bool Interface::isReserved(const std::string& str) const
   {return find(d_reserved,str) != ~static_cast<Ulong>(0);}
 inline const GroupEltInterface& Interface::outInterface() const
   {return *d_out;}
 inline const Permutation& Interface::order() const {return d_order;}
-inline const String& Interface::outPostfix() const {return d_out->postfix;}
-inline const String& Interface::outPrefix() const {return d_out->prefix;}
-inline const String& Interface::outSeparator() const {return d_out->separator;}
-inline const String& Interface::outSymbol(const Generator& s) const
+inline const std::string& Interface::outPostfix() const {return d_out->postfix;}
+inline const std::string& Interface::outPrefix() const {return d_out->prefix;}
+inline const std::string& Interface::outSeparator() const {return d_out->separator;}
+inline const std::string& Interface::outSymbol(const Generator& s) const
   {return d_out->symbol[s];}
 inline Rank Interface::rank() const {return d_rank;}
 inline const TokenTree& Interface::symbolTree() const {return d_symbolTree;}
 
-inline void Interface::setInPostfix(const String& a) {d_in->setPostfix(a);}
-inline void Interface::setInPrefix(const String& a) {d_in->setPrefix(a);}
-inline void Interface::setInSeparator(const String& a) {d_in->setSeparator(a);}
-inline void Interface::setInSymbol(const Generator& s, const String& a)
+inline void Interface::setInPostfix(const std::string& a) {d_in->setPostfix(a);}
+inline void Interface::setInPrefix(const std::string& a) {d_in->setPrefix(a);}
+inline void Interface::setInSeparator(const std::string& a) {d_in->setSeparator(a);}
+inline void Interface::setInSymbol(const Generator& s, const std::string& a)
   {return d_in->setSymbol(s,a);}
-inline void Interface::setOutPostfix(const String& a) {d_out->setPostfix(a);}
-inline void Interface::setOutPrefix(const String& a) {d_out->setPrefix(a);}
-inline void Interface::setOutSeparator(const String& a)
+inline void Interface::setOutPostfix(const std::string& a) {d_out->setPostfix(a);}
+inline void Interface::setOutPrefix(const std::string& a) {d_out->setPrefix(a);}
+inline void Interface::setOutSeparator(const std::string& a)
   {d_out->setSeparator(a);}
-inline void Interface::setOutSymbol(const Generator& s, const String& a)
+inline void Interface::setOutSymbol(const Generator& s, const std::string& a)
   {return d_out->setSymbol(s,a);}
 
-inline String& Interface::append(String& str, const CoxWord& g) const
+inline std::string& Interface::append(std::string& str, const CoxWord& g) const
   {return interface::append(str,g,*d_out);}
 inline void Interface::print(FILE* file, const CoxWord& g) const
   {interface::print(file,g,*d_out);}

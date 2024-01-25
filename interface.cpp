@@ -45,7 +45,7 @@ namespace {
 namespace {
   using namespace interface;
 
-  void makeSymbols(List<String>& list, const String* const symbol, Ulong n);
+  void makeSymbols(List<std::string>& list, const std::string* const symbol, Ulong n);
   CoxNbr toCoxNbr(char c);
   Automaton *tokenAutomaton(LFlags f);
   Automaton *tokenAut0();
@@ -480,53 +480,39 @@ DescentSetInterface::DescentSetInterface()
 DescentSetInterface::DescentSetInterface(GAP)
   :prefix("["),postfix("]"),separator(","),twosidedPrefix("[["),
    twosidedPostfix("]]"),twosidedSeparator("],[")
-
 {}
 
 DescentSetInterface::~DescentSetInterface()
-
 {}
 
-void DescentSetInterface::setPrefix(const String& str)
-
+void DescentSetInterface::setPrefix(const std::string& str)
 {
   prefix = str;
-  return;
 }
 
-void DescentSetInterface::setPostfix(const String& str)
-
+void DescentSetInterface::setPostfix(const std::string& str)
 {
   postfix = str;
-  return;
 }
 
-void DescentSetInterface::setSeparator(const String& str)
-
+void DescentSetInterface::setSeparator(const std::string& str)
 {
   separator = str;
-  return;
 }
 
-void DescentSetInterface::setTwosidedPrefix(const String& str)
-
+void DescentSetInterface::setTwosidedPrefix(const std::string& str)
 {
   twosidedPrefix = str;
-  return;
 }
 
-void DescentSetInterface::setTwosidedPostfix(const String& str)
-
+void DescentSetInterface::setTwosidedPostfix(const std::string& str)
 {
   twosidedPostfix = str;
-  return;
 }
 
-void DescentSetInterface::setTwosidedSeparator(const String& str)
-
+void DescentSetInterface::setTwosidedSeparator(const std::string& str)
 {
   twosidedSeparator = str;
-  return;
 }
 
 };
@@ -560,6 +546,7 @@ void DescentSetInterface::setTwosidedSeparator(const String& str)
 
 namespace interface {
 
+#if 0
 GroupEltInterface::GroupEltInterface()
   :symbol(0),prefix(String::undefined()),postfix(String::undefined()),
    separator(String::undefined())
@@ -573,20 +560,18 @@ GroupEltInterface::GroupEltInterface()
 */
 
 {}
+#endif
 
+// Construct the default interface in rank |l|.
 GroupEltInterface::GroupEltInterface(const Rank& l)
-  :symbol(l),prefix(0),postfix(0),separator(0)
-/*
-  Constructs the default interface in rank l.
-*/
-
+  :symbol(l),prefix(),postfix(),separator()
 {
   symbol.setSize(l);
 
   makeSymbols(symbol,decimalSymbols(l),l);
 
   if (l > 9) { /* need separators */
-    new(&separator) String(".");
+    separator = ".";
   }
 }
 
@@ -702,28 +687,28 @@ void GroupEltInterface::print(FILE* file) const
 
 /******** manipulators ******************************************************/
 
-void GroupEltInterface::setPostfix(const String& a)
+void GroupEltInterface::setPostfix(const std::string& a)
 
 {
   postfix = a;
   return;
 }
 
-void GroupEltInterface::setPrefix(const String& a)
+void GroupEltInterface::setPrefix(const std::string& a)
 
 {
   prefix = a;
   return;
 }
 
-void GroupEltInterface::setSeparator(const String& a)
+void GroupEltInterface::setSeparator(const std::string& a)
 
 {
   separator = a;
   return;
 }
 
-void GroupEltInterface::setSymbol(const Generator& s, const String& a)
+void GroupEltInterface::setSymbol(const Generator& s, const std::string& a)
 
 /*
   Sets the symbol for generator s to a. Remember that the relation between
@@ -797,7 +782,7 @@ ReservedSymbols::~ReservedSymbols()
 
 namespace interface {
 
-const String* alphabeticSymbols(Ulong n)
+const std::string* alphabeticSymbols(Ulong n)
 
 /*
   Produces an alphabetic representation of the numbers in {1,...,n}.
@@ -810,7 +795,7 @@ const String* alphabeticSymbols(Ulong n)
 */
 
 {
-  static List<String> list(0);
+  static List<std::string> list(0);
   static bool first = true;
 
   if (first) {
@@ -824,14 +809,14 @@ const String* alphabeticSymbols(Ulong n)
     list.setSize(n+1);
     for (Ulong j = prev; j < n; ++j) {  /* write symbol */
       list[j+1].assign(list[j/26]);
-      append(list[j+1],alphabet[j%26]);
+      list[j+1].push_back(alphabet[j%26]);
     }
   }
 
   return list.ptr()+1;
 }
 
-const String* decimalSymbols(Ulong n)
+const std::string* decimalSymbols(Ulong n)
 
 /*
   Returns a pointer to a list of strings, the first n of which contain
@@ -839,21 +824,21 @@ const String* decimalSymbols(Ulong n)
 */
 
 {
-  static List<String> list(0);
+  static List<std::string> list(0);
 
   if (n > list.size()) { /* enlarge the list */
     Ulong prev_size = list.size();
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
-      list[j].setLength(io::digits(j+1,10));
-      sprintf(list[j].ptr(),"%lu",j+1);
+      list[j].resize(io::digits(j+1,10));
+      sprintf(list[j].data(),"%lu",j+1);
     }
   }
 
   return list.ptr();
 }
 
-const String* hexSymbolsFromZero(Ulong n)
+const std::string* hexSymbolsFromZero(Ulong n)
 
 /*
   Returns a pointer to a list of strings, the first n of which contain
@@ -862,21 +847,21 @@ const String* hexSymbolsFromZero(Ulong n)
 */
 
 {
-  static List<String> list;
+  static List<std::string> list;
 
   if (n > list.size()) { /* enlarge the list */
     Ulong prev_size = list.size();
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
-      list[j].setLength(io::digits(j,16));
-      sprintf(list[j].ptr(),"%lx",j);
+      list[j].resize(io::digits(j,16));
+      sprintf(list[j].data(),"%lx",j);
     }
   }
 
   return list.ptr();
 }
 
-const String* hexSymbols(Ulong n)
+const std::string* hexSymbols(Ulong n)
 
 /*
   Returns a pointer to a list of strings, the first n of which contain
@@ -884,21 +869,21 @@ const String* hexSymbols(Ulong n)
 */
 
 {
-  static List<String> list;
+  static List<std::string> list;
 
   if (n > list.size()) { /* enlarge the list */
     Ulong prev_size = list.size();
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
-      list[j].setLength(io::digits(j+1,16));
-      sprintf(list[j].ptr(),"%lx",j+1);
+      list[j].resize(io::digits(j+1,16));
+      sprintf(list[j].data(),"%lx",j+1);
     }
   }
 
   return list.ptr();
 }
 
-const String* twohexSymbols(Ulong n)
+const std::string* twohexSymbols(Ulong n)
 
 /*
   Returns a pointer to a list of strings, the first n of which contain
@@ -909,14 +894,14 @@ const String* twohexSymbols(Ulong n)
 */
 
 {
-  static List<String> list;
+  static List<std::string> list;
 
   if (n > list.size()) { /* enlarge the list */
     Ulong prev_size = list.size();
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
-      list[j].setLength(2*io::digits(j+1,256));
-      sprintf(list[j].ptr(),"%0*lx",2*io::digits(j+1,256),j+1);
+      list[j].resize(2*io::digits(j+1,256));
+      sprintf(list[j].data(),"%0*lx",2*io::digits(j+1,256),j+1);
     }
   }
 
@@ -979,9 +964,8 @@ ParseInterface::~ParseInterface()
 {}
 
 void ParseInterface::reset()
-
 {
-  str.setLength(0);
+  str.resize(0);
   nestlevel = 0;
   a.setSize(1);
   a[0].reset();
@@ -1023,7 +1007,7 @@ TokenTree::~TokenTree()
 }
 
 
-Ulong TokenTree::find(const String& str, const Ulong& n, Token& val) const
+Ulong TokenTree::find(const std::string& str, const Ulong& n, Token& val) const
 
 /*
   Finds the longest initial substring in str from position n which is a valid
@@ -1065,7 +1049,7 @@ Ulong TokenTree::find(const String& str, const Ulong& n, Token& val) const
   return q;
 }
 
-void TokenTree::insert(const String& str, const Token& val)
+void TokenTree::insert(const std::string& str, const Token& val)
 
 /*
   Insert a new string in the tree, corresponding to the token val.
@@ -1118,28 +1102,28 @@ void TokenTree::insert(const String& str, const Token& val)
 
 namespace interface {
 
-String& append(String& str, const CoxWord& g, const GroupEltInterface& GI)
+std::string& append(std::string& str, const CoxWord& g, const GroupEltInterface& GI)
 
 /*
   Appends the string g to the string str in the output format defined by I.
 */
 
 {
-  io::append(str,GI.prefix);
+  str.append(GI.prefix);
 
   for (Ulong j = 0; j < g.length(); ++j) {
     Generator s = g[j]-1;
-    io::append(str,GI.symbol[s]);
+    str.append(GI.symbol[s]);
     if (j+1 < g.length())  /* more to come */
-      io::append(str,GI.separator);
+      str.append(GI.separator);
   }
 
-  io::append(str,GI.postfix);
+  str.append(GI.postfix);
 
   return str;
 }
 
-String& append(String& str, const LFlags& f, const Interface& I)
+std::string& append(std::string& str, const LFlags& f, const Interface& I)
 
 /*
   Appends to str the representation of f as a one-sided descent set,
@@ -1149,7 +1133,7 @@ String& append(String& str, const LFlags& f, const Interface& I)
 {
   const DescentSetInterface& d = I.descentInterface();
 
-  io::append(str,d.prefix);
+  str.append(d.prefix);
 
   for (LFlags f1 = f; f1;)
     {
@@ -1157,15 +1141,15 @@ String& append(String& str, const LFlags& f, const Interface& I)
       appendSymbol(str,s,I);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
-	io::append(str,d.separator);
+	str.append(d.separator);
     }
 
-  io::append(str,d.postfix);
+  str.append(d.postfix);
 
   return str;
 }
 
-String& appendTwosided(String& str, const LFlags& f, const Interface& I)
+std::string& appendTwosided(std::string& str, const LFlags& f, const Interface& I)
 
 /*
   Appends to str the representation of f as a two-sided descent set,
@@ -1175,7 +1159,7 @@ String& appendTwosided(String& str, const LFlags& f, const Interface& I)
 {
   const DescentSetInterface& d = I.descentInterface();
 
-  io::append(str,d.twosidedPrefix);
+  str.append(d.twosidedPrefix);
 
   for (LFlags f1 = f>>I.rank(); f1;) // left descents
     {
@@ -1183,10 +1167,10 @@ String& appendTwosided(String& str, const LFlags& f, const Interface& I)
       appendSymbol(str,s,I);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
-	io::append(str,d.separator);
+	str.append(d.separator);
     }
 
-  io::append(str,d.twosidedSeparator);
+  str.append(d.twosidedSeparator);
 
   for (LFlags f1 = f&leqmask[I.rank()-1]; f1;) // right descents
     {
@@ -1194,10 +1178,10 @@ String& appendTwosided(String& str, const LFlags& f, const Interface& I)
       appendSymbol(str,s,I);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
-	io::append(str,d.separator);
+	str.append(d.separator);
     }
 
-  io::append(str,d.twosidedPostfix);
+  str.append(d.twosidedPostfix);
 
   return str;
 }
@@ -1313,7 +1297,7 @@ void printTwosided(FILE *file, const LFlags& f, const DescentSetInterface& DI,
 
 namespace interface {
 
-const String* checkLeadingWhite(const GroupEltInterface& GI)
+const std::string* checkLeadingWhite(const GroupEltInterface& GI)
 
 /*
   Checks if GI constains a string starting with whitespace, as defined by
@@ -1348,7 +1332,7 @@ bool checkRepeated(const GroupEltInterface& GI)
 */
 
 {
-  List<String> l(0);
+  List<std::string> l(0);
 
   if (GI.prefix.length())
     insert(l,GI.prefix);
@@ -1371,7 +1355,7 @@ bool checkRepeated(const GroupEltInterface& GI)
   return true;
 }
 
-const String* checkReserved(const GroupEltInterface& GI, const Interface& I)
+const std::string* checkReserved(const GroupEltInterface& GI, const Interface& I)
 
 /*
   Checks if GI constains a string that was reserved by I. If so, returns
@@ -1401,7 +1385,7 @@ Ulong descentWidth(const LFlags& f, const Interface& I)
 */
 
 {
-  String str(0);
+  std::string str;
 
   if (f == leqmask[2*I.rank()-1]) {    // two-sided descents
     interface::appendTwosided(str,f,I);
@@ -1465,7 +1449,7 @@ bool isPower(const Token& tok)
 
 namespace {
 
-void makeSymbols(List<String>& list, const String* const symbol, Ulong n)
+void makeSymbols(List<std::string>& list, const std::string* const symbol, Ulong n)
 
 /*
   This function deep-copies the n first entries of symbol onto the
@@ -1499,7 +1483,7 @@ CoxNbr readCoxNbr(ParseInterface& P, Ulong size)
 */
 
 {
-  String& str = P.str;
+  std::string& str = P.str;
   P.offset += skipSpaces(str,P.offset);
 
   Ulong c = 0;

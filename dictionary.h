@@ -8,6 +8,7 @@
 #ifndef DICTIONARY_H  /* guard against multiple inclusions */
 #define DICTIONARY_H
 
+#include <string>
 #include "globals.h"
 
 namespace dictionary {
@@ -34,6 +35,10 @@ namespace dictionary {
 namespace dictionary {
   template <class T>
     void printExtensions(FILE* file, DictCell<T>* cell, String& name,
+			 bool& first, const char* sep = ",");
+  template <class T>
+    void printExtensions
+  (FILE* file, DictCell<T>* cell, std::string& name,
 			 bool& first, const char* sep = ",");
 };
 
@@ -71,9 +76,11 @@ template <class T> class Dictionary {
 /* modifiers */
   void insert(const String& str, T* const value);
   void remove(const String& str);
+  void insert(const std::string& str, T* const value);
+  void remove(const std::string& str);
 /* accessors */
-  T* find(const String& str) const;
-  DictCell<T>* findCell(const String& str) const;
+  T* find(const std::string& str) const;
+  DictCell<T>* findCell(const std::string& str) const;
   DictCell<T>* root() {return d_root;}
 };
 

@@ -46,8 +46,8 @@ namespace {
 namespace {
   using namespace files;
 
-  void makeVersionString(String& vstr, const String& str);
-  void makeTypeString(String& tstr, const String& str, const CoxGraph& G);
+  void makeVersionString(std::string& vstr, const std::string& str);
+  void makeTypeString(std::string& tstr, const std::string& str, const CoxGraph& G);
 };
 
 /****************************************************************************
@@ -70,8 +70,8 @@ namespace {
 namespace files {
 
 OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Pretty)
-  :versionString(""),
-   typeString(""),
+  :version_string(""),
+   type_string(""),
    closureSeparator1("P_{x,y} for x extremal w.r.t. y:\n\n"),
    closureSeparator2(""),
    closureSeparator3("rational singular locus:\n\n"),
@@ -123,7 +123,7 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Pretty)
    rDescentPostfix(""),
    lengthPrefix(" length "),
    lengthPostfix(""),
-   closeString("\n"),
+   close_string("\n"),
    bettiHyphens("h"),
    lineSize(LINESIZE),
    polTraits(Pretty()),
@@ -213,8 +213,8 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Pretty)
 }
 
 OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Terse)
-  :versionString(""),
-   typeString(""),
+  :version_string(""),
+   type_string(""),
    closureSeparator1("# extremal pairs\n"),
    closureSeparator2(""),
    closureSeparator3("# rational singular locus\n"),
@@ -245,7 +245,7 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Terse)
    graphListPrefix(""),
    graphListPostfix(""),
    graphListSeparator("\n#\n"),
-   closeString(""),
+   close_string(""),
    polTraits(Terse()),
    heckeTraits(I,Terse()),
    addHeckeTraits(I,Terse()),
@@ -350,13 +350,13 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Terse)
   hasHeader[slocusH] = true;
   hasHeader[sstratificationH] = true;
 
-  makeVersionString(versionString,"#");
-  makeTypeString(typeString,"#",G);
+  makeVersionString(version_string,"#");
+  makeTypeString(type_string,"#",G);
 }
 
 OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, GAP)
-  :versionString(""),
-   typeString(""),
+  :version_string(""),
+   type_string(""),
    closureSeparator1(""),
    closureSeparator2(""),
    closureSeparator3(""),
@@ -387,7 +387,7 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, GAP)
    graphListPrefix("[\n"),
    graphListPostfix("]"),
    graphListSeparator(",\n"),
-   closeString(";"),
+   close_string(";"),
    polTraits(GAP()),
    heckeTraits(I,GAP()),
    addHeckeTraits(I,GAP()),
@@ -492,8 +492,8 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, GAP)
   hasHeader[slocusH] = true;
   hasHeader[sstratificationH] = true;
 
-  makeVersionString(versionString,"##");
-  makeTypeString(typeString,"##",G);
+  makeVersionString(version_string,"##");
+  makeTypeString(type_string,"##",G);
 }
 
 OutputTraits::~OutputTraits()
@@ -950,7 +950,7 @@ WgraphTraits::~WgraphTraits()
 
 namespace files {
 
-void appendHomology(String& str, const Homology& h, OutputTraits& traits)
+void appendHomology(std::string& str, const Homology& h, OutputTraits& traits)
 
 /*
   Appends the homology vector to str.
@@ -960,22 +960,22 @@ void appendHomology(String& str, const Homology& h, OutputTraits& traits)
   Ulong initLength = str.length();
   Ulong maxWidth = maxLength(h); // maximum width of output
 
-  io::append(str,traits.bettiPrefix);
+  str.append(traits.bettiPrefix);
 
   for (Ulong j = 0; j < h.size(); ++j) {
     if (traits.printBettiRank) {
-      io::append(str,traits.bettiRankPrefix);
+      str.append(traits.bettiRankPrefix);
       io::append(str,j);
-      io::append(str,traits.bettiRankPostfix);
+      str.append(traits.bettiRankPostfix);
     }
     io::append(str,static_cast<Ulong>(h[j]));
     if (traits.hasBettiPadding)
       io::pad(str,(j+1)*(maxWidth+1)+initLength);
     if (j+1 < h.size()) // there is more to come
-      io::append(str,traits.bettiSeparator);
+      str.append(traits.bettiSeparator);
   }
 
-  io::append(str,traits.bettiPostfix);
+  str.append(traits.bettiPostfix);
 
   return;
 }
@@ -1140,11 +1140,11 @@ void printHeader(FILE* file, const Header& header, OutputTraits& traits)
   // preliminaries
 
   if (traits.printVersion)
-    io::print(file,traits.versionString);
+    io::print(file,traits.version_string);
   if (traits.printType)
-    io::print(file,traits.typeString);
+    io::print(file,traits.type_string);
   if (traits.hasHeader[header])
-    printFile(file,traits.header[header].ptr(),HEADER_DIR);
+    printFile(file,traits.header[header].c_str(),HEADER_DIR);
 
   return;
 }
@@ -1152,12 +1152,12 @@ void printHeader(FILE* file, const Header& header, OutputTraits& traits)
 void printHomology(FILE* file, const Homology& h, OutputTraits& traits)
 
 {
-  String buf(0);
+  std::string buf(0);
 
   appendHomology(buf,h,traits);
 
   if (traits.lineSize)
-    foldLine(file,buf,traits.lineSize,0,traits.bettiHyphens.ptr());
+    foldLine(file,buf,traits.lineSize,0,traits.bettiHyphens.c_str());
   else
     io::print(file,buf);
 
@@ -1285,7 +1285,7 @@ void printWGraph(FILE* file, const WGraph& X, const LFlags& f,
 
   and some others private to the present module:
 
-    - makeVersionString(vstr,str) : makes the version string with str as
+    - makeVersion_string(vstr,str) : makes the version string with str as
       prefix;
     - makeTypeString(tstr,str) : makes the type string with str as prefix;
 
@@ -1293,7 +1293,7 @@ void printWGraph(FILE* file, const WGraph& X, const LFlags& f,
 
 namespace files {
 
-void appendModifier(String& str, const Ulong& d, const long& m,
+void appendModifier(std::string& str, const Ulong& d, const long& m,
 		    PolynomialTraits& traits)
 
 /*
@@ -1301,26 +1301,26 @@ void appendModifier(String& str, const Ulong& d, const long& m,
 */
 
 {
-  io::append(str,traits.modifierPrefix);
+  str.append(traits.modifierPrefix);
   io::append(str,static_cast<Ulong>(d));
-  io::append(str,traits.modifierSeparator);
+  str.append(traits.modifierSeparator);
   io::append(str,static_cast<long>(m));
-  io::append(str,traits.modifierPostfix);
+  str.append(traits.modifierPostfix);
 
   return;
 }
 
-void appendSeparator(String& str, const Ulong& n, HeckeTraits& traits)
+void appendSeparator(std::string& str, const Ulong& n, HeckeTraits& traits)
 
 {
   if (traits.twoSided) { // need to look at parity of n
     if (n%2)
-      io::append(str,traits.oddSeparator);
+      str.append(traits.oddSeparator);
     else
-      io::append(str,traits.evenSeparator);
+      str.append(traits.evenSeparator);
   }
   else
-    io::append(str,traits.oddSeparator);
+    str.append(traits.oddSeparator);
 
   return;
 }
@@ -1341,7 +1341,7 @@ void minReps(List<CoxNbr>& min, const Partition& pi, schubert::NFCompare& c)
   return;
 }
 
-void pad(String& str, const Ulong& n, HeckeTraits& traits)
+void pad(std::string& str, const Ulong& n, HeckeTraits& traits)
 
 /*
   Adds padding to the string, to make its length at least equal to
@@ -1357,7 +1357,7 @@ void pad(String& str, const Ulong& n, HeckeTraits& traits)
     Ulong m = str.length();
     if (m < traits.oddWidth) { // odd padding
       for (Ulong j = m; j < traits.oddWidth; ++j)
-	io::append(str,traits.padChar);
+	str.push_back(traits.padChar);
     }
   }
 
@@ -1365,7 +1365,7 @@ void pad(String& str, const Ulong& n, HeckeTraits& traits)
     Ulong m = str.length();
     if (m < traits.evenWidth) { // odd padding
       for (Ulong j = m; j < traits.evenWidth; ++j)
-	io::append(str,traits.padChar);
+	str.push_back(traits.padChar);
     }
   }
 
@@ -1448,58 +1448,51 @@ void writeClasses(List<List<CoxNbr> >& lc, const Partition& pi)
 
 namespace {
 
-void makeVersionString(String& vstr, const String& str)
+void makeVersionString(std::string& vstr, const std::string& str)
 
 {
   using namespace version;
 
-  append(vstr,str);
-  append(vstr,"\n");
-  append(vstr,str);
-  append(vstr," This file has been created by ");
-  append(vstr,NAME);
-  append(vstr," version ");
-  append(vstr,VERSION);
-  append(vstr,"\n");
-
-  return;
+  vstr.append(str);
+  vstr.push_back('\n');
+  vstr.append(str);
+  vstr.append(" This file has been created by ");
+  vstr.append(NAME);
+  vstr.append(" version ");
+  vstr.append(VERSION);
+  vstr.push_back('\n');
 }
 
-void makeTypeString(String& tstr, const String& str, const CoxGraph& G)
+void makeTypeString(std::string& tstr, const std::string& str, const CoxGraph& G)
 
 {
-  append(tstr,str);
-  append(tstr,"\n");
-  append(tstr,str);
-  append(tstr," Group type is ");
-  append(tstr,G.type().name());
-  append(tstr,G.rank());
-  append(tstr,"\n");
-
-  return;
+  tstr.append(str);
+  tstr.push_back('\n');
+  tstr.append(str);
+  tstr.append(" Group type is ");
+  tstr.append(G.type().name());
+  io::append(tstr,G.rank());
+  tstr.push_back('\n');
 }
 
 };
 
 namespace {
 
+
+// Return the maximal length of an entry in h.
 Ulong maxLength(const Homology& h)
-
-/*
-  Returns the maximal length of an entry in h.
-*/
-
 {
-  static String buf(0);
+  static std::string buf;
 
   Ulong maxl = 0;
 
   for (Ulong j = 0; j < h.size(); ++j) {
-    reset(buf);
-    append(buf,"h[");
-    append(buf,j);
-    append(buf,"] = ");
-    append(buf,h[j]);
+    buf.clear();
+    buf.append("h[");
+    io::append(buf,j);
+    buf.append("] = ");
+    io::append(buf,h[j]);
     if (maxl < buf.size())
       maxl = buf.size();
   }

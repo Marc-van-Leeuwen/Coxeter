@@ -189,7 +189,7 @@ class TypeAInterface:public Interface {
   void setPermutationInput(bool b);                              /* inlined */
   void setPermutationOutput(bool b);                             /* inlined */
 // i/o
-  virtual String& append(String& str, const CoxWord& g) const;
+  virtual std::string& append(std::string& str, const CoxWord& g) const;
   virtual void print(FILE* file, const CoxWord& g) const;
 };
 

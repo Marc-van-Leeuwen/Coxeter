@@ -2312,7 +2312,7 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   const SchubertContext& p = kl.schubert();
 
@@ -2328,15 +2328,15 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
 
   unsigned long ls = LINESIZE;
 
-  reset(buf);
+  buf.clear();
 
-  append(buf,"x = ");
+  buf.append("x = ");
   p.append(buf,x,I);
-  append(buf,"; y = ");
+  buf.append("; y = ");
   p.append(buf,y,I);
-  append(buf," L:");
+  buf.append(" L:");
   append(buf,p.ldescent(y),I);
-  append(buf," R:");
+  buf.append(" R:");
   append(buf,p.rdescent(y),I);
   foldLine(file,buf,ls,0,"yL");
   fprintf(file,"\n\n");
@@ -2375,10 +2375,10 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
     if (!p.inOrder(x,ys)) { /* easy case */
       if (s < kl.rank()) { /* action is on the right */
 	fprintf(file,"x not comparable to ys for s = %d\n",s+1);
-	reset(buf);
-	append(buf,"xs = ");
+	buf.clear();
+	buf.append("xs = ");
 	p.append(buf,xs,I);
-	append(buf,"; ys = ");
+	buf.append("; ys = ");
 	p.append(buf,ys,I);
 	foldLine(file,buf,ls,0,"y");
 	fprintf(file,"\n\n");
@@ -2386,10 +2386,10 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
       }
       else { /* action is on the left */
 	fprintf(file,"x not comparable to sy for s = %d\n",s+1-kl.rank());
-	reset(buf);
-	append(buf,"sx = ");
+	buf.clear();
+	buf.append("sx = ");
 	p.append(buf,xs,I);
-	append(buf,"; sy = ");
+	buf.append("; sy = ");
 	p.append(buf,ys,I);
 	foldLine(file,buf,ls,0,"s");
 	fprintf(file,"\n\n");
@@ -2402,10 +2402,10 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
     if (s < kl.rank()) {
       fprintf(file,"applying recursion formula with s = %d on the right\n\n",
 	      s+1);
-      reset(buf);
-      append(buf,"xs = ");
+      buf.clear();
+      buf.append("xs = ");
       p.append(buf,xs,I);
-      append(buf,"; ys = ");
+      buf.append("; ys = ");
       p.append(buf,ys,I);
       foldLine(file,buf,ls,0,"y");
       fprintf(file,"\n\n");
@@ -2413,10 +2413,10 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
     else {
       fprintf(file,"applying recursion formula with s = %d on the left\n\n",
 	      s+1-kl.rank());
-      reset(buf);
-      append(buf,"sx = ");
+      buf.clear();
+      buf.append("sx = ");
       p.append(buf,xs,I);
-      append(buf,"; sy = ");
+      buf.append("; sy = ");
       p.append(buf,ys,I);
       foldLine(file,buf,ls,0,"s");
       fprintf(file,"\n\n");
@@ -2424,14 +2424,14 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
 
     /* first term */
 
-    reset(buf);
+    buf.clear();
 
     if (s < kl.rank()) {
-      append(buf,"P_{xs,ys} = ");
+      buf.append("P_{xs,ys} = ");
       append(buf,kl.klPol(xs,ys),"q");
     }
     else {
-      append(buf,"P_{sx,sy} = ");
+      buf.append("P_{sx,sy} = ");
       append(buf,kl.klPol(xs,ys),"q");
     }
 
@@ -2440,14 +2440,14 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
 
     /* second term */
 
-    reset(buf);
+    buf.clear();
 
     if (s < kl.rank()) {
-      append(buf,"P_{x,ys}  = ");
+      buf.append("P_{x,ys}  = ");
       append(buf,kl.klPol(x,ys),"q");
     }
     else {
-      append(buf,"P_{x,sy}  = ");
+      buf.append("P_{x,sy}  = ");
       append(buf,kl.klPol(x,ys),"q");
     }
 
@@ -2466,10 +2466,10 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
       if (!p.inOrder(x,z))
 	continue;
       coatomcorrection = true;
-      reset(buf);
-      io::append(buf,"z = ");
+      buf.clear();
+      buf.append("z = ");
       p.append(buf,z,I);
-      io::append(buf," P_{x,z} = ");
+      buf.append(" P_{x,z} = ");
       polynomials::append(buf,kl.klPol(x,z),"q");
       foldLine(file,buf,ls,4,"P+");
       fprintf(file,"\n");
@@ -2492,15 +2492,15 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
 	continue;
       if (m[j].mu) {
 	mucorrection = true;
-	reset(buf);
-	io::append(buf,"z = ");
+	buf.clear();
+	buf.append("z = ");
 	p.append(buf,z,I);
 	pad(buf,l_ys+1); /* remember the four characters "z = " */
-	io::append(buf," mu = ");
+	buf.append(" mu = ");
 	append(buf,m[j].mu);
-	io::append(buf," height = ");
+	buf.append(" height = ");
 	append(buf,m[j].height);
-	io::append(buf," P_{x,z} = ");
+	buf.append(" P_{x,z} = ");
 	append(buf,kl.klPol(x,z),"q");
 	foldLine(file,buf,ls,4,"Pmh+");
 	fprintf(file,"\n");
@@ -2513,11 +2513,11 @@ void showKLPol(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& d_y,
 
  end:
 
-  reset(buf);
-  io::append(buf,"result : ");
+  buf.clear();
+  buf.append("result : ");
   append(buf,pol,"q");
   if (2*pol.deg()+1 == d)
-    io::append(buf," *");
+    buf.append(" *");
   foldLine(file,buf,ls,4,"+");
   fprintf(file,"\n\n");
 
@@ -2533,7 +2533,7 @@ void showMu(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& y,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   const SchubertContext& p = kl.schubert();
 
@@ -2546,15 +2546,15 @@ void showMu(FILE* file, KLContext& kl, const CoxNbr& d_x, const CoxNbr& y,
   {
     unsigned long ls = LINESIZE;
 
-    reset(buf);
+    buf.clear();
 
-    append(buf,"x = ");
+    buf.append("x = ");
     p.append(buf,x,I);
-    append(buf,"  y = ");
+    buf.append("  y = ");
     p.append(buf,y,I);
-    append(buf," L:");
+    buf.append(" L:");
     append(buf,p.ldescent(y),I);
-    append(buf," R:");
+    buf.append(" R:");
     append(buf,p.rdescent(y),I);
     foldLine(file,buf,ls,0,"yL");
     fprintf(file,"\n\n");
@@ -2614,7 +2614,7 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   const SchubertContext& p = kl.schubert();
   unsigned long ls = LINESIZE;
@@ -2629,20 +2629,20 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
   if (!p.inOrder(x,ys)) { // mu(x,y) = mu(xs,ys)
     if (s < kl.rank()) { // action is on the right
       fprintf(file,"x not comparable to ys for s = %d\n",s+1);
-      reset(buf);
-      append(buf,"xs = ");
+      buf.clear();
+      buf.append("xs = ");
       p.append(buf,xs,I);
-      append(buf,"; ys = ");
+      buf.append("; ys = ");
       p.append(buf,ys,I);
       foldLine(file,buf,ls,0,"y");
       fprintf(file,"\n\nresult : %lu\n\n",static_cast<Ulong>(r));
     }
     else { // action is on the left
       fprintf(file,"x not comparable to sy for s = %d\n",s-kl.rank()+1);
-      reset(buf);
-      append(buf,"sx = ");
+      buf.clear();
+      buf.append("sx = ");
       p.append(buf,xs,I);
-      append(buf,"; sy = ");
+      buf.append("; sy = ");
       p.append(buf,ys,I);
       foldLine(file,buf,ls,0,"s");
       fprintf(file,"\n\n");
@@ -2656,10 +2656,10 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
     if (s < kl.rank()) {
       fprintf(file,"applying recursion formula with s = %d on the right\n\n",
 	      s+1);
-      reset(buf);
-      append(buf,"xs = ");
+      buf.clear();
+      buf.append("xs = ");
       p.append(buf,xs,I);
-      append(buf,"; ys = ");
+      buf.append("; ys = ");
       p.append(buf,ys,I);
       foldLine(file,buf,ls,0,"y");
       fprintf(file,"\n\n");
@@ -2667,10 +2667,10 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
     else {
       fprintf(file,"applying recursion formula with s = %d on the left\n\n",
 	      s+1-kl.rank());
-      reset(buf);
-      append(buf,"sx = ");
+      buf.clear();
+      buf.append("sx = ");
       p.append(buf,xs,I);
-      append(buf,"; sy = ");
+      buf.append("; sy = ");
       p.append(buf,ys,I);
       foldLine(file,buf,ls,0,"s");
       fprintf(file,"\n\n");
@@ -2678,7 +2678,7 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
 
   // first term
 
-    reset(buf);
+    buf.clear();
 
     if (s < kl.rank()) {
       fprintf(file,"mu(xs,ys) = %lu\n",static_cast<Ulong>(kl.mu(xs,ys)));
@@ -2689,7 +2689,7 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
 
   // second term
 
-    reset(buf);
+    buf.clear();
 
     const KLPol& pol = kl.klPol(x,ys);
     KLCoeff r1 = 0;
@@ -2719,10 +2719,10 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
       if (!p.inOrder(x,z))
 	continue;
       coatomcorrection = true;
-      reset(buf);
-      io::append(buf,"z = ");
+      buf.clear();
+      buf.append("z = ");
       p.append(buf,z,I);
-      io::append(buf," mu(x,z) = ");
+      buf.append(" mu(x,z) = ");
       io::append(buf,kl.mu(x,z));
       foldLine(file,buf,ls,4," ");
       fprintf(file,"\n");
@@ -2757,15 +2757,15 @@ void showRecursiveMu(FILE* file, KLContext& kl, const CoxNbr& d_x,
 
      if (m[j].mu) {
        mucorrection = true;
-       reset(buf);
-       io::append(buf,"z = ");
+       buf.clear();
+       buf.append("z = ");
        p.append(buf,z,I);
        pad(buf,l_ys+1); // remember the four characters "z = "
-       io::append(buf," mu = ");
+       buf.append(" mu = ");
        append(buf,m[j].mu);
-       io::append(buf," height = ");
+       buf.append(" height = ");
        append(buf,m[j].height);
-       io::append(buf," mu(x,z) = ");
+       buf.append(" mu(x,z) = ");
        append(buf,kl.mu(x,z));
        foldLine(file,buf,ls,4," ");
        fprintf(file,"\n");
@@ -2793,7 +2793,7 @@ void showSimpleMu(FILE* file, KLContext& kl, const CoxNbr& x,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   const SchubertContext& p = kl.schubert();
   unsigned long ls = LINESIZE;
@@ -2820,17 +2820,17 @@ void showSimpleMu(FILE* file, KLContext& kl, const CoxNbr& x,
 
   /* consider four cases */
 
-  reset(buf);
+  buf.clear();
 
   if (p.descent(xt) & lmask[s]) { /* xts < xt */
 
-    append(buf,"xs = ");
+    buf.append("xs = ");
     p.append(buf,xs,I);
-    append(buf,"  ys = ");
+    buf.append("  ys = ");
     p.append(buf,ys,I);
 
     if (p.descent(yst) & lmask[s]) { /* ysts < yst */
-      append(buf,"  yst = ");
+      buf.append("  yst = ");
       p.append(buf,yst,I);
       foldLine(file,buf,ls,0,"xy");
       fprintf(file,"\n\n");
@@ -2850,13 +2850,13 @@ void showSimpleMu(FILE* file, KLContext& kl, const CoxNbr& x,
   }
   else { /* xts > xt */
     if (p.descent(yst) & lmask[s]) { /* ysts < yst */
-      append(buf,"xs = ");
+      buf.append("xs = ");
       p.append(buf,xs,I);
-      append(buf,"  xt = ");
+      buf.append("  xt = ");
       p.append(buf,xt,I);
-      append(buf,"  ys = ");
+      buf.append("  ys = ");
       p.append(buf,ys,I);
-      append(buf,"  yst = ");
+      buf.append("  yst = ");
       p.append(buf,yst,I);
       foldLine(file,buf,ls,0,"xy");
       fprintf(file,"\n\n");
@@ -2870,11 +2870,11 @@ void showSimpleMu(FILE* file, KLContext& kl, const CoxNbr& x,
     }
     else { /* ysts > yst */
       if (p.descent(xs) & lmask[t]) {
-	append(buf,"xs = ");
+	buf.append("xs = ");
 	p.append(buf,xs,I);
-	append(buf,"  xt = ");
+	buf.append("  xt = ");
 	p.append(buf,xt,I);
-	append(buf,"  ys = ");
+	buf.append("  ys = ");
 	p.append(buf,ys,I);
 	foldLine(file,buf,ls,0,"xy");
 	fprintf(file,"\n\n");
@@ -2885,9 +2885,9 @@ void showSimpleMu(FILE* file, KLContext& kl, const CoxNbr& x,
 	return;
       }
       else { /* mu(xs,ys) = 0 */
-	append(buf,"xt = ");
+	buf.append("xt = ");
 	p.append(buf,xt,I);
-	append(buf,"  ys = ");
+	buf.append("  ys = ");
 	p.append(buf,ys,I);
 	foldLine(file,buf,ls,0,"xy");
 	fprintf(file,"\n\n");
@@ -3152,7 +3152,7 @@ void allocExtrRow(KLContext& kl, ExtrRow& row, const CoxNbr& y)
 
 // Append a star to the string if mu != 0.
 #if 0
-void appendStar(String& str, const KLContext& kl, const CoxNbr& x,
+void appendStar(std::string& str, const KLContext& kl, const CoxNbr& x,
 		const KLPol& pol, const Length& l)
 {
   if (l != undef_length) {

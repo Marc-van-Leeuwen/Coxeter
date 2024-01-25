@@ -36,7 +36,7 @@ namespace {
   };
 
   template<class P>
-  void appendStar(String& str, const HeckeMonomial<P>& m,
+  void appendStar(std::string& str, const HeckeMonomial<P>& m,
 		  const SchubertContext& p, const Length& l);
   template<class P>
   Ulong maxLength(const List<HeckeMonomial<P> >& h, const SchubertContext& p,
@@ -113,7 +113,7 @@ template<class P> HeckeMonomial<P>::~HeckeMonomial()
 namespace hecke {
 
 template<class P>
-void append(String& str, const HeckeMonomial<P>& m, const SchubertContext& p,
+void append(std::string& str, const HeckeMonomial<P>& m, const SchubertContext& p,
 	    const Interface& I)
 
 /*
@@ -122,7 +122,7 @@ void append(String& str, const HeckeMonomial<P>& m, const SchubertContext& p,
 
 {
   p.append(str,m.x(),I);
-  io::append(str," : ");
+  str.append(" : ");
   polynomials::append(str,m.pol(),"q");
 
   return;
@@ -133,14 +133,14 @@ void append(String& str, const HeckeMonomial<P>& m, const SchubertContext& p,
 namespace {
 
 template<class P>
-void appendStar(String& str, const HeckeMonomial<P>& m,
+void appendStar(std::string& str, const HeckeMonomial<P>& m,
 		  const SchubertContext& p, const Length& l)
 
 {
   Length lx = p.length(m.x());
 
   if (static_cast<long>(2*m.pol().deg()) == static_cast<long>(l-lx-1))
-    append(str," *");
+    str.append(" *");
 
   return;
 }
@@ -155,12 +155,12 @@ Ulong maxLength(const List<HeckeMonomial<P> >& h, const SchubertContext& p,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   Ulong maxl = 0;
 
   for (Ulong j = 0; j < h.size(); ++j) {
-    reset(buf);
+    buf.clear();
     const HeckeMonomial<P>& m = h[j];
     hecke::append(buf,m,p,I);
     appendStar(buf,m,p,l);
@@ -186,10 +186,10 @@ void oneColumnPrint(FILE* file,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   for (Ulong j = 0; j < h.size(); ++j) {
-    reset(buf);
+    buf.clear();
     hecke::append(buf,h[a[j]],p,I);
     appendStar(buf,h[a[j]],p,l);
     foldLine(file,buf,ls,4,"+");
@@ -220,7 +220,7 @@ void prettyPrint(FILE* file,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   Ulong maxl = maxLength(h,p,I,l);
   Ulong hl = (ls-1)/2;
@@ -314,14 +314,14 @@ void twoColumnPrint(FILE* file,
 */
 
 {
-  static String buf(0);
+  static std::string buf;
 
   Ulong hl = (ls-1)/2; /* width of output column */
   Ulong fl = h.size()/2; /* number of full lines */
   Ulong i = 0;
 
   for (Ulong j = 0; j < fl; ++j) { /* print out a full line */
-    reset(buf);
+    buf.clear();
     hecke::append(buf,h[a[i]],p,I);
     appendStar(buf,h[a[i]],p,l);
     pad(buf,ls-hl);
@@ -334,7 +334,7 @@ void twoColumnPrint(FILE* file,
   }
 
   if (h.size()%2) { /* print out a half line */
-    reset(buf);
+    buf.clear();
     hecke::append(buf,h[a[i]],p,I);
     appendStar(buf,h[a[i]],p,l);
     print(file,buf);

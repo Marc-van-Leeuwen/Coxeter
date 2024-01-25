@@ -198,16 +198,11 @@ bool operator< (const CoxWord& g, const CoxWord& h)
 
 namespace coxtypes {
 
-String& append(String& str, const CoxNbr& x)
 
-/*
-  Appends x to str in numeral form; uses buf to write out the value.
-*/
-
+// Append |x| to |str| in numeral form
+std::string& append(std::string& str, const CoxNbr& x)
 {
-  static String buf(digits(COXNBR_MAX,10)+1);
-  buf.setLength(sprintf(buf.ptr(),"%lu",static_cast<Ulong>(x)));
-  append(str,buf);
+  io::append(str,static_cast<Ulong>(x));
   return str;
 }
 

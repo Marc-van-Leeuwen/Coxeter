@@ -157,7 +157,7 @@ void WGraph::print(FILE* file, const Interface& I) const
 
   // find alignement
 
-  String str(0);
+  std::string str;
   LFlags f = leqmask[I.rank()-1];
   interface::append(str,f,I);
   Ulong descent_maxwidth = str.length();
@@ -166,7 +166,7 @@ void WGraph::print(FILE* file, const Interface& I) const
 
   for (Vertex x = 0; x < size(); ++x) {
     fprintf(file,"%*lu : ",d,x);
-    io::reset(str);
+    str.clear();
     interface::append(str,descent(x),I);
     pad(str,descent_maxwidth );
     io::print(file,str);

@@ -61,7 +61,7 @@ namespace {
   void klCoeffOverflow(const CoxNbr& x, const CoxNbr& y);
   void klFail(const CoxNbr& x, const CoxNbr& y);
   void leadingWhitespace(const GroupEltInterface& I,
-         const GroupEltInterface& J, const Permutation& a, const String& str);
+         const GroupEltInterface& J, const Permutation& a, const std::string& str);
   void lengthOverflow();
   void memoryWarning();
   void minRootOverflow();
@@ -83,7 +83,7 @@ namespace {
   void repeatedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
 		      const Permutation& a);
   void reservedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
-		      const Permutation& a, const String& str);
+		      const Permutation& a, const std::string& str);
   void ueMuFail(const CoxNbr& x, const CoxNbr& y);
   void undefCoxarr();
   void wrongCoxeterEntry(Rank i, Rank j, Ulong m);
@@ -208,7 +208,7 @@ void error::Error(int number, ... )
       const GroupEltInterface* I = va_arg(ap, const GroupEltInterface*);
       const GroupEltInterface* J = va_arg(ap, const GroupEltInterface*);
       const Permutation* a = va_arg(ap, const Permutation*);
-      const String* str = va_arg(ap, const String*);
+      const std::string* str = va_arg(ap, const std::string*);
       leadingWhitespace(*I,*J,*a,*str);
     }
       break;
@@ -297,7 +297,7 @@ void error::Error(int number, ... )
       const GroupEltInterface* I = va_arg(ap, const GroupEltInterface*);
       const GroupEltInterface* J = va_arg(ap, const GroupEltInterface*);
       const Permutation* a = va_arg(ap, const Permutation*);
-      const String* str = va_arg(ap, const String*);
+      const std::string* str = va_arg(ap, const std::string*);
       reservedSymbol(*I,*J,*a,*str);
     }
       break;
@@ -612,7 +612,7 @@ void klFail(const CoxNbr& x, const CoxNbr& y)
 
 
 void leadingWhitespace(const GroupEltInterface& I, const GroupEltInterface& J,
-		       const Permutation& a, const String& str)
+		       const Permutation& a, const std::string& str)
 
 /*
   Handles the error LEADING_WHITESPACE; this means that I contains a symbol
@@ -882,7 +882,7 @@ void parseError(const char *const str)
 }
 
 void reservedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
-		    const Permutation& a, const String& str)
+		    const Permutation& a, const std::string& str)
 
 /*
   Handles the error RESERVED_SYMBOL; this means that I contains a symbol

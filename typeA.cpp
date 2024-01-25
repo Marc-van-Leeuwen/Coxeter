@@ -272,13 +272,12 @@ TypeAInterface::~TypeAInterface()
   delete d_pInterface;
 };
 
-String& TypeAInterface::append(String& str, const CoxWord& g) const
 
 /*
-  Special append function for type A. If hasPermutationOutput is true,
+  Special append function for type A. If |hasPermutationOutput()| holds,
   it outputs elements in permutation form.
 */
-
+std::string& TypeAInterface::append(std::string& str, const CoxWord& g) const
 {
   if (hasPermutationOutput()) { // print out as permutation
     CoxWord a(0);

@@ -145,8 +145,8 @@ class SchubertContext {
   virtual void revertSize(const Ulong& n) = 0;
   virtual void setSize(const Ulong& n) = 0;
 /* input-output */
-  virtual String& append(String&, const CoxNbr& x) const = 0;
-  virtual String& append(String&, const CoxNbr& x, const Interface& I)
+  virtual std::string& append(std::string&, const CoxNbr& x) const = 0;
+  virtual std::string& append(std::string&, const CoxNbr& x, const Interface& I)
     const = 0;
   virtual void print(FILE* file, const CoxNbr& x) const = 0;
   virtual void print(FILE* file, const CoxNbr& x, const Interface& I)
@@ -249,8 +249,8 @@ class StandardSchubertContext:public SchubertContext {
   void revertSize(const Ulong& n);
   void setSize(const Ulong& n);
 /* i/o */
-  String& append(String&, const CoxNbr& x) const;
-  String& append(String&, const CoxNbr& x, const Interface& I) const;
+  std::string& append(std::string&, const CoxNbr& x) const;
+  std::string& append(std::string&, const CoxNbr& x, const Interface& I) const;
   void print(FILE* file, const CoxNbr& x) const;
   void print(FILE* file, const CoxNbr& x, const Interface& I) const;
 };

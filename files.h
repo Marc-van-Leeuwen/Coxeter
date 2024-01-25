@@ -49,33 +49,33 @@ namespace files {
 
 namespace files {
 template <class C>
-  void appendCoefficient(String& str, const C& c,
+  void appendCoefficient(std::string& str, const C& c,
 			PolynomialTraits& traits);
 template <class E>
-  void appendExponent(String& str, const E& e, PolynomialTraits& traits);
+  void appendExponent(std::string& str, const E& e, PolynomialTraits& traits);
 template <class M>
-  void appendHeckeMonomial(String& str, const M& m, const SchubertContext& p,
+  void appendHeckeMonomial(std::string& str, const M& m, const SchubertContext& p,
 			   const Interface& I, HeckeTraits& hTraits,
 			   PolynomialTraits& pTraits, const Length& l);
-void appendHomology(String& str, const Homology& h, OutputTraits& traits);
+void appendHomology(std::string& str, const Homology& h, OutputTraits& traits);
 template <class C>
-  void appendMonomial(String& str, const C& c, const Ulong& e,
+  void appendMonomial(std::string& str, const C& c, const Ulong& e,
 		      PolynomialTraits& traits,
 		      const Ulong& d = 1, const long& m = 0);
-void appendModifier(String& str, const Ulong& d, const long& m,
+void appendModifier(std::string& str, const Ulong& d, const long& m,
 		    PolynomialTraits& traits);
 template <class M>
-  void appendMuMark(String& str, const M& m, const SchubertContext& p,
+  void appendMuMark(std::string& str, const M& m, const SchubertContext& p,
 		    const Length& l, HeckeTraits& traits);
 template <class P>
-  void appendPolynomial(String& str, const P& p,
+  void appendPolynomial(std::string& str, const P& p,
 			PolynomialTraits& traits,
 			const Ulong& d = 1, const long& m = 0);
-void appendSeparator(String& str, const Ulong& n, HeckeTraits& traits);
+void appendSeparator(std::string& str, const Ulong& n, HeckeTraits& traits);
 template <class KL>
   void makeWGraph(WGraph& X, const List<CoxNbr>& c, const LFlags& f, KL& kl);
 void minReps(List<CoxNbr>& min, const Partition& pi, schubert::NFCompare& c);
-void pad(String& str, const Ulong& n, HeckeTraits& traits);
+void pad(std::string& str, const Ulong& n, HeckeTraits& traits);
 template<class H>
   void printAsBasisElt(FILE* file, const H& h, const SchubertContext& p,
 		       Interface& I, OutputTraits& traits);
@@ -194,22 +194,22 @@ void writeClasses(List<List<CoxNbr> >& lc, const Partition& pi);
 namespace files {
 
 struct PolynomialTraits {
-  String prefix;
-  String postfix;
-  String indeterminate;
-  String sqrtIndeterminate;
-  String posSeparator;
-  String negSeparator;
-  String product;
-  String exponent;
-  String expPrefix;
-  String expPostfix;
-  String zeroPol;
-  String one;
-  String negOne;
-  String modifierPrefix;
-  String modifierPostfix;
-  String modifierSeparator;
+  std::string prefix;
+  std::string postfix;
+  std::string indeterminate;
+  std::string sqrtIndeterminate;
+  std::string posSeparator;
+  std::string negSeparator;
+  std::string product;
+  std::string exponent;
+  std::string expPrefix;
+  std::string expPostfix;
+  std::string zeroPol;
+  std::string one;
+  std::string negOne;
+  std::string modifierPrefix;
+  std::string modifierPostfix;
+  std::string modifierSeparator;
   bool printExponent;
   bool printModifier;
 // constructors and destructors
@@ -223,15 +223,15 @@ struct PolynomialTraits {
 };
 
 struct HeckeTraits {
-  String prefix;
-  String postfix;
-  String evenSeparator;
-  String oddSeparator;
-  String monomialPrefix;
-  String monomialPostfix;
-  String monomialSeparator;
-  String muMark;
-  String hyphens;
+  std::string prefix;
+  std::string postfix;
+  std::string evenSeparator;
+  std::string oddSeparator;
+  std::string monomialPrefix;
+  std::string monomialPostfix;
+  std::string monomialSeparator;
+  std::string muMark;
+  std::string hyphens;
   Ulong lineSize;
   Ulong indent;
   Ulong evenWidth;
@@ -263,14 +263,14 @@ struct AddHeckeTraits:public HeckeTraits { // Hecke traits for additive output
 };
 
 struct PartitionTraits {
-  String prefix;
-  String postfix;
-  String separator;
-  String classPrefix;
-  String classPostfix;
-  String classSeparator;
-  String classNumberPrefix;
-  String classNumberPostfix;
+  std::string prefix;
+  std::string postfix;
+  std::string separator;
+  std::string classPrefix;
+  std::string classPostfix;
+  std::string classSeparator;
+  std::string classNumberPrefix;
+  std::string classNumberPostfix;
   bool printClassNumber;
 // constructors and destructors
   void* operator new(size_t size) {return arena().alloc(size);}
@@ -283,14 +283,14 @@ struct PartitionTraits {
 };
 
 struct PosetTraits {
-  String prefix;
-  String postfix;
-  String separator;
-  String edgePrefix;
-  String edgePostfix;
-  String edgeSeparator;
-  String nodePrefix;
-  String nodePostfix;
+  std::string prefix;
+  std::string postfix;
+  std::string separator;
+  std::string edgePrefix;
+  std::string edgePostfix;
+  std::string edgeSeparator;
+  std::string nodePrefix;
+  std::string nodePostfix;
   Ulong nodeShift;
   bool printNode;
 // constructors and destructors
@@ -304,20 +304,20 @@ struct PosetTraits {
 };
 
 struct WgraphTraits {
-  String prefix;
-  String postfix;
-  String separator;
-  String edgeListPrefix;
-  String edgeListPostfix;
-  String edgeListSeparator;
-  String edgePrefix;
-  String edgePostfix;
-  String edgeSeparator;
-  String nodePrefix;
-  String nodePostfix;
-  String nodeSeparator;
-  String nodeNumberPrefix;
-  String nodeNumberPostfix;
+  std::string prefix;
+  std::string postfix;
+  std::string separator;
+  std::string edgeListPrefix;
+  std::string edgeListPostfix;
+  std::string edgeListSeparator;
+  std::string edgePrefix;
+  std::string edgePostfix;
+  std::string edgeSeparator;
+  std::string nodePrefix;
+  std::string nodePostfix;
+  std::string nodeSeparator;
+  std::string nodeNumberPrefix;
+  std::string nodeNumberPostfix;
   Ulong nodeShift;
   int padSize;
   bool hasPadding;
@@ -334,68 +334,68 @@ struct WgraphTraits {
 
 struct OutputTraits {
 // strings
-  String versionString;
-  String typeString;
+  std::string version_string;
+  std::string type_string;
   // header file names
-  String header[numHeaders];
-  String prefix[numHeaders];
-  String postfix[numHeaders];
+  std::string header[numHeaders];
+  std::string prefix[numHeaders];
+  std::string postfix[numHeaders];
   bool hasHeader[numHeaders];
   // prettyfying strings for printouts
-  String closureSeparator1;
-  String closureSeparator2;
-  String closureSeparator3;
-  String closureSeparator4;
-  String closureSeparator5;
-  String closureSeparator6;
-  String eltList;
-  String singularLocus;
-  String singularStratification;
-  String emptySingularLocus;
-  String emptySingularStratification;
+  std::string closureSeparator1;
+  std::string closureSeparator2;
+  std::string closureSeparator3;
+  std::string closureSeparator4;
+  std::string closureSeparator5;
+  std::string closureSeparator6;
+  std::string eltList;
+  std::string singularLocus;
+  std::string singularStratification;
+  std::string emptySingularLocus;
+  std::string emptySingularStratification;
   // list formatting
-  String bettiPrefix;
-  String bettiPostfix;
-  String bettiSeparator;
-  String bettiRankPrefix;
-  String bettiRankPostfix;
-  String cellNumberPrefix;
-  String cellNumberPostfix;
-  String closureSizePrefix;
-  String closureSizePostfix;
-  String coatomPrefix;
-  String coatomPostfix;
-  String coatomSeparator;
-  String compCountPrefix;
-  String compCountPostfix;
-  String dufloPrefix;
-  String dufloPostfix;
-  String dufloSeparator;
-  String dufloListPrefix;
-  String dufloListPostfix;
-  String dufloListSeparator;
-  String dufloNumberPrefix;
-  String dufloNumberPostfix;
-  String eltNumberPrefix;
-  String eltNumberPostfix;
-  String eltListPrefix;
-  String eltListPostfix;
-  String eltListSeparator;
-  String eltPrefix;
-  String eltPostfix;
-  String eltDataPrefix;
-  String eltDataPostfix;
-  String graphListPrefix;
-  String graphListPostfix;
-  String graphListSeparator;
-  String lDescentPrefix;
-  String lDescentPostfix;
-  String rDescentPrefix;
-  String rDescentPostfix;
-  String lengthPrefix;
-  String lengthPostfix;
-  String closeString;
-  String bettiHyphens;
+  std::string bettiPrefix;
+  std::string bettiPostfix;
+  std::string bettiSeparator;
+  std::string bettiRankPrefix;
+  std::string bettiRankPostfix;
+  std::string cellNumberPrefix;
+  std::string cellNumberPostfix;
+  std::string closureSizePrefix;
+  std::string closureSizePostfix;
+  std::string coatomPrefix;
+  std::string coatomPostfix;
+  std::string coatomSeparator;
+  std::string compCountPrefix;
+  std::string compCountPostfix;
+  std::string dufloPrefix;
+  std::string dufloPostfix;
+  std::string dufloSeparator;
+  std::string dufloListPrefix;
+  std::string dufloListPostfix;
+  std::string dufloListSeparator;
+  std::string dufloNumberPrefix;
+  std::string dufloNumberPostfix;
+  std::string eltNumberPrefix;
+  std::string eltNumberPostfix;
+  std::string eltListPrefix;
+  std::string eltListPostfix;
+  std::string eltListSeparator;
+  std::string eltPrefix;
+  std::string eltPostfix;
+  std::string eltDataPrefix;
+  std::string eltDataPostfix;
+  std::string graphListPrefix;
+  std::string graphListPostfix;
+  std::string graphListSeparator;
+  std::string lDescentPrefix;
+  std::string lDescentPostfix;
+  std::string rDescentPrefix;
+  std::string rDescentPostfix;
+  std::string lengthPrefix;
+  std::string lengthPostfix;
+  std::string close_string;
+  std::string bettiHyphens;
   Ulong lineSize;
 // traits for the output of a polynomial
   PolynomialTraits polTraits;

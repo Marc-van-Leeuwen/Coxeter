@@ -41,7 +41,7 @@ namespace type {
 
 class Type {
  private:
-  String d_name;
+  std::string d_name;
  public:
 // constructors and destructors
   void operator delete(void* ptr)
@@ -51,10 +51,10 @@ class Type {
   ~Type();
 // accessors
   const char& operator[] (const Ulong& j) const;
-  const String& name() const;
+  const std::string& name() const;
 // manipulators
   char& operator[] (const Ulong& j);
-  String& name();
+  std::string& name();
 };
 
 const Type undef_type("");
@@ -67,9 +67,9 @@ namespace type {
 
 inline const char& Type::operator[] (const Ulong& j) const
   {return d_name[j];}
-inline const String& Type::name() const {return d_name;}
+inline const std::string& Type::name() const {return d_name;}
 inline char& Type::operator[] (const Ulong& j) {return d_name[j];}
-inline String& Type::name() {return d_name;}
+inline std::string& Type::name() {return d_name;}
 
 };
 

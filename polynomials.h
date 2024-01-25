@@ -57,15 +57,15 @@ namespace polynomials {
   template <class T>
   bool operator> (const Polynomial<T>& p, const Polynomial<T>& q);
   template <class T>
-  String& append(String& str, const Polynomial<T> &p, const char *x);
+  std::string& append(std::string& str, const Polynomial<T> &p, const char *x);
   template <class T>
-  String& append(String& str, const Polynomial<T>& p, const Degree& d,
+  std::string& append(std::string& str, const Polynomial<T>& p, const Degree& d,
 	     const long& m, const char *x);
   template <class T>
-  String& append(String& str, const Polynomial<T>& p, const Degree& d,
+  std::string& append(std::string& str, const Polynomial<T>& p, const Degree& d,
 	     const long& m, const char *x,GAP);
   template <class T>
-  String& append(String& str, const Polynomial<T>& p, const Degree& d,
+  std::string& append(std::string& str, const Polynomial<T>& p, const Degree& d,
 	     const long& m, const char *x,Terse);
   template <class T>
   void print(FILE* file, const Polynomial<T>& p, const char *x);

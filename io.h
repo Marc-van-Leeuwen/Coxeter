@@ -9,7 +9,8 @@
 #define IO_H
 
 #include "globals.h"
-#include <string.h>
+#include <string>
+#include <cstring>
 
 namespace io {
   using namespace globals;
@@ -44,26 +45,27 @@ namespace io {
   String& append(String& l, const char c);
   String& append(String& l, const char *s);
   String& append(String& l1, const String& l2);
-  String& append(String& l, const Ulong& n);
-  String& append(String& l, const long& m);
-  String& append(String& l, const int& n);
-  String& append(String& l, const unsigned& n);
+  std::string& append(std::string& l, const Ulong& n);
+  std::string& append(std::string& l, const long& m);
+  std::string& append(std::string& l, const int& n);
+  std::string& append(std::string& l, const unsigned& n);
   String& append(String& l, const int *v, const Ulong& n);
   int digits(Ulong c, Ulong b);
   String& erase(String& l, const Ulong& n);
-  void foldLine(FILE* file, const String& str, const Ulong& ls,
+  void foldLine(FILE* file, const std::string& str, const Ulong& ls,
 		const Ulong& h, const char* hyphens);
-  char* getInput(FILE *inputfile, String& buf, Ulong len = 0);
-  String& pad(String& l, const Ulong& n);
+  const char* getInput(FILE *inputfile, std::string& buf, Ulong len = 0);
+  std::string& pad(std::string& l, const Ulong& n);
   void print(FILE* file, const char * str);                      /* inlined */
-  void print(FILE* file, const String& str);                     /* inlined */
+  void print(FILE* file, const std::string& str);                /* inlined */
   void print(FILE* file, const int *const& v, const Ulong& n);
   void printFile(FILE* file, const char *name);
   void printFile(FILE* file, const char *name, const char *dir_name);
   String& reset(String& l);
   String& setString(String& l, const String& s, const Ulong &first,
 		       const Ulong& r);
-  Ulong skipSpaces(const String& l, Ulong p);
+  Ulong skipSpaces(const std::string& l, Ulong p);
+  Ulong skipSpaces(const std::string& l, Ulong p);
 };
 
 /******** type definitions **************************************************/
@@ -86,7 +88,7 @@ class String:public List<char>
     String():List<char>() {};
     String(const Ulong& n):List<char>(n+1) {setSizeValue(1);}
     String(const int& n):List<char>(n+1) {setSizeValue(1);}
-    String(const char* const str):List<char>(strlen(str)+1)
+    String(const char* const str):List<char>(std::strlen(str)+1)
       {setData(str,strlen(str)+1);}
     ~String();
 /* modifiers */
@@ -105,11 +107,11 @@ class String:public List<char>
 namespace io {
 
 inline void print(FILE *file, const char* str) {fprintf(file,"%s",str);}
-inline void print(FILE *file, const String& str)
-  {fprintf(file,"%s",str.ptr());}
+inline void print(FILE *file, const std::string& str)
+  { fprintf(file,"%s",str.c_str()); }
 
 inline void String::setLength(const Ulong& n) {setSize(n+1);}
-inline bool String::isDefined() const {return size();}
+inline bool String::isDefined() const {return size()>0;}
 inline Ulong String::length() const {return size()-1;}
 
 };

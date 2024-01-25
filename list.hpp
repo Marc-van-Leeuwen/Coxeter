@@ -11,6 +11,7 @@
 #include <memory> // for |std::uninitialized_copy|
 
 #include "error.h"
+#include "io.h"
 
 namespace list {
   using namespace error;
@@ -518,16 +519,15 @@ template <class T> Ulong find(const List<T>& l, const T& m)
 
 namespace list {
 
-template <class T> void print(FILE* file, const List<T>& l)
-
 /*
   Rudimentary print function for lists. It assumes that print(FILE*,T) is
   defined.
 */
 
+template <class T> void print(FILE* file, const List<T>& l)
 {
   for (Ulong j = 0; j < l.size(); ++j) {
-    print(file,l[j]);
+    io::print(file,l[j]);
     if (j+1 < l.size()) /* more to come */
       fprintf(file,",");
   }
