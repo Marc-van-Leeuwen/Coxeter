@@ -9,11 +9,11 @@ globals = globals.h
 
 pflags = -c $(includedirs) -pg -O
 oflags = -c $(includedirs) -O -Wall
-gflags = -c $(includedirs) -g
+gflags = -c $(includedirs) -ggdb
 
 cflags = $(gflags) # the default setting
 
-ifdef optimize
+ifeq ($(optimize),true)
 	NDEBUG = true
 	cflags = $(oflags)
 endif
