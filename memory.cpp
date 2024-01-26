@@ -244,12 +244,18 @@ Ulong Arena::byteSize(Ulong n, Ulong m)
   copying the contents of ptr to it, and freeing ptr; we never try to
   fuse smaller adjacent blocks together.
 
+  This function should be used only when the memory area is known to be
+  used for types that are trivially copyable (no |std::string| for
+  instance), and probably not at all. The caller can instead do the
+  |alloc| and the |free|, and in between move the data using placement
+  |new| or |std::uninitialized_copy|, or whatever is appropriate for the
+  actual data held there; that does not suffer from the above constraint.
+
   Returns 0 and sets the error MEMORY_WARNING in case of overflow, if
   CATCH_MEMORY_OVERFLOW is set.
 
-  NOTE : equivalent to alloc if old_size = 0.
+  NOTE : equivalent to |alloc| if |old_size == 0|.
 */
-
 void *memory::Arena::realloc(void *ptr, size_t old_size, size_t new_size)
 {
   assert(old_size<new_size); // this is only for growing, not shrinking

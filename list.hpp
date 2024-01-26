@@ -8,6 +8,7 @@
 #include <new>
 #include <algorithm> // for |std::copy|
 #include <cassert>
+#include <memory> // for |std::uninitialized_copy|
 
 #include "error.h"
 
@@ -296,24 +297,21 @@ template <class T> void List<T>::reverse()
   return;
 }
 
+// Check if |*this| will hold |n| nodes of data, and resize it if not.
+
+// Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set.
 template <class T> void List<T>::setSize(Ulong n)
-
-/*
-  Checks if the varlist will hold n nodes of data, and resizes it if not.
-
-  Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set.
-*/
-
 {
   if (d_allocated < n) { /* resize */
-    void *p = arena().realloc(d_ptr,d_allocated*sizeof(T),n*sizeof(T));
+    void *p = arena().alloc(n*sizeof(T));
     if (ERRNO) /* overflow */
       return;
-    d_ptr = static_cast<T*> (p);
-    // Ulong old_alloc = d_allocated;
-    d_allocated = arena().allocSize(n,sizeof(T));
-    // the following line causes trouble; I can't understand why!
-    // new(d_ptr+old_alloc) T[d_allocated-old_alloc];
+    auto* pp = static_cast<T*> (p);
+    // the next line could use |std::uninitialized_move| from C++17
+    std::uninitialized_copy(d_ptr,d_ptr+d_size,pp);
+    arena().free(d_ptr,d_allocated*sizeof(T)); // clean up emptied memory
+    d_ptr = pp; // henceforth use the new, partially initialized, memory0
+    d_allocated = arena().allocSize(n,sizeof(T)); // use actual space bought
   }
 
   d_size = n;
@@ -452,17 +450,18 @@ template <class T> Ulong insert(List<T>& l, const T& d_m)
 */
 
 {
-  // this is necessary in the case where m points into the array being
+  // this is necessary in the case where |d_m| points into the array being
   // resized. It could be avoided by doing the appendage after the allocation
   // of new memory and before the freeing of the old memory; this entails
-  // not being able to use setSize, or realloc. It hasn't seemed worthwile.
+  // not being able to use setSize. It hasn't seemed worthwile.
   T m = d_m;
 
   Ulong j0 = ~0L;
   Ulong j1 = l.size();
 
-  for (; j1-j0 > 1;) {
-    Ulong j = j0 + (j1-j0)/2;
+  while (j1-j0 > 1)
+  {
+    Ulong j = (j0+j1)/2;
     if (l[j] == m) /* m was found */
       return j;
     if (l[j] < m)
@@ -471,7 +470,7 @@ template <class T> Ulong insert(List<T>& l, const T& d_m)
       j1 = j;
   }
 
-  /* at this point j1 = j0+1; insertion point is j1 */
+  // now |j1 == j0+1| and |j1==l.size() or l[j1]>m|; insertion point is |j1|
 
   l.setSize(l.size()+1);
   if (ERRNO) /* overflow */
