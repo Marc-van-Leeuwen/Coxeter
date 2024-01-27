@@ -42,7 +42,7 @@ namespace {
 
   void activate(CommandTree* tree);
   void ambigAction(CommandTree* tree, const std::string& str);
-  CommandData* ambigCommand();
+  std::shared_ptr<commands::CommandData> ambigCommand();
   void cellCompletion(DictCell<CommandData>* cell);
   void commandCompletion(DictCell<CommandData>* cell);
   void empty_error(const char* str);
@@ -333,12 +333,10 @@ void relax_f()
 
 {}
 
-void run()
-
 /*
   This function runs an interactive session of the program.
 */
-
+void run()
 {
   static std::string name;
 
@@ -353,8 +351,8 @@ void run()
     CommandTree* tree = treeStack.top();
     tree->prompt();
     getInput(stdin,name);
-    CommandData* cd = tree->find(name);
-    if (cd == 0) {
+    std::shared_ptr<commands::CommandData> cd = tree->find(name);
+    if (cd == nullptr) {
       tree->error(name.c_str());
       continue;
     }
@@ -432,7 +430,7 @@ void empty_error(const char* str)
 {
   CommandTree* tree = mainCommandTree();
 
-  CommandData* cd = tree->find(str);
+  auto cd = tree->find(str);
   if (cd == 0) {
     default_error(str);
     return;
@@ -548,7 +546,7 @@ CommandTree::CommandTree(const char* prompt,
 */
 
 {
-  d_root->ptr = new CommandData("","",a,&relax_f,false);
+  d_root->ptr = std::make_shared<CommandData>("","",a,&relax_f,false);
 
   if (h) { /* add help functionality */
     d_help = new CommandTree("help",&cr_h,h);
@@ -591,7 +589,7 @@ void CommandTree::prompt() const
 void CommandTree::add(const char* name, const char* tag, void (*a)(),
 		      void (*h)(), bool rep)
 {
-  CommandData *cd = new CommandData(name,tag,a,h,rep);
+  auto cd = std::make_shared<CommandData>(name,tag,a,h,rep);
 
   insert(std::string(name),cd);
   if (d_help && h) { /* add help functionality */
@@ -609,24 +607,21 @@ void CommandTree::setAction(const char* str, void (*a)())
 */
 
 {
-  CommandData* cd = find(str);
+  auto cd = find(str);
   cd->action = a;
 
   return;
 }
 
-void CommandTree::setRepeat(const char* str, bool b)
 
 /*
   Assuming that str is a fullname on the command tree, sets the autorepeat
   value of the corresponding command data structure to b.
 */
-
+void CommandTree::setRepeat(const char* str, bool b)
 {
-  CommandData* cd = find(str);
+  auto cd = find(str);
   cd->autorepeat = b;
-
-  return;
 }
 
 };
@@ -686,17 +681,14 @@ CommandData::~CommandData()
 
 namespace {
 
-CommandData* ambigCommand()
-
 /*
-  Returns a dummy command cell which is a placeholder indicating that
+  Return a dummy command cell which is a placeholder indicating that
   ambigAction must be executed; this requires knowledge of where we are
   in the command tree.
 */
-
+std::shared_ptr<commands::CommandData> ambigCommand()
 {
-  static CommandData cd("","",0,0,false);
-  return &cd;
+  return std::make_shared<CommandData>("","",nullptr,nullptr,false);
 }
 
 void cellCompletion(DictCell<CommandData>* cell)
@@ -3514,7 +3506,7 @@ void printCommandTree(FILE* file, DictCell<CommandData>* cell)
     return;
 
   if (cell->fullname) { /* print command info */
-    CommandData* cd = cell->value();
+    auto cd = cell->value();
     fprintf(file,"  - %s : %s;\n",cd->name.c_str(),cd->tag.c_str());
   };
 

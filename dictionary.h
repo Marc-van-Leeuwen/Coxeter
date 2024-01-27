@@ -24,6 +24,7 @@ namespace dictionary {
 
 #include "memory.h"
 #include "io.h"
+#include <memory> // for |std::shared_ptr|
 
 namespace dictionary {
   using namespace memory;
@@ -43,7 +44,7 @@ namespace dictionary {
 namespace dictionary {
 
 template <class T> struct DictCell {
-  T *ptr;
+  std::shared_ptr<T> ptr;
   DictCell *left;
   DictCell *right;
   char letter;
@@ -54,11 +55,12 @@ template <class T> struct DictCell {
   void operator delete(void* ptr)
     {return arena().free(ptr,sizeof(DictCell));}
   DictCell() {/* not implemented */};
-  DictCell(char c, T* v, bool f, bool u, DictCell *l = 0, DictCell *r = 0)
+  DictCell(char c, std::shared_ptr<T> v, bool f, bool u,
+	   DictCell *l = nullptr, DictCell *r = nullptr)
     :ptr(v), left(l), right(r), letter(c), fullname(f), uniquePrefix(u) {};
   ~DictCell();
 /* accessors */
-  T* value() const {return ptr;}
+  std::shared_ptr<T> value() const {return ptr;}
 };
 
 template <class T> class Dictionary {
@@ -70,10 +72,10 @@ template <class T> class Dictionary {
   Dictionary();
   virtual ~Dictionary();
 /* modifiers */
-  void insert(const std::string& str, T* const value);
+  void insert(const std::string& str, std::shared_ptr<T> const value);
   void remove(const std::string& str);
 /* accessors */
-  T* find(const std::string& str) const;
+  std::shared_ptr<T> find(const std::string& str) const;
   DictCell<T>* findCell(const std::string& str) const;
   DictCell<T>* root() {return d_root;}
 };

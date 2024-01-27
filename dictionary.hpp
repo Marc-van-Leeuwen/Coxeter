@@ -75,7 +75,8 @@ template <class T> DictCell<T>* Dictionary<T>::findCell(const std::string& str)
   return cell;
 }
 
-template <class T> T* Dictionary<T>::find(const std::string& str) const
+template <class T>
+  std::shared_ptr<T> Dictionary<T>::find(const std::string& str) const
 
 {
   DictCell<T>* dc = findCell(str);
@@ -83,11 +84,11 @@ template <class T> T* Dictionary<T>::find(const std::string& str) const
   if (dc)
     return dc->value();
   else
-    return 0;
+    return nullptr;
 }
 
 template <class T> void Dictionary<T>::insert(const std::string& str,
-					      T* const value)
+					      std::shared_ptr<T> const value)
 
 /*
   Inserts a new word in the dictionary. The root of the tree always
@@ -173,17 +174,17 @@ template <class T> void Dictionary<T>::remove(const std::string& str)
 
 namespace dictionary {
 
-template <class T> DictCell<T>::~DictCell()
 
 /*
   This destructor will recursively remove the dictionary. It is assumed
-  that the dictionary owns its data.
+  that the dictionary owns its tree data, but |ptr| is a smart pointer, so
+  its destruction will already do the right thing
 */
 
+template <class T> DictCell<T>::~DictCell()
 {
   delete left;
   delete right;
-  delete ptr;
 }
 
 /*
