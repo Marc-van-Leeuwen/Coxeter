@@ -9,7 +9,7 @@ globals = globals.h
 
 pflags = -c $(includedirs) -pg -O
 oflags = -c $(includedirs) -O -Wall
-gflags = -c $(includedirs) -ggdb
+gflags = -c $(includedirs) -Wall -ggdb
 
 cflags = $(gflags) # the default setting
 

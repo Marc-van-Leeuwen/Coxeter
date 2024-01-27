@@ -7,14 +7,15 @@
 
 /**************************************************************************
 
- This file presents the main type in this program, viz. the CoxGroup
- class. This is the base class for the hierarchy of coxeter group
+ This file presents the main type in this program, namely the CoxGroup
+ class. This is the base class for the hierarchy of Coxeter group
  classes, ranging from the most general ones considered in this program
- (rank <= 255, coefficients of Coxeter matris <= COXENTRY_MAX) to
+ (rank <= 255, coefficients of Coxeter matrix <= COXENTRY_MAX) to
  the most special, the class SmallCoxGroup.
 
  We have adhered to the philosophy that all non-leaf classes in the
- hierarchy should be abstract. So this file contains only the root
+ hierarchy should be abstract, marked '(a)' below; the leaf classes are
+ concrete, marked '(a)' below. So this file contains only the root
  of the hierarchy, as an abstract class.
 
  The layout of the Coxeter hierarchy as considered in this program
@@ -90,7 +91,7 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
  protected:
 
-  CoxGraph* d_graph;
+  graph::CoxGraph* d_graph;
   MinTable* d_mintable;
   KLSupport* d_klsupport;
   kl::KLContext* d_kl;
@@ -99,9 +100,9 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   Interface* d_interface;
   OutputTraits* d_outputTraits;
 
-  struct CoxHelper;  /* provides helper functions */
+  struct CoxHelper; // predeclare, defined in implementation part
+  friend CoxHelper;  /* provides helper functions */
   CoxHelper* d_help;
-  friend struct CoxHelper;
 
  public:
 

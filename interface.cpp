@@ -82,12 +82,12 @@ namespace {
    The second level is the possibility to define an arbitrary ordering on
    the generators. Each group has a "standard" ordering, built-in in the
    case of finite or affine groups, and implicitly defined by the datum
-   of the Coxeter matrix for general groups. However, the user may change
-   this ordering if he wishes.
+   of the Coxeter matrix for general groups. However, users may change
+   this ordering if they wish.
 
    This setup is easy to implement, and gives more than enough flexibility
    to read from and write to programs like Gap, Magma or Maple, or even TeX,
-   and to perform some other nifty output tricks (outputting a k-l basis
+   and to perform some other nifty output tricks (outputting a K-L basis
    element in Gap format, say, is a breeze.) Also the program can read from
    one program and write to another, functioning as a pipe.
 
@@ -105,31 +105,31 @@ namespace {
    constructors :
 
    - Interface(x,l) : constructs the standard interface in type x and rank l;
-   - ~Interface() : (not implemented yet);
+   - ~Interface() : (not complete yet);
 
    manipulators :
 
    - readSymbols() : updates the symbol tree for the group;
    - setAutomaton() : resets the value of the automaton;
    - setIn(i) : resets the input interface to i;
-   - setInPostfix(a) : changes the input postfix; (inlined)
-   - setInPrefix(a) : changes the input prefix; (inlined)
-   - setInSeparator(a) : changes the input separator; (inlined)
-   - setInSymbol(s,a) : changes the input symbol; (inlined)
+   - setInPostfix(a) : changes the input postfix;
+   - setInPrefix(a) : changes the input prefix;
+   - setInSeparator(a) : changes the input separator;
+   - setInSymbol(s,a) : changes the input symbol;
    - setOrder(gen_order) : changes the perceived ordering of the generators;
    - setOut(i) : resets the output interface to i;
-   - setOutPrefix(a) : changes the output prefix; (inlined)
-   - setOutPostfix(a) : changes the output postfix; (inlined)
-   - setOutSeparator(a) : changes the output separator; (inlined)
-   - setOutSymbol(s,a) : changes the output symbol; (inlined)
+   - setOutPrefix(a) : changes the output prefix;
+   - setOutPostfix(a) : changes the output postfix;
+   - setOutSeparator(a) : changes the output separator;
+   - setOutSymbol(s,a) : changes the output symbol;
 
    accessors :
 
    - in(s) : returns the internal number of the generator placed in s-th
-     position by the user (inlined);
-   - out(s) : returns the user-number of the s-th internal generator (inlined);
-   - outOrder() : returns the array [out(s), 0 <= s < rank] (inlined);
-   - rank() : returns the rank (inlined);
+     position by the user;
+   - out(s) : returns the user-number of the s-th internal generator;
+   - outOrder() : returns the array [out(s), 0 <= s < rank];
+   - rank() : returns the rank;
 
    input/output functions :
 
@@ -140,6 +140,8 @@ namespace {
  ****************************************************************************/
 
 namespace interface {
+
+// Construct the default interface (see the introduction.)
 
 Interface::Interface(const Type& x, const Rank& l)
   :d_order(l),
@@ -153,10 +155,6 @@ Interface::Interface(const Type& x, const Rank& l)
    d_parseEscape("?"),
    d_reserved(0),
    d_rank(l)
-
-/*
-  Constructs the default interface (see the introduction.)
-*/
 
 {
   d_order = identityOrder(l);
@@ -179,12 +177,11 @@ Interface::Interface(const Type& x, const Rank& l)
   setAutomaton();
 }
 
-Interface::~Interface()
 
 /*
-  We just have to delete d_in and d_out.
+  We just have to delete d_in and d_out (what about d_tokenAut, d_descent?)
 */
-
+Interface::~Interface()
 {
   delete d_out;
   delete d_in;

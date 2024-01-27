@@ -20,12 +20,10 @@
 
 namespace typeA {
 
-TypeACoxGroup::TypeACoxGroup(const Rank& l):FiniteCoxGroup(Type("A"),l)
 
-/*
-  Constructor for the type A Coxeter groups.
-*/
-
+// Constructor for the type A Coxeter groups.
+TypeACoxGroup::TypeACoxGroup(const Rank& l)
+: FiniteCoxGroup(Type("A"),l)
 {
   delete d_interface;
   d_typeAInterface = new TypeAInterface(l);

@@ -12,49 +12,38 @@
 
 #include "globals.h"
 #include "list.h"
+#include "bits.h"
+#include "coxtypes.h"
+#include "memory.h"
+#include "type.h"
 
 namespace graph {
   using namespace globals;
   using namespace list;
-};
-
-/* type declarations */
-
-namespace graph {
-  class CoxGraph;
-  typedef unsigned short CoxEntry;
-  typedef List<CoxEntry> CoxMatrix;
-}
-
-#include "bits.h"
-#include "coxtypes.h"
-#include "memory.h"
-
-namespace graph {
   using namespace bits;
   using namespace coxtypes;
   using namespace memory;
-};
+  using namespace type;
+
+/* type declarations */
+
+  class CoxGraph;
+  typedef unsigned short CoxEntry;
+  typedef List<CoxEntry> CoxMatrix;
+
 
 /* constants */
 
-namespace graph {
   const Ulong SBITMAP_MAX = RANK_MAX/CHAR_BIT + (bool)(RANK_MAX%CHAR_BIT);
   /* a CoxNbr should hold at least 2 COXENTRY_MAX elements */
   static const CoxEntry COXENTRY_MAX = 32763;
   static const CoxEntry undef_coxentry = USHRT_MAX;
   static const CoxEntry infty = 0;
-};
 
 /******** function declarations **********************************************/
 
-#include "type.h"
 
-namespace graph {
-  using namespace type;
-};
 
-namespace graph {
   void getConjugacyClasses(List<LFlags>& cl, const CoxGraph& G);
   bool isAffine(CoxGraph& G, LFlags I);
   bool isConnected(CoxGraph& G, LFlags I);

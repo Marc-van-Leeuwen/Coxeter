@@ -16,13 +16,11 @@
 
 #include "globals.h"
 #include "constants.h"
-#include <limits.h>
-
 #include "io.h"
+#include <limits.h>
 
 namespace coxtypes {
   using namespace globals;
-  using namespace io;
 };
 
 /* type declarations and bounds */
@@ -73,12 +71,6 @@ namespace coxtypes {
 };
 
 /* functions provided by coxtypes.h */
-
-#include "io.h"
-
-namespace coxtypes {
-  using namespace io;
-};
 
 namespace coxtypes {
   bool operator== (const CoxWord& g, const CoxWord& h);

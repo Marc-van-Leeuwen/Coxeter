@@ -50,7 +50,7 @@ namespace typeA {
 
 namespace typeA {
 
-class TypeACoxGroup:public FiniteCoxGroup {
+class TypeACoxGroup:public fcoxgroup::FiniteCoxGroup {
   TypeAInterface* d_typeAInterface;
  public:
 // constructors and destructors

@@ -53,8 +53,8 @@ namespace fcoxgroup {
 
 namespace fcoxgroup {
 
-class FiniteCoxGroup : public CoxGroup {
-
+class FiniteCoxGroup : public coxgroup::CoxGroup
+{
  protected:
 
   CoxArr d_longest_coxarr;

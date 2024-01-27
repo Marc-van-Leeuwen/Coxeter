@@ -75,7 +75,7 @@ namespace coxgroup {
 namespace coxgroup {
 
 CoxGroup::CoxGroup(const Type& x, const Rank& l)
-
+  : d_graph(new CoxGraph(x,l))
 /*
   Constructor for the abstract CoxGroup class. Does the basic initializations
   in the following order (the order is important) :
@@ -83,11 +83,10 @@ CoxGroup::CoxGroup(const Type& x, const Rank& l)
   - the Coxeter graph, which is where the Coxeter matrix gets constructed;
   - the interface;
   - the minroot table;
-  - the kazhdan-lusztig context;
+  - the Kazhdan-Lusztig context;
 */
 
 {
-  d_graph = new CoxGraph(x,l);
   if (ERRNO) /* problem with the Coxeter matrix */
     return;
 
