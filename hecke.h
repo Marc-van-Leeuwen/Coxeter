@@ -32,7 +32,8 @@ namespace hecke {
 
 namespace hecke {
   template<class P>
-  void append(String& str, const HeckeMonomial<P>& m, const SchubertContext& p,
+  void append(std::string& str, const HeckeMonomial<P>& m,
+	      const SchubertContext& p,
 	      const Interface& I);
   template<class P>
   void prettyPrint(FILE* file, const List<HeckeMonomial<P> >& h,

@@ -187,10 +187,6 @@ struct GroupEltInterface {
   void* operator new(size_t size) {return arena().alloc(size);}
   void operator delete(void* ptr)
     {return arena().free(ptr,sizeof(GroupEltInterface));}
-#if 0
-  void* operator new(size_t size, void* ptr) {return ptr;}
-  void operator delete(void* p1, void* p2) {};
-#endif
   GroupEltInterface();
   GroupEltInterface(const Rank& l);
   GroupEltInterface(const Rank& l, Alphabetic);

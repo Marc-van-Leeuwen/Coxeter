@@ -61,8 +61,8 @@ namespace commands {
 namespace commands {
 
 struct CommandData {
-  String name;
-  String tag;
+  std::string name;
+  std::string tag;
   void (*action)();
   void (*help)();
   bool autorepeat;
@@ -77,7 +77,7 @@ struct CommandData {
 
 class CommandTree:public Dictionary<CommandData> {
  private:
-  String d_prompt;
+  std::string d_prompt;
   CommandTree* d_help;
   void (*d_entry)();
   void (*d_error)(const char* str);

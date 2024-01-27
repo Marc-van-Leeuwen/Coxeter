@@ -48,7 +48,7 @@ namespace minroots {
 };
 
 namespace minroots {
-  String& append(String& str, const DotVal& a);
+  std::string& append(std::string& str, const DotVal& a);
   LFlags descent(MinTable& T, MinNbr r);
   Length depth(MinTable& T, MinNbr r);
   void print(FILE *file, MinTable& T);

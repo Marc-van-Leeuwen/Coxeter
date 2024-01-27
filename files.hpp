@@ -463,7 +463,7 @@ template <class H>
 */
 
 {
-  std::string buf(0);
+  std::string buf;
 
   bool oldTS = setTwoSided(h,a,p,I,hTraits,pTraits,l);
 

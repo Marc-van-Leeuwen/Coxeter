@@ -143,13 +143,6 @@ namespace {
   };
 
   MuData* find(MuRow& row, const CoxNbr& x);
-#if 0
-  void allocExtrRow(KLContext& kl, ExtrRow& row, const CoxNbr& y);
-  void appendStar(String& str, const KLContext& kl, const CoxNbr& x,
-		  const KLPol& pol, const Length& l);
-  void printStar(FILE* file, const KLContext& kl, const CoxNbr& x,
-		 const KLPol& pol, const Length& l);
-#endif
   KLPol& safeAdd(KLPol& p, const KLPol& q, const Degree& n);
   KLPol& safeSubtract(KLPol& p, const KLPol& q, const KLCoeff& mu,
 		      const Length& h);
@@ -3125,46 +3118,6 @@ void cBasis(HeckeElt& h, const CoxNbr& y, KLContext& kl)
 namespace {
 
 
-/*
-  This function does the allocation of the extremal row for y, but in row
-  instead of in kl.extrList(y).
-*/
-#if 0
-void allocExtrRow(KLContext& kl, ExtrRow& row, const CoxNbr& y)
-{
-  const SchubertContext& p = kl.schubert();
-  BitMap b(kl.size());
-
-  p.extractClosure(b,y);
-  if (ERRNO)
-    return;
-
-  maximize(p,b,p.descent(y));
-
-  readBitMap(row,b);
-  if (ERRNO)
-    return;
-
-  return;
-
-}
-#endif
-
-// Append a star to the string if mu != 0.
-#if 0
-void appendStar(std::string& str, const KLContext& kl, const CoxNbr& x,
-		const KLPol& pol, const Length& l)
-{
-  if (l != undef_length) {
-    const SchubertContext& p = kl.schubert();
-    Length l_x = p.length(x);
-    if (2*pol.deg()+1+l_x == l)
-      io::append(str," *");
-  }
-
-  return;
-}
-#endif
 
 MuData* find(MuRow& row, const CoxNbr& x)
 
@@ -3204,23 +3157,6 @@ const KLPol& one()
 
 namespace {
 
-/*
-  Like appendStar, but with output to a file.
-*/
-#if 0
-void printStar(FILE* file, const KLContext& kl, const CoxNbr& x,
-	       const KLPol& pol, const Length& l)
-{
-  if (l != undef_length) {
-    const SchubertContext& p = kl.schubert();
-    Length l_x = p.length(x);
-    if (2*pol.deg()+1+l_x == l)
-      fprintf(file," *");
-  }
-
-  return;
-}
-#endif
 
 KLPol& safeAdd(KLPol& p, const KLPol& q, const Degree& n)
 

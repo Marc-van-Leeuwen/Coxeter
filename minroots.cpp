@@ -1646,52 +1646,52 @@ LFlags minroots::support(MinTable& T, MinNbr r)
 
  ****************************************************************************/
 
-String& minroots::append(String& str, const DotVal& a)
+std::string& minroots::append(std::string& str, const DotVal& a)
 
 {
   switch (a)
     {
     case undef_dotval:
-      io::append(str,"undef_minnbr");
+      str.append("undef_minnbr");
       return str;
     case undef_negdot:
-      io::append(str,"-c(*)/2");
+      str.append("-c(*)/2");
       return str;
     case locked :
-      io::append(str,"*");
+      str.append("*");
       return str;
     case neg_cos :
-      io::append(str,"-c/2");
+      str.append("-c/2");
       return str;
     case neg_cos2 :
-      io::append(str,"-c(2)/2");
+      str.append("-c(2)/2");
       return str;
     case neg_half :
-      io::append(str,"-1/2");
+      str.append("-1/2");
       return str;
     case neg_hinvgold :
-      io::append(str,"-c(2,5)/2");
+      str.append("-c(2,5)/2");
       return str;
     case zero :
-      io::append(str,"0");
+      str.append("0");
       return str;
     case hinvgold :
-      io::append(str,"c(2,5)/2");
+      str.append("c(2,5)/2");
       return str;
     case half :
-      io::append(str,"1/2");
+      str.append("1/2");
       return str;
     case cos2 :
-      io::append(str,"c(2)/2");
+      str.append("c(2)/2");
       return str;
     case dotval::cos :
-      io::append(str,"c/2");
+      str.append("c/2");
       return str;
     case dotval::one :
-      io::append(str,"1");
+      str.append("1");
       return str;
     case undef_posdot:
-      io::append(str,"c(*)/2");
+      str.append("c(*)/2");
       return str;
     default: // should not happen
       return str;

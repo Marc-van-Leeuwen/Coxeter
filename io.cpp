@@ -28,24 +28,6 @@
 
 /*****************************************************************************
 
-        Chapter I -- The String class
-
- *****************************************************************************/
-
-namespace io {
-
-String::~String()
-
-/*
-  Simply destroy the underlying List.
-*/
-
-{}
-
-};
-
-/*****************************************************************************
-
         Chapter I --- Output functions returning strings
 
   This section regroups various output functions returning strings. We have
@@ -72,46 +54,6 @@ String::~String()
 namespace io {
 
 
-/*
-  Appends c to the varstring l, resizing l as necessary (this is old)
-*/
-String& append(String& l, const char c)
-{
-  l[l.length()] = c;
-  l.setLength(l.length()+1);
-  l[l.length()] = 0;
-
-  return l;
-}
-
-
-String& append(String& l, const char *s)
-
-/*
-  Appends s to the varstring l, resizing l as necessary.
-*/
-
-{
-  l.setLength(l.length()+strlen(s));
-  strcat(l.ptr(),s);
-
-  return l;
-}
-
-
-String& append(String& l1, const String& l2)
-
-/*
-  Appends l2 to the varstring l1, resizing l1 as necessary.
-*/
-
-{
-  l1.setLength(l1.length()+l2.length());
-  strcat(l1.ptr(),l2.ptr());
-
-  return l1;
-}
-
 
 std::string& append(std::string& str, const Ulong& n)
 {
@@ -126,67 +68,11 @@ std::string& append(std::string& str, const long& m)
 
 
 
-#if 0
-/*
-  Append to |l| the string representation of the |n| first elements pointed
-  by v, as a comma-separated and square-bracket-enclosed list.
-
-  This function was and is broken; it never uses |l|, and never returns |buf|
-*/
-std::string& append(std::string& l, const int *v, const Ulong& n)
-{
-  static std::string buf(0);
-
-  reset(buf);
-
-  append(buf,"[");
-
-  for (Ulong j = 0; j < n; j++) {
-    append(buf,v[j]);
-    if (j+1 < n)  /* more to come */
-      append(buf,",");
-  }
-
-  append(buf,"]");
-
-  return l;
-}
-#endif
-
 std::string& append(std::string& str, const int& n)
 {
   return str += std::to_string(n);
 }
 
-
-String& append(String& str, const unsigned& n)
-
-{
-  static String cs(digits(UINT_MAX,10)+1);
-
-  cs.setLength(sprintf(cs.ptr(),"%u",n));
-  append(str,cs);
-
-  return str;
-}
-
-
-
-/*
-  Erases the last n letters from the string l (everything if n >= length)
-*/
-#if 0
-String& erase(String&l, const Ulong& n)
-{
-  if (n >= l.length()) /* erase everything */
-    return reset(l);
-
-  l[l.length()-n] = '\0';
-  l.setLength(l.length()-n);
-
-  return l;
-}
-#endif
 
 
 // Pads the string with white spaces to length n.
@@ -198,47 +84,6 @@ std::string& pad(std::string& l, const Ulong& n)
   return l.append(n-l.length(),' ');
 }
 
-#if 0
-String& reset(String& l)
-
-/*
-  Resets l to the empty string.
-*/
-
-{
-  l[0] = '\0';
-  l.setLength(0);
-
-  return l;
-}
-#endif
-
-String& setString(String& l, const String& s, const Ulong& first,
-		     const Ulong& r)
-
-/*
-  Sets the string l to the subword of s starting at first, with length r.
-*/
-
-{
-  l.setLength(r);
-  l.setData(s.ptr()+first,0,r);
-  l[r] = '\0';
-
-  return l;
-}
-
-
-/*
-  This function returns an impossible string, namely the one corresponding
-  to a an empty list of characters (no terminating '\0'.
-  Its length would be -1.
-*/
-const String& String::undefined()
-{
-  static String str; /* uses private default constructor */
-  return str;
-}
 
 };
 

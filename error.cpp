@@ -41,9 +41,6 @@ namespace {
 
   void abortError();
   void badCoxEntry();
-#if 0
-  void badFile();
-#endif
   void badInput(char *s);
   void badLength(const long& l);
   void badLine(char *filename,Rank l,Rank i,Rank j);

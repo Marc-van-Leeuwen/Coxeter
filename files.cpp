@@ -1152,7 +1152,7 @@ void printHeader(FILE* file, const Header& header, OutputTraits& traits)
 void printHomology(FILE* file, const Homology& h, OutputTraits& traits)
 
 {
-  std::string buf(0);
+  std::string buf;
 
   appendHomology(buf,h,traits);
 

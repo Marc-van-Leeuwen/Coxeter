@@ -22,9 +22,7 @@ namespace {
   using namespace interface;
 
   const char *alphabet = "abcdefghijklmnopqrstuvwxyz";
-#if 0
-  const char *affine = "abcdefg";
-#endif
+  // never used: |const char *affine = "abcdefg";|
   const Token not_token = RANK_MAX+1;
   const Token prefix_token = RANK_MAX+2;
   const Token postfix_token = RANK_MAX+3;
@@ -543,21 +541,6 @@ void DescentSetInterface::setTwosidedSeparator(const std::string& str)
 
 namespace interface {
 
-#if 0
-GroupEltInterface::GroupEltInterface()
-  :symbol(0),prefix(String::undefined()),postfix(String::undefined()),
-   separator(String::undefined())
-
-/*
-  We use the default constructor to construct an interface where the symbol
-  table is empty, and the prefix,postfix and separator strings are all
-  undefined. It is not intended to be used other than in very special cases.
-
-  NOTE : This is pretty dangerous, and should be much more hidden!
-*/
-
-{}
-#endif
 
 // Construct the default interface in rank |l|.
 GroupEltInterface::GroupEltInterface(const Rank& l)
@@ -779,10 +762,9 @@ ReservedSymbols::~ReservedSymbols()
 
 namespace interface {
 
-const std::string* alphabeticSymbols(Ulong n)
 
 /*
-  Produces an alphabetic representation of the numbers in {1,...,n}.
+  Produce an alphabetic representation of the numbers in {1,...,n}.
   In fact, the numbers from 0 are represented by strings of the form
   "", "a", ... , "z", "aa", ... , "az", "ba", ... through the following
   algorithm : for n > 0 the representation of n is the concatenation
@@ -790,7 +772,7 @@ const std::string* alphabeticSymbols(Ulong n)
   the number of letters in the alphabet. In our case the role of
   n-1 is actually played by n.
 */
-
+const std::string* alphabeticSymbols(Ulong n)
 {
   static List<std::string> list(0);
   static bool first = true;
@@ -798,7 +780,7 @@ const std::string* alphabeticSymbols(Ulong n)
   if (first) {
     first = false;
     list.setSize(1);
-    new(list.ptr()) String("");
+    new(list.ptr()) std::string("");
   }
 
   if (n+1 > list.size()) { /* enlarge the list */
@@ -945,7 +927,7 @@ const Permutation& identityOrder(Ulong n)
 namespace interface {
 
 ParseInterface::ParseInterface()
-  :str(0),nestlevel(0),a(1),c(0),x(0)
+  :str(),nestlevel(0),a(1),c(0),x(0)
 
 {
   a.setSize(1);

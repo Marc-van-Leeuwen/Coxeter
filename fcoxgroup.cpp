@@ -34,9 +34,6 @@ namespace {
     ParNbr *rdcw_arr() {return d_rdcw_arr.ptr();}
   };
 
-#if 0
-  void fillLongest(FiniteCoxGroup *W);
-#endif
   CoxSize order(FiniteCoxGroup *W);
   Workspace& workspace();
 };
@@ -1266,12 +1263,6 @@ namespace {
     - W->longest_coxword : string form of the longest element in W;
 
 */
-#if 0 // this was never implemented, nor used
-void fillLongest(FiniteCoxGroup *W)
-{
-  return;
-}
-#endif
 
 
 CoxSize order(FiniteCoxGroup *W)

@@ -11,7 +11,6 @@
 #include <memory> // for |std::uninitialized_copy|
 
 #include "error.h"
-#include "io.h"
 
 namespace list {
   using namespace error;
@@ -62,19 +61,13 @@ namespace list {
 
 namespace list {
 
+
+// Allocate |*this| to be able to hold |n| elements, but start out empty.
 template <class T> List<T>::List(const Ulong& n)
-
-/*
-  Allocates this to hold n elements. Relies on the fact that it always
-  receives clean memory from alloc, and that the default constructor does
-  nothing.
-*/
-
-{
-  d_allocated = arena().allocSize(n,sizeof(T));
-  d_ptr = static_cast<T*> (arena().alloc(n*sizeof(T)));
-  d_size = 0;
-}
+  : d_ptr(static_cast<T*> (arena().alloc(n*sizeof(T))))
+  , d_size(0)
+  , d_allocated(arena().allocSize(n,sizeof(T)))
+{}
 
 
 template <class T> List<T>::List(const List<T>& r)
@@ -94,47 +87,33 @@ template <class T> List<T>::List(const List<T>& r)
 
 
 template <class T> List<T>::List(const T* p, const Ulong& n)
-  :d_allocated(0)
-
-/*
-  Constructor for the List class, allocating the list to size n, and
-  initializing it with the first n members pointed by T (recall that
-  our lists are really strings --- bitwise copying is assumed for T)
-*/
-
+  : List(n)
 {
-  d_ptr = static_cast<T*> (arena().alloc(n*sizeof(T)));
-  d_allocated = arena().allocSize(n,sizeof(T));
-  memcpy(d_ptr,p,n*sizeof(T));
-  d_size = n;
+  std::uninitialized_copy(p,p+n,d_ptr);
 }
-
 
 /*
   A list constructor taking iterators as parameters. It is assumed that
-  the value-type of |I| may be allocated to |T|.
+  the value-type of I may be allocated to T.
 */
-
 template <class T> template <class I>
 List<T>::List(const I& first, const I& last)
-: d_ptr(nullptr), d_size(0), d_allocated(0)
+  : List() // first construct as empty
 {
   for (I i = first; i != last; ++i) {
     append(*i);
   }
 }
 
-template<class T> template<class I, class F>
-List<T>::List(const I& first, const I& last, F& f)
 
 /*
   Like the previous one, except that in addition F is a functor taking one
   argument of type I::value_type, and whose value-type may be allocated to T.
 */
-
+template<class T> template<class I, class F>
+List<T>::List(const I& first, const I& last, F& f)
+  : List() // first construct as empty
 {
-  memset(this,0,sizeof(List<T>));
-
   for (I i = first; i != last; ++i) {
     append(f(*i));
   }
@@ -231,12 +210,9 @@ template <class T> void List<T>::append(const T& x)
     T* new_ptr = static_cast<T*> (arena().alloc((c+1)*sizeof(T)));
     if (new_ptr==nullptr) /* overflow */
       { assert(ERRNO!=0); return; }
-    if (d_ptr!=nullptr)
-    {
-      std::copy(d_ptr,d_ptr+c,new_ptr); // copy the whole old range of values
-      arena().free(d_ptr,d_allocated*sizeof(T));
-    }
+    std::copy(d_ptr,d_ptr+c,new_ptr); // copy the whole old range of values
     new_ptr[c] = x;
+    arena().free(d_ptr,d_allocated*sizeof(T));
     d_ptr = new_ptr;
     d_allocated = arena().allocSize(c+1,sizeof(T));
     d_size = c+1;
@@ -519,15 +495,16 @@ template <class T> Ulong find(const List<T>& l, const T& m)
 
 namespace list {
 
+template <class T> void print(FILE* file, const List<T>& l)
+
 /*
   Rudimentary print function for lists. It assumes that print(FILE*,T) is
   defined.
 */
 
-template <class T> void print(FILE* file, const List<T>& l)
 {
   for (Ulong j = 0; j < l.size(); ++j) {
-    io::print(file,l[j]);
+    print(file,l[j]);
     if (j+1 < l.size()) /* more to come */
       fprintf(file,",");
   }

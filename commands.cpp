@@ -85,9 +85,6 @@ namespace {
   void lwgraph_f();
   void matrix_f();
   void mu_f();
-#if 0
-  void not_implemented_f();
-#endif
   void pol_f();
   void q_f();
   void qq_f();
@@ -580,7 +577,7 @@ void CommandTree::prompt() const
 */
 
 {
-  printf("%s : ",d_prompt.ptr());
+  printf("%s : ",d_prompt.c_str());
 }
 
 /******** manipulators ******************************************************/
@@ -1918,17 +1915,6 @@ void matrix_f()
   return;
 }
 
-#if 0 // currently this is never called
-
-// Provide meager response for not (yet) implemented commands.
-void not_implemented_f()
-{
-  fprintf(stderr,"Sorry, not implemented yet\n");
-  return;
-
-}
-#endif
-
 void mu_f()
 
 /*
@@ -3214,7 +3200,7 @@ void interface::in::postfix_f()
 
 {
   printf("Enter the new input postfix (finish with a carriage return):\n");
-  std::string buf(0);
+  std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
   return;
@@ -3228,7 +3214,7 @@ void interface::in::prefix_f()
 
 {
   printf("Enter the new input prefix (finish with a carriage return):\n");
-  std::string buf(0);
+  std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
   return;
@@ -3242,7 +3228,7 @@ void interface::in::separator_f()
 
 {
   printf("Enter the new input separator (finish with a carriage return):\n");
-  std::string buf(0);
+  std::string buf;
   getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
   return;
@@ -3414,7 +3400,7 @@ void interface::out::postfix_f()
 
 {
   printf("enter the new output postfix (finish with a carriage return):\n");
-  std::string buf(0);
+  std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
   return;
@@ -3428,7 +3414,7 @@ void interface::out::prefix_f()
 
 {
   printf("Enter the new output prefix (finish with a carriage return):\n");
-  std::string buf(0);
+  std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
   return;
@@ -3442,7 +3428,7 @@ void interface::out::separator_f()
 
 {
   printf("Enter the new output separator (finish with a carriage return):\n");
-  std::string buf(0);
+  std::string buf;
   getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
   return;
@@ -3529,7 +3515,7 @@ void printCommandTree(FILE* file, DictCell<CommandData>* cell)
 
   if (cell->fullname) { /* print command info */
     CommandData* cd = cell->value();
-    fprintf(file,"  - %s : %s;\n",cd->name.ptr(),cd->tag.ptr());
+    fprintf(file,"  - %s : %s;\n",cd->name.c_str(),cd->tag.c_str());
   };
 
   printCommandTree(file,cell->left);

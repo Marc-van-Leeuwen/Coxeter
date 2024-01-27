@@ -34,11 +34,7 @@ namespace dictionary {
 
 namespace dictionary {
   template <class T>
-    void printExtensions(FILE* file, DictCell<T>* cell, String& name,
-			 bool& first, const char* sep = ",");
-  template <class T>
-    void printExtensions
-  (FILE* file, DictCell<T>* cell, std::string& name,
+    void printExtensions(FILE* file, DictCell<T>* cell, std::string& name,
 			 bool& first, const char* sep = ",");
 };
 
@@ -74,8 +70,6 @@ template <class T> class Dictionary {
   Dictionary();
   virtual ~Dictionary();
 /* modifiers */
-  void insert(const String& str, T* const value);
-  void remove(const String& str);
   void insert(const std::string& str, T* const value);
   void remove(const std::string& str);
 /* accessors */
