@@ -11,6 +11,7 @@
 
 #include "bits.h"
 #include "error.h"
+#include <sstream>
 
 namespace interface {
   using namespace error;
@@ -795,36 +796,33 @@ const std::string* alphabeticSymbols(Ulong n)
   return list.ptr()+1;
 }
 
-const std::string* decimalSymbols(Ulong n)
 
 /*
-  Returns a pointer to a list of strings, the first n of which contain
-  the decimal string representations of the first n natural numbers.
+  Return a pointer to a list of strings, the first |n| of which contain
+  the decimal string representations of the first |n| natural numbers.
 */
-
+const std::string* decimalSymbols(Ulong n)
 {
   static List<std::string> list(0);
 
-  if (n > list.size()) { /* enlarge the list */
+  if (n > list.size()) { // enlarge the list
     Ulong prev_size = list.size();
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
       list[j].resize(io::digits(j+1,10));
-      sprintf(list[j].data(),"%lu",j+1);
+      sprintf(&list[j][0],"%lu",j+1);
     }
   }
 
   return list.ptr();
 }
 
-const std::string* hexSymbolsFromZero(Ulong n)
-
 /*
-  Returns a pointer to a list of strings, the first n of which contain
-  the hexadecimal string representations of the first n integers,
+  Return a pointer to a list of strings, the first |n| of which contain
+  the hexadecimal string representations of the first |n| integers,
   including zero.
 */
-
+const std::string* hexSymbolsFromZero(Ulong n)
 {
   static List<std::string> list;
 
@@ -833,7 +831,7 @@ const std::string* hexSymbolsFromZero(Ulong n)
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
       list[j].resize(io::digits(j,16));
-      sprintf(list[j].data(),"%lx",j);
+      sprintf(&list[j][0],"%lx",j);
     }
   }
 
@@ -855,7 +853,7 @@ const std::string* hexSymbols(Ulong n)
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
       list[j].resize(io::digits(j+1,16));
-      sprintf(list[j].data(),"%lx",j+1);
+      sprintf(&list[j][0],"%lx",j+1);
     }
   }
 
@@ -880,7 +878,7 @@ const std::string* twohexSymbols(Ulong n)
     list.setSize(n);
     for (Ulong j = prev_size; j < n; ++j) {  /* write symbol */
       list[j].resize(2*io::digits(j+1,256));
-      sprintf(list[j].data(),"%0*lx",2*io::digits(j+1,256),j+1);
+      sprintf(&list[j][0],"%0*lx",2*io::digits(j+1,256),j+1);
     }
   }
 

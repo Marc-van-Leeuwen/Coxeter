@@ -22,18 +22,18 @@ ifdef profile
 	cflags = $(pflags)
 endif
 
-cc = g++
+CXX = g++ -std=c++11
 
 all: coxeter #clean
 
 coxeter: $(objects)
-	$(cc) -o coxeter $(objects)
+	$(CXX) -o coxeter $(objects)
 
 clean:
 	rm -f $(objects)
 
 %.o:%.cpp
-	$(cc) $(cflags) $*.cpp
+	$(CXX) $(cflags) $*.cpp
 
 # dependencies --- these were generated automatically by make depend on my
 # system; they are explicitly copied for portability. Only local dependencies
@@ -43,7 +43,7 @@ clean:
 # contents of tmp in lieu of the dependencies listed here.
 
 %.d:%.cpp
-	@$(cc) -MM $*.cpp
+	@$(CXX) -MM $*.cpp
 depend: $(dependencies)
 
 affine.o: affine.cpp affine.h globals.h coxgroup.h coxtypes.h io.h list.h \
