@@ -419,7 +419,7 @@ void ambigAction(CommandTree* tree, const std::string& str)
   fprintf(stderr," : ambiguous (");
   DictCell<CommandData>* cell = tree->findCell(str);
   name = str; // copy string to static variable
-  dictionary::printExtensions(stderr,cell->left,name,b);
+  dictionary::printExtensions(stderr,cell,name,b);
   fprintf(stderr,")\n");
 
   return;

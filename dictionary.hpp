@@ -216,37 +216,31 @@ namespace dictionary {
 
 /*
   This function prints to |file| all the possible extensions of the string
-  corresponding to |cell|. The string |name| should contain the strict prefix,
-  which excludes |cell->letter|, it is used as a working variable but will be
+  corresponding to |cell|. The string |name| should contain the given prefix up
+  to and including |cell->letter|, it is used as a working variable but will be
   restored to its original value (but not necessesarily original capacity) upon
   returning from this recursive function. The output will start with |sep|
   unless |first|, which after so suppressing |sep| once is set to |false|.
-
-  The actual behaviour reflects the weird structure of dictionaries: not only
-  are the extensions for the current |cell| printed, but also the extensions of
-  its strict prefix |name| whose final letter is alphabetically beyond
-  |cell->letter|, since these are present in the right subtree. This makes the
-  recurion easy, and makes no difference when called with |cell| equal to the
-  root of the tree, which has an empty right subtree, and does the right thing
-  when |cell| is |parent->left|, where |parent| is the node for |name|.
 */
 template <class T>
   void printExtensions(FILE* file, DictCell<T>* cell, std::string& name,
 		       bool &first, const char* sep)
 {
-  if (cell == nullptr)
-    return;
-  name.push_back(cell->letter);
-  if (cell->fullname) { // print prefix for current cell
-    if (first) /* first time a name is found */
-      first = false;
-    else
-      fprintf(file,"%s",sep);
-    fprintf(file,"%s",name.c_str());
+  for (cell = cell->left; // use only left subtree
+       cell != nullptr;
+       cell = cell->right) // walk down right-list of left subtree
+  {
+    name.push_back(cell->letter);
+    if (cell->fullname) { // print prefix for current cell
+      if (first) /* first time a name is found */
+	first = false;
+      else
+	fprintf(file,"%s",sep);
+      fprintf(file,"%s",name.c_str());
+    }
+    printExtensions(file,cell,name,first,sep);
+    name.pop_back(); // remove last character from |name|
   }
-  printExtensions(file,cell->left,name,first,sep);
-  name.pop_back(); // remove last character from |name|
-  printExtensions(file,cell->right,name,first,sep);
 }
 
 };
