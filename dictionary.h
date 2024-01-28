@@ -72,7 +72,7 @@ template <class T> class Dictionary {
   Dictionary();
   virtual ~Dictionary();
 /* modifiers */
-  void insert(const std::string& str, std::shared_ptr<T> const value);
+  void insert(const std::string& str, std::shared_ptr<T> value);
   void remove(const std::string& str);
 /* accessors */
   std::shared_ptr<T> find(const std::string& str) const;
