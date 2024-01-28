@@ -70,7 +70,7 @@ struct CommandData {
   void* operator new(size_t size) {return arena().alloc(size);}
   void operator delete(void* ptr)
     {return arena().free(ptr,sizeof(CommandData));}
-  CommandData(const char* const& str, const char* const& t, void (*a)(),
+  CommandData(const char* str, const char* t, void (*a)(),
 	      void (*h)(), bool rep);
   ~CommandData();
 };

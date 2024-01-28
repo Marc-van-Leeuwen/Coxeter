@@ -639,11 +639,13 @@ void CommandTree::setRepeat(const char* str, bool b)
 
 namespace commands {
 
-CommandData::CommandData(const char* const& str, const char* const& t,
+CommandData::CommandData(const char* str, const char* t,
 			 void (*a)(), void (*h)(), bool rep)
   :name(str), tag(t), action(a), help(h), autorepeat(rep)
 
-{}
+{
+  assert(action!=nullptr);
+}
 
 CommandData::~CommandData()
 
@@ -688,7 +690,8 @@ namespace {
 */
 std::shared_ptr<commands::CommandData> ambigCommand()
 {
-  return std::make_shared<CommandData>("","",nullptr,nullptr,false);
+  static auto p =  std::make_shared<CommandData>("","",&relax_f,&relax_f,false);
+  return p; // always return the same pointer value;
 }
 
 void cellCompletion(DictCell<CommandData>* cell)
