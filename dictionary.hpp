@@ -90,7 +90,7 @@ template <class T> Dictionary<T>::~Dictionary()
 
   NOTE : in fact, recognizes if |str| is a prefix of a word in the dictionary,
   as any such prefix has a corresponding cell with data stored. It is up to the
-  client to decide what payload data tot store there, but the condition of
+  client to decide what payload data to store there, but the condition of
   whether this prefix is actually a stored word (|fullname|) and if as a prefix
   it is unique (|uniquePrefix|) are stored in the cell proper. It is not
   possible to restrict to only store leaf nodes.
@@ -105,7 +105,7 @@ template <class T> DictCell<T>* Dictionary<T>::findCell(const std::string& str)
     if (cell->left == nullptr) /* leaf reached */
       return nullptr;
     cell = cell->left;
-    while (cell->right!=nullptr and  c > cell->letter)
+    while (c > cell->letter and cell->right!=nullptr)
       cell = cell->right;
     if (c != cell->letter)
       return nullptr;
@@ -128,73 +128,52 @@ template <class T>
 
 
 /*
-  Insert a new word in the dictionary. The root of the tree always
-  corresponds to the empty string "" (which may or may not be considered
-  to be in the dictionary.) The nodes are classified in three types :
-  dictionary words, unique prefixes (i.e., strings which are prefixes
-  to a unique dictionary word) and non-unique prefixes.
+  Insert a new word in the dictionary. The root of the tree always corresponds
+  to the empty string "" (which may or may not be considered to be in the
+  dictionary.) The nodes are classified in three types : dictionary words
+  (|fullname| holds), unique prefixes (|not fullname and uniquePrefix|) and
+  non-unique prefixes (|not fullname and not uniquePrefix|). These attributes
+  are defined or modified on the cells on the path to our final cell.
+
+  We use a "triple ref" trick, which is Algol68 lingo for a variable pointer to
+  a pointer. Here that variable |p| points to the link that either points to an
+  existing cell we want to modify, or after which we want to insert a fresh cell
+  if none is present. The work of inserting can then be neatly split into
+  advancing this to the correct link, and then doing our stuff depending on
+  whether a node is already present and whether we are at the |final| letter of
+  |str|. One nice aspect is that cases where we insert into a left or right
+  descendant link require no distinction at all.
 */
 template <class T> void Dictionary<T>::insert(const std::string& str,
 					      std::shared_ptr<T> value)
 {
-  DictCell<T>* cell = findCell(str);
-
-  if (cell && cell->fullname) { /* word was already in the dictionary */
-    cell->ptr = value; // overwrite any stored value
-    return;
-  }
-
-  /* from now on we are sure that the word is not already in the
-     dictionary */
-
-  cell = d_root; // restart
-
-  for (Ulong j = 0; j<str.length(); ++j)
-    {
-      const bool final = j+1 == str.length();
-      if (cell->left == nullptr) { // end of stored prefix reached
-	if (final)  // one more character to record: add a leaf |fullname| node
-	  cell->left = new DictCell<T>(str[j],value,true,false);
-	else // at least 2 more chars, add a non |fullname|
-	  cell->left = new DictCell<T>(str[j],nullptr,false,true);
-	cell = cell->left; // descend into newly created node
-	continue; // w.r.t. |for(j)|; remainder is effectively |else| branch
-      }
-
-      // now |cell->left!=nullptr|, we are prefix of some previous word
-
-      if (str[j] < cell->left->letter) { /* insert at beginning */
-	if (final)  // one more character to record: add a leaf |fullname| node
-	  cell->left = new DictCell<T>(str[j],value,true,false,
-				       nullptr,cell->left);
-	else // at least 2 more chars, add a non |fullname|
-	  cell->left = new DictCell<T>(str[j],nullptr,false,true,
-				       nullptr,cell->left);
-	cell = cell->left;
-	continue;
-      }
-      cell = cell->left;
-      while (cell->right!=nullptr and cell->right->letter <= str[j])
-	cell = cell->right;
-      if (cell->letter < str[j]) { /* add new cell */
-	if (final)  // one more character to record: add a leaf |fullname| node
-	  cell->right = new DictCell<T>(str[j],value,true,false,
-					nullptr,cell->right);
-	else // at least 2 more chars, add a non |fullname|
-	  cell->right = new DictCell<T>(str[j],0,false,true,
-					nullptr,cell->right);
-	cell = cell->right;
-	continue;
-      }
-
-      /* if we reach this point cell->letter = str[j] */
-
-      cell->uniquePrefix = false;
-      if (final) { // word is complete
-	cell->fullname = true;
-	cell->ptr = value;
+  DictCell<T>** p = &d_root->left;
+  for (const char& c: str)
+  {
+    bool final = &c==&str[str.length()-1];
+    while(*p != nullptr and (*p)->letter<c)
+      p = &(*p)->right; // skip over cells with |letter<c|
+    if (*p != nullptr and (*p)->letter==c) // whether a proper cell is present
+    { // so far we match an existing prefix
+      (*p)->uniquePrefix = false; // is is no longer unique (if it was)
+      if (final) // |str| is an existing prefix, replace any data
+      {
+	(*p)->fullname=true;
+	(*p)->ptr = value;
       }
     }
+    else // not looking at letter |c|
+    {
+      if (final)
+	*p = new DictCell<T>(c,value,true,false,nullptr,*p);
+      // having the |uniquePrefix| argument be |false| seems wrong here, but
+      // the convention appears to be |fullname| implies |not uniquePrefix|
+      else
+	*p = new DictCell<T>(c,nullptr,false,true,nullptr,*p);
+    } // |if (letter==c)|
+    p = &(*p)->left; // either way continue with left link for this cell
+
+  } // |for(c:str)|
 }
 
 template <class T> void Dictionary<T>::remove(const std::string& str)
