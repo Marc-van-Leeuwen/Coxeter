@@ -16,7 +16,6 @@
 #include "typeA.h"
 
 namespace commands {
-  using namespace directories;
   using namespace error;
   using namespace fcoxgroup;
   using namespace help;
@@ -40,14 +39,15 @@ namespace {
   Stack<CommandTree *> treeStack;
   CoxGroup* W = 0;
 
-  void activate(CommandTree* tree);
+  void activate(CommandTree* tree); // push |tree| onto the command stack
   void ambigAction(CommandTree* tree, const std::string& str);
   std::shared_ptr<commands::CommandData> ambigCommand();
   void cellCompletion(DictCell<CommandData>* cell);
   void commandCompletion(DictCell<CommandData>* cell);
   void empty_error(const char* str);
   CommandTree* emptyCommandTree();
-  template<class C> CommandTree* initCommandTree();
+  template<class C> // C is just a tag to select one of these functions
+    void initCommandTree(CommandTree&); // command initialization functions
   void printCommandTree(FILE* file, DictCell<CommandData>* cell);
   void startup();
 
@@ -108,7 +108,7 @@ namespace {
   const char* descent_tag = "prints out the descent sets";
   const char* duflo_tag = "prints out the Duflo involutions";
   const char* extremals_tag =
-    "prints out the k-l polynomials for the extremal pairs";
+    "prints out the Kazhdan-Lusztig polynomials for the extremal pairs";
   const char* fullcontext_tag = "sets the context to the full group";
   const char* help_tag = "enters help mode";
   const char* ihbetti_tag = "prints the IH betti numbers";
@@ -118,29 +118,29 @@ namespace {
   const char* intro_tag =
     "(in help mode only) prints a message for first time users";
   const char* inorder_tag = "tells whether two elements are in Bruhat order";
-  const char* invpol_tag = "prints a single inverse k-l polynomial";
-  const char* klbasis_tag = "prints an element of the k-l basis";
+  const char* invpol_tag = "prints a single inverse Kazhdan-Lusztig polynomial";
+  const char* klbasis_tag = "prints an element of the Kazhdan-Lusztig basis";
   const char* lcorder_tag = "prints the left cell order";
-  const char* lcells_tag = "prints out the left k-l cells";
-  const char* lcwgraphs_tag = "prints out the W-graphs of the left k-l cells";
+  const char* lcells_tag = "prints out the left Kazhdan-Lusztig cells";
+  const char* lcwgraphs_tag = "prints out the W-graphs of the left Kazhdan-Lusztig cells";
   const char* lrcorder_tag = "prints the two-sided cell order";
-  const char* lrcells_tag = "prints out the tow-sided k-l cells";
+  const char* lrcells_tag = "prints out the tow-sided Kazhdan-Lusztig cells";
   const char* lrcwgraphs_tag =
-    "prints out the W-graphs of the two-sided k-l cells";
+    "prints out the W-graphs of the two-sided Kazhdan-Lusztig cells";
   const char* lrwgraph_tag = "prints out the two-sided W-graph";
   const char* lwgraph_tag = "prints out the left W-graph";
   const char* matrix_tag = "prints the current Coxeter matrix";
   const char* mu_tag = "prints a single mu-coefficient";
-  const char* pol_tag = "prints a single k-l polynomial";
+  const char* pol_tag = "prints a single Kazhdan-Lusztig polynomial";
   const char* q_tag = "exits the current mode";
   const char* qq_tag = "exits the program";
   const char* rank_tag = "resets the rank";
   const char* rcorder_tag = "prints the right cell order";
-  const char* rcells_tag = "prints out the right k-l cells";
-  const char* rcwgraphs_tag = "prints out the W-graphs of the right k-l cells";
+  const char* rcells_tag = "prints out the right Kazhdan-Lusztig cells";
+  const char* rcwgraphs_tag = "prints out the W-graphs of the right Kazhdan-Lusztig cells";
   const char* rwgraph_tag = "prints out the right W-graph";
   const char* schubert_tag = "prints out the kl data for a schubert variety";
-  const char* show_tag = "maps out the computation of a k-l polynomial";
+  const char* show_tag = "maps out the computation of a Kazhdan-Lusztig polynomial";
   const char* showmu_tag = "maps out the computation of a mu coefficient";
   const char* slocus_tag =
     "prints the rational singular locus of the Schubert variety";
@@ -163,14 +163,14 @@ namespace {
 
     const char* lcorder_tag = "prints the left cell order";
     const char* lrcorder_tag = "prints the two-sided cell order";
-    const char* lcells_tag = "prints out the left k-l cells";
-    const char* lrcells_tag = "prints out the two-sided k-l cells";
+    const char* lcells_tag = "prints out the left Kazhdan-Lusztig cells";
+    const char* lrcells_tag = "prints out the two-sided Kazhdan-Lusztig cells";
     const char* mu_tag = "prints out a mu-coefficient";
-    const char* pol_tag = "prints out a single k-l polynomial";
-    const char* rcells_tag = "prints out the right k-l cells";
+    const char* pol_tag = "prints out a single Kazhdan-Lusztig polynomial";
+    const char* rcells_tag = "prints out the right Kazhdan-Lusztig cells";
     const char* rcorder_tag = "prints the right cell order";
-  };
-};
+  }; // |namespace uneq|
+}; // |namespace|
 
 namespace commands {
   void (*default_help)() = &help::default_h;
@@ -245,7 +245,7 @@ namespace commands {
       const char* separator_tag = "resets the input separator";
       const char* symbol_tag = "resets an input symbol";
       const char* terse_tag = "sets terse conventions for input";
-    };
+    }; // |namespace in|
 
     namespace out {
       void alphabetic_f();
@@ -274,10 +274,10 @@ namespace commands {
       const char* separator_tag = "resets the output separator";
       const char* symbol_tag = "resets an output symbol";
       const char* terse_tag = "sets terse conventions for output";
-    };
-};
+    }; // |namespace out|
+  }; // |namespace interface|
 
-};
+}; // |namespace commands|
 
 /*****************************************************************************
 
@@ -290,22 +290,23 @@ namespace commands {
   with the functions that will executed for them; in other words, something
   that should be a map in STL parlance. Actually, the active command tree is
   the top of the command tree stack treeStack; exiting the current mode means
-  popping the stack; entering a new mode means pushing it on the stack.
+  popping the stack; entering a new mode means pushing it onto the stack.
 
   Each mode has an associated entry and exit function, which take care of
   initialization and clean-up duties. Actually, there is mostly one main mode;
   the entry function for this is the one which gets type and rank for the user;
   the exit function destroys the current group. Redefining type or rank means
-  exiting and re-entering the main mode. In addition, there is the "empty"
-  mode, active on startup only, where nothing is defined yet, and some
-  auxiliary modes which temporarily hide the main mode in order to perform
-  certain duties : interface mode to set the i/o preferences of the user,
-  help mode for help, and also unequal-parameter mode which sets unequal
-  parameters for the k-l functions; this is in fact a sort of duplicate
-  main mode.
+  exiting and re-entering the main mode. In addition, there is the "empty" mode,
+  active on startup only, where nothing is defined yet, and some auxiliary modes
+  which temporarily hide the main mode in order to perform certain duties :
+  interface mode to set the i/o preferences of the user, help mode for help, and
+  also unequal-parameter mode which sets unequal parameters for the
+  Kazhdan-Lusztig functions; this is in fact a sort of duplicate main mode.
 
-  Command completion is implemented to the extent that incomplete commands
-  are recognized when non-ambiguous.
+  Command completion is implemented to the extent that incomplete commands are
+  recognized when non-ambiguous. This is realized by augmenting the command
+  trees with commands for each unique prefix, sharing the pointer to the
+  |CommondCell| so that the prefix becomes an alias of the complete command.
 
  *****************************************************************************/
 
@@ -325,13 +326,7 @@ namespace commands {
 
 namespace commands {
 
-void relax_f()
-
-/*
-  Does nothing.
-*/
-
-{}
+void relax_f() {}
 
 /*
   This function runs an interactive session of the program.
@@ -342,9 +337,9 @@ void run()
 
   activate(emptyCommandTree());
 
-  if (ERRNO) {
-    Error (ERRNO);
-    return;
+  if (ERRNO) {     // if already something went wrong
+    Error (ERRNO); // report it
+    return;        // and quit program
   }
 
   while (1) { /* the only way to exit from this loop is the "qq" command */
@@ -353,7 +348,7 @@ void run()
     getInput(stdin,name);
     std::shared_ptr<commands::CommandData> cd = tree->find(name);
     if (cd == nullptr) {
-      tree->error(name.c_str());
+      tree->call_error(name.c_str());
       continue;
     }
     if (cd == ambigCommand()) {
@@ -362,11 +357,11 @@ void run()
     }
     cd->action();
     if (cd->autorepeat) {
-      tree->setAction("",cd->action);
+      tree->set_default_action(cd->action);
       tree->setRepeat("",true);
     }
     else {
-      tree->setAction("",&relax_f);
+      tree->set_default_action(&relax_f);
       tree->setRepeat("",false);
     }
   }
@@ -377,23 +372,26 @@ void run()
 void default_error(const char* str)
 {
   Error(COMMAND_NOT_FOUND,str);
-  return;
 }
 
 };
 
 namespace {
 
-void activate(CommandTree* tree)
 
 /*
   Puts the tree on top of treeStack, and executes the initialization function.
 
-*/
+  If an error occurs, report just that and return with |MODECHANGE_FAIL|
 
+  Curiously |tree| is already on the stack before |call_entry| is invoked,
+  but it probably makes little difference since the main command loot that
+  uses the stack is not visited before |call_entry| finishes.
+*/
+void activate(CommandTree* tree)
 {
   treeStack.push(tree);
-  tree->entry();
+  tree->call_entry();
 
   if (ERRNO) { /* an error occured during initialization */
     Error(ERRNO);
@@ -404,30 +402,31 @@ void activate(CommandTree* tree)
   return;
 }
 
-void ambigAction(CommandTree* tree, const std::string& str)
 
 /*
   Response to ambiguous commands. Prints a warning and the list of possible
   completions in the current tree on stderr.
 */
-
+void ambigAction(CommandTree* tree, const std::string& str)
 {
-  static std::string name;
   bool b = true;
 
   print(stderr,str);
   fprintf(stderr," : ambiguous (");
   DictCell<CommandData>* cell = tree->findCell(str);
-  name = str; // copy string to static variable
+  std::string name = str; // copy string to a variable, to lose the |const|
   dictionary::printExtensions(stderr,cell,name,b);
   fprintf(stderr,")\n");
 
   return;
 }
 
+// the error function for the empty mode pushes the main commands mode!
 void empty_error(const char* str)
-
 {
+  static auto const type_node=mainCommandTree()->find("type");
+  static auto const rank_node=mainCommandTree()->find("rank");
+
   CommandTree* tree = mainCommandTree();
 
   auto cd = tree->find(str);
@@ -444,27 +443,26 @@ void empty_error(const char* str)
     Error(ERRNO);
     return;
   }
-  /* type and rank are set at this point */
-  if ((cd != tree->find("type")) && (cd != tree->find("rank")))
+  // type and rank are already set during |activate(tree)|; skip their action
+  if ((cd != type_node) && (cd != rank_node))
     cd->action();
+
   if (cd->autorepeat) {
-    tree->setAction("",cd->action);
+    tree->set_default_action(cd->action);
     tree->setRepeat("",true);
   }
   else {
-    tree->setAction("",&relax_f);
+    tree->set_default_action(&relax_f);
     tree->setRepeat("",false);
   }
-  return;
 }
 
-void startup()
 
 /*
   The response to the first carriage return. Sets the response to "help"
   to a less verbose version, and starts up the program.
 */
-
+void startup()
 {
   activate(mainCommandTree());
 
@@ -532,27 +530,41 @@ void startup()
 
 namespace commands {
 
+
+/*
+  Initialize a command tree with the given prompt and action |a| for the
+  empty command, and call |filler| to construct the remainder of the tree.
+
+  The reason that |filler| is passed as an argument, rather than letting it be
+  called by our caller after completing the constructor, is that |CommandTree|
+  variables will be |static| inside a function |f|, so that their constructor is
+  called only once, but all following code every time that |f| is called.
+*/
+
+void help_filler(CommandTree& tree)
+{
+  tree.add("q",q_tag,&q_f,0,false);
+}
+
 CommandTree::CommandTree(const char* prompt,
 			 void (*a)(),
+			 void (*filler)(CommandTree&),
 			 void (*entry)(),
 			 void (*error)(const char*),
 			 void (*exit)(),
 			 void (*h)())
   :d_prompt(prompt), d_entry(entry), d_error(error), d_exit(exit)
-
-/*
-  Initializes a command tree with the given prompt and action for the
-  empty command.
-*/
-
 {
   d_root->ptr = std::make_shared<CommandData>("","",a,&relax_f,false);
 
-  if (h) { /* add help functionality */
-    d_help = new CommandTree("help",&cr_h,h);
-    d_help->add("q",q_tag,&q_f,0,false);
+  if (h!=nullptr) { /* add help functionality */
+    d_help = new CommandTree("help",&cr_h,&help_filler,h);
     add("help",help_tag,&help_f,&help_h,false);
   }
+  filler(*this); // add all mode-specific nodes
+  commandCompletion(root());
+  if (auto p=helpMode())
+    commandCompletion(p->root());
 }
 
 CommandTree::~CommandTree()
@@ -597,20 +609,11 @@ void CommandTree::add(const char* name, const char* tag, void (*a)(),
   }
 }
 
-void CommandTree::setAction(const char* str, void (*a)())
 
-/*
-  Assuming that str is a fullname on the command tree, sets the response
-  to str to a.
-
-  NOTE : is a bit dangerous. Should work also when str is only a prefix.
-*/
-
+// set |action| field of root node (for empty string) to |a|
+void CommandTree::set_default_action(void (*a)())
 {
-  auto cd = find(str);
-  cd->action = a;
-
-  return;
+  d_root->ptr->action = a;
 }
 
 
@@ -642,7 +645,6 @@ namespace commands {
 CommandData::CommandData(const char* str, const char* t,
 			 void (*a)(), void (*h)(), bool rep)
   :name(str), tag(t), action(a), help(h), autorepeat(rep)
-
 {
   assert(action!=nullptr);
 }
@@ -740,44 +742,43 @@ void commandCompletion(DictCell<CommandData>* cell)
   commandCompletion(cell->right);
 }
 
-template<> CommandTree* initCommandTree<Empty_tag>()
 
 /*
-  This function builds the initial command tree of the program. The idea
-  is that all commands on the main command tree will be considered entry
-  commands, and so will do the necessary initialization. This is achieved
-  thru the special error function.
+  This function builds the initial command tree of the program. The idea is that
+  all commands on the main command tree will be considered entry commands, and
+  so will do the necessary initialization. This is achieved thru the
+  |empty_error| function, since almost eny command will not be recognized in
+  empty mode, so typing it will call the mode's error function, which will then
+  install the main command mode.
+
+  Like all |initCommandTree| instances, this function should really be called
+  only once, since subsequent calls will attempt to add new functions to an
+  already complete commande tree hel in a static variable. It would be more
+  proper to have just a function that builds the tree and have the caller hold
+  the result in a static variable.
 */
-
+template<> void initCommandTree<Empty_tag>(CommandTree& tree)
 {
-  static CommandTree tree("coxeter",&startup,&relax_f,&empty_error,&relax_f,
-			  &intro_h);
-
   tree.add("author","author_tag",&author_f,&relax_f,false);
   tree.add("qq",qq_tag,&qq_f,&qq_h,false);
 
-  commandCompletion(tree.root());
-
   tree.helpMode()->add("intro",intro_tag,&intro_h,0,false);
-
-  commandCompletion(tree.helpMode()->root());
-
-  return &tree;
 }
 
-CommandTree* emptyCommandTree()
 
 /*
-  Returns a pointer to the initial command tree of the program, building it on
+  Return a pointer to the initial command tree of the program, building it on
   the first call.
 */
 
+CommandTree* emptyCommandTree()
 {
-  static CommandTree* tree = initCommandTree<Empty_tag>();
-  return tree;
+  static CommandTree empty_tree
+    ("empty",&startup,&initCommandTree<Empty_tag>,
+     &relax_f,&empty_error,&relax_f,&intro_h);
+  return &empty_tree;
 }
 
-template<> CommandTree* initCommandTree<Interface_tag>()
 
 /*
   This function builds the interface command tree; this makes available the
@@ -785,10 +786,8 @@ template<> CommandTree* initCommandTree<Interface_tag>()
   have no reason to be clogging up the main command tree.
 */
 
+template<> void initCommandTree<Interface_tag>(CommandTree& tree)
 {
-  static CommandTree tree("interface",&relax_f,&interface_entry,&default_error,
-			  &interface_exit,&interface_help);
-
   tree.add("alphabetic",commands::interface::alphabetic_tag,
 	   &commands::interface::alphabetic_f,&help::interface::alphabetic_h);
   tree.add("bourbaki",commands::interface::bourbaki_tag,
@@ -814,24 +813,15 @@ template<> CommandTree* initCommandTree<Interface_tag>()
   tree.add("q",q_tag,&q_f,0,false);
   tree.add("terse",commands::interface::out::terse_tag,
 	   &commands::interface::out::terse_f, &help::interface::out::terse_h);
-
-  commandCompletion(tree.root());
-  commandCompletion(tree.helpMode()->root());
-
-  return &tree;
 }
 
-template<> CommandTree* initCommandTree<commands::interface::In_tag>()
 
 /*
   This function builds the command tree for the input-modification mode.
 */
-
+template<> void initCommandTree<commands::interface::In_tag>(CommandTree& tree)
 {
   using namespace commands::interface;
-
-  static CommandTree tree("in",&relax_f,&in_entry,&default_error,
-			  &in_exit,&help::interface::in_help);
 
   tree.add("q",q_tag,&q_f,0,false);
 
@@ -858,24 +848,16 @@ template<> CommandTree* initCommandTree<commands::interface::In_tag>()
   tree.add("symbol",in::symbol_tag,&symbol_f,
 	   &help::interface::in::symbol_h);
   tree.add("terse",in::terse_tag,&in::terse_f,&help::interface::in::terse_h);
-
-  commandCompletion(tree.root());
-  commandCompletion(tree.helpMode()->root());
-
-  return &tree;
 }
 
-template<> CommandTree* initCommandTree<commands::interface::Out_tag>()
 
 /*
   This function builds the command tree for the output-modification mode.
 */
 
+template<> void initCommandTree<commands::interface::Out_tag>(CommandTree& tree)
 {
   using namespace commands::interface;
-
-  static CommandTree tree("out",&relax_f,&out_entry,&default_error,
-			  &out_exit,&help::interface::out_help);
 
   tree.add("q",q_tag,&q_f,0,false);
 
@@ -903,59 +885,55 @@ template<> CommandTree* initCommandTree<commands::interface::Out_tag>()
 	   &help::interface::out::symbol_h);
   tree.add("terse",out::terse_tag,&out::terse_f,
 	   &help::interface::out::terse_h);
-
-  commandCompletion(tree.root());
-  commandCompletion(tree.helpMode()->root());
-
-  return &tree;
 }
 
-};
+}; // |namespace|
 
 namespace commands {
 
-CommandTree* interface::inCommandTree()
-
-{
-  static CommandTree* tree = initCommandTree<In_tag>();
-  return tree;
-}
-
-CommandTree* interface::outCommandTree()
-
-{
-  static CommandTree* tree = initCommandTree<Out_tag>();
-  return tree;
-}
-
-CommandTree* interfaceCommandTree()
-
 /*
-  Returns a pointer to the interface command tree, building it on the first
+  Return a pointer to the interface command tree, building it on the first
   call.
 */
 
+CommandTree* interfaceCommandTree()
 {
-  static CommandTree* tree = initCommandTree<Interface_tag>();
-  return tree;
+  static CommandTree interface_tree
+    ("interface",&relax_f,&initCommandTree<Interface_tag>,
+     &interface_entry,&default_error,&interface_exit,&interface_help);
+  return &interface_tree;
 }
 
-};
+CommandTree* interface::inCommandTree()
+{
+  static CommandTree in_tree
+    ("in",&relax_f,&initCommandTree<In_tag>,
+     &in_entry,&default_error,&in_exit,&help::interface::in_help);
+  return &in_tree;
+}
+
+CommandTree* interface::outCommandTree()
+{
+  static CommandTree out_tree
+    ("out",&relax_f,&initCommandTree<Out_tag>,
+     &out_entry,&default_error,
+     &out_exit,&help::interface::out_help);
+  return &out_tree;
+}
+
+
+}; // |namespace commands|
 
 namespace {
 
-template<> CommandTree* initCommandTree<Main_tag>()
 
 /*
   This function builds the main command tree, the one that is being run on
   startup. Auxiliary trees may be grafted onto this one (thru the pushdown
   stack treeStack) by some functions needing to be in special modes.
 */
-
+template<> void initCommandTree<Main_tag>(CommandTree& tree)
 {
-  static CommandTree tree("coxeter",&relax_f,&main_entry,&default_error,
-			  &main_exit,&main_help);
-
   tree.add("author",author_tag,&author_f,&relax_f,false);
   tree.add("betti",betti_tag,&betti_f,&betti_h,false);
   tree.add("coatoms",coatoms_tag,&coatoms_f,&coatoms_h);
@@ -999,48 +977,41 @@ template<> CommandTree* initCommandTree<Main_tag>()
 
   special::addSpecialCommands(&tree);
 
-  commandCompletion(tree.root());
-
   tree.helpMode()->add("intro",intro_tag,&intro_h,0,false);
   tree.helpMode()->add("input",input_tag,&input_h,0,false);
-
-  commandCompletion(tree.helpMode()->root());
-
-  return &tree;
 }
 
 };
 
 namespace commands {
 
-CommandTree* mainCommandTree()
 
 /*
-  Returns a pointer to the main command tree of the program, building it on
+  Return a pointer to the main command tree of the program, building it on
   the first call.
 */
 
+CommandTree* mainCommandTree()
 {
-  static CommandTree* tree = initCommandTree<Main_tag>();
-  return tree;
+  static CommandTree main_tree
+    ("coxeter",&relax_f,&initCommandTree<Main_tag>,
+     &main_entry,&default_error, &main_exit,&main_help);
+  return &main_tree;
 }
 
 };
 
 namespace {
 
-template<> CommandTree* initCommandTree<Uneq_tag>()
 
 /*
   This function builds the unequal-parameter command tree. It contains
   essentially the same functions as the main command tree, except that the
-  unequal-parameter versions have been substituted for the k-l functions.
+  unequal-parameter versions have been substituted for the Kazhdan-Lusztig
+  functions.
 */
-
+template<> void initCommandTree<Uneq_tag>(CommandTree& tree)
 {
-  static CommandTree tree("uneq",&relax_f,&uneq_entry,&default_error,
-			  &uneq_exit,&uneq_help);
-
   tree.add("author",author_tag,&author_f,&relax_f,false);
   tree.add("coatoms",coatoms_tag,&coatoms_f,&coatoms_h);
   tree.add("compute",compute_tag,&compute_f,&compute_h);
@@ -1065,26 +1036,22 @@ template<> CommandTree* initCommandTree<Uneq_tag>()
 	   &help::uneq::rcorder_h,false);
   tree.add("q",q_tag,&q_f,0,false);
   tree.add("qq",qq_tag,&qq_f,&qq_h,false);
-
-  commandCompletion(tree.root());
-  commandCompletion(tree.helpMode()->root());
-
-  return &tree;
 }
 
 };
 
 namespace commands {
 
-CommandTree* uneqCommandTree()
 
 /*
-  Returns a pointer to the uneq command tree, building it on the first call.
+  Return a pointer to the uneq command tree, building it on the first call.
 */
-
+CommandTree* uneqCommandTree()
 {
-  static CommandTree* tree = initCommandTree<Uneq_tag>();
-  return tree;
+  static CommandTree uneq_tree
+    ("uneq",&relax_f,&initCommandTree<Uneq_tag>,
+     &uneq_entry,&default_error,&uneq_exit,&uneq_help);
+  return &uneq_tree;
 }
 
 };
@@ -1194,7 +1161,7 @@ namespace {
 // Print a message about the author.
 void author_f()
 {
-  printFile(stderr,"author.mess",MESSAGE_DIR);
+  printFile(stderr,"author.mess",directories::MESSAGE_DIR);
   return;
 }
 
@@ -1322,7 +1289,7 @@ void duflo_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"duflo.mess",MESSAGE_DIR);
+    printFile(stderr,"duflo.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1390,7 +1357,7 @@ void fullcontext_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"fullcontext.mess",MESSAGE_DIR);
+    printFile(stderr,"fullcontext.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1567,8 +1534,8 @@ void inorder_f()
 void invpol_f()
 
 /*
-  Response to the invpol command. This prints out a single inverse k-l
-  polynomial, without details.
+  Response to the invpol command. This prints out a single inverse
+  Kazhdan-Lusztig polynomial, without details.
 */
 
 {
@@ -1618,8 +1585,8 @@ void invpol_f()
 void klbasis_f()
 
 /*
-  Prints out one element in the k-l basis of the group, in the format
-  defined by the current output mode.
+  Prints out one element in the Kazhdan-Lusztig basis of the group, in the
+  format defined by the current output mode.
 */
 
 {
@@ -1664,7 +1631,7 @@ void lcorder_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lcorder.mess",MESSAGE_DIR);
+    printFile(stderr,"lcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1699,7 +1666,7 @@ void lcells_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",MESSAGE_DIR);
+    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1723,7 +1690,7 @@ void lcwgraphs_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",MESSAGE_DIR);
+    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1747,7 +1714,7 @@ void lrcorder_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lrcorder.mess",MESSAGE_DIR);
+    printFile(stderr,"lrcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1783,7 +1750,7 @@ void lrcells_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lrcells.mess",MESSAGE_DIR);
+    printFile(stderr,"lrcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1819,7 +1786,7 @@ void lrcwgraphs_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",MESSAGE_DIR);
+    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -1842,7 +1809,7 @@ void lrwgraph_f()
 
 {
   if (!W->isFullContext() && wgraph_warning) {
-    printFile(stderr,"wgraph.mess",MESSAGE_DIR);
+    printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
     printf("continue ? y/n\n");
     if (!yesNo())
       return;
@@ -1874,7 +1841,7 @@ void lwgraph_f()
 
 {
   if (!W->isFullContext() && wgraph_warning) {
-    printFile(stderr,"wgraph.mess",MESSAGE_DIR);
+    printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
     printf("continue ? y/n\n");
     if (!yesNo())
       return;
@@ -2016,7 +1983,7 @@ void q_f()
 
 {
   CommandTree* tree = treeStack.top();
-  tree->exit();
+  tree->call_exit();
 
   if (ERRNO) {
     Error(ERRNO);
@@ -2037,7 +2004,7 @@ void qq_f()
 {
   while(treeStack.size()) {
     CommandTree* tree = treeStack.top();
-    tree->exit();
+    tree->call_exit();
     treeStack.pop();
   }
 
@@ -2072,7 +2039,7 @@ void rcorder_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"rcorder.mess",MESSAGE_DIR);
+    printFile(stderr,"rcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2108,7 +2075,7 @@ void rcells_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"rcells.mess",MESSAGE_DIR);
+    printFile(stderr,"rcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2144,7 +2111,7 @@ void rcwgraphs_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",MESSAGE_DIR);
+    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2167,7 +2134,7 @@ void rwgraph_f()
 
 {
   if (!W->isFullContext() && wgraph_warning) {
-    printFile(stderr,"wgraph.mess",MESSAGE_DIR);
+    printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
     printf("continue ? y/n\n");
     if (!yesNo())
       return;
@@ -2195,8 +2162,8 @@ void schubert_f()
 
 /*
   Response to the schubert command. This will print out the information
-  corresponding to one element in the k-l basis, and the information on
-  the singularities of the corresponding Schubert variety, in the format
+  corresponding to one element in the Kazhdan-Lusztig basis, and the information
+  on the singularities of the corresponding Schubert variety, in the format
   popularized by Goresky.
 */
 
@@ -2429,8 +2396,8 @@ namespace uneq {
 void klbasis_f()
 
 /*
-  Prints out one element in the k-l basis of the group, in the format
-  defined by the current output mode.
+  Prints out one element in the Kazhdan-Lusztig basis of the group, in the
+  format defined by the current output mode.
 */
 
 {
@@ -2474,7 +2441,7 @@ void lcells_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",MESSAGE_DIR);
+    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2510,7 +2477,7 @@ void lcorder_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"lcorder.mess",MESSAGE_DIR);
+    printFile(stderr,"lcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2546,7 +2513,7 @@ void lrcorder_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"uneq/lrcorder.mess",MESSAGE_DIR);
+    printFile(stderr,"uneq/lrcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2582,7 +2549,7 @@ void lrcells_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"uneq/lrcells.mess",MESSAGE_DIR);
+    printFile(stderr,"uneq/lrcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2743,7 +2710,7 @@ void rcells_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"rcells.mess",MESSAGE_DIR);
+    printFile(stderr,"rcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2779,7 +2746,7 @@ void rcorder_f()
 
 {
   if (!isFiniteType(W)) {
-    printFile(stderr,"rcorder.mess",MESSAGE_DIR);
+    printFile(stderr,"rcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2994,7 +2961,7 @@ void interface::permutation_f()
   using namespace typeA;
 
   if (!isTypeA(W->type())) {
-    printFile(stderr,"permutation.mess",MESSAGE_DIR);
+    printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -3174,7 +3141,7 @@ void interface::in::permutation_f()
   using namespace typeA;
 
   if (!isTypeA(W->type())) {
-    printFile(stderr,"permutation.mess",MESSAGE_DIR);
+    printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -3369,7 +3336,7 @@ void interface::out::permutation_f()
   using namespace typeA;
 
   if (!isTypeA(W->type())) {
-    printFile(stderr,"permutation.mess",MESSAGE_DIR);
+    printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -3488,14 +3455,13 @@ void printCommands(FILE* file, CommandTree* tree)
 
 };
 
-CoxGroup* commands::currentGroup()
 
 /*
-  Returns the "current" Coxeter group.
+  Return the "current" Coxeter group.
 
   NOTE : this will probably have to be refined in the future.
 */
-
+CoxGroup* commands::currentGroup()
 {
   return W;
 }
@@ -3534,23 +3500,21 @@ void interface_exit()
   return;
 }
 
-void main_entry()
 
 /*
-  Sets the type and rank. This is used as entry function for the main mode,
+  Set |W| after getting the type and rank.
+  This is used as entry function for the main mode,
   and as the function that restarts the program when we change the type.
 
   NOTE : error handling should be done by the calling function.
 
-  NOTE : something should be done about deallocating before reallocating!
+  NOTE : something should be done about deallocating |W| before reallocating!
 */
-
+void main_entry()
 {
   W = interactive::allocCoxGroup();
 
   /* an error may be set here */
-
-  return;
 }
 
 };

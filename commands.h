@@ -33,19 +33,18 @@ namespace commands {
 /******** function declarations ********************************************/
 
 namespace commands {
-  coxgroup::CoxGroup* currentGroup();
-  void default_error(const char* str);
-  void execute();
+  coxgroup::CoxGroup* currentGroup(); // get group fixed upon main mode entry
+  void default_error(const char* str); // report |COMMAND_NOT_FOUND|
+  CommandTree* mainCommandTree(); // for ordinary computation commands
+  CommandTree* uneqCommandTree(); // for commands for unequal-parameter groups
   CommandTree* interfaceCommandTree();
-  CommandTree* mainCommandTree();
-  void printCommands(FILE* file, CommandTree* tree);
-  void relax_f();
-  void run();
-  CommandTree* uneqCommandTree();
   namespace interface {
     CommandTree* inCommandTree();
     CommandTree* outCommandTree();
   };
+  void printCommands(FILE* file, CommandTree* tree);
+  void relax_f(); // no-op, to be used as action function
+  void run();
 };
 
 /******** Type definitions *************************************************/
@@ -87,35 +86,25 @@ class CommandTree:public Dictionary<CommandData> {
   void* operator new(size_t size) {return arena().alloc(size);}
   void operator delete(void* ptr)
     {return arena().free(ptr,sizeof(CommandTree));}
-  CommandTree(const char *str, void (*action)(), void (*entry)() = &relax_f,
+  CommandTree(const char *str, void (*action)(),
+	      void (*filler)(CommandTree& tree), // function filling the tree
+	      void (*entry)() = &relax_f,
 	      void (*error)(const char*) = &default_error,
-	      void (*exit)() = &relax_f, void (*h)() = 0);
+	      void (*exit)() = &relax_f, void (*h)() = nullptr
+    );
   ~CommandTree();
 /* modifiers */
   void add(const char* name, const char* tag, void (*action)(),
 	   void (*help)() = default_help, bool rep = true);
-  void setAction(const char* str, void (*a)());
+  void set_default_action(void (*a)()); // assign |a| to |d_root->action|
   void setRepeat(const char* str, bool b);
-  void setEntry(void (*a)());                                    /* inlined */
 /* accessors */
-  void prompt() const;
-  void entry() const;                                            /* inlined */
-  void error(const char *str) const;                             /* inlined */
-  void exit() const;                                             /* inlined */
-  CommandTree* helpMode() const;                                 /* inlined */
+  void prompt() const; // print |d_prompt|
+  void call_entry() const { d_entry(); }
+  void call_error(const char *str) const { d_error(str); }
+  void call_exit() const { d_exit(); }
+  CommandTree* helpMode() const { return d_help; }
 };
-
-};
-
-/******** Inline definitions *********************************************/
-
-namespace commands {
-
-inline void CommandTree::setEntry(void (*a)()) {d_entry = a;}
-inline void CommandTree::entry() const {return d_entry();}
-inline void CommandTree::error(const char *str) const {return d_error(str);}
-inline void CommandTree::exit() const {return d_exit();}
-inline CommandTree* CommandTree::helpMode() const {return d_help;}
 
 };
 
