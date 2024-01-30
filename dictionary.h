@@ -48,19 +48,15 @@ template <class T> struct DictCell {
   DictCell *left;
   DictCell *right;
   char letter;
-  bool fullname;
-  bool uniquePrefix;
 /* constructors and destructors */
   void* operator new(size_t size) {return arena().alloc(size);}
   void operator delete(void* ptr)
     {return arena().free(ptr,sizeof(DictCell));}
-  DictCell() {/* not implemented */};
-  DictCell(char c, std::shared_ptr<T> v, bool f, bool u,
+  DictCell(char c, std::shared_ptr<T> v,
 	   DictCell *l = nullptr, DictCell *r = nullptr)
-    :ptr(v), left(l), right(r), letter(c), fullname(f), uniquePrefix(u) {};
+    :ptr(v), left(l), right(r), letter(c) {};
   ~DictCell();
-/* accessors */
-  std::shared_ptr<T> value() const {return ptr;}
+  bool has_own_action() const; // whether |ptr| defined, and not as completion
 };
 
 template <class T> class Dictionary {
@@ -75,7 +71,7 @@ template <class T> class Dictionary {
   void insert(const std::string& str, std::shared_ptr<T> value);
   void remove(const std::string& str);
 /* accessors */
-  std::shared_ptr<T> find(const std::string& str) const;
+  T* find(const std::string& str, bool& absent_action) const;
   DictCell<T>* findCell(const std::string& str) const;
   DictCell<T>* root() {return d_root;}
 };

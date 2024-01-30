@@ -41,8 +41,6 @@ namespace {
 
   void activate(CommandTree* tree); // push |tree| onto the command stack
   void ambigAction(CommandTree* tree, const std::string& str);
-  std::shared_ptr<commands::CommandData> ambigCommand();
-  void cellCompletion(DictCell<CommandData>* cell);
   void commandCompletion(DictCell<CommandData>* cell);
   void empty_error(const char* str);
   CommandTree* emptyCommandTree();
@@ -346,13 +344,14 @@ void run()
     CommandTree* tree = treeStack.top();
     tree->prompt();
     getInput(stdin,name);
-    std::shared_ptr<commands::CommandData> cd = tree->find(name);
-    if (cd == nullptr) {
-      tree->call_error(name.c_str());
+    bool ambiguous_prefix; // will be set when |find| finds cell but no action
+    CommandData* cd = tree->find(name,ambiguous_prefix);
+    if (ambiguous_prefix) {
+      ambigAction(tree,name);
       continue;
     }
-    if (cd == ambigCommand()) {
-      ambigAction(tree,name);
+    if (cd == nullptr) {
+      tree->call_error(name.c_str());
       continue;
     }
     cd->action();
@@ -424,18 +423,21 @@ void ambigAction(CommandTree* tree, const std::string& str)
 // the error function for the empty mode pushes the main commands mode!
 void empty_error(const char* str)
 {
-  static auto const type_node=mainCommandTree()->find("type");
-  static auto const rank_node=mainCommandTree()->find("rank");
+  bool ambiguous; // whether |find| finds an ambiguous prefix
+  static auto* const type_node=mainCommandTree()->find("type",ambiguous);
+  static auto* const rank_node=mainCommandTree()->find("rank",ambiguous);
+
+  assert(type_node!=nullptr and rank_node!=nullptr);
 
   CommandTree* tree = mainCommandTree();
 
-  auto cd = tree->find(str);
-  if (cd == 0) {
-    default_error(str);
+  auto cd = tree->find(str,ambiguous);
+  if (ambiguous) {
+    ambigAction(tree,str);
     return;
   }
-  if (cd == ambigCommand()) {
-    ambigAction(tree,str);
+  if (cd == nullptr) {
+    default_error(str);
     return;
   }
   activate(tree);
@@ -567,13 +569,13 @@ CommandTree::CommandTree(const char* prompt,
     commandCompletion(p->root());
 }
 
-CommandTree::~CommandTree()
 
 /*
   The memory allocated by a CommandTree object is hidden in the dictionary
   and in the d_help pointer.
 */
 
+CommandTree::~CommandTree()
 {
   delete d_help;
 }
@@ -604,7 +606,7 @@ void CommandTree::add(const char* name, const char* tag, void (*a)(),
   auto cd = std::make_shared<CommandData>(name,tag,a,h,rep);
 
   insert(std::string(name),cd);
-  if (d_help && h) { /* add help functionality */
+  if (d_help!=nullptr && h!=nullptr) { /* add help functionality */
     d_help->add(name,tag,h,0,false);
   }
 }
@@ -623,7 +625,9 @@ void CommandTree::set_default_action(void (*a)())
 */
 void CommandTree::setRepeat(const char* str, bool b)
 {
-  auto cd = find(str);
+  bool dummy;
+  auto cd = find(str,dummy);
+  assert(cd!=nullptr);
   cd->autorepeat = b;
 }
 
@@ -668,14 +672,12 @@ CommandData::~CommandData()
 
   The following functions are defined :
 
-  - ambigCommand() : returns a special value flagging ambiguous commands;
-  - cellCompletion(cell) : auxiliary to commandCompletion;
   - commandCompletion(tree) : finishes off the command tree;
-  - emptyCommandTree() : returns a pointer to the initial command tree;
   - initCommandTree<Empty_tag> : builds the empty command tree;
   - initCommandTree<Interface_tag> : builds the interface command tree;
   - initCommandTree<Main_tag> : builds the main command tree;
   - initCommandTree<Uneq_tag> : builds the command tree for unequal parameters;
+  - emptyCommandTree() : returns a pointer to the initial command tree;
   - interfaceCommandTree() : returns a pointer to the interface command tree;
   - mainCommandTree() : returns a pointer to the main command tree;
   - uneqCommandTree() : returns a pointer to the unequal-parameter command
@@ -686,62 +688,37 @@ CommandData::~CommandData()
 namespace {
 
 /*
-  Return a dummy command cell which is a placeholder indicating that
-  ambigAction must be executed; this requires knowledge of where we are
-  in the command tree.
+  For any nodes that are not in the dictionary, but that have a unique extension
+  in the dictionary, we share the action of that unique extension in the node,
+  so that typing a unique prefix will activate the dictionary entry. Somewhat
+  more generally if among the possible extensions there is one (the shortest)
+  that is a prefix of all other extensions, we share the action of that shortest
+  extension. This will not happen unless some dictionary entry is a prefix of at
+  least one other entry, which is probably not the case, but when the case does
+  apply it seems a reasonable thing to do.
+
+  This function implements this command completion method. It traverses the
+  command tree depth first, visiting the nodes in in-order. In a node for which
+  no action is initially present (so it is not a dictionary entry) but which can
+  be extended by a single letter (giving a left descendant, which was therefore
+  visited previously) we copy the action, if any, of its left descendant. If at
+  least two letters can follows no completion applies and we do nothing.
 */
-std::shared_ptr<commands::CommandData> ambigCommand()
-{
-  static auto p =  std::make_shared<CommandData>("","",&relax_f,&relax_f,false);
-  return p; // always return the same pointer value;
-}
-
-void cellCompletion(DictCell<CommandData>* cell)
-
-/*
-  This function fills in the value fields of the cells which do not
-  correspond to full names. It is assumed that the tree is traversed
-  in infix (?) order, i.e. first visit left child, then cell, the right
-  child, so that all longer names are already visited. This allows to
-  fill in unique completions backwards, making thins easy.
-*/
-
-{
-  if (cell->fullname == true)
-    return;
-
-  if (cell->uniquePrefix == false) { /* ambiguous */
-    cell->ptr = ambigCommand();
-    return;
-  }
-
-  if (cell->uniquePrefix == true) { /* unique completion */
-    cell->ptr = cell->left->value();
-    return;
-  }
-}
 
 void commandCompletion(DictCell<CommandData>* cell)
-
-/*
-  This function finishes up the command tree by implementing command
-  completion. This is done as follows. We traverse the command tree
-  from the root. If node.fullname is true, we do nothing. Otherwise,
-  if node.uniquePrefix is true, we set node.value to be equal to the
-  value of the unique completion of the string recognized by node in
-  the dictionary. If node.uniquePrefix is false, we set node.value
-  to ambigCommand().
-*/
-
 {
-  if (cell == 0)
-    return;
-
-  commandCompletion(cell->left);
-  cellCompletion(cell);
-  commandCompletion(cell->right);
+  if (cell != nullptr) // end recursion
+  {
+    commandCompletion(cell->left);
+    if (cell->ptr==nullptr) // do noting for already complete commands
+    {
+      assert(cell->left!=nullptr); // if not final, there is an extension
+      if (cell->left->right==nullptr) // then copy unique extension
+	cell->ptr = cell->left->ptr; // of |left|, if it has one
+    }
+    commandCompletion(cell->right);
+  }
 }
-
 
 /*
   This function builds the initial command tree of the program. The idea is that
@@ -3441,13 +3418,12 @@ void interface::out::terse_f()
 
 namespace commands {
 
-void printCommands(FILE* file, CommandTree* tree)
 
 /*
-  Prints one line for each command on the tree (sorted in alphabetical order)
+  Print one line for each command on the tree (sorted in alphabetical order)
   with the name of the command and the information contained in the tag field.
 */
-
+void printCommands(FILE* file, CommandTree* tree)
 {
   printCommandTree(file,tree->root()->left);
   return;
@@ -3474,8 +3450,8 @@ void printCommandTree(FILE* file, DictCell<CommandData>* cell)
   if (cell == 0)
     return;
 
-  if (cell->fullname) { /* print command info */
-    auto cd = cell->value();
+  if (cell->has_own_action()) {
+    auto cd = cell->ptr;
     fprintf(file,"  - %s : %s;\n",cd->name.c_str(),cd->tag.c_str());
   };
 

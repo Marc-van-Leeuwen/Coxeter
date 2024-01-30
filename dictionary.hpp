@@ -59,7 +59,7 @@ template <class T> DictCell<T>::~DictCell()
 */
 
 template <class T> Dictionary<T>::Dictionary()
-  : d_root(new DictCell<T>('\0',nullptr,true,false)) {}
+  : d_root(new DictCell<T>('\0',nullptr)) {}
 
 
 /*
@@ -115,15 +115,15 @@ template <class T> DictCell<T>* Dictionary<T>::findCell(const std::string& str)
 }
 
 template <class T>
-  std::shared_ptr<T> Dictionary<T>::find(const std::string& str) const
+T* Dictionary<T>::find(const std::string& str, bool& absent_action) const
 
 {
   DictCell<T>* dc = findCell(str);
 
-  if (dc)
-    return dc->value();
-  else
-    return nullptr;
+  if (dc == nullptr)
+    return absent_action=false,nullptr;
+  absent_action = dc->ptr==nullptr;
+  return dc->ptr.get();
 }
 
 
@@ -155,21 +155,17 @@ template <class T> void Dictionary<T>::insert(const std::string& str,
       p = &(*p)->right; // skip over cells with |letter<c|
     if (*p != nullptr and (*p)->letter==c) // whether a proper cell is present
     { // so far we match an existing prefix
-      (*p)->uniquePrefix = false; // is is no longer unique (if it was)
       if (final) // |str| is an existing prefix, replace any data
-      {
-	(*p)->fullname=true;
 	(*p)->ptr = value;
-      }
     }
     else // not looking at letter |c|
     {
       if (final)
-	*p = new DictCell<T>(c,value,true,false,nullptr,*p);
+	*p = new DictCell<T>(c,value,nullptr,*p);
       // having the |uniquePrefix| argument be |false| seems wrong here, but
       // the convention appears to be |fullname| implies |not uniquePrefix|
       else
-	*p = new DictCell<T>(c,nullptr,false,true,nullptr,*p);
+	*p = new DictCell<T>(c,nullptr,nullptr,*p);
     } // |if (letter==c)|
     p = &(*p)->left; // either way continue with left link for this cell
 
@@ -192,6 +188,14 @@ template <class T> void Dictionary<T>::remove(const std::string& str)
 
 namespace dictionary {
 
+template <class T>
+bool DictCell<T>::has_own_action() const
+{ if (ptr==nullptr)
+    return false;
+  if (left==nullptr)
+    return true;
+  return (left->ptr!=ptr);
+}
 
 /*
   This function prints to |file| all the possible extensions of the string
@@ -210,7 +214,7 @@ template <class T>
        cell = cell->right) // walk down right-list of left subtree
   {
     name.push_back(cell->letter);
-    if (cell->fullname) { // print prefix for current cell
+    if (cell->has_own_action()) { // print prefix for current cell
       if (first) /* first time a name is found */
 	first = false;
       else
