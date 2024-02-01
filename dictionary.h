@@ -56,6 +56,7 @@ template <class T> struct DictCell {
 	   DictCell *l = nullptr, DictCell *r = nullptr)
     :ptr(v), left(l), right(r), letter(c) {};
   ~DictCell();
+  void make_complete(); // install completions dwonwards
   bool has_own_action() const; // whether |ptr| defined, and not as completion
 };
 
@@ -70,10 +71,11 @@ template <class T> class Dictionary {
 /* modifiers */
   void insert(const std::string& str, std::shared_ptr<T> value);
   void remove(const std::string& str);
+  void install_command_completion() { d_root->make_complete(); };
 /* accessors */
-  T* find(const std::string& str, bool& absent_action) const;
-  DictCell<T>* findCell(const std::string& str) const;
-  DictCell<T>* root() {return d_root;}
+  T* find (const std::string& str, bool& absent_action) const;
+  DictCell<T>* findCell (const std::string& str) const;
+  DictCell<T>* root() const { return d_root; }
 };
 
 };

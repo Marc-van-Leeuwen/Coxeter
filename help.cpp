@@ -40,7 +40,7 @@ void main_help()
   using namespace commands;
 
   printFile(stderr,"main.help1",MESSAGE_DIR);
-  printCommands(stderr,mainCommandTree()->helpMode());
+  printCommands(stderr,*mainCommandTree()->helpMode());
   printFile(stderr,"main.help2",MESSAGE_DIR);
 
   return;
@@ -52,7 +52,7 @@ void interface_help()
   using namespace commands;
 
   printFile(stderr,"interface_m.help1",MESSAGE_DIR);
-  printCommands(stderr,interfaceCommandTree()->helpMode());
+  printCommands(stderr,*interfaceCommandTree()->helpMode());
   printFile(stderr,"interface_m.help2",MESSAGE_DIR);
 
   return;
@@ -66,7 +66,7 @@ void in_help()
   using namespace commands;
 
   printFile(stderr,"interface/in_m.help1",MESSAGE_DIR);
-  printCommands(stderr,commands::interface::inCommandTree()->helpMode());
+  printCommands(stderr,*commands::interface::inCommandTree()->helpMode());
   printFile(stderr,"interface/in_m.help2",MESSAGE_DIR);
 
   return;
@@ -78,7 +78,7 @@ void out_help()
   using namespace commands;
 
   printFile(stderr,"interface/out_m.help1",MESSAGE_DIR);
-  printCommands(stderr,commands::interface::outCommandTree()->helpMode());
+  printCommands(stderr,*commands::interface::outCommandTree()->helpMode());
   printFile(stderr,"interface/out_m.help2",MESSAGE_DIR);
 
   return;
@@ -92,7 +92,7 @@ void uneq_help()
   using namespace commands;
 
   printFile(stderr,"uneq.help1",MESSAGE_DIR);
-  printCommands(stderr,uneqCommandTree()->helpMode());
+  printCommands(stderr,*uneqCommandTree()->helpMode());
   printFile(stderr,"uneq.help2",MESSAGE_DIR);
 
   return;
@@ -289,7 +289,7 @@ void interface_h()
   using namespace commands;
 
   printFile(stderr,"interface.help",MESSAGE_DIR);
-  printCommands(stderr,interfaceCommandTree()->helpMode());
+  printCommands(stderr,*interfaceCommandTree()->helpMode());
   fprintf(stderr,"\n");
   return;
 }
@@ -307,7 +307,7 @@ void intro_h()
   using namespace commands;
 
   printFile(stderr,"empty_m.help1",MESSAGE_DIR);
-  printCommands(stderr,mainCommandTree()->helpMode());
+  printCommands(stderr,*mainCommandTree()->helpMode());
   printFile(stderr,"empty_m.help2",MESSAGE_DIR);
 
   return;

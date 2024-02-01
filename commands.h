@@ -42,7 +42,7 @@ namespace commands {
     CommandTree* inCommandTree();
     CommandTree* outCommandTree();
   };
-  void printCommands(FILE* file, CommandTree* tree);
+  void printCommands(FILE* file, const CommandTree& tree);
   void relax_f(); // no-op, to be used as action function
   void run();
 };
@@ -103,7 +103,7 @@ class CommandTree:public Dictionary<CommandData> {
   void call_entry() const { d_entry(); }
   void call_error(const char *str) const { d_error(str); }
   void call_exit() const { d_exit(); }
-  CommandTree* helpMode() const { return d_help; }
+  CommandTree* helpMode() const { return d_help; } // may return |nullptr|
 };
 
 };

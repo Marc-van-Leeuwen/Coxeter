@@ -172,21 +172,35 @@ template <class T> void Dictionary<T>::insert(const std::string& str,
   } // |for(c:str)|
 }
 
-template <class T> void Dictionary<T>::remove(const std::string& str)
 
 /*
   Not implemented.
 */
-
+template <class T> void Dictionary<T>::remove(const std::string& str)
 {}
 
-};
+}; // |namespace dictionary|
 
 
 
 /****** Auxiliary functions ************************************************/
 
 namespace dictionary {
+
+template <class T>
+  void DictCell<T>::make_complete()
+{
+  if (left!=nullptr)
+    left->make_complete();
+  if (ptr==nullptr) // do nothing for prefixes that already have an action
+  {
+     assert(left!=nullptr); // if not final, there is an extension
+     if (left->right==nullptr) // then there is a unique extension letter
+       ptr = left->ptr; // copy its action here (or nothing, if ambiguous)
+  }
+  if (right!=nullptr)
+    right->make_complete();
+}
 
 template <class T>
 bool DictCell<T>::has_own_action() const

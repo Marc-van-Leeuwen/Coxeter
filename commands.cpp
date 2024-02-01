@@ -39,14 +39,13 @@ namespace {
   Stack<CommandTree *> treeStack;
   CoxGroup* W = 0;
 
-  void activate(CommandTree* tree); // push |tree| onto the command stack
+  void activate(CommandTree& tree); // push |tree| onto the command stack
   void ambigAction(CommandTree* tree, const std::string& str);
-  void commandCompletion(DictCell<CommandData>* cell);
   void empty_error(const char* str);
   CommandTree* emptyCommandTree();
   template<class C> // C is just a tag to select one of these functions
     void initCommandTree(CommandTree&); // command initialization functions
-  void printCommandTree(FILE* file, DictCell<CommandData>* cell);
+  void printCommandTree(FILE* file, const DictCell<CommandData>* cell);
   void startup();
 
   void interface_entry();
@@ -333,7 +332,7 @@ void run()
 {
   static std::string name;
 
-  activate(emptyCommandTree());
+  activate(*emptyCommandTree());
 
   if (ERRNO) {     // if already something went wrong
     Error (ERRNO); // report it
@@ -387,18 +386,16 @@ namespace {
   but it probably makes little difference since the main command loot that
   uses the stack is not visited before |call_entry| finishes.
 */
-void activate(CommandTree* tree)
+void activate(CommandTree& tree)
 {
-  treeStack.push(tree);
-  tree->call_entry();
+  treeStack.push(&tree);
+  tree.call_entry();
 
   if (ERRNO) { /* an error occured during initialization */
     Error(ERRNO);
     treeStack.pop();
     ERRNO = MODECHANGE_FAIL;
   }
-
-  return;
 }
 
 
@@ -416,8 +413,6 @@ void ambigAction(CommandTree* tree, const std::string& str)
   std::string name = str; // copy string to a variable, to lose the |const|
   dictionary::printExtensions(stderr,cell,name,b);
   fprintf(stderr,")\n");
-
-  return;
 }
 
 // the error function for the empty mode pushes the main commands mode!
@@ -440,7 +435,7 @@ void empty_error(const char* str)
     default_error(str);
     return;
   }
-  activate(tree);
+  activate(*tree);
   if (ERRNO) { /* something went wrong during initialization */
     Error(ERRNO);
     return;
@@ -466,12 +461,10 @@ void empty_error(const char* str)
 */
 void startup()
 {
-  activate(mainCommandTree());
+  activate(*mainCommandTree());
 
   if (ERRNO)
     Error(ERRNO);
-
-  return;
 }
 
 };
@@ -489,7 +482,7 @@ void startup()
   Recognizing initial subwords allows for command completion : when the
   completion is unique, the command is executed as if the full name were
   typed. When the completion is not unique, the function for ambiguous
-  commands is executed : as defined here, it prints the list of all possible
+  commands is executed: as defined here, it prints the list of all possible
   completions in the current tree, and prompts the user again.
 
   The case of the empty command is special : either it does nothing, or,
@@ -564,9 +557,9 @@ CommandTree::CommandTree(const char* prompt,
     add("help",help_tag,&help_f,&help_h,false);
   }
   filler(*this); // add all mode-specific nodes
-  commandCompletion(root());
-  if (auto p=helpMode())
-    commandCompletion(p->root());
+  install_command_completion();
+  if (auto* p=helpMode())
+    p->install_command_completion();
 }
 
 
@@ -686,39 +679,6 @@ CommandData::~CommandData()
  *****************************************************************************/
 
 namespace {
-
-/*
-  For any nodes that are not in the dictionary, but that have a unique extension
-  in the dictionary, we share the action of that unique extension in the node,
-  so that typing a unique prefix will activate the dictionary entry. Somewhat
-  more generally if among the possible extensions there is one (the shortest)
-  that is a prefix of all other extensions, we share the action of that shortest
-  extension. This will not happen unless some dictionary entry is a prefix of at
-  least one other entry, which is probably not the case, but when the case does
-  apply it seems a reasonable thing to do.
-
-  This function implements this command completion method. It traverses the
-  command tree depth first, visiting the nodes in in-order. In a node for which
-  no action is initially present (so it is not a dictionary entry) but which can
-  be extended by a single letter (giving a left descendant, which was therefore
-  visited previously) we copy the action, if any, of its left descendant. If at
-  least two letters can follows no completion applies and we do nothing.
-*/
-
-void commandCompletion(DictCell<CommandData>* cell)
-{
-  if (cell != nullptr) // end recursion
-  {
-    commandCompletion(cell->left);
-    if (cell->ptr==nullptr) // do noting for already complete commands
-    {
-      assert(cell->left!=nullptr); // if not final, there is an extension
-      if (cell->left->right==nullptr) // then copy unique extension
-	cell->ptr = cell->left->ptr; // of |left|, if it has one
-    }
-    commandCompletion(cell->right);
-  }
-}
 
 /*
   This function builds the initial command tree of the program. The idea is that
@@ -1139,7 +1099,6 @@ namespace {
 void author_f()
 {
   printFile(stderr,"author.mess",directories::MESSAGE_DIR);
-  return;
 }
 
 void betti_f()
@@ -1169,8 +1128,6 @@ void betti_f()
 
   OutputTraits& traits = W->outputTraits();
   printBetti(stdout,y,W->schubert(),traits);
-
-  return;
 }
 
 void coatoms_f()
@@ -1197,8 +1154,6 @@ void coatoms_f()
     W->print(stdout,c[j]);
     printf("\n");
   }
-
-  return;
 }
 
 void compute_f()
@@ -1227,8 +1182,6 @@ void compute_f()
   if (x != undef_coxnbr)
     printf(" (%s%lu)","%",static_cast<Ulong>(x));
   printf("\n");
-
-  return;
 }
 
 void descent_f()
@@ -1254,8 +1207,6 @@ void descent_f()
   f = W->rdescent(g);
   W->printFlags(stdout,f);
   printf("\n");
-
-  return;
 }
 
 void duflo_f()
@@ -1289,8 +1240,6 @@ void duflo_f()
 
   printHeader(file.f(),dufloH,traits);
   printDuflo(file.f(),Wf->duflo(),Wf->lCell(),Wf->kl(),W->interface(),traits);
-
-  return;
 }
 
 void extremals_f()
@@ -1321,8 +1270,6 @@ void extremals_f()
 
   printHeader(file.f(),extremalsH,traits);
   printExtremals(file.f(),y,W->kl(),W->interface(),traits);
-
-  return;
 }
 
 void fullcontext_f()
@@ -1344,19 +1291,13 @@ void fullcontext_f()
   if (ERRNO) {
     Error(ERRNO);
   }
-
-  return;
 }
 
+
+// Response to the help command.
 void help_f()
-
-/*
-  Response to the help command.
-*/
-
 {
-  activate(treeStack.top()->helpMode());
-  return;
+  activate(*treeStack.top()->helpMode());
 }
 
 void ihbetti_f()
@@ -1383,8 +1324,6 @@ void ihbetti_f()
 
   OutputTraits& traits = W->outputTraits();
   printIHBetti(stdout,y,W->kl(),traits);
-
-  return;
 }
 
 void interface_f()
@@ -1394,8 +1333,7 @@ void interface_f()
 */
 
 {
-  activate(interfaceCommandTree());
-  return;
+  activate(*interfaceCommandTree());
 }
 
 void interval_f()
@@ -1457,8 +1395,6 @@ void interval_f()
     W->print(file.f(),res[a[j]]);
     fprintf(file.f(),"\n");
   }
-
-  return;
 }
 
 void inorder_f()
@@ -1555,8 +1491,6 @@ void invpol_f()
 
   print(stdout,pol,"q");
   printf("\n");
-
-  return;
 }
 
 void klbasis_f()
@@ -1595,8 +1529,6 @@ void klbasis_f()
 
   printHeader(file.f(),basisH,traits);
   printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
-
-  return;
 }
 
 void lcorder_f()
@@ -1631,8 +1563,6 @@ void lcorder_f()
 
   printHeader(file.f(),lCOrderH,traits);
   printLCOrder(file.f(),Wf->kl(),Wf->interface(),traits);
-
-  return;
 }
 
 void lcells_f()
@@ -1654,8 +1584,6 @@ void lcells_f()
 
   printHeader(file.f(),lCellsH,traits);
   printLCells(file.f(),Wf->lCell(),Wf->kl(),Wf->interface(),traits);
-
-  return;
 }
 
 void lcwgraphs_f()
@@ -1678,8 +1606,6 @@ void lcwgraphs_f()
 
   printHeader(file.f(),lCellWGraphsH,traits);
   printLCellWGraphs(file.f(),Wf->lCell(),Wf->kl(),W->interface(),traits);
-
-  return;
 }
 
 void lrcorder_f()
@@ -1714,8 +1640,6 @@ void lrcorder_f()
 
   printHeader(file.f(),lrCOrderH,traits);
   printLRCOrder(file.f(),Wf->kl(),Wf->interface(),traits);
-
-  return;
 }
 
 void lrcells_f()
@@ -1750,8 +1674,6 @@ void lrcells_f()
 
   printHeader(file.f(),lrCellsH,traits);
   printLRCells(file.f(),Wf->lrCell(),Wf->kl(),Wf->interface(),traits);
-
-  return;
 }
 
 void lrcwgraphs_f()
@@ -1774,8 +1696,6 @@ void lrcwgraphs_f()
 
   printHeader(file.f(),lrCellWGraphsH,traits);
   printLRCellWGraphs(file.f(),Wf->lrCell(),Wf->kl(),W->interface(),traits);
-
-  return;
 }
 
 void lrwgraph_f()
@@ -1806,8 +1726,6 @@ void lrwgraph_f()
 
   printHeader(file.f(),lrWGraphH,traits);
   printLRWGraph(file.f(),W->kl(),W->interface(),traits);
-
-  return;
 }
 
 void lwgraph_f()
@@ -1838,8 +1756,6 @@ void lwgraph_f()
 
   printHeader(file.f(),lWGraphH,traits);
   printLWGraph(file.f(),W->kl(),W->interface(),traits);
-
-  return;
 }
 
 void matrix_f()
@@ -1850,8 +1766,6 @@ void matrix_f()
 
 {
   interactive::printMatrix(stdout,W);
-
-  return;
 }
 
 void mu_f()
@@ -1896,8 +1810,6 @@ void mu_f()
   }
 
   printf("%lu\n",static_cast<Ulong>(mu));
-
-  return;
 }
 
 void pol_f()
@@ -1947,8 +1859,6 @@ void pol_f()
 
   print(stdout,pol,"q");
   printf("\n");
-
-  return;
 }
 
 void q_f()
@@ -1968,8 +1878,6 @@ void q_f()
   }
 
   treeStack.pop();
-
-  return;
 }
 
 void qq_f()
@@ -2003,8 +1911,6 @@ void rank_f()
   else {
     W = Wloc;
   }
-
-  return;
 }
 
 void rcorder_f()
@@ -2039,8 +1945,6 @@ void rcorder_f()
 
   printHeader(file.f(),rCOrderH,traits);
   printRCOrder(file.f(),Wf->kl(),Wf->interface(),traits);
-
-  return;
 }
 
 void rcells_f()
@@ -2075,8 +1979,6 @@ void rcells_f()
 
   printHeader(file.f(),rCellsH,traits);
   printRCells(file.f(),Wf->rCell(),Wf->kl(),Wf->interface(),traits);
-
-  return;
 }
 
 void rcwgraphs_f()
@@ -2099,8 +2001,6 @@ void rcwgraphs_f()
 
   printHeader(file.f(),rCellWGraphsH,traits);
   printRCellWGraphs(file.f(),Wf->rCell(),Wf->kl(),W->interface(),traits);
-
-  return;
 }
 
 void rwgraph_f()
@@ -2131,8 +2031,6 @@ void rwgraph_f()
 
   printHeader(file.f(),rWGraphH,traits);
   printRWGraph(file.f(),W->kl(),W->interface(),traits);
-
-  return;
 }
 
 void schubert_f()
@@ -2165,8 +2063,6 @@ void schubert_f()
 
   printHeader(file.f(),closureH,traits);
   printClosure(file.f(),y,W->kl(),W->interface(),traits);
-
-  return;
 }
 
 void show_f()
@@ -2220,8 +2116,6 @@ void show_f()
 
   interactive::OutputFile file;
   showKLPol(file.f(),W->kl(),x,y,W->interface(),s);
-
-  return;
 }
 
 void showmu_f()
@@ -2267,8 +2161,6 @@ void showmu_f()
 
   interactive::OutputFile file;
   showMu(file.f(),W->kl(),x,y,W->interface());
-
-  return;
 }
 
 void slocus_f ()
@@ -2299,8 +2191,6 @@ void slocus_f ()
 
   printHeader(file.f(),slocusH,traits);
   printSingularLocus(file.f(),y,W->kl(),W->interface(),traits);
-
-  return;
 }
 
 void sstratification_f ()
@@ -2331,8 +2221,6 @@ void sstratification_f ()
 
   printHeader(file.f(),sstratificationH,traits);
   printSingularStratification(file.f(),y,W->kl(),W->interface(),traits);
-
-  return;
 }
 
 void type_f()
@@ -2353,8 +2241,6 @@ void type_f()
     wgraph_warning = true;
     W = Wloc;
   }
-
-  return;
 }
 
 void uneq_f()
@@ -2364,8 +2250,7 @@ void uneq_f()
 */
 
 {
-  activate(uneqCommandTree());
-  return;
+  activate(*uneqCommandTree());
 }
 
 namespace uneq {
@@ -2406,8 +2291,6 @@ void klbasis_f()
 
   printHeader(file.f(),basisH,traits);
   printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
-
-  return;
 }
 
 void lcells_f()
@@ -2441,8 +2324,6 @@ void lcells_f()
 
   printHeader(file.f(),lCellsH,traits);
   printLCells(file.f(),Wf->lUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
-
-  return;
 }
 
 void lcorder_f()
@@ -2477,8 +2358,6 @@ void lcorder_f()
 
   printHeader(file.f(),lCOrderH,traits);
   printLCOrder(file.f(),Wf->uneqkl(),Wf->interface(),traits);
-
-  return;
 }
 
 void lrcorder_f()
@@ -2513,8 +2392,6 @@ void lrcorder_f()
 
   printHeader(file.f(),lrCOrderH,traits);
   printLRCOrder(file.f(),Wf->uneqkl(),Wf->interface(),traits);
-
-  return;
 }
 
 void lrcells_f()
@@ -2549,8 +2426,6 @@ void lrcells_f()
 
   printHeader(file.f(),lrCellsH,traits);
   printLRCells(file.f(),Wf->lrUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
-
-  return;
 }
 
 void mu_f()
@@ -2624,8 +2499,6 @@ void mu_f()
 
   print(stdout,mu,"v");
   printf("\n");
-
-  return;
 }
 
 void pol_f()
@@ -2674,8 +2547,6 @@ void pol_f()
 
   print(stdout,pol,"q");
   printf("\n");
-
-  return;
 }
 
 void rcells_f()
@@ -2710,8 +2581,6 @@ void rcells_f()
 
   printHeader(file.f(),rCellsH,traits);
   printRCells(file.f(),Wf->rUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
-
-  return;
 }
 
 void rcorder_f()
@@ -2746,8 +2615,6 @@ void rcorder_f()
 
   printHeader(file.f(),rCOrderH,traits);
   printRCOrder(file.f(),Wf->uneqkl(),Wf->interface(),traits);
-
-  return;
 }
 
 };
@@ -2767,8 +2634,6 @@ void interface::abort_f()
   delete in_buf;
   in_buf = 0;
   treeStack.pop();
-
-  return;
 }
 
 void interface::alphabetic_f()
@@ -2784,8 +2649,6 @@ void interface::alphabetic_f()
   in_buf = new GroupEltInterface(W->rank(),Alphabetic());
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
-
-  return;
 }
 
 void interface::bourbaki_f()
@@ -2807,8 +2670,6 @@ void interface::bourbaki_f()
   in_buf = new GroupEltInterface(W->interface().outInterface());
   out::bourbaki_f();
   W->interface().setOut(*in_buf);
-
-  return;
 }
 
 void interface::decimal_f()
@@ -2824,8 +2685,6 @@ void interface::decimal_f()
   in_buf = new GroupEltInterface(W->rank(),Decimal());
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
-
-  return;
 }
 
 void interface::default_f()
@@ -2846,8 +2705,6 @@ void interface::default_f()
   W->interface().setOrder(identityOrder(W->rank()));
   W->interface().setDescent(Default());
   W->setOutputTraits(Pretty());
-
-  return;
 }
 
 void interface::gap_f()
@@ -2871,8 +2728,6 @@ void interface::gap_f()
   W->interface().setOut(*in_buf);
   W->interface().setDescent(GAP());
   W->setOutputTraits(GAP());
-
-  return;
 }
 
 void interface::hexadecimal_f()
@@ -2889,15 +2744,12 @@ void interface::hexadecimal_f()
   W->interface().setIn(*in_buf);
 
   W->interface().setOut(*in_buf);
-
-  return;
 }
 
 void interface::in_f()
 
 {
-  activate(inCommandTree());
-  return;
+  activate(*inCommandTree());
 }
 
 void interface::ordering_f()
@@ -2917,15 +2769,12 @@ void interface::ordering_f()
   }
 
   W->setOrdering(in_order);
-
-  return;
 }
 
 void interface::out_f()
 
 {
-  activate(outCommandTree());
-  return;
+  activate(*outCommandTree());
 }
 
 void interface::permutation_f()
@@ -2950,8 +2799,6 @@ void interface::permutation_f()
   W->interface().setOrder(identityOrder(W->rank()));
   W->interface().setDescent(Default());
   W->setOutputTraits(Pretty());
-
-  return;
 }
 
 
@@ -2986,8 +2833,6 @@ void interface::symbol_f()
   printf("enter the new symbol (finish with a carriage return):\n");
   getInput(stdin,buf,0);
   in_buf->setSymbol(s,buf);
-
-  return;
 }
 
 void interface::terse_f()
@@ -3007,8 +2852,6 @@ void interface::terse_f()
 
   W->interface().setDescent(Default());
   W->setOutputTraits(Terse());
-
-  return;
 }
 
 void interface::in::alphabetic_f()
@@ -3023,8 +2866,6 @@ void interface::in::alphabetic_f()
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = alpha[j];
   }
-
-  return;
 }
 
 void interface::in::bourbaki_f()
@@ -3045,8 +2886,6 @@ void interface::in::bourbaki_f()
   for (Generator s = 0; s < W->rank(); ++s) {
     in_buf->symbol[s] = W->interface().inSymbol(W->rank()-s-1);
   }
-
-  return;
 }
 
 void interface::in::decimal_f()
@@ -3061,8 +2900,6 @@ void interface::in::decimal_f()
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = dec[j];
   }
-
-  return;
 }
 
 void interface::in::default_f()
@@ -3074,8 +2911,6 @@ void interface::in::default_f()
 {
   delete in_buf;
   in_buf = new GroupEltInterface(W->rank());
-
-  return;
 }
 
 void interface::in::gap_f()
@@ -3088,8 +2923,6 @@ void interface::in::gap_f()
   delete in_buf;
   in_buf = new GroupEltInterface(W->rank(),GAP());
   in::bourbaki_f();
-
-  return;
 }
 
 void interface::in::hexadecimal_f()
@@ -3104,8 +2937,6 @@ void interface::in::hexadecimal_f()
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = hex[j];
   }
-
-  return;
 }
 
 void interface::in::permutation_f()
@@ -3127,8 +2958,6 @@ void interface::in::permutation_f()
 
   delete in_buf;
   in_buf = 0;
-
-  return;
 }
 
 void interface::in::postfix_f()
@@ -3142,7 +2971,6 @@ void interface::in::postfix_f()
   std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
-  return;
 }
 
 void interface::in::prefix_f()
@@ -3156,7 +2984,6 @@ void interface::in::prefix_f()
   std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
-  return;
 }
 
 void interface::in::separator_f()
@@ -3170,7 +2997,6 @@ void interface::in::separator_f()
   std::string buf;
   getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
-  return;
 }
 
 void interface::in::terse_f()
@@ -3182,8 +3008,6 @@ void interface::in::terse_f()
 {
   delete in_buf;
   in_buf = new GroupEltInterface(W->rank(),GAP());
-
-  return;
 }
 
 void interface::out::alphabetic_f()
@@ -3198,8 +3022,6 @@ void interface::out::alphabetic_f()
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = alpha[j];
   }
-
-  return;
 }
 
 void interface::out::bourbaki_f()
@@ -3231,8 +3053,6 @@ void interface::out::bourbaki_f()
   }
 
   W->setOrdering(a);
-
-  return;
 }
 
 void interface::out::decimal_f()
@@ -3247,8 +3067,6 @@ void interface::out::decimal_f()
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = dec[j];
   }
-
-  return;
 }
 
 void interface::out::default_f()
@@ -3263,8 +3081,6 @@ void interface::out::default_f()
   W->setOrdering(identityOrder(W->rank()));
 
   W->setOutputTraits(Pretty());
-
-  return;
 }
 
 void interface::out::gap_f()
@@ -3283,8 +3099,6 @@ void interface::out::gap_f()
   W->interface().setOut(*in_buf); // has to be done here so that output traits
                                   // will be correct.
   W->setOutputTraits(GAP());
-
-  return;
 }
 
 void interface::out::hexadecimal_f()
@@ -3299,8 +3113,6 @@ void interface::out::hexadecimal_f()
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = hex[j];
   }
-
-  return;
 }
 
 void interface::out::permutation_f()
@@ -3327,8 +3139,6 @@ void interface::out::permutation_f()
 
   delete in_buf;
   in_buf = 0;
-
-  return;
 }
 
 void interface::out::postfix_f()
@@ -3342,7 +3152,6 @@ void interface::out::postfix_f()
   std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
-  return;
 }
 
 void interface::out::prefix_f()
@@ -3356,7 +3165,6 @@ void interface::out::prefix_f()
   std::string buf;
   getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
-  return;
 }
 
 void interface::out::separator_f()
@@ -3370,7 +3178,6 @@ void interface::out::separator_f()
   std::string buf;
   getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
-  return;
 }
 
 void interface::out::terse_f()
@@ -3387,8 +3194,6 @@ void interface::out::terse_f()
   W->interface().setOut(*in_buf); // has to be done here so that output
                                   // traits will be correct
   W->setOutputTraits(Terse());
-
-  return;
 }
 
 };
@@ -3423,10 +3228,9 @@ namespace commands {
   Print one line for each command on the tree (sorted in alphabetical order)
   with the name of the command and the information contained in the tag field.
 */
-void printCommands(FILE* file, CommandTree* tree)
+void printCommands(FILE* file, const CommandTree& tree)
 {
-  printCommandTree(file,tree->root()->left);
-  return;
+  printCommandTree(file,tree.root()->left);
 }
 
 };
@@ -3444,7 +3248,7 @@ CoxGroup* commands::currentGroup()
 
 namespace {
 
-void printCommandTree(FILE* file, DictCell<CommandData>* cell)
+void printCommandTree(FILE* file, const DictCell<CommandData>* cell)
 
 {
   if (cell == 0)
@@ -3457,15 +3261,12 @@ void printCommandTree(FILE* file, DictCell<CommandData>* cell)
 
   printCommandTree(file,cell->left);
   printCommandTree(file,cell->right);
-
-  return;
 }
 
 void interface_entry()
 
 {
   commands::interface::in_buf = new GroupEltInterface(W->rank());
-  return;
 }
 
 void interface_exit()
@@ -3473,7 +3274,6 @@ void interface_exit()
 {
   delete commands::interface::in_buf;
   commands::interface::in_buf = 0;
-  return;
 }
 
 
@@ -3513,8 +3313,6 @@ void interface::in_entry()
   printf("\n");
 
   in_buf = new GroupEltInterface(W->interface().inInterface());
-
-  return;
 }
 
 void interface::in_exit()
@@ -3568,7 +3366,6 @@ void interface::in_exit()
 
  error_exit:
   ERRNO = ERROR_WARNING;
-  return;
 }
 
 void interface::out_entry()
@@ -3588,8 +3385,6 @@ void interface::out_entry()
   printf("current output symbols are the following :\n\n");
   printInterface(stdout,*in_buf,W->interface().inInterface(),a);
   printf("\n");
-
-  return;
 }
 
 void interface::out_exit()
@@ -3611,8 +3406,6 @@ void interface::out_exit()
   printf("\n");
 
   W->interface().setOut(*in_buf);
-
-  return;
 }
 
 };
@@ -3628,25 +3421,20 @@ void main_exit()
 {
   delete W;
   wgraph_warning = true;
-  return;
 }
 
 void uneq_entry()
 
 {
   W->activateUEKL();
-  return;
 }
 
-void uneq_exit()
 
 /*
   We keep the unequal-parameter context, because one might want to go back
-  and forth between the unequal and the ordinary case.
+  and forth between the unequal and the ordinary case. So exit is a no-op
 */
-
-{
-  return;
-}
+void uneq_exit()
+{}
 
 };
