@@ -10,6 +10,7 @@
 
 #include <string>
 #include "globals.h"
+#include "sl_list.h"
 
 namespace dictionary {
   using namespace globals;
@@ -18,8 +19,8 @@ namespace dictionary {
 /******** type declarations *************************************************/
 
 namespace dictionary {
-  template <class T> class Dictionary;
-  template <class T> struct DictCell;
+  template <typename T> class Dictionary;
+  template <typename T> struct DictCell;
 };
 
 #include "memory.h"
@@ -34,7 +35,7 @@ namespace dictionary {
 /******** function declarations *********************************************/
 
 namespace dictionary {
-  template <class T>
+  template <typename T>
     void printExtensions(FILE* file, DictCell<T>* cell, std::string& name,
 			 bool& first, const char* sep = ",");
 };
@@ -43,7 +44,7 @@ namespace dictionary {
 
 namespace dictionary {
 
-template <class T> struct DictCell {
+template <typename T> struct DictCell {
   std::shared_ptr<T> ptr;
   DictCell *left;
   DictCell *right;
@@ -60,7 +61,58 @@ template <class T> struct DictCell {
   bool has_own_action() const; // whether |ptr| defined, and not as completion
 };
 
-template <class T> class Dictionary {
+template <typename T>
+  class dict_const_iterator
+  : public std::iterator<std::forward_iterator_tag, T, unsigned long>
+{
+  // data
+  DictCell<T>* p;
+  containers::stack<DictCell<T>*> stack;
+
+  using self = dict_const_iterator<T>;
+
+public:
+  dict_const_iterator() : p(nullptr), stack() {} // end indicator
+  explicit dict_const_iterator(const DictCell<T>* ptr)
+    : p(const_cast<DictCell<T>*> (ptr)), stack() {}
+
+  // contents access methods; return |const| ref/ptr for |const_iterator|
+  const DictCell<T>& operator*()  const { return *p; }
+  const DictCell<T>* operator->() const { return p; }
+
+  // equality testing methods: test addresses of cells pointed to
+  bool operator==(const self& x) const { return p == x.p; }
+  bool operator!=(const self& x) const { return p != x.p; }
+
+  self operator++()
+  { if (p->left!=nullptr)
+    {
+      stack.push(p);
+      p=p->left;
+      return *this;
+    }
+    while (not stack.empty() and p->right==nullptr)
+    {
+      p=stack.top();
+      stack.pop();
+    }
+    if (p->right==nullptr) // which implies |stack.empty|
+    {
+      p=nullptr; // indicates we are at the end
+      return *this;
+    }
+    p=p->right;
+    return *this;
+  }
+
+  self operator++(int)
+  { auto old = *this;
+    operator++;
+    return old;
+  }
+};
+
+template <typename T> class Dictionary {
 
  protected:
   DictCell<T>* d_root;
@@ -76,6 +128,11 @@ template <class T> class Dictionary {
   T* find (const std::string& str, bool& absent_action) const;
   DictCell<T>* findCell (const std::string& str) const;
   DictCell<T>* root() const { return d_root; }
+
+  dict_const_iterator<T> begin() const
+  { return dict_const_iterator<T>(d_root); }
+  dict_const_iterator<T> end() const
+  { return dict_const_iterator<T>(); }
 };
 
 };

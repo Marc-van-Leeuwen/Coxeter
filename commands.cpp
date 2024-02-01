@@ -16,6 +16,7 @@
 #include "typeA.h"
 
 namespace commands {
+
   using namespace error;
   using namespace fcoxgroup;
   using namespace help;
@@ -45,7 +46,6 @@ namespace {
   CommandTree* emptyCommandTree();
   template<class C> // C is just a tag to select one of these functions
     void initCommandTree(CommandTree&); // command initialization functions
-  void printCommandTree(FILE* file, const DictCell<CommandData>* cell);
   void startup();
 
   void interface_entry();
@@ -3206,8 +3206,6 @@ void interface::out::terse_f()
 
   - printCommands(file,tree) : prints info about the various commands
     on the tree;
-  - printCommandTree(file,cell) : the recursive function doing the actual
-    work;
   - interface_entry() : entry function for the interface mode;
   - interface_exit() : exit function for the interface mode;
   - interface::in_entry() : entry function for the interface::in mode;
@@ -3227,13 +3225,19 @@ namespace commands {
 /*
   Print one line for each command on the tree (sorted in alphabetical order)
   with the name of the command and the information contained in the tag field.
+  The tree root is skipped, even if it should have an own action.
 */
 void printCommands(FILE* file, const CommandTree& tree)
 {
-  printCommandTree(file,tree.root()->left);
+  for (auto it = std::next(tree.begin()); it != tree.end(); ++it)
+    if (it->has_own_action())
+    {
+      const auto* cd = it->ptr.get();
+      fprintf(file,"  - %s : %s;\n",cd->name.c_str(),cd->tag.c_str());
+    }
 }
 
-};
+}; // |namespace commands|
 
 
 /*
