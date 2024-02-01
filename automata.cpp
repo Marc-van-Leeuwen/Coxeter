@@ -9,10 +9,6 @@
 
 #include "memory.h"
 
-namespace automata {
-  using namespace memory;
-};
-
 /****************************************************************************
 
   This file regroups the stuff about finite state automata that will be needed
@@ -47,8 +43,8 @@ ExplicitAutomaton::ExplicitAutomaton(Ulong n, Ulong m)
   :d_accept(n),d_rank(m),d_size(n)
 
 {
-  d_table = (State **)arena().alloc(d_size*sizeof(Ulong *));
-  d_table[0] = (State *)arena().alloc(d_size*d_rank*sizeof(Ulong));
+  d_table = (State **)memory::arena().alloc(d_size*sizeof(Ulong *));
+  d_table[0] = (State *)memory::arena().alloc(d_size*d_rank*sizeof(Ulong));
 
   for (Ulong j = 1; j < d_size; ++j)
     d_table[j] = d_table[j-1] + d_rank;
@@ -64,8 +60,8 @@ ExplicitAutomaton::~ExplicitAutomaton()
 */
 
 {
-  arena().free(d_table[0],d_size*d_rank*sizeof(Ulong));
-  arena().free(d_table,d_size*sizeof(Ulong *));
+  memory::arena().free(d_table[0],d_size*d_rank*sizeof(Ulong));
+  memory::arena().free(d_table,d_size*sizeof(Ulong *));
 }
 
 };

@@ -51,24 +51,24 @@ namespace {
 /******** local declarations ************************************************/
 
 namespace {
-  void checkCoxElement(CoxGroup *W, CoxWord g);
-  void checkCoxEntry(Rank i, Rank j, Ulong m);
+  void checkCoxElement(coxgroup::CoxGroup *W, coxtypes::CoxWord g);
+  void checkCoxEntry(coxtypes::Rank i, coxtypes::Rank j, Ulong m);
   void checkFilename(const char *s);
   void checkLength(const long& l);
-  void checkRank(const Rank& l, const Type& type);
+  void checkRank(const coxtypes::Rank& l, const Type& type);
   void checkType(std::string& buf);
   void getCoxFileName(std::string& buf);
-  Ulong parse(const Interface& I, Generator &s, const std::string& line);
-  Ulong parse(const Interface& I, Generator &s, const std::string& line,
-		const LFlags& f);
-  void printADiagram(FILE* file, const CoxGroup* W);
-  void printBDiagram(FILE* file, const CoxGroup* W);
-  void printDDiagram(FILE* file, const CoxGroup* W);
-  void printEDiagram(FILE* file, const CoxGroup* W);
-  void printFDiagram(FILE* file, const CoxGroup* W);
-  void printGDiagram(FILE* file, const CoxGroup* W);
-  void printHDiagram(FILE* file, const CoxGroup* W);
-  void printIDiagram(FILE* file, const CoxGroup* W);
+  Ulong parse(const interface::Interface& I, coxtypes::Generator &s, const std::string& line);
+  Ulong parse(const interface::Interface& I, coxtypes::Generator &s, const std::string& line,
+		const bits::Lflags& f);
+  void printADiagram(FILE* file, const coxgroup::CoxGroup* W);
+  void printBDiagram(FILE* file, const coxgroup::CoxGroup* W);
+  void printDDiagram(FILE* file, const coxgroup::CoxGroup* W);
+  void printEDiagram(FILE* file, const coxgroup::CoxGroup* W);
+  void printFDiagram(FILE* file, const coxgroup::CoxGroup* W);
+  void printGDiagram(FILE* file, const coxgroup::CoxGroup* W);
+  void printHDiagram(FILE* file, const coxgroup::CoxGroup* W);
+  void printIDiagram(FILE* file, const coxgroup::CoxGroup* W);
 };
 
 /****************************************************************************
@@ -134,7 +134,7 @@ OutputFile::~OutputFile()
 
 namespace interactive {
 
-CoxGroup* allocCoxGroup()
+coxgroup::CoxGroup* allocCoxGroup()
 
 /*
   This function gets a type from the user, and allocates a CoxGroup
@@ -151,7 +151,7 @@ CoxGroup* allocCoxGroup()
   return allocCoxGroup(x);
 }
 
-CoxGroup* allocCoxGroup(const Type& x)
+coxgroup::CoxGroup* allocCoxGroup(const Type& x)
 
 /*
   This function gets a rank from the user, and allocates a CoxGroup
@@ -160,7 +160,7 @@ CoxGroup* allocCoxGroup(const Type& x)
 */
 
 {
-  Rank l = getRank(x);
+  coxtypes::Rank l = getRank(x);
 
   if (ERRNO)
     return 0;
@@ -168,7 +168,7 @@ CoxGroup* allocCoxGroup(const Type& x)
   return coxeterGroup(x,l);
 }
 
-CoxGroup* coxeterGroup(const Type& x, const Rank& l)
+coxgroup::CoxGroup* coxeterGroup(const Type& x, const coxtypes::Rank& l)
 
 /*
   This function allocates a CoxGroup of the given type and rank. More
@@ -179,9 +179,9 @@ CoxGroup* coxeterGroup(const Type& x, const Rank& l)
 
 {
   if (isTypeA(x)) { /* allocate a TypeACoxGroup */
-    if (l > MEDRANK_MAX)
+    if (l > coxtypes::MEDRANK_MAX)
       return new GeneralTypeABRCoxGroup(l);
-    else if (l > SMALLRANK_MAX)
+    else if (l > coxtypes::SMALLRANK_MAX)
       return new GeneralTypeAMRCoxGroup(l);
     else if (l > maxSmallRank(x))
       return new GeneralTypeASRCoxGroup(l);
@@ -189,9 +189,9 @@ CoxGroup* coxeterGroup(const Type& x, const Rank& l)
       return new GeneralTypeASCoxGroup(l);
   }
   else if (isFiniteType(x)) { /* allocate a FiniteCoxGroup */
-    if (l > MEDRANK_MAX)
+    if (l > coxtypes::MEDRANK_MAX)
       return new GeneralFBRCoxGroup(x,l);
-    else if (l > SMALLRANK_MAX)
+    else if (l > coxtypes::SMALLRANK_MAX)
       return new GeneralFMRCoxGroup(x,l);
     else if (l > maxSmallRank(x))
       return new GeneralFSRCoxGroup(x,l);
@@ -199,24 +199,24 @@ CoxGroup* coxeterGroup(const Type& x, const Rank& l)
       return new GeneralSCoxGroup(x,l);
   }
   else if (isAffineType(x)) { /* allocate an AffineCoxGroup */
-    if (l > MEDRANK_MAX)
+    if (l > coxtypes::MEDRANK_MAX)
       return new GeneralABRCoxGroup(x,l);
-    else if (l > SMALLRANK_MAX)
+    else if (l > coxtypes::SMALLRANK_MAX)
       return new GeneralAMRCoxGroup(x,l);
-    else  /* l <= SMALLRANK_MAX */
+    else  /* l <= coxtypes::SMALLRANK_MAX */
       return new GeneralASRCoxGroup(x,l);
   }
   else { /* allocate a GeneralCoxGroup */
-    if (l > MEDRANK_MAX)
+    if (l > coxtypes::MEDRANK_MAX)
       return new BigRankCoxGroup(x,l);
-    else if (l > SMALLRANK_MAX)
+    else if (l > coxtypes::SMALLRANK_MAX)
       return new MedRankCoxGroup(x,l);
     else
       return new SmallRankCoxGroup(x,l);
   }
 }
 
-CoxEntry getCoxEntry(const Rank& i, const Rank& j)
+graph::CoxEntry getCoxEntry(const coxtypes::Rank& i, const coxtypes::Rank& j)
 
 /*
   This function gets a Coxeter matrix entry from the user. It prompts
@@ -226,7 +226,7 @@ CoxEntry getCoxEntry(const Rank& i, const Rank& j)
 
 {
   static std::string buf;
-  Ulong m = undef_coxentry;
+  Ulong m = graph::undef_coxentry;
 
   do {
     if (ERRNO)
@@ -235,14 +235,14 @@ CoxEntry getCoxEntry(const Rank& i, const Rank& j)
     getInput(stdin,buf);
     if (buf[0] == '\0') { /* abort */
       ERRNO = BAD_COXENTRY;
-      return undef_coxentry;
+      return graph::undef_coxentry;
     }
     m = strtol(buf.c_str(),NULL,0);
     checkCoxEntry(i,j,m);
   }
   while (ERRNO);
 
-  return static_cast<CoxEntry>(m) ;
+  return static_cast<graph::CoxEntry>(m) ;
 }
 
 };
@@ -291,7 +291,7 @@ void getCoxFileName(std::string& str)
 
 namespace interactive {
 
-const CoxWord& getCoxWord(CoxGroup *W)
+const coxtypes::CoxWord& getCoxWord(coxgroup::CoxGroup *W)
 
 /*
   This function gets a coxword from the user. If the input is not
@@ -300,7 +300,7 @@ const CoxWord& getCoxWord(CoxGroup *W)
 */
 
 {
-  static ParseInterface P;
+  static interface::ParseInterface P;
 
   P.reset();
 
@@ -324,7 +324,7 @@ const CoxWord& getCoxWord(CoxGroup *W)
 }
 
 
-Generator getGenerator(CoxGroup* W)
+coxtypes::Generator getGenerator(coxgroup::CoxGroup* W)
 
 /*
   This function gets a generator from the user. The string should start
@@ -337,8 +337,8 @@ Generator getGenerator(CoxGroup* W)
 {
   static std::string buf;
 
-  const Interface& I = W->interface();
-  Generator s = undef_generator;
+  const interface::Interface& I = W->interface();
+  coxtypes::Generator s = coxtypes::undef_generator;
 
   Ulong r = 0;
   buf.clear();
@@ -351,7 +351,7 @@ Generator getGenerator(CoxGroup* W)
     getInput(stdin,buf,r);
     if (buf[r] == '?') {
       ERRNO = ABORT;
-      return undef_generator;
+      return coxtypes::undef_generator;
     }
     r = parse(I,s,buf);
   } while (ERRNO);
@@ -360,7 +360,7 @@ Generator getGenerator(CoxGroup* W)
 }
 
 
-Generator getGenerator(CoxGroup* W, const LFlags& f)
+coxtypes::Generator getGenerator(coxgroup::CoxGroup* W, const bits::Lflags& f)
 
 /*
   Like getGenerator, but moreover checks if s is flagged by f.
@@ -369,8 +369,8 @@ Generator getGenerator(CoxGroup* W, const LFlags& f)
 {
   static std::string buf;
 
-  const Interface& I = W->interface();
-  Generator s = undef_generator;
+  const interface::Interface& I = W->interface();
+  coxtypes::Generator s = coxtypes::undef_generator;
 
   Ulong r = 0;
   buf.clear();
@@ -383,7 +383,7 @@ Generator getGenerator(CoxGroup* W, const LFlags& f)
     getInput(stdin,buf,r);
     if (buf[r] == '?') {
       ERRNO = ABORT;
-      return undef_generator;
+      return coxtypes::undef_generator;
     }
     r = parse(I,s,buf,f);
   } while (ERRNO);
@@ -392,7 +392,8 @@ Generator getGenerator(CoxGroup* W, const LFlags& f)
 }
 
 
-void getLength(List<Length>& L, const CoxGraph& G, const Interface& I)
+void getLength(list::List<coxtypes::Length>& L,
+	       const graph::CoxGraph& G, const interface::Interface& I)
 
 /*
   This function gets lengths of generators from the user, for computing
@@ -406,7 +407,7 @@ void getLength(List<Length>& L, const CoxGraph& G, const Interface& I)
 */
 
 {
-  List<LFlags> cl(0);
+  list::List<bits::Lflags> cl(0);
   static std::string buf;
 
   getConjugacyClasses(cl,G);
@@ -443,8 +444,8 @@ void getLength(List<Length>& L, const CoxGraph& G, const Interface& I)
 
     /* set corresponding lengths */
 
-    for (LFlags f = cl[j]; f; f &= f-1) {
-      Generator s = firstBit(f);
+    for (bits::Lflags f = cl[j]; f; f &= f-1) {
+      coxtypes::Generator s = constants::firstBit(f);
       L[s] = l;
       L[s+G.rank()] = l; // left multiplication
     }
@@ -453,7 +454,7 @@ void getLength(List<Length>& L, const CoxGraph& G, const Interface& I)
 }
 
 
-Rank getRank(const Type& type)
+coxtypes::Rank getRank(const Type& type)
 
 /*
   This function gets a rank from the user, corresponding to the given
@@ -464,7 +465,7 @@ Rank getRank(const Type& type)
 
 {
   static std::string buf;
-  Rank l;
+  coxtypes::Rank l;
   int ignore_error;
 
   if (strchr("GI",type[0]))  /* rank is 2 */
@@ -489,7 +490,7 @@ Rank getRank(const Type& type)
       ERRNO = ERROR_WARNING;
       return 0;
     }
-    l = (Rank)strtol(buf.c_str(),NULL,0);
+    l = (coxtypes::Rank)strtol(buf.c_str(),NULL,0);
     checkRank(l,type);
   }
   while (ERRNO);
@@ -533,7 +534,7 @@ const Type& getType()
 
 
 // Read the entry |i,j| of a Coxeter matrix from the file |inputfile|.
-CoxEntry readCoxEntry(const Rank& i, const Rank& j, FILE *inputfile)
+graph::CoxEntry readCoxEntry(const coxtypes::Rank& i, const coxtypes::Rank& j, FILE *inputfile)
 {
   Ulong m;
 
@@ -568,7 +569,7 @@ CoxEntry readCoxEntry(const Rank& i, const Rank& j, FILE *inputfile)
 ******************************************************************************/
 
 
-void interactive::changeOrdering(CoxGroup *W, Permutation& order)
+void interactive::changeOrdering(coxgroup::CoxGroup *W, bits::Permutation& order)
 
 /*
   This function allows the user to specify a new ordering of the generators.
@@ -578,7 +579,7 @@ void interactive::changeOrdering(CoxGroup *W, Permutation& order)
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printRepresentation(stdout,W);
 
@@ -608,7 +609,7 @@ void interactive::changeOrdering(CoxGroup *W, Permutation& order)
 
   /* transfer ordering to the permutation */
 
-  for (Generator s = 0; s < W->rank(); s++)
+  for (coxtypes::Generator s = 0; s < W->rank(); s++)
     order[s] = g[s]-1;
 
   return;
@@ -636,7 +637,7 @@ in the current situation. They are :
 
 namespace {
 
-void checkCoxElement(CoxGroup *W, CoxWord g)
+void checkCoxElement(coxgroup::CoxGroup *W, coxtypes::CoxWord g)
 
 /*
   Checks if g is a reduced expression of a Coxeter element in W --- in other
@@ -648,8 +649,8 @@ void checkCoxElement(CoxGroup *W, CoxWord g)
 
   CCE_map.reset();
 
-  for (Length j = 0; g[j]; ++j) {
-    Generator s = g[j] - 1;
+  for (coxtypes::Length j = 0; g[j]; ++j) {
+    coxtypes::Generator s = g[j] - 1;
     if (CCE_map.getBit(s)) { /* error */
       ERRNO = NOT_COXELT;
       return;
@@ -661,7 +662,7 @@ void checkCoxElement(CoxGroup *W, CoxWord g)
 }
 
 
-void checkCoxEntry(Rank i, Rank j, Ulong m)
+void checkCoxEntry(coxtypes::Rank i, coxtypes::Rank j, Ulong m)
 
 /*
   Checks if m is a valid Coxeter entry for indices i, j. The value
@@ -675,7 +676,7 @@ void checkCoxEntry(Rank i, Rank j, Ulong m)
     return;
   }
 
-  if ((m == 1) || (m > COXENTRY_MAX))
+  if ((m == 1) || (m > graph::COXENTRY_MAX))
     ERRNO = WRONG_COXETER_ENTRY;
 
   return;
@@ -712,14 +713,14 @@ void checkLength(const long& l)
 */
 
 {
-  if ((l < 0) || (l > LENGTH_MAX)) {
+  if ((l < 0) || (l > coxtypes::LENGTH_MAX)) {
     ERRNO = BAD_LENGTH;
   }
 
   return;
 }
 
-void checkRank(const Rank& l, const Type& type)
+void checkRank(const coxtypes::Rank& l, const Type& type)
 
 /*
   It is assumed that W->type() has been succesfully filled in. This function
@@ -734,15 +735,15 @@ void checkRank(const Rank& l, const Type& type)
   switch(type[0])
     {
     case 'A':
-      if ((l < 1) || (l > RANK_MAX))
+      if ((l < 1) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'B':
-      if ((l < 2) || (l > RANK_MAX))
+      if ((l < 2) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'D':
-      if ((l < 2) || (l > RANK_MAX))
+      if ((l < 2) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'E':
@@ -766,19 +767,19 @@ void checkRank(const Rank& l, const Type& type)
 	ERRNO = WRONG_RANK;
       break;
     case 'a':
-      if ((l < 2) || (l > RANK_MAX))
+      if ((l < 2) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'b':
-      if ((l < 3) || (l > RANK_MAX))
+      if ((l < 3) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'c':
-      if ((l < 3) || (l > RANK_MAX))
+      if ((l < 3) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'd':
-      if ((l < 5) || (l > RANK_MAX))
+      if ((l < 5) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'e':
@@ -794,11 +795,11 @@ void checkRank(const Rank& l, const Type& type)
 	ERRNO = WRONG_RANK;
       break;
     case 'X':
-      if ((l < 1) || (l > RANK_MAX))
+      if ((l < 1) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     case 'Y':
-      if ((l < 1) || (l > RANK_MAX))
+      if ((l < 1) || (l > coxtypes::RANK_MAX))
 	ERRNO = WRONG_RANK;
       break;
     }
@@ -877,8 +878,8 @@ void checkType(std::string& str)
 
 namespace interactive {
 
-void printInterface(FILE* file, const GroupEltInterface& GI,
-		       const Permutation& a)
+void printInterface(FILE* file, const interface::GroupEltInterface& GI,
+		       const bits::Permutation& a)
 
 {
   fprintf(file,"prefix: ");
@@ -893,7 +894,7 @@ void printInterface(FILE* file, const GroupEltInterface& GI,
 
   for (Ulong j = 0; j < a.size(); ++j) {
     fprintf(file,"generator ");
-    Generator s = a[j];
+    coxtypes::Generator s = a[j];
     print(file,GI.symbol[s]);
     fprintf(file,"\n");
   }
@@ -901,8 +902,8 @@ void printInterface(FILE* file, const GroupEltInterface& GI,
   return;
 }
 
-void printInterface(FILE* file, const GroupEltInterface& GI,
-		    const GroupEltInterface& WI, const Permutation& a)
+void printInterface(FILE* file, const interface::GroupEltInterface& GI,
+		    const interface::GroupEltInterface& WI, const bits::Permutation& a)
 
 {
   fprintf(file,"prefix: ");
@@ -917,7 +918,7 @@ void printInterface(FILE* file, const GroupEltInterface& GI,
 
   for (Ulong j = 0; j < a.size(); ++j) {
     fprintf(file,"generator ");
-    Generator s = a[j];
+    coxtypes::Generator s = a[j];
     print(file,WI.symbol[s]);
     fprintf(file,": ");
     print(file,GI.symbol[s]);
@@ -927,14 +928,14 @@ void printInterface(FILE* file, const GroupEltInterface& GI,
   return;
 }
 
-void printMatrix(FILE* file, const CoxGroup* W)
+void printMatrix(FILE* file, const coxgroup::CoxGroup* W)
 
 /*
   Prints the Coxeter matrix on file.
 */
 
 {
-  Permutation a(W->interface().order());
+  bits::Permutation a(W->interface().order());
   a.inverse();
 
   for (Ulong i = 0; i < W->rank(); ++i) {
@@ -947,18 +948,18 @@ void printMatrix(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printOrdering(FILE* file, const CoxGroup* W)
+void printOrdering(FILE* file, const coxgroup::CoxGroup* W)
 
 /*
   Prints the current ordering of the generators.
 */
 
 {
-  Permutation a(W->interface().order());
+  bits::Permutation a(W->interface().order());
   a.inverse();
 
   for (Ulong j = 0; j < a.size(); ++j) {
-    Generator s = a[j];
+    coxtypes::Generator s = a[j];
     print(file,W->interface().inSymbol(s));
     if (j+1 < a.size()) /* there is more to come */
       fprintf(file," < ");
@@ -967,7 +968,7 @@ void printOrdering(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printRepresentation(FILE* file, const CoxGroup* W)
+void printRepresentation(FILE* file, const coxgroup::CoxGroup* W)
 
 /*
   Prints the numbering of the generators on the file, for
@@ -1029,16 +1030,16 @@ void printRepresentation(FILE* file, const CoxGroup* W)
 
 namespace {
 
-void printADiagram(FILE* file, const CoxGroup* W)
+void printADiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   fprintf(file,"\t");
 
   if (W->rank() <= 8) { /* rank is at least 4 */
     print(file,I.inSymbol(0));
-    for (Generator s = 1; s < W->rank(); ++s) {
+    for (coxtypes::Generator s = 1; s < W->rank(); ++s) {
       fprintf(file," - ");
       print(file,I.inSymbol(s));
     }
@@ -1056,10 +1057,10 @@ void printADiagram(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printBDiagram(FILE* file, const CoxGroup* W)
+void printBDiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   fprintf(file,"\t");
 
@@ -1067,7 +1068,7 @@ void printBDiagram(FILE* file, const CoxGroup* W)
     print(file,I.inSymbol(0));
     fprintf(file," = ");
     print(file,I.inSymbol(1));
-    for (Generator s = 2; s < W->rank(); ++s) {
+    for (coxtypes::Generator s = 2; s < W->rank(); ++s) {
       fprintf(file," - ");
       print(file,I.inSymbol(s));
     }
@@ -1085,10 +1086,10 @@ void printBDiagram(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printDDiagram(FILE* file, const CoxGroup* W)
+void printDDiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   fprintf(file,"\t");
 
@@ -1096,7 +1097,7 @@ void printDDiagram(FILE* file, const CoxGroup* W)
     print(file,I.inSymbol(0));
     fprintf(file," - ");
     print(file,I.inSymbol(2));
-    for (Generator s = 3; s < W->rank(); ++s) {
+    for (coxtypes::Generator s = 3; s < W->rank(); ++s) {
       fprintf(file," - ");
       print(file,I.inSymbol(s));
     }
@@ -1130,10 +1131,10 @@ void printDDiagram(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printEDiagram(FILE* file, const CoxGroup* W)
+void printEDiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   fprintf(file,"\t");
 
@@ -1142,7 +1143,7 @@ void printEDiagram(FILE* file, const CoxGroup* W)
   print(file,I.inSymbol(2));
   fprintf(file," - ");
   print(file,I.inSymbol(3));
-  for (Generator s = 4; s < W->rank(); ++s) {
+  for (coxtypes::Generator s = 4; s < W->rank(); ++s) {
     fprintf(file," - ");
     print(file,I.inSymbol(s));
   }
@@ -1160,10 +1161,10 @@ void printEDiagram(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printFDiagram(FILE* file, const CoxGroup* W)
+void printFDiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   fprintf(file,"\t");
   print(file,I.inSymbol(0));
@@ -1177,10 +1178,10 @@ void printFDiagram(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printGDiagram(FILE* file, const CoxGroup* W)
+void printGDiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   fprintf(file,"\t");
   int c = I.inSymbol(0).length() + 1;
@@ -1193,17 +1194,17 @@ void printGDiagram(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printHDiagram(FILE* file, const CoxGroup* W)
+void printHDiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   fprintf(file,"\t");
   int c = I.inSymbol(0).length() + 1;
   fprintf(file,"%*s5\n",c,"");
   fprintf(file,"\t");
   print(file,I.inSymbol(0));
-  for (Generator s = 1; s < W->rank(); ++s) {
+  for (coxtypes::Generator s = 1; s < W->rank(); ++s) {
     fprintf(file," - ");
     print(file,I.inSymbol(s));
   }
@@ -1211,14 +1212,14 @@ void printHDiagram(FILE* file, const CoxGroup* W)
   return;
 }
 
-void printIDiagram(FILE* file, const CoxGroup* W)
+void printIDiagram(FILE* file, const coxgroup::CoxGroup* W)
 
 {
-  const Interface& I = W->interface();
+  const interface::Interface& I = W->interface();
 
   /* print the tag */
 
-  CoxEntry m = W->M(0,1);
+  graph::CoxEntry m = W->M(0,1);
   fprintf(file,"\t");
   int c = I.inSymbol(0).length() + 1;
   fprintf(file,"%*s%d\n",c,"",m);
@@ -1283,7 +1284,7 @@ int interactive::endOfLine(FILE *f)
 
 namespace {
 
-Ulong parse(const Interface& I, Generator &s, const std::string& line)
+Ulong parse(const interface::Interface& I, coxtypes::Generator &s, const std::string& line)
 
 /*
   This function parses a generator from the line.
@@ -1294,7 +1295,7 @@ Ulong parse(const Interface& I, Generator &s, const std::string& line)
 */
 
 {
-  Token tok;
+  interface::Token tok;
 
   Ulong q = io::skipSpaces(line,0);
 
@@ -1302,7 +1303,7 @@ Ulong parse(const Interface& I, Generator &s, const std::string& line)
   Ulong strsize = line.length()-q;
 
   if (strsize == 0) { /* default generator */
-    s = undef_generator;
+    s = coxtypes::undef_generator;
     return q;
   }
 
@@ -1326,7 +1327,7 @@ Ulong parse(const Interface& I, Generator &s, const std::string& line)
 
   str = line.c_str()+q;
   Ulong p = I.symbolTree().find(str,0,tok);
-  if (tokenType(tok) != interface::generator_type) { /* error */
+  if (interface::tokenType(tok) != interface::generator_type) { /* error */
     ERRNO = PARSE_ERROR;
     return q;
   }
@@ -1337,8 +1338,8 @@ Ulong parse(const Interface& I, Generator &s, const std::string& line)
   return q;
 }
 
-Ulong parse(const Interface& I, Generator &s, const std::string& line,
-	      const LFlags& f)
+Ulong parse(const interface::Interface& I, coxtypes::Generator &s,
+	    const std::string& line, const bits::Lflags& f)
 
 /*
   This function parses a generator from the line, checking if the
@@ -1350,7 +1351,7 @@ Ulong parse(const Interface& I, Generator &s, const std::string& line,
 */
 
 {
-  Token tok;
+  interface::Token tok;
 
   Ulong q = io::skipSpaces(line,0);
 
@@ -1358,7 +1359,7 @@ Ulong parse(const Interface& I, Generator &s, const std::string& line,
   Ulong strsize = line.length()-q;
 
   if (strsize == 0) { /* default generator */
-    s = undef_generator;
+    s = coxtypes::undef_generator;
     return q;
   }
 
@@ -1384,11 +1385,11 @@ Ulong parse(const Interface& I, Generator &s, const std::string& line,
   strsize = line.length()-q;
 
   Ulong p = I.symbolTree().find(str,0,tok);
-  if (tokenType(tok) != interface::generator_type) { /* error */
+  if (interface::tokenType(tok) != interface::generator_type) { /* error */
     ERRNO = PARSE_ERROR;
     return q;
   }
-  if (!(f & lmask[s+tok-1])) { /* error */
+  if (!(f & constants::lmask[s+tok-1])) { /* error */
     ERRNO = NOT_DESCENT;
     return q;
   }

@@ -10,49 +10,40 @@
 
 #include "globals.h"
 
-namespace cells {
-  using namespace globals;
-};
-
 #include "bits.h"
 #include "kl.h"
 #include "uneqkl.h"
 #include "wgraph.h"
 
-namespace cells {
-  using namespace bits;
-  using namespace wgraph;
-};
-
 /******** function declarations **********************************************/
 
 namespace cells {
-  CoxNbr checkClasses(const Partition& pi, const SchubertContext& p);
-  void lCells(Partition& pi, kl::KLContext& kl);
-  void rCells(Partition& pi, kl::KLContext& kl);
-  void lrCells(Partition& pi, kl::KLContext& kl);
-  void lDescentPartition(Partition& pi, const SchubertContext& p);
-  void rDescentPartition(Partition& pi, const SchubertContext& p);
-  void lStringEquiv(Partition& pi, const SchubertContext& p);
-  void lStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p);
-  void rStringEquiv(Partition& pi, const SchubertContext& p);
-  void rStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p);
-  void lrStringEquiv(Partition& pi, const SchubertContext& p);
-  void lrStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p);
-  void lGeneralizedTau(Partition& pi, const SchubertContext& p);
-  void rGeneralizedTau(Partition& pi, const SchubertContext& p);
-  void lGraph(OrientedGraph& X, kl::KLContext& kl);
-  void lrGraph(OrientedGraph& X, kl::KLContext& kl);
-  void rGraph(OrientedGraph& X, kl::KLContext& kl);
-  void lGraph(OrientedGraph& X, uneqkl::KLContext& kl);
-  void lrGraph(OrientedGraph& X, uneqkl::KLContext& kl);
-  void rGraph(OrientedGraph& X, uneqkl::KLContext& kl);
-  void lWGraph(WGraph& X, kl::KLContext& kl);
-  void lWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl);
-  void rWGraph(WGraph& X, kl::KLContext& kl);
-  void rWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl);
-  void lrWGraph(WGraph& X, kl::KLContext& kl);
-  void lrWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl);
+  coxtypes::CoxNbr checkClasses(const bits::Partition& pi, const schubert::SchubertContext& p);
+  void lCells(bits::Partition& pi, kl::KLContext& kl);
+  void rCells(bits::Partition& pi, kl::KLContext& kl);
+  void lrCells(bits::Partition& pi, kl::KLContext& kl);
+  void lDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p);
+  void rDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p);
+  void lStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p);
+  void lStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p);
+  void rStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p);
+  void rStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p);
+  void lrStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p);
+  void lrStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p);
+  void lGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p);
+  void rGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p);
+  void lGraph(wgraph::OrientedGraph& X, kl::KLContext& kl);
+  void lrGraph(wgraph::OrientedGraph& X, kl::KLContext& kl);
+  void rGraph(wgraph::OrientedGraph& X, kl::KLContext& kl);
+  void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl);
+  void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl);
+  void rGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl);
+  void lWGraph(wgraph::WGraph& X, kl::KLContext& kl);
+  void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl);
+  void rWGraph(wgraph::WGraph& X, kl::KLContext& kl);
+  void rWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl);
+  void lrWGraph(wgraph::WGraph& X, kl::KLContext& kl);
+  void lrWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl);
   void printCellPartition(FILE* file, const kl::KLContext& kl);
 };
 

@@ -57,8 +57,8 @@ namespace {
   void klCoeffNegative(const CoxNbr& x, const CoxNbr& y);
   void klCoeffOverflow(const CoxNbr& x, const CoxNbr& y);
   void klFail(const CoxNbr& x, const CoxNbr& y);
-  void leadingWhitespace(const GroupEltInterface& I,
-         const GroupEltInterface& J, const Permutation& a, const std::string& str);
+  void leadingWhitespace(const interface::GroupEltInterface& I,
+         const interface::GroupEltInterface& J, const bits::Permutation& a, const std::string& str);
   void lengthOverflow();
   void memoryWarning();
   void minRootOverflow();
@@ -77,14 +77,14 @@ namespace {
   void outOfMemory();
   void parNbrOverflow();
   void parseError(const char *const str);
-  void repeatedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
-		      const Permutation& a);
-  void reservedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
-		      const Permutation& a, const std::string& str);
+  void repeatedSymbol(const interface::GroupEltInterface& I, const interface::GroupEltInterface& J,
+		      const bits::Permutation& a);
+  void reservedSymbol(const interface::GroupEltInterface& I, const interface::GroupEltInterface& J,
+		      const bits::Permutation& a, const std::string& str);
   void ueMuFail(const CoxNbr& x, const CoxNbr& y);
   void undefCoxarr();
   void wrongCoxeterEntry(Rank i, Rank j, Ulong m);
-  void wrongRank(const Type& type, Rank* l, int* mess);
+  void wrongRank(const type::Type& type, Rank* l, int* mess);
   void wrongType();
 };
 
@@ -202,9 +202,9 @@ void error::Error(int number, ... )
     }
       break;
     case LEADING_WHITESPACE: {
-      const GroupEltInterface* I = va_arg(ap, const GroupEltInterface*);
-      const GroupEltInterface* J = va_arg(ap, const GroupEltInterface*);
-      const Permutation* a = va_arg(ap, const Permutation*);
+      const interface::GroupEltInterface* I = va_arg(ap, const interface::GroupEltInterface*);
+      const interface::GroupEltInterface* J = va_arg(ap, const interface::GroupEltInterface*);
+      const bits::Permutation* a = va_arg(ap, const bits::Permutation*);
       const std::string* str = va_arg(ap, const std::string*);
       leadingWhitespace(*I,*J,*a,*str);
     }
@@ -284,16 +284,16 @@ void error::Error(int number, ... )
     }
       break;
     case REPEATED_SYMBOL: {
-      const GroupEltInterface* I = va_arg(ap, const GroupEltInterface*);
-      const GroupEltInterface* J = va_arg(ap, const GroupEltInterface*);
-      const Permutation* a = va_arg(ap, const Permutation*);
+      const interface::GroupEltInterface* I = va_arg(ap, const interface::GroupEltInterface*);
+      const interface::GroupEltInterface* J = va_arg(ap, const interface::GroupEltInterface*);
+      const bits::Permutation* a = va_arg(ap, const bits::Permutation*);
       repeatedSymbol(*I,*J,*a);
     }
       break;
     case RESERVED_SYMBOL: {
-      const GroupEltInterface* I = va_arg(ap, const GroupEltInterface*);
-      const GroupEltInterface* J = va_arg(ap, const GroupEltInterface*);
-      const Permutation* a = va_arg(ap, const Permutation*);
+      const interface::GroupEltInterface* I = va_arg(ap, const interface::GroupEltInterface*);
+      const interface::GroupEltInterface* J = va_arg(ap, const interface::GroupEltInterface*);
+      const bits::Permutation* a = va_arg(ap, const bits::Permutation*);
       const std::string* str = va_arg(ap, const std::string*);
       reservedSymbol(*I,*J,*a,*str);
     }
@@ -314,7 +314,7 @@ void error::Error(int number, ... )
     }
       break;
     case WRONG_RANK: {
-      Type* t = va_arg(ap,Type*);
+      type::Type* t = va_arg(ap,type::Type*);
       Rank* l = va_arg(ap,Rank*);
       int* mess = va_arg(ap,int*);
       wrongRank(*t,l,mess);
@@ -608,8 +608,8 @@ void klFail(const CoxNbr& x, const CoxNbr& y)
 }
 
 
-void leadingWhitespace(const GroupEltInterface& I, const GroupEltInterface& J,
-		       const Permutation& a, const std::string& str)
+void leadingWhitespace(const interface::GroupEltInterface& I, const interface::GroupEltInterface& J,
+		       const bits::Permutation& a, const std::string& str)
 
 /*
   Handles the error LEADING_WHITESPACE; this means that I contains a symbol
@@ -878,8 +878,8 @@ void parseError(const char *const str)
   return;
 }
 
-void reservedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
-		    const Permutation& a, const std::string& str)
+void reservedSymbol(const interface::GroupEltInterface& I, const interface::GroupEltInterface& J,
+		    const bits::Permutation& a, const std::string& str)
 
 /*
   Handles the error RESERVED_SYMBOL; this means that I contains a symbol
@@ -898,8 +898,8 @@ void reservedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
     "interface not modified. Please change reserved symbol or abort.\n");
 }
 
-void repeatedSymbol(const GroupEltInterface& I, const GroupEltInterface& J,
-		    const Permutation& a)
+void repeatedSymbol(const interface::GroupEltInterface& I, const interface::GroupEltInterface& J,
+		    const bits::Permutation& a)
 
 /*
   Handles the error REPEATED_SYMBOL; this means that I contains repeated
@@ -961,7 +961,7 @@ void wrongCoxeterEntry(Rank i, Rank j, Ulong m)
   return;
 }
 
-void wrongRank(const Type& type, Rank *l, int *mess)
+void wrongRank(const type::Type& type, Rank *l, int *mess)
 
 {
   switch (type[0])

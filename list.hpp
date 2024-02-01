@@ -64,9 +64,9 @@ namespace list {
 
 // Allocate |*this| to be able to hold |n| elements, but start out empty.
 template <class T> List<T>::List(const Ulong& n)
-  : d_ptr(static_cast<T*> (arena().alloc(n*sizeof(T))))
+  : d_ptr(static_cast<T*> (memory::arena().alloc(n*sizeof(T))))
   , d_size(0)
-  , d_allocated(arena().allocSize(n,sizeof(T)))
+  , d_allocated(memory::arena().allocSize(n,sizeof(T)))
 {}
 
 
@@ -77,8 +77,8 @@ template <class T> List<T>::List(const List<T>& r)
 */
 
 {
-  d_ptr = static_cast<T*> (arena().alloc(r.size()*sizeof(T)));
-  d_allocated = arena().allocSize(r.size(),sizeof(T));
+  d_ptr = static_cast<T*> (memory::arena().alloc(r.size()*sizeof(T)));
+  d_allocated = memory::arena().allocSize(r.size(),sizeof(T));
   for (Ulong j = 0; j < r.size(); ++j) {
     new(d_ptr+j) T(r[j]);
   }
@@ -132,7 +132,7 @@ template<class T> List<T>::~List()
   for (Ulong j = 0; j < d_allocated; ++j) {
     d_ptr[j].~T();
   }
-  arena().free(d_ptr,d_allocated*sizeof(T));
+  memory::arena().free(d_ptr,d_allocated*sizeof(T));
 }
 
 /******** accessors *********************************************************/
@@ -207,14 +207,14 @@ template <class T> void List<T>::append(const T& x)
 
   if (d_allocated < c+1)
   {
-    T* new_ptr = static_cast<T*> (arena().alloc((c+1)*sizeof(T)));
+    T* new_ptr = static_cast<T*> (memory::arena().alloc((c+1)*sizeof(T)));
     if (new_ptr==nullptr) /* overflow */
       { assert(ERRNO!=0); return; }
     std::copy(d_ptr,d_ptr+c,new_ptr); // copy the whole old range of values
     new_ptr[c] = x;
-    arena().free(d_ptr,d_allocated*sizeof(T));
+    memory::arena().free(d_ptr,d_allocated*sizeof(T));
     d_ptr = new_ptr;
-    d_allocated = arena().allocSize(c+1,sizeof(T));
+    d_allocated = memory::arena().allocSize(c+1,sizeof(T));
     d_size = c+1;
     return;
   }
@@ -280,15 +280,15 @@ template <class T> void List<T>::reverse()
 template <class T> void List<T>::setSize(Ulong n)
 {
   if (d_allocated < n) { /* resize */
-    void *p = arena().alloc(n*sizeof(T));
+    void *p = memory::arena().alloc(n*sizeof(T));
     if (ERRNO) /* overflow */
       return;
     auto* pp = static_cast<T*> (p);
     // the next line could use |std::uninitialized_move| from C++17
     std::uninitialized_copy(d_ptr,d_ptr+d_size,pp);
-    arena().free(d_ptr,d_allocated*sizeof(T)); // clean up emptied memory
+    memory::arena().free(d_ptr,d_allocated*sizeof(T)); // clean up emptied memory
     d_ptr = pp; // henceforth use the new, partially initialized, memory0
-    d_allocated = arena().allocSize(n,sizeof(T)); // use actual space bought
+    d_allocated = memory::arena().allocSize(n,sizeof(T)); // use actual space bought
   }
 
   d_size = n;
@@ -315,14 +315,14 @@ void List<T>::setData(const T *source, Ulong first, Ulong r)
 
   if (d_allocated < first+r)
   {
-    T* new_ptr = static_cast<T*> (arena().alloc((first+r)*sizeof(T)));
+    T* new_ptr = static_cast<T*> (memory::arena().alloc((first+r)*sizeof(T)));
     if (new_ptr==nullptr) /* overflow */
       { assert(ERRNO!=0); return; }
     std::copy(d_ptr,d_ptr+first,new_ptr); // copy initial part from |*this|
     std::copy(source,source+r,new_ptr+first); // add final part from |source|
-    arena().free(d_ptr,d_allocated*sizeof(T));
+    memory::arena().free(d_ptr,d_allocated*sizeof(T));
     d_ptr = new_ptr;
-    d_allocated = arena().allocSize(first+r,sizeof(T));
+    d_allocated = memory::arena().allocSize(first+r,sizeof(T));
     d_size = first+r;
     return;
   }

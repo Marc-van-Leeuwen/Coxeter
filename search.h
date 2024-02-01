@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace search {
-  using namespace globals;
-};
-
 /******** type declarations *************************************************/
 
 namespace search {
@@ -33,19 +29,15 @@ namespace search {
 #include "list.h"
 
 namespace search {
-  using namespace list;
-};
-
-namespace search {
 
 template <class T> struct TreeNode {
   TreeNode* left;
   TreeNode* right;
   T data;
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(TreeNode));}
+    {return memory::arena().free(ptr,sizeof(TreeNode));}
   TreeNode(const T& a);
   ~TreeNode();
 };
@@ -56,9 +48,9 @@ template <class T> class BinaryTree {
   TreeNode<T>* d_root;
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(BinaryTree));}
+    {return memory::arena().free(ptr,sizeof(BinaryTree));}
   BinaryTree();
   virtual ~BinaryTree();
 /* accessors */

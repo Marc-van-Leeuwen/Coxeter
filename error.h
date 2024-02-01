@@ -11,10 +11,6 @@
 #include "globals.h"
 
 namespace error {
-  using namespace globals;
-};
-
-namespace error {
   enum ErrorCodes {
     ABORT=1,
     BAD_COXENTRY,

@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace files {
-  using namespace globals;
-};
-
 /******** type declarations *************************************************/
 
 namespace files {
@@ -42,8 +38,6 @@ namespace files {
 #include "wgraph.h"
 
 namespace files {
-  using namespace hecke;
-  using namespace wgraph;
   // do _not_ use namespace kl! creates conflicts in coxgroup
 };
 
@@ -54,10 +48,10 @@ template <class C>
 template <class E>
   void appendExponent(std::string& str, const E& e, PolynomialTraits& traits);
 template <class M>
-  void appendHeckeMonomial(std::string& str, const M& m, const SchubertContext& p,
-			   const Interface& I, HeckeTraits& hTraits,
-			   PolynomialTraits& pTraits, const Length& l);
-void appendHomology(std::string& str, const Homology& h, OutputTraits& traits);
+  void appendHeckeMonomial(std::string& str, const M& m, const schubert::SchubertContext& p,
+			   const interface::Interface& I, HeckeTraits& hTraits,
+			   PolynomialTraits& pTraits, const coxtypes::Length& l);
+void appendHomology(std::string& str, const schubert::Homology& h, OutputTraits& traits);
 template <class C>
   void appendMonomial(std::string& str, const C& c, const Ulong& e,
 		      PolynomialTraits& traits,
@@ -65,82 +59,87 @@ template <class C>
 void appendModifier(std::string& str, const Ulong& d, const long& m,
 		    PolynomialTraits& traits);
 template <class M>
-  void appendMuMark(std::string& str, const M& m, const SchubertContext& p,
-		    const Length& l, HeckeTraits& traits);
+  void appendMuMark(std::string& str, const M& m, const schubert::SchubertContext& p,
+		    const coxtypes::Length& l, HeckeTraits& traits);
 template <class P>
   void appendPolynomial(std::string& str, const P& p,
 			PolynomialTraits& traits,
 			const Ulong& d = 1, const long& m = 0);
 void appendSeparator(std::string& str, const Ulong& n, HeckeTraits& traits);
 template <class KL>
-  void makeWGraph(WGraph& X, const List<CoxNbr>& c, const LFlags& f, KL& kl);
-void minReps(List<CoxNbr>& min, const Partition& pi, schubert::NFCompare& c);
+  void makeWGraph
+    (wgraph::WGraph& X, const list::List<coxtypes::CoxNbr>& c,
+     const bits::Lflags& f, KL& kl);
+void minReps
+  (list::List<coxtypes::CoxNbr>& min, const bits::Partition& pi,
+   schubert::NFCompare& c);
 void pad(std::string& str, const Ulong& n, HeckeTraits& traits);
 template<class H>
-  void printAsBasisElt(FILE* file, const H& h, const SchubertContext& p,
-		       Interface& I, OutputTraits& traits);
-void printBetti(FILE* file, const CoxNbr& y, const SchubertContext& p,
+  void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
+		       interface::Interface& I, OutputTraits& traits);
+void printBetti(FILE* file, const coxtypes::CoxNbr& y, const schubert::SchubertContext& p,
 		OutputTraits& traits);
-void printCellOrder(FILE* file, const OrientedGraph& X,
-		    const SchubertContext& p, const Interface& I,
+void printCellOrder(FILE* file, const wgraph::OrientedGraph& X,
+		    const schubert::SchubertContext& p, const interface::Interface& I,
 		    PosetTraits& traits);
-void printCoatoms(FILE* file, const CoxNbr& y, const SchubertContext& p,
-		  const Interface& I, OutputTraits& traits);
+void printCoatoms
+  (FILE* file, const coxtypes::CoxNbr& y, const schubert::SchubertContext& p,
+		  const interface::Interface& I, OutputTraits& traits);
 template <class KL>
-  void printClosure(FILE* file, const CoxNbr& y, KL& kl, const Interface& I,
+  void printClosure(FILE* file, const coxtypes::CoxNbr& y, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits);
 template <class C>
   void printCoefficient(FILE* file, const C& c,
 			PolynomialTraits& traits);
-void printDescents(FILE* file, const LFlags& df, const LFlags& f,
-		   const Interface& I, WgraphTraits& traits);
+void printDescents(FILE* file, const bits::Lflags& df, const bits::Lflags& f,
+		   const interface::Interface& I, WgraphTraits& traits);
 template <class KL>
-  void printDuflo(FILE* file, const List<CoxNbr>& d, const Partition& pi,
-		  KL& kl, const Interface& I, OutputTraits& traits);
-void printEltData(FILE* file, const CoxNbr& y, const SchubertContext& p,
-		  const Interface& I, OutputTraits& traits);
+  void printDuflo(FILE* file, const list::List<coxtypes::CoxNbr>& d, const bits::Partition& pi,
+		  KL& kl, const interface::Interface& I, OutputTraits& traits);
+void printEltData(FILE* file, const coxtypes::CoxNbr& y, const schubert::SchubertContext& p,
+		  const interface::Interface& I, OutputTraits& traits);
 template <class E>
   void printExponent(FILE* file, const E& e, PolynomialTraits& traits);
 template <class KL>
-  void printExtremals(FILE* file, const CoxNbr& y, const KL& kl,
-		      const Interface& I, OutputTraits& traits);
+  void printExtremals(FILE* file, const coxtypes::CoxNbr& y, const KL& kl,
+		      const interface::Interface& I, OutputTraits& traits);
 void printHeader(FILE* file, const Header& header, OutputTraits& traits);
 template <class H>
-  void printHeckeElt(FILE* file, const H& h, const SchubertContext& p,
-		     const Interface& I, OutputTraits& traits,
-		     const Length& l = undef_length);
+  void printHeckeElt(FILE* file, const H& h, const schubert::SchubertContext& p,
+		     const interface::Interface& I, OutputTraits& traits,
+		     const coxtypes::Length& l = coxtypes::undef_length);
 template <class H>
-  void printHeckeElt(FILE* file, const H& h, const Permutation& a,
-		     const SchubertContext& p, const Interface& I,
+  void printHeckeElt(FILE* file, const H& h, const bits::Permutation& a,
+		     const schubert::SchubertContext& p, const interface::Interface& I,
 		     HeckeTraits& hTraits,
 		     PolynomialTraits& pTraits,
-		     const Length& l = undef_length);
-void printHomology(FILE* file, const Homology& h, OutputTraits& traits);
+		     const coxtypes::Length& l = coxtypes::undef_length);
+void printHomology(FILE* file, const schubert::Homology& h, OutputTraits& traits);
 template <class KL>
-  void printIHBetti(FILE* file, const CoxNbr& y, KL& kl, OutputTraits& traits);
+  void printIHBetti(FILE* file, const coxtypes::CoxNbr& y, KL& kl, OutputTraits& traits);
 template <class KL>
-  void printLCOrder(FILE* file, KL& kl, const Interface& I,
+  void printLCOrder(FILE* file, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits);
 template <class KL>
-  void printLCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
+  void printLCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
 		   OutputTraits& traits);
 template <class KL>
-  void printLCellWGraphs(FILE* file, const Partition& lp, KL& kl,
-			 const Interface& I, OutputTraits& traits);
+  void printLCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
+			 const interface::Interface& I, OutputTraits& traits);
 template <class KL>
-  void printLRCOrder(FILE* file, KL& kl, const Interface& I,
+  void printLRCOrder(FILE* file, KL& kl, const interface::Interface& I,
 		     OutputTraits& traits);
 template <class KL>
-  void printLRCells(FILE* file, const Partition& lp, KL& kl,
-		    const Interface& I, OutputTraits& traits);
+  void printLRCells(FILE* file, const bits::Partition& lp, KL& kl,
+		    const interface::Interface& I, OutputTraits& traits);
 template <class KL>
-  void printLRCellWGraphs(FILE* file, const Partition& lp, KL& kl,
-			  const Interface& I, OutputTraits& traits);
+  void printLRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
+			  const interface::Interface& I, OutputTraits& traits);
 template <class KL>
-  void printLRWGraph(FILE* file, KL& kl, const Interface& I,
+  void printLRWGraph(FILE* file, KL& kl, const interface::Interface& I,
 		     OutputTraits& traits);
 template <class KL>
-  void printLWGraph(FILE* file, KL& kl, const Interface& I,
+  void printLWGraph(FILE* file, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits);
 template <class C>
   void printMonomial(FILE* file, const C& c, const Ulong& e,
@@ -149,44 +148,47 @@ template <class C>
 void printModifier(FILE* file, const Ulong& d, const long& m,
 		   PolynomialTraits& traits);
 template <class M>
-  void printMuMark(FILE* file, const M& m, const SchubertContext& p,
-		   const Length& l, HeckeTraits& traits);
-void printPartition(FILE* file, const Partition& pi, const SchubertContext& p,
-		    const Interface& I, PartitionTraits& traits);
+  void printMuMark(FILE* file, const M& m, const schubert::SchubertContext& p,
+		   const coxtypes::Length& l, HeckeTraits& traits);
+void printPartition(FILE* file, const bits::Partition& pi, const schubert::SchubertContext& p,
+		    const interface::Interface& I, PartitionTraits& traits);
 template <class P>
   void printPolynomial(FILE* file, const P& p, PolynomialTraits& traits,
 		       const Ulong& d = 1, const long& m = 0);
 template <class KL>
-  void printRCOrder(FILE* file, KL& kl, const Interface& I,
+  void printRCOrder(FILE* file, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits);
 template <class KL>
-  void printRCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
+  void printRCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
 		   OutputTraits& traits);
 template <class KL>
-  void printRCellWGraphs(FILE* file, const Partition& lp, KL& kl,
-			 const Interface& I, OutputTraits& traits);
+  void printRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
+			 const interface::Interface& I, OutputTraits& traits);
 template <class KL>
-  void printRWGraph(FILE* file, KL& kl, const Interface& I,
+  void printRWGraph(FILE* file, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits);
 void printSeparator(FILE* file, const Ulong& n, HeckeTraits& traits);
 template <class KL>
-  void printSingularLocus(FILE* file, const CoxNbr& y, KL& kl,
-			  const Interface& I, OutputTraits& traits);
+  void printSingularLocus(FILE* file, const coxtypes::CoxNbr& y, KL& kl,
+			  const interface::Interface& I, OutputTraits& traits);
 template <class KL>
-  void printSingularStratification(FILE* file, const CoxNbr& y, KL& kl,
-				   const Interface& I, OutputTraits& traits);
-void printWGraph(FILE* file, const WGraph& X, const LFlags& f,
-		 const Interface& I, WgraphTraits& traits);
+  void printSingularStratification(FILE* file, const coxtypes::CoxNbr& y, KL& kl,
+				   const interface::Interface& I, OutputTraits& traits);
+void printWGraph(FILE* file, const wgraph::WGraph& X, const bits::Lflags& f,
+		 const interface::Interface& I, WgraphTraits& traits);
 template <class KL>
-  void printWGraphList(FILE* file, const Partition& pi, const LFlags& f,
-		       const Interface& I, KL& kl, OutputTraits& traits);
+  void printWGraphList(FILE* file, const bits::Partition& pi, const bits::Lflags& f,
+		       const interface::Interface& I, KL& kl, OutputTraits& traits);
 template <class H>
-  bool setTwoSided(const H& h, const Permutation& a, const SchubertContext& p,
-		   const Interface& I, HeckeTraits& hTraits,
-		   PolynomialTraits& pTraits, const Length& l = undef_length);
-void sortLists(List<List<CoxNbr> >& lc, schubert::NFCompare& nfc,
-	       Permutation& a);
-void writeClasses(List<List<CoxNbr> >& lc, const Partition& pi);
+  bool setTwoSided(const H& h, const bits::Permutation& a,
+		   const schubert::SchubertContext& p,
+		   const interface::Interface& I, HeckeTraits& hTraits,
+		   PolynomialTraits& pTraits,
+		   const coxtypes::Length& l = coxtypes::undef_length);
+void sortLists(list::List<list::List<coxtypes::CoxNbr> >& lc, schubert::NFCompare& nfc,
+	       bits::Permutation& a);
+void writeClasses
+  (list::List<list::List<coxtypes::CoxNbr> >& lc, const bits::Partition& pi);
 };
 
 /******** type definitions **************************************************/
@@ -213,12 +215,12 @@ struct PolynomialTraits {
   bool printExponent;
   bool printModifier;
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(PolynomialTraits));}
-  PolynomialTraits(Pretty);
-  PolynomialTraits(Terse);
-  PolynomialTraits(GAP);
+    {return memory::arena().free(ptr,sizeof(PolynomialTraits));}
+  PolynomialTraits(io::Pretty);
+  PolynomialTraits(io::Terse);
+  PolynomialTraits(io::GAP);
   ~PolynomialTraits();
 };
 
@@ -241,24 +243,24 @@ struct HeckeTraits {
   bool reversePrint;
   bool twoSided;
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(HeckeTraits));}
-  HeckeTraits(const Interface& I, Pretty);
-  HeckeTraits(const Interface& I, Terse);
-  HeckeTraits(const Interface& I, GAP);
+    {return memory::arena().free(ptr,sizeof(HeckeTraits));}
+  HeckeTraits(const interface::Interface& I, io::Pretty);
+  HeckeTraits(const interface::Interface& I, io::Terse);
+  HeckeTraits(const interface::Interface& I, io::GAP);
   virtual ~HeckeTraits();
 };
 
 struct AddHeckeTraits:public HeckeTraits { // Hecke traits for additive output
-  GroupEltInterface* eltTraits;
+  interface::GroupEltInterface* eltTraits;
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(AddHeckeTraits));}
-  AddHeckeTraits(const Interface& I, Pretty);
-  AddHeckeTraits(const Interface& I, Terse);
-  AddHeckeTraits(const Interface& I, GAP);
+    {return memory::arena().free(ptr,sizeof(AddHeckeTraits));}
+  AddHeckeTraits(const interface::Interface& I, io::Pretty);
+  AddHeckeTraits(const interface::Interface& I, io::Terse);
+  AddHeckeTraits(const interface::Interface& I, io::GAP);
   ~AddHeckeTraits();
 };
 
@@ -273,12 +275,12 @@ struct PartitionTraits {
   std::string classNumberPostfix;
   bool printClassNumber;
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(PartitionTraits));}
-  PartitionTraits(Pretty);
-  PartitionTraits(Terse);
-  PartitionTraits(GAP);
+    {return memory::arena().free(ptr,sizeof(PartitionTraits));}
+  PartitionTraits(io::Pretty);
+  PartitionTraits(io::Terse);
+  PartitionTraits(io::GAP);
   ~PartitionTraits();
 };
 
@@ -294,12 +296,12 @@ struct PosetTraits {
   Ulong nodeShift;
   bool printNode;
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(PosetTraits));}
-  PosetTraits(Pretty);
-  PosetTraits(Terse);
-  PosetTraits(GAP);
+    {return memory::arena().free(ptr,sizeof(PosetTraits));}
+  PosetTraits(io::Pretty);
+  PosetTraits(io::Terse);
+  PosetTraits(io::GAP);
   ~PosetTraits();
 };
 
@@ -323,12 +325,12 @@ struct WgraphTraits {
   bool hasPadding;
   bool printNodeNumber;
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(WgraphTraits));}
-  WgraphTraits(Pretty);
-  WgraphTraits(Terse);
-  WgraphTraits(GAP);
+    {return memory::arena().free(ptr,sizeof(WgraphTraits));}
+  WgraphTraits(io::Pretty);
+  WgraphTraits(io::Terse);
+  WgraphTraits(io::GAP);
   ~WgraphTraits();
 };
 
@@ -424,14 +426,14 @@ struct OutputTraits {
   bool printVersion;
   bool hasBettiPadding;
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void* operator new(size_t size, void* ptr) {return ptr;}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(OutputTraits));}
+    {return memory::arena().free(ptr,sizeof(OutputTraits));}
   void operator delete(void* p1, void* p2) {};
-  OutputTraits(const CoxGraph& G, const Interface& I, Pretty);
-  OutputTraits(const CoxGraph& G, const Interface& I, Terse);
-  OutputTraits(const CoxGraph& G, const Interface& I, GAP);
+  OutputTraits(const graph::CoxGraph& G, const interface::Interface& I, io::Pretty);
+  OutputTraits(const graph::CoxGraph& G, const interface::Interface& I, io::Terse);
+  OutputTraits(const graph::CoxGraph& G, const interface::Interface& I, io::GAP);
   ~OutputTraits();
 // manipulators
   void setBasisTraits(HeckeTraits& hTraits);

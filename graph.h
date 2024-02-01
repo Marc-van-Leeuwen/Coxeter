@@ -18,23 +18,19 @@
 #include "type.h"
 
 namespace graph {
-  using namespace globals;
-  using namespace list;
-  using namespace bits;
-  using namespace coxtypes;
-  using namespace memory;
-  using namespace type;
 
 /* type declarations */
 
   class CoxGraph;
   typedef unsigned short CoxEntry;
-  typedef List<CoxEntry> CoxMatrix;
+  typedef list::List<CoxEntry> CoxMatrix;
 
 
 /* constants */
 
-  const Ulong SBITMAP_MAX = RANK_MAX/CHAR_BIT + (bool)(RANK_MAX%CHAR_BIT);
+  const Ulong SBITMAP_MAX =
+    coxtypes::RANK_MAX/CHAR_BIT
+    + (bool)(coxtypes::RANK_MAX % CHAR_BIT);
   /* a CoxNbr should hold at least 2 COXENTRY_MAX elements */
   static const CoxEntry COXENTRY_MAX = 32763;
   static const CoxEntry undef_coxentry = USHRT_MAX;
@@ -44,18 +40,18 @@ namespace graph {
 
 
 
-  void getConjugacyClasses(List<LFlags>& cl, const CoxGraph& G);
-  bool isAffine(CoxGraph& G, LFlags I);
-  bool isConnected(CoxGraph& G, LFlags I);
-  bool isCrystallographic(CoxGraph& G, LFlags I);
-  bool isFinite(CoxGraph& G, LFlags I);
-  bool isLoop(CoxGraph& G, LFlags I);
-  bool isSimplyLaced(CoxGraph& G, LFlags I);
-  bool isTree(CoxGraph& G, LFlags I);
-  CoxSize order(CoxGraph& G, LFlags I);
-  ParSize quotOrder(CoxGraph& G, LFlags I, LFlags J);
-  Generator *standardEnumeration(CoxGraph& G, LFlags I);
-  const Type& type(CoxGraph& G, LFlags I);
+  void getConjugacyClasses(list::List<bits::Lflags>& cl, const CoxGraph& G);
+  bool isAffine(CoxGraph& G, bits::Lflags I);
+  bool isConnected(CoxGraph& G, bits::Lflags I);
+  bool isCrystallographic(CoxGraph& G, bits::Lflags I);
+  bool isFinite(CoxGraph& G, bits::Lflags I);
+  bool isLoop(CoxGraph& G, bits::Lflags I);
+  bool isSimplyLaced(CoxGraph& G, bits::Lflags I);
+  bool isTree(CoxGraph& G, bits::Lflags I);
+  coxtypes::CoxSize order(CoxGraph& G, bits::Lflags I);
+  coxtypes::ParSize quotOrder(CoxGraph& G, bits::Lflags I, bits::Lflags J);
+  coxtypes::Generator *standardEnumeration(CoxGraph& G, bits::Lflags I);
+  const type::Type& type(CoxGraph& G, bits::Lflags I);
 };
 
 /* type definitions */
@@ -63,45 +59,45 @@ namespace graph {
 class graph::CoxGraph
 {
  private:
-  Type d_type;
-  Rank d_rank;
+  type::Type d_type;
+  coxtypes::Rank d_rank;
   CoxMatrix d_matrix;
-  LFlags d_S;
-  List<LFlags> d_star;
-  List<LFlags> d_starOps;
+  bits::Lflags d_S;
+  list::List<bits::Lflags> d_star;
+  list::List<bits::Lflags> d_starOps;
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(CoxGraph));}
-  CoxGraph(const Type& x, const Rank& l);
+    {return memory::arena().free(ptr,sizeof(CoxGraph));}
+  CoxGraph(const type::Type& x, const coxtypes::Rank& l);
   ~CoxGraph();
 /* accessors */
-  LFlags component(LFlags I,Generator s) const;
-  LFlags extremities(LFlags I) const;
-  CoxEntry M(Generator s, Generator t) const;                  /* inlined */
-  LFlags nodes(LFlags I) const;
-  Rank rank() const;                                           /* inlined */
-  LFlags supp() const;                                         /* inlined */
-  LFlags star(Generator s) const;                              /* inlined */
-  LFlags star(LFlags I, Generator s) const;                    /* inlined */
-  const List<LFlags>& starOps() const;                         /* inlined */
-  const Type& type() const;                                    /* inlined */
+  bits::Lflags component(bits::Lflags I,coxtypes::Generator s) const;
+  bits::Lflags extremities(bits::Lflags I) const;
+  CoxEntry M(coxtypes::Generator s, coxtypes::Generator t) const;                  /* inlined */
+  bits::Lflags nodes(bits::Lflags I) const;
+  coxtypes::Rank rank() const;                                           /* inlined */
+  bits::Lflags supp() const;                                         /* inlined */
+  bits::Lflags star(coxtypes::Generator s) const;                              /* inlined */
+  bits::Lflags star(bits::Lflags I, coxtypes::Generator s) const;                    /* inlined */
+  const list::List<bits::Lflags>& starOps() const;                         /* inlined */
+  const type::Type& type() const;                                    /* inlined */
 };
 
 /******** inline definitions **********************************************/
 
 namespace graph {
 
-  inline CoxEntry CoxGraph::M(Generator s, Generator t) const
+  inline CoxEntry CoxGraph::M(coxtypes::Generator s, coxtypes::Generator t) const
     {return(d_matrix[s*d_rank + t]);}
-  inline Rank CoxGraph::rank() const {return d_rank;}
-  inline LFlags CoxGraph::supp() const {return d_S;}
-  inline LFlags CoxGraph::star(Generator s) const {return(d_star[s]);}
-  inline LFlags CoxGraph::star(LFlags I, Generator s) const
+  inline coxtypes::Rank CoxGraph::rank() const {return d_rank;}
+  inline bits::Lflags CoxGraph::supp() const {return d_S;}
+  inline bits::Lflags CoxGraph::star(coxtypes::Generator s) const {return(d_star[s]);}
+  inline bits::Lflags CoxGraph::star(bits::Lflags I, coxtypes::Generator s) const
     {return(d_star[s]&I);}
-  inline const List<LFlags>& CoxGraph::starOps() const {return d_starOps;}
-  inline const Type& CoxGraph::type() const {return d_type;}
+  inline const list::List<bits::Lflags>& CoxGraph::starOps() const {return d_starOps;}
+  inline const type::Type& CoxGraph::type() const {return d_type;}
 
 };
 

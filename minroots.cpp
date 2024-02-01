@@ -11,8 +11,8 @@ namespace {
   using namespace minroots;
 
   const Ulong dihedral = MINNBR_MAX + 4;
-  const int first_dotval = locked;
-  const int first_negdotval = neg_cos;
+  const int first_dotval = dotval::locked;
+  const int first_negdotval = dotval::neg_cos;
   const int dotval_size = 13;
   const int dotval_negsize = 4;
 };
@@ -25,30 +25,30 @@ namespace {
   {
   public:
     InitMinTable() {};
-    InitMinTable(CoxGraph& G);
-    MinNbr dihedralShift(MinNbr r, Generator s, Generator t,
+    InitMinTable(graph::CoxGraph& G);
+    MinNbr dihedralShift(MinNbr r, coxtypes::Generator s, coxtypes::Generator t,
 			   Ulong c);
-    void initMinTable(CoxGraph& G);
-    void fillDepthOneRow(CoxGraph& G, MinNbr r, Generator s);
-    void fillDihedralRoots(CoxGraph& G);
-    void fillDihedralRow(CoxGraph& G, MinNbr r, Generator s, Length d);
-    void fillMinTable(CoxGraph& G);
-    void fillReflectionRow(CoxGraph& G, MinNbr r, Generator s);
-    void newDepthOneRoot(CoxGraph& G, MinNbr r, Generator s);
-    void newDepthTwoRoot(CoxGraph& G, MinNbr r, Generator s);
-    void newDihedralRoot(CoxGraph& G, MinNbr r, Generator s, Length d);
-    void newMinRoot(CoxGraph& G, MinNbr r, Generator s);
+    void initMinTable(graph::CoxGraph& G);
+    void fillDepthOneRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void fillDihedralRoots(graph::CoxGraph& G);
+    void fillDihedralRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s, coxtypes::Length d);
+    void fillMinTable(graph::CoxGraph& G);
+    void fillReflectionRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void newDepthOneRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void newDepthTwoRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void newDihedralRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s, coxtypes::Length d);
+    void newMinRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
     void setMinMemory(unsigned long n) {d_min.setSize(n); d_dot.setSize(n);}
     inline MinNbr size() {return d_size;}
   };
 
-  DotVal bondCosineSum(CoxEntry m, int a, int b);
+  dotval::DotVal bondCosineSum(graph::CoxEntry m, int a, int b);
 
-  DotVal *CS3;
-  DotVal *CS4;
-  DotVal *CS5;
-  DotVal *CS6;
-  DotVal *CSm;
+  dotval::DotVal *CS3;
+  dotval::DotVal *CS4;
+  dotval::DotVal *CS5;
+  dotval::DotVal *CS6;
+  dotval::DotVal *CSm;
 };
 
 /***************************************************************************
@@ -216,19 +216,21 @@ InitStaticConstants::InitStaticConstants()
 */
 
 {
-  CS3 = (DotVal *)memory::arena().alloc((dotval_negsize+1)*dotval_size*
-					  sizeof(DotVal));
-  CS4 = (DotVal *)memory::arena().alloc(dotval_negsize*dotval_size*
-					  sizeof(DotVal));
-  CS5 = (DotVal *)memory::arena().alloc(dotval_negsize*dotval_size*
-					  sizeof(DotVal));
-  CS6 = (DotVal *)memory::arena().alloc(dotval_negsize*dotval_size*
-					  sizeof(DotVal));
-  CSm = (DotVal *)memory::arena().alloc((dotval_negsize+1)*dotval_size*
-					  sizeof(DotVal));
+  CS3 = (dotval::DotVal*)memory::arena().alloc((dotval_negsize+1)*dotval_size*
+					  sizeof(dotval::DotVal));
+  CS4 = (dotval::DotVal*)memory::arena().alloc(dotval_negsize*dotval_size*
+					  sizeof(dotval::DotVal));
+  CS5 = (dotval::DotVal*)memory::arena().alloc(dotval_negsize*dotval_size*
+					  sizeof(dotval::DotVal));
+  CS6 = (dotval::DotVal*)memory::arena().alloc(dotval_negsize*dotval_size*
+					  sizeof(dotval::DotVal));
+  CSm = (dotval::DotVal*)memory::arena().alloc((dotval_negsize+1)*dotval_size*
+					  sizeof(dotval::DotVal));
   CS3 += dotval_size;
   CSm += dotval_size;
 
+  using namespace dotval; // all right hand sides are constants defined there
+  
   CS3[-13] = locked;          /* locked - cos(*) */
   CS3[-12] = undef_dotval;    /* undef_negdot - cos(*) : can't occur */
   CS3[-11] = locked;          /* - cos - cos(*) */
@@ -573,7 +575,7 @@ InitStaticConstants::InitStaticConstants()
 
 namespace {
 
-InitMinTable::InitMinTable(CoxGraph& G)
+InitMinTable::InitMinTable(graph::CoxGraph& G)
 
 {
   static InitStaticConstants a;
@@ -584,30 +586,31 @@ InitMinTable::InitMinTable(CoxGraph& G)
   return;
 }
 
-void InitMinTable::initMinTable(CoxGraph& G)
+void InitMinTable::initMinTable(graph::CoxGraph& G)
 
 {
   d_min.setSize(rank());
   d_dot.setSize(rank());
 
-  d_min[0] = new(arena()) MinNbr[rank()*rank()];
-  d_dot[0] = new(arena()) DotProduct[rank()*rank()];
+  d_min[0] = new(memory::arena()) MinNbr[rank()*rank()];
+  d_dot[0] = new(memory::arena()) DotProduct[rank()*rank()];
 
-  for (Generator s = 1; s < rank(); s++)
+  for (coxtypes::Generator s = 1; s < rank(); s++)
     {
       d_dot[s] = d_dot[s-1] + rank();
       d_min[s] = d_min[s-1] + rank();
     }
 
   for (MinNbr r = 0; r < rank(); r++) {
-    for (Generator s = 0; s < rank(); s++)
+    for (coxtypes::Generator s = 0; s < rank(); s++)
       switch (G.M(r,s)) {
+	using namespace dotval;
       case 0:
 	d_dot[r][s] = locked;
 	d_min[r][s] = not_minimal;
 	break;
       case 1:
-	d_dot[r][s] = dotval::one;
+	d_dot[r][s] = one;
 	d_min[r][s] = not_positive;
 	break;
       case 2:
@@ -630,7 +633,7 @@ void InitMinTable::initMinTable(CoxGraph& G)
   return;
 }
 
-MinNbr InitMinTable::dihedralShift(MinNbr r, Generator s, Generator t,
+MinNbr InitMinTable::dihedralShift(MinNbr r, coxtypes::Generator s, coxtypes::Generator t,
 				    Ulong c)
 
 /*
@@ -639,7 +642,7 @@ MinNbr InitMinTable::dihedralShift(MinNbr r, Generator s, Generator t,
 
 {
   Ulong j;
-  Generator u;
+  coxtypes::Generator u;
 
   u = s;
 
@@ -657,7 +660,7 @@ MinNbr InitMinTable::dihedralShift(MinNbr r, Generator s, Generator t,
 }
 
 
-void InitMinTable::fillDihedralRoots(CoxGraph& G)
+void InitMinTable::fillDihedralRoots(graph::CoxGraph& G)
 
 /*
   Assuming M has been initialized by InitMinTable, fills in the
@@ -670,7 +673,7 @@ void InitMinTable::fillDihedralRoots(CoxGraph& G)
   /* fill in roots of depth 1 */
 
   for (; r < rank(); ++r) {
-    for (Generator s = 0; s < rank(); ++s)
+    for (coxtypes::Generator s = 0; s < rank(); ++s)
       if (min(r,s) == dihedral) {
 	newDepthOneRoot(G,r,s);
 	d_size++;
@@ -682,7 +685,7 @@ void InitMinTable::fillDihedralRoots(CoxGraph& G)
   MinNbr c = d_size;
 
   for (; r < c; ++r) {
-    for (Generator s = 0; s < rank(); ++s)
+    for (coxtypes::Generator s = 0; s < rank(); ++s)
       if (min(r,s) == dihedral) {
 	newDepthTwoRoot(G,r,s);
 	d_size++;
@@ -691,10 +694,10 @@ void InitMinTable::fillDihedralRoots(CoxGraph& G)
 
   /* fill in roots of depth > 2 */
 
-  for (Length d = 3; r < d_size; ++d) {
+  for (coxtypes::Length d = 3; r < d_size; ++d) {
     c = d_size;
     for (; r < c; ++r) {
-      for (Generator s = 0; s < rank(); ++s)
+      for (coxtypes::Generator s = 0; s < rank(); ++s)
 	if (min(r,s) == dihedral) {
 	  newDihedralRoot(G,r,s,d);
 	  d_size++;
@@ -706,17 +709,17 @@ void InitMinTable::fillDihedralRoots(CoxGraph& G)
 }
 
 
-void InitMinTable::fillDepthOneRow(CoxGraph& G, MinNbr r, Generator s)
+void InitMinTable::fillDepthOneRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
-  Generator u = min(r,s);
+  coxtypes::Generator u = min(r,s);
   MinNbr* ps = d_min[s];
 
-  for (Generator t = 0; t < rank(); t++) {
+  for (coxtypes::Generator t = 0; t < rank(); t++) {
     if (t == s)
       continue;
     if (t == u) { /* t is the other element in the support */
-      CoxEntry m = G.M(s,t);
+      graph::CoxEntry m = G.M(s,t);
       if (m == 3) { /* descent */
 	d_min[r][t] = s;
 	ps[t] = r;
@@ -728,6 +731,7 @@ void InitMinTable::fillDepthOneRow(CoxGraph& G, MinNbr r, Generator s)
       continue;
     }
     switch (dot(r,t)) {
+      using namespace dotval;
     case zero:
       d_min[r][t] = r;
       break;
@@ -748,13 +752,13 @@ void InitMinTable::fillDepthOneRow(CoxGraph& G, MinNbr r, Generator s)
 }
 
 
-void InitMinTable::fillDihedralRow(CoxGraph& G, MinNbr r, Generator s,
-				  Length d)
+void InitMinTable::fillDihedralRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s,
+				  coxtypes::Length d)
 
 {
   MinNbr p = min(r,s);
 
-  for (Generator t = 0; t < rank(); t++) {
+  for (coxtypes::Generator t = 0; t < rank(); t++) {
     if (t == s)
       continue;
     if (min(p,t) < p) { /* t is the other element in the support */
@@ -763,7 +767,7 @@ void InitMinTable::fillDihedralRow(CoxGraph& G, MinNbr r, Generator s,
       else if (dot(r,t) == 0)
 	d_min[r][t] = r;
       else { /* descent */
-	CoxEntry m = G.M(s,t);
+	graph::CoxEntry m = G.M(s,t);
 	MinNbr y;
 	switch (m % 4) {
 	case 0:
@@ -785,6 +789,7 @@ void InitMinTable::fillDihedralRow(CoxGraph& G, MinNbr r, Generator s,
       continue;
     }
     switch (dot(r,t)) {
+      using namespace dotval;
     case zero:
       d_min[r][t] = r;
       break;
@@ -805,7 +810,7 @@ void InitMinTable::fillDihedralRow(CoxGraph& G, MinNbr r, Generator s,
 }
 
 
-void InitMinTable::fillReflectionRow(CoxGraph& G, MinNbr r, Generator s)
+void InitMinTable::fillReflectionRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 /*
   This function fills in d_min[r], where r has just been created through s,
@@ -814,16 +819,17 @@ void InitMinTable::fillReflectionRow(CoxGraph& G, MinNbr r, Generator s)
 */
 
 {
-  for (Generator t = 0; t < rank(); t++) {
+  for (coxtypes::Generator t = 0; t < rank(); t++) {
     if (t == s)
       continue;
     switch (dot(r,t)) {
+      using namespace dotval;
     case dotval::cos:
     case cos2:
     case half:  /* descent */
     case hinvgold:
-      if (G.star(bits::lmask[t],s)) { /* M(t,s) > 2 */
-	CoxEntry m = G.M(s,t);
+      if (G.star(constants::lmask[t],s)) { /* M(t,s) > 2 */
+	graph::CoxEntry m = G.M(s,t);
 	MinNbr y = dihedralShift(r,s,t,2*m-1);
 	d_min[r][t] = y;
 	d_min[y][t] = r;
@@ -858,13 +864,13 @@ void InitMinTable::fillReflectionRow(CoxGraph& G, MinNbr r, Generator s)
 }
 
 
-void InitMinTable::fillMinTable(CoxGraph& G)
+void InitMinTable::fillMinTable(graph::CoxGraph& G)
 
 {
   fillDihedralRoots(G);
 
   for (Ulong r = rank(); r < d_size; r++) {
-    for (Generator s = 0; s < rank(); ++s)
+    for (coxtypes::Generator s = 0; s < rank(); ++s)
       if (min(r,s) == undef_minnbr) {
 	newMinRoot(G,r,s);
 	d_size++;
@@ -878,13 +884,13 @@ void InitMinTable::fillMinTable(CoxGraph& G)
 }
 
 
-void InitMinTable::newDepthOneRoot(CoxGraph& G, MinNbr r, Generator s)
+void InitMinTable::newDepthOneRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
   setMinMemory(d_size+1);
 
-  d_min[d_size]= new(arena()) MinNbr[rank()];
-  d_dot[d_size]= new(arena()) DotProduct[rank()];
+  d_min[d_size]= new(memory::arena()) MinNbr[rank()];
+  d_dot[d_size]= new(memory::arena()) DotProduct[rank()];
 
   d_min[d_size][s] = r;
   d_min[r][s] = d_size;
@@ -892,9 +898,9 @@ void InitMinTable::newDepthOneRoot(CoxGraph& G, MinNbr r, Generator s)
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (LFlags f = G.star(s); f; f &= f-1) {
-    Generator t = bits::firstBit(f);
-    if (dot(r,t) == locked)
+  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+    coxtypes::Generator t = constants::firstBit(f);
+    if (dot(r,t) == dotval::locked)
       continue;
     d_dot[d_size][t] =
       bondCosineSum(G.M(s,t),dot(r,t),dot(r,s));
@@ -906,13 +912,13 @@ void InitMinTable::newDepthOneRoot(CoxGraph& G, MinNbr r, Generator s)
 }
 
 
-void InitMinTable::newDepthTwoRoot(CoxGraph& G, MinNbr r, Generator s)
+void InitMinTable::newDepthTwoRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
   setMinMemory(d_size+1);
 
-  d_min[d_size]= new(arena()) MinNbr[rank()];
-  d_dot[d_size]= new(arena()) DotProduct[rank()];
+  d_min[d_size]= new(memory::arena()) MinNbr[rank()];
+  d_dot[d_size]= new(memory::arena()) DotProduct[rank()];
 
   d_min[d_size][s] = r;
   d_min[r][s] = d_size;
@@ -920,9 +926,9 @@ void InitMinTable::newDepthTwoRoot(CoxGraph& G, MinNbr r, Generator s)
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (LFlags f = G.star(s); f; f &= f-1) {
-    Generator t = bits::firstBit(f);
-    if (dot(r,t) == locked)
+  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+    coxtypes::Generator t = constants::firstBit(f);
+    if (dot(r,t) == dotval::locked)
       continue;
     d_dot[d_size][t] =
       bondCosineSum(G.M(s,t),dot(r,t),dot(r,s));
@@ -934,14 +940,14 @@ void InitMinTable::newDepthTwoRoot(CoxGraph& G, MinNbr r, Generator s)
 }
 
 
-void InitMinTable::newDihedralRoot(CoxGraph& G, MinNbr r, Generator s,
-				  Length d)
+void InitMinTable::newDihedralRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s,
+				  coxtypes::Length d)
 
 {
   setMinMemory(d_size+1);
 
-  d_min[d_size]= new(arena()) MinNbr[rank()];
-  d_dot[d_size]= new(arena()) DotProduct[rank()];
+  d_min[d_size]= new(memory::arena()) MinNbr[rank()];
+  d_dot[d_size]= new(memory::arena()) DotProduct[rank()];
 
   d_min[d_size][s] = r;
   d_min[r][s] = d_size;
@@ -949,17 +955,17 @@ void InitMinTable::newDihedralRoot(CoxGraph& G, MinNbr r, Generator s,
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (LFlags f = G.star(s); f; f &= f-1) {
-    Generator t = bits::firstBit(f);
-    if (dot(r,t) == locked)
+  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+    coxtypes::Generator t = constants::firstBit(f);
+    if (dot(r,t) == dotval::locked)
       continue;
-    CoxEntry m = G.M(s,t);
+    graph::CoxEntry m = G.M(s,t);
     d_dot[d_size][t] =
       bondCosineSum(m,dot(r,t),dot(r,s));
 
     /* correction if maximal depth is reached */
 
-    if (dot(d_size,t) == undef_negdot)  /* t is the other element */
+    if (dot(d_size,t) == dotval::undef_negdot)  /* t is the other element */
       if (d == (m-1)/2)
 	d_dot[d_size][t] = -d_dot[d_size][t];
   }
@@ -970,13 +976,13 @@ void InitMinTable::newDihedralRoot(CoxGraph& G, MinNbr r, Generator s,
 }
 
 
-void InitMinTable::newMinRoot(CoxGraph& G, MinNbr r, Generator s)
+void InitMinTable::newMinRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
   setMinMemory(d_size+1);
 
-  d_min[d_size]= new(arena()) MinNbr[rank()];
-  d_dot[d_size]= new(arena()) DotProduct[rank()];
+  d_min[d_size]= new(memory::arena()) MinNbr[rank()];
+  d_dot[d_size]= new(memory::arena()) DotProduct[rank()];
 
   d_min[d_size][s] = r;
   d_min[r][s] = d_size;
@@ -984,9 +990,9 @@ void InitMinTable::newMinRoot(CoxGraph& G, MinNbr r, Generator s)
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (LFlags f = G.star(s); f; f &= f-1) {
-    Generator t = bits::firstBit(f);
-    if (dot(r,t) == locked)
+  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+    coxtypes::Generator t = constants::firstBit(f);
+    if (dot(r,t) == dotval::locked)
       continue;
     d_dot[d_size][t] =
       bondCosineSum(G.M(s,t),dot(r,t),dot(r,s));
@@ -1008,8 +1014,8 @@ void InitMinTable::newMinRoot(CoxGraph& G, MinNbr r, Generator s)
 
  The following functions are defined :
 
-  - MinTable(CoxGraph&);
-  - fill(CoxGraph&) : fills the MinTable;
+  - MinTable(graph::CoxGraph&);
+  - fill(graph::CoxGraph&) : fills the MinTable;
 
   access to the descent sets :
 
@@ -1036,7 +1042,7 @@ void InitMinTable::newMinRoot(CoxGraph& G, MinNbr r, Generator s)
 
 namespace minroots {
 
-MinTable::MinTable(CoxGraph& G)
+MinTable::MinTable(graph::CoxGraph& G)
 
 {
   new(this) InitMinTable(G);
@@ -1059,22 +1065,22 @@ MinTable::~MinTable()
   /* undo general allocations */
 
   for (Ulong j = d_rank; j < d_min.size(); ++j) {
-    arena().free(d_min[j],d_rank*sizeof(MinNbr));
+    memory::arena().free(d_min[j],d_rank*sizeof(MinNbr));
   }
 
   for (Ulong j = d_rank; j < d_dot.size(); ++j) {
-    arena().free(d_dot[j],d_rank*sizeof(DotProduct));
+    memory::arena().free(d_dot[j],d_rank*sizeof(DotProduct));
   }
 
   /* undo first allocation */
 
-  arena().free(d_min[0],d_rank*d_rank*sizeof(MinNbr));
-  arena().free(d_dot[0],d_rank*d_rank*sizeof(DotProduct));
+  memory::arena().free(d_min[0],d_rank*d_rank*sizeof(MinNbr));
+  memory::arena().free(d_dot[0],d_rank*d_rank*sizeof(DotProduct));
 
   return;
 }
 
-LFlags MinTable::descent(const CoxWord& g) const
+bits::Lflags MinTable::descent(const coxtypes::CoxWord& g) const
 
 /*
   Returns the two-sided descent set of g, in the usual format : the right
@@ -1083,73 +1089,73 @@ LFlags MinTable::descent(const CoxWord& g) const
 */
 
 {
-  static CoxWord h(0);
+  static coxtypes::CoxWord h(0);
 
-  LFlags f = 0;
+  bits::Lflags f = 0;
 
-  for (Generator s = 0; s < d_rank; ++s) {
+  for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(g,s))
-      f |= lmask[s];
+      f |= constants::lmask[s];
   }
 
   h = g;
   inverse(h);
 
-  for (Generator s = 0; s < d_rank; ++s) {
+  for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(h,s))
-      f |= lmask[d_rank+s];
+      f |= constants::lmask[d_rank+s];
   }
 
   return f;
 }
 
-LFlags MinTable::ldescent(const CoxWord& g) const
+bits::Lflags MinTable::ldescent(const coxtypes::CoxWord& g) const
 
 /*
   Returns the left descent set of g.
 */
 
 {
-  static CoxWord h(0);
+  static coxtypes::CoxWord h(0);
 
   h = g;
   inverse(h);
-  LFlags f = 0;
+  bits::Lflags f = 0;
 
-  for (Generator s = 0; s < d_rank; ++s) {
+  for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(h,s))
-      f |= lmask[s];
+      f |= constants::lmask[s];
   }
 
   return f;
 }
 
-LFlags MinTable::rdescent(const CoxWord& g) const
+bits::Lflags MinTable::rdescent(const coxtypes::CoxWord& g) const
 
 /*
   Returns the right descent set of g.
 */
 
 {
-  LFlags f = 0;
+  bits::Lflags f = 0;
 
-  for (Generator s = 0; s < d_rank; ++s) {
+  for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(g,s))
-      f |= lmask[s];
+      f |= constants::lmask[s];
   }
 
   return f;
 }
 
-void MinTable::fill(CoxGraph& G)
+void MinTable::fill(graph::CoxGraph& G)
 
 {
   InitMinTable* T = (InitMinTable *)this;
   T->fillMinTable(G);
 }
 
-int MinTable::insert(CoxWord& g, const Generator& s,
-		     const Permutation& order) const
+int MinTable::insert(coxtypes::CoxWord& g, const coxtypes::Generator& s,
+		     const bits::Permutation& order) const
 
 /*
   This function is like prod below, except that it is now assumed that
@@ -1170,8 +1176,8 @@ int MinTable::insert(CoxWord& g, const Generator& s,
 
 {
   MinNbr r = s;
-  Generator i = s;
-  Length p = g.length();
+  coxtypes::Generator i = s;
+  coxtypes::Length p = g.length();
   Ulong q = p;
 
   for (Ulong j = p; j;)
@@ -1201,7 +1207,7 @@ int MinTable::insert(CoxWord& g, const Generator& s,
   return 1;
 }
 
-bool MinTable::inOrder(const CoxWord& d_g, const CoxWord& d_h) const
+bool MinTable::inOrder(const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_h) const
 
 /*
   This function tells whether g <= h using the well-known elementary
@@ -1212,13 +1218,13 @@ bool MinTable::inOrder(const CoxWord& d_g, const CoxWord& d_h) const
 */
 
 {
-  CoxWord g(d_g);
-  CoxWord h(d_h);
+  coxtypes::CoxWord g(d_g);
+  coxtypes::CoxWord h(d_h);
 
   if (h.length() == 0)
     return g.length() == 0;
 
-   Generator s = h[h.length()-1]-1; // last term of h
+   coxtypes::Generator s = h[h.length()-1]-1; // last term of h
    if (isDescent(g,s))
      prod(g,s);
    h.erase(h.length()-1);
@@ -1226,8 +1232,8 @@ bool MinTable::inOrder(const CoxWord& d_g, const CoxWord& d_h) const
    return inOrder(g,h);
 }
 
-bool MinTable::inOrder(List<Length>& a, const CoxWord& d_g,
-		       const CoxWord& d_h) const
+bool MinTable::inOrder(list::List<coxtypes::Length>& a, const coxtypes::CoxWord& d_g,
+		       const coxtypes::CoxWord& d_h) const
 
 /*
   Like the previous inOrder, but puts in a the places where the erasures take
@@ -1240,12 +1246,12 @@ bool MinTable::inOrder(List<Length>& a, const CoxWord& d_g,
   if (!inOrder(d_g,d_h))
     return false;
 
-  CoxWord g(d_g);
-  CoxWord h(d_h);
-  List<Length> b(0);
+  coxtypes::CoxWord g(d_g);
+  coxtypes::CoxWord h(d_h);
+  list::List<coxtypes::Length> b(0);
 
   while (h.length()) {
-    Generator s = h[h.length()-1]-1; // last term of h
+    coxtypes::Generator s = h[h.length()-1]-1; // last term of h
     if (isDescent(g,s))
       prod(g,s);
     else /* there is an erasure */
@@ -1263,7 +1269,7 @@ bool MinTable::inOrder(List<Length>& a, const CoxWord& d_g,
   return true;
 }
 
-const CoxWord& MinTable::inverse(CoxWord& g) const
+const coxtypes::CoxWord& MinTable::inverse(coxtypes::CoxWord& g) const
 
 /*
   Inverses g. As we have made the assummption that only reduced words
@@ -1275,10 +1281,10 @@ const CoxWord& MinTable::inverse(CoxWord& g) const
 */
 
 {
-  Length p = g.length();
+  coxtypes::Length p = g.length();
 
-  for (Length j = 0; j < p/2; ++j) {
-    CoxLetter u = g[p-j-1];
+  for (coxtypes::Length j = 0; j < p/2; ++j) {
+    coxtypes::CoxLetter u = g[p-j-1];
     g[p-j-1] = g[j];
     g[j] = u;
   }
@@ -1287,7 +1293,7 @@ const CoxWord& MinTable::inverse(CoxWord& g) const
 }
 
 
-bool MinTable::isDescent(const CoxWord& g, const Generator& s) const
+bool MinTable::isDescent(const coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 
 /*
   Returns true if s is a descent generator of g, false otherwise.
@@ -1298,7 +1304,7 @@ bool MinTable::isDescent(const CoxWord& g, const Generator& s) const
 
   for (Ulong j = g.length(); j;) {
     --j;
-    Generator t = g[j]-1;
+    coxtypes::Generator t = g[j]-1;
     r = min(r,t);
     if (r == not_positive) { /* found reduction */
       return true;
@@ -1313,7 +1319,8 @@ bool MinTable::isDescent(const CoxWord& g, const Generator& s) const
 }
 
 
-const CoxWord& MinTable::normalForm(CoxWord& g, const Permutation& order) const
+const coxtypes::CoxWord& MinTable::normalForm
+  (coxtypes::CoxWord& g, const bits::Permutation& order) const
 
 /*
   Transforms g into its shortlex normal form (as defined by order) by a
@@ -1333,7 +1340,7 @@ const CoxWord& MinTable::normalForm(CoxWord& g, const Permutation& order) const
   return g;
 }
 
-const CoxWord& MinTable::power(CoxWord& g, const Ulong& m) const
+const coxtypes::CoxWord& MinTable::power(coxtypes::CoxWord& g, const Ulong& m) const
 
 /*
   Raises a to the m-th power. This can be done very quickly, by squarings
@@ -1349,7 +1356,7 @@ const CoxWord& MinTable::power(CoxWord& g, const Ulong& m) const
     return g;
   }
 
-  CoxWord h = g;
+  coxtypes::CoxWord h = g;
   Ulong p;
 
   for (p = m; ~p & hi_bit; p <<= 1)  /* shift m up to high powers */
@@ -1366,7 +1373,7 @@ const CoxWord& MinTable::power(CoxWord& g, const Ulong& m) const
   return g;
 }
 
-int MinTable::prod(CoxWord& g, const Generator& s) const
+int MinTable::prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 
 /*
   This is the fundamental function provided by the mintable structure. It
@@ -1392,12 +1399,12 @@ int MinTable::prod(CoxWord& g, const Generator& s) const
 
 {
   MinNbr r = s;
-  Length p = g.length();
+  coxtypes::Length p = g.length();
 
   for (Ulong j = p; j;)
     {
       --j;
-      Generator t = g[j]-1;
+      coxtypes::Generator t = g[j]-1;
       r = min(r,t);
       if (r == not_positive) { /* found reduction */
 	g.erase(j);
@@ -1416,7 +1423,8 @@ int MinTable::prod(CoxWord& g, const Generator& s) const
 }
 
 
-int MinTable::prod(CoxWord& g, CoxLetter *const h, const Ulong& n) const
+int MinTable::prod
+  (coxtypes::CoxWord& g, coxtypes::CoxLetter *const h, const Ulong& n) const
 
 /*
   Does the product consecutively by the letters in h. Returns the
@@ -1427,7 +1435,7 @@ int MinTable::prod(CoxWord& g, CoxLetter *const h, const Ulong& n) const
   int p = 0;
 
   for (Ulong j = 0; j < n; ++j) {
-    Generator s = h[j] - 1;
+    coxtypes::Generator s = h[j] - 1;
     p += prod(g,s);
   }
 
@@ -1435,7 +1443,7 @@ int MinTable::prod(CoxWord& g, CoxLetter *const h, const Ulong& n) const
 }
 
 
-int MinTable::prod(CoxWord& g, const CoxWord& h) const
+int MinTable::prod(coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const
 
 /*
   Does the product consecutively by the letters in h. Returns the
@@ -1445,13 +1453,13 @@ int MinTable::prod(CoxWord& g, const CoxWord& h) const
 */
 
 {
-  static CoxWord buf(0);
+  static coxtypes::CoxWord buf(0);
 
   buf = h;
   int p = 0;
 
   for (Ulong j = 0; j < buf.length(); ++j) {
-    Generator s = buf[j] - 1;
+    coxtypes::Generator s = buf[j] - 1;
     p += prod(g,s);
   }
 
@@ -1459,7 +1467,7 @@ int MinTable::prod(CoxWord& g, const CoxWord& h) const
 }
 
 
-const CoxWord& MinTable::reduced(CoxWord& g, CoxWord& h) const
+const coxtypes::CoxWord& MinTable::reduced(coxtypes::CoxWord& g, coxtypes::CoxWord& h) const
 
 /*
   Writes in g a reduced word corresponding to the arbitrary generator
@@ -1487,7 +1495,7 @@ const CoxWord& MinTable::reduced(CoxWord& g, CoxWord& h) const
 
  This section defines some ausiliary functions defined in this module :
 
-  - bondCosineSum(CoxEntry,int,int) : defines the symbolic sum of a and b
+  - bondCosineSum(graph::CoxEntry,int,int) : defines the symbolic sum of a and b
     for bonds of type m;
 
  ****************************************************************************/
@@ -1495,7 +1503,7 @@ const CoxWord& MinTable::reduced(CoxWord& g, CoxWord& h) const
 
 namespace {
 
-DotVal bondCosineSum(CoxEntry m, int a, int b)
+dotval::DotVal bondCosineSum(graph::CoxEntry m, int a, int b)
 
 {
   int j = a - first_dotval, k = b - first_negdotval;
@@ -1537,14 +1545,14 @@ DotVal bondCosineSum(CoxEntry m, int a, int b)
 
  ****************************************************************************/
 
-Length minroots::depth(MinTable& T, MinNbr r)
+coxtypes::Length minroots::depth(MinTable& T, MinNbr r)
 
 {
-  Length d = 0;
+  coxtypes::Length d = 0;
   MinNbr& rv = r;
 
   while(1) {
-    Generator s;
+    coxtypes::Generator s;
     for (s = 0; s < T.rank(); ++s)
       if (T.min(r,s) < rv)
 	break;
@@ -1558,20 +1566,20 @@ Length minroots::depth(MinTable& T, MinNbr r)
 }
 
 
-LFlags minroots::descent(MinTable& T, MinNbr r)
+bits::Lflags minroots::descent(MinTable& T, MinNbr r)
 
 {
-  LFlags A = 0;
+  bits::Lflags A = 0;
 
   for (Ulong j = 0; j < T.rank(); ++j)
     if (T.dot(r,j) > 0)
-      A |= bits::lmask[j];
+      A |= constants::lmask[j];
 
   return A;
 }
 
 
-CoxWord& minroots::reduced(MinTable& T, MinNbr r)
+coxtypes::CoxWord& minroots::reduced(MinTable& T, MinNbr r)
 
 /*
   Returns a reduced expression for the reflection corresponding to r.
@@ -1581,12 +1589,12 @@ CoxWord& minroots::reduced(MinTable& T, MinNbr r)
 */
 
 {
-  static CoxWord buf(0);
+  static coxtypes::CoxWord buf(0);
 
-  Length d = 0;
+  coxtypes::Length d = 0;
 
   while (1) {
-    Generator s;
+    coxtypes::Generator s;
     for (s = 0; s < T.rank(); s++)
       if (T.min(r,s) < r)
 	break;
@@ -1601,7 +1609,7 @@ CoxWord& minroots::reduced(MinTable& T, MinNbr r)
   buf.setLength(2*d+1);
   buf[d] = r+1;
 
-  for (Length j = 1; j <= d; j++)
+  for (coxtypes::Length j = 1; j <= d; j++)
     buf[d+j] = buf[d-j];
 
   buf[2*d+1] = '\0';
@@ -1610,27 +1618,27 @@ CoxWord& minroots::reduced(MinTable& T, MinNbr r)
 }
 
 
-LFlags minroots::support(MinTable& T, MinNbr r)
+bits::Lflags minroots::support(MinTable& T, MinNbr r)
 
 /*
   Returns the support fo the root of index r.
 */
 
 {
-  LFlags f = 0;
+  bits::Lflags f = 0;
 
   while(1) {
-    Generator s;
+    coxtypes::Generator s;
     for (s = 0; s < T.rank(); ++s)
       if (T.min(r,s) < r)
 	break;
     if (s == T.rank())
       break;
-    f |= bits::lmask[s];
+    f |= constants::lmask[s];
     r = T.min(r,s);
   }
 
-  return f | bits::lmask[r];
+  return f | constants::lmask[r];
 }
 
 
@@ -1646,11 +1654,12 @@ LFlags minroots::support(MinTable& T, MinNbr r)
 
  ****************************************************************************/
 
-std::string& minroots::append(std::string& str, const DotVal& a)
+std::string& minroots::append(std::string& str, const dotval::DotVal& a)
 
 {
   switch (a)
     {
+      using namespace dotval;
     case undef_dotval:
       str.append("undef_minnbr");
       return str;
@@ -1718,7 +1727,7 @@ void minroots::print(FILE *file, MinTable& T)
   for (rv = 0; rv < T.size(); ++rv)
     {
       fprintf(file," %*u : ",d,rv);
-      for (Generator s = 0; s < T.rank(); s++)
+      for (coxtypes::Generator s = 0; s < T.rank(); s++)
 	switch (T.min(r,s))
 	  {
 	  case undef_minnbr:

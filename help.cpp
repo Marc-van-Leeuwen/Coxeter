@@ -66,7 +66,7 @@ void in_help()
   using namespace commands;
 
   printFile(stderr,"interface/in_m.help1",MESSAGE_DIR);
-  printCommands(stderr,*commands::interface::inCommandTree()->helpMode());
+  printCommands(stderr,*commands::interf::inCommandTree()->helpMode());
   printFile(stderr,"interface/in_m.help2",MESSAGE_DIR);
 
   return;
@@ -78,7 +78,7 @@ void out_help()
   using namespace commands;
 
   printFile(stderr,"interface/out_m.help1",MESSAGE_DIR);
-  printCommands(stderr,*commands::interface::outCommandTree()->helpMode());
+  printCommands(stderr,*commands::interf::outCommandTree()->helpMode());
   printFile(stderr,"interface/out_m.help2",MESSAGE_DIR);
 
   return;

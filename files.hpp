@@ -70,21 +70,22 @@ void appendExponent(std::string& str, const E& e, PolynomialTraits& traits)
 }
 
 template <class M>
-void appendHeckeMonomial(std::string& str, const M& m, const SchubertContext& p,
-			 const Interface& I, HeckeTraits& hTraits,
-			 PolynomialTraits& pTraits, const Length& l)
+void appendHeckeMonomial(std::string& str, const M& m, const schubert::SchubertContext& p,
+			 const interface::Interface& I, HeckeTraits& hTraits,
+			 PolynomialTraits& pTraits, const coxtypes::Length& l)
 {
   using namespace klsupport;
 
   typedef typename M::PolType P;
   PolynomialType ptype = P::polType();
-  Length lx = p.length(m.x());
+  coxtypes::Length lx = p.length(m.x());
 
   Ulong d = 1;
   long q = 0;
   std::string indeterminate = pTraits.indeterminate; // back up
 
-  if ((l != undef_length) && hTraits.doShift) { // set shift parameters
+  if ((l != coxtypes::undef_length) && hTraits.doShift)
+  { // set shift parameters
     d = 2;
     q = lx-l;
     pTraits.indeterminate = pTraits.sqrtIndeterminate;
@@ -105,7 +106,7 @@ void appendHeckeMonomial(std::string& str, const M& m, const SchubertContext& p,
 
   str.append(hTraits.monomialPostfix);
 
-  if ((ptype == KLPOL) && (l != undef_length))
+  if ((ptype == KLPOL) && (l != coxtypes::undef_length))
     appendMuMark(str,m,p,l,hTraits);
 
   pTraits.indeterminate = indeterminate;
@@ -146,8 +147,8 @@ void appendMonomial(std::string& str, const C& c, const Ulong& e,
 }
 
 template <class M>
-void appendMuMark(std::string& str, const M& m, const SchubertContext& p,
-		  const Length& l, HeckeTraits& traits)
+void appendMuMark(std::string& str, const M& m, const schubert::SchubertContext& p,
+		  const coxtypes::Length& l, HeckeTraits& traits)
 
 /*
   Appends a marker if the degree of the polynomial is as big as it can
@@ -155,7 +156,7 @@ void appendMuMark(std::string& str, const M& m, const SchubertContext& p,
 */
 
 {
-  Length lx = p.length(m.x());
+  coxtypes::Length lx = p.length(m.x());
 
   if (static_cast<long>(2*m.pol().deg()) == static_cast<long>(l-lx-1))
     str.append(traits.muMark);
@@ -200,7 +201,7 @@ void appendPolynomial(std::string& str, const P& p, PolynomialTraits& traits,
 }
 
 template <class KL>
-  void makeWGraph(WGraph& X, const List<CoxNbr>& c, const LFlags& f, KL& kl)
+  void makeWGraph(wgraph::WGraph& X, const list::List<coxtypes::CoxNbr>& c, const bits::Lflags& f, KL& kl)
 
 /*
   Puts in X the W-graph for the part of the context contained in c. The flags
@@ -208,7 +209,7 @@ template <class KL>
 */
 
 {
-  SubSet q(kl.size());
+  bits::SubSet q(kl.size());
 
   for (Ulong j = 0; j < c.size(); ++j)
     q.add(c[j]);
@@ -224,8 +225,8 @@ template <class KL>
 }
 
 template <class H>
-void printAsBasisElt(FILE* file, const H& h, const SchubertContext& p,
-		     Interface& I, OutputTraits& traits)
+void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
+		     interface::Interface& I, OutputTraits& traits)
 
 /*
   This function prints one element of the k-l basis, according to the
@@ -240,15 +241,15 @@ void printAsBasisElt(FILE* file, const H& h, const SchubertContext& p,
 
   // printing of the basis element proper
 
-  GroupEltInterface GI(I.outInterface());
+  interface::GroupEltInterface GI(I.outInterface());
   I.setOut(*traits.addHeckeTraits.eltTraits);
 
   HeckeTraits& hTraits = traits.addHeckeTraits;
   PolynomialTraits& pTraits = traits.polTraits;
 
-  CoxNbr y = h[h.size()-1].x();
+  coxtypes::CoxNbr y = h[h.size()-1].x();
 
-  Permutation a(0);
+  bits::Permutation a(0);
   sortI(h,nfc,a);
 
   io::print(file,traits.prefix[basisH]);
@@ -263,7 +264,7 @@ void printAsBasisElt(FILE* file, const H& h, const SchubertContext& p,
 }
 
 template <class KL>
-void printClosure(FILE* file, const CoxNbr& y, KL& kl, const Interface& I,
+void printClosure(FILE* file, const coxtypes::CoxNbr& y, KL& kl, const interface::Interface& I,
 		  OutputTraits& traits)
 
 /*
@@ -274,7 +275,7 @@ void printClosure(FILE* file, const CoxNbr& y, KL& kl, const Interface& I,
 */
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   // print out y and the descent sets
 
@@ -339,8 +340,8 @@ void printCoefficient(FILE* file, const C& c, PolynomialTraits& traits)
 }
 
 template <class KL>
-  void printDuflo(FILE* file, const List<CoxNbr>& dl, const Partition& pi,
-		  KL& kl, const Interface& I, OutputTraits& traits)
+  void printDuflo(FILE* file, const list::List<coxtypes::CoxNbr>& dl, const bits::Partition& pi,
+		  KL& kl, const interface::Interface& I, OutputTraits& traits)
 
 /*
   This function prints out the Duflo involutions on the file. The list
@@ -351,17 +352,17 @@ template <class KL>
 */
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   // print duflo involutions
 
-  List<CoxNbr> min(0);
+  list::List<coxtypes::CoxNbr> min(0);
   schubert::NFCompare nfc(p,I.order());
   minReps(min,pi,nfc);
-  Permutation a(0);
+  bits::Permutation a(0);
   sortI(min,nfc,a);
 
-  int d = digits(dl.size()-1,10);
+  int d = io::digits(dl.size()-1,10);
 
   io::print(file,traits.prefix[dufloH]);
   io::print(file,traits.dufloListPrefix);
@@ -409,20 +410,20 @@ void printExponent(FILE* file, const E& e, PolynomialTraits& traits)
 }
 
 template <class KL>
-void printExtremals(FILE* file, const CoxNbr& y, KL& kl, const Interface& I,
+void printExtremals(FILE* file, const coxtypes::CoxNbr& y, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits)
 
 {
   kl::HeckeElt h(0);
 
   kl.row(h,y);
-  if (ERRNO) {
-    Error(ERRNO);
+  if (error::ERRNO) {
+    error::Error(error::ERRNO);
     return;
   }
 
-  const SchubertContext& p = kl.schubert();
-  Length ly = p.length(y);
+  const schubert::SchubertContext& p = kl.schubert();
+  coxtypes::Length ly = p.length(y);
 
   io::print(file,traits.prefix[extremalsH]);
   printHeckeElt(file,h,p,I,traits,ly);
@@ -433,8 +434,8 @@ void printExtremals(FILE* file, const CoxNbr& y, KL& kl, const Interface& I,
 }
 
 template <class H>
-  void printHeckeElt(FILE* file, const H& h, const SchubertContext& p,
-		     const Interface& I, OutputTraits& traits, const Length& l)
+  void printHeckeElt(FILE* file, const H& h, const schubert::SchubertContext& p,
+		     const interface::Interface& I, OutputTraits& traits, const coxtypes::Length& l)
 
 /*
   Does the printing of the sorted Hecke algebra element.
@@ -444,7 +445,7 @@ template <class H>
   typedef typename H::eltType::PolType P;
   hecke::NFCompare<P> nfc(p,I.order());
 
-  Permutation a(0);
+  bits::Permutation a(0);
   sortI(h,nfc,a);
 
   printHeckeElt(file,h,a,p,I,traits.heckeTraits,traits.polTraits,l);
@@ -453,10 +454,10 @@ template <class H>
 }
 
 template <class H>
-  void printHeckeElt(FILE* file, const H& h, const Permutation& a,
-		     const SchubertContext& p, const Interface& I,
+  void printHeckeElt(FILE* file, const H& h, const bits::Permutation& a,
+		     const schubert::SchubertContext& p, const interface::Interface& I,
 		     HeckeTraits& hTraits,
-		     PolynomialTraits& pTraits, const Length& l)
+		     PolynomialTraits& pTraits, const coxtypes::Length& l)
 /*
   Prints out the Hecke algebra element h, permuted according to the
   permutation a, following the given traits.
@@ -475,7 +476,8 @@ template <class H>
       appendSeparator(buf,j,hTraits);
     pad(buf,j,hTraits);
     if (hTraits.lineSize)
-      foldLine(file,buf,hTraits.lineSize,hTraits.indent,hTraits.hyphens.c_str());
+      io::foldLine(file,buf,hTraits.lineSize,
+		   hTraits.indent,hTraits.hyphens.c_str());
     else
       io::print(file,buf);
     buf.clear();
@@ -489,10 +491,10 @@ template <class H>
 }
 
 template <class KL>
-  void printIHBetti(FILE* file, const CoxNbr& y, KL& kl, OutputTraits& traits)
+  void printIHBetti(FILE* file, const coxtypes::CoxNbr& y, KL& kl, OutputTraits& traits)
 
 {
-  Homology h(0);
+  schubert::Homology h(0);
   ihBetti(h,y,kl);
 
   io::print(file,traits.prefix[ihBettiH]);
@@ -504,12 +506,12 @@ template <class KL>
 }
 
 template <class KL>
-void printLCOrder(FILE* file, KL& kl, const Interface& I, OutputTraits& traits)
+void printLCOrder(FILE* file, KL& kl, const interface::Interface& I, OutputTraits& traits)
 
 {
   // make graph
 
-  OrientedGraph X(0);
+  wgraph::OrientedGraph X(0);
   cells::lGraph(X,kl);
 
   // printout data
@@ -523,7 +525,7 @@ void printLCOrder(FILE* file, KL& kl, const Interface& I, OutputTraits& traits)
 }
 
 template <class KL>
-void printLCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
+void printLCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
 		 OutputTraits& traits)
 
 {
@@ -539,13 +541,13 @@ void printLCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
 }
 
 template <class KL>
-void printLCellWGraphs(FILE* file, const Partition& lp, KL& kl,
-		       const Interface& I, OutputTraits& traits)
+void printLCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
+		       const interface::Interface& I, OutputTraits& traits)
 
 {
   // set flag parameter
 
-  LFlags f = leqmask[kl.rank()-1] << kl.rank();
+  bits::Lflags f = constants::leqmask[kl.rank()-1] << kl.rank();
 
   // print W-graphs
 
@@ -558,13 +560,13 @@ void printLCellWGraphs(FILE* file, const Partition& lp, KL& kl,
 }
 
 template <class KL>
-void printLRCOrder(FILE* file, KL& kl, const Interface& I,
+void printLRCOrder(FILE* file, KL& kl, const interface::Interface& I,
 		   OutputTraits& traits)
 
 {
   // make graph
 
-  OrientedGraph X(0);
+  wgraph::OrientedGraph X(0);
   cells::lrGraph(X,kl);
 
   // printout data
@@ -578,7 +580,7 @@ void printLRCOrder(FILE* file, KL& kl, const Interface& I,
 }
 
 template <class KL>
-void printLRCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
+void printLRCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
 		  OutputTraits& traits)
 
 {
@@ -594,13 +596,13 @@ void printLRCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
 }
 
 template <class KL>
-void printLRCellWGraphs(FILE* file, const Partition& lp, KL& kl,
-			const Interface& I, OutputTraits& traits)
+void printLRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
+			const interface::Interface& I, OutputTraits& traits)
 
 {
   // set flag parameter
 
-  LFlags f = leqmask[2*kl.rank()-1];
+  bits::Lflags f = constants::leqmask[2*kl.rank()-1];
 
   // print graphs
 
@@ -613,7 +615,7 @@ void printLRCellWGraphs(FILE* file, const Partition& lp, KL& kl,
 }
 
 template <class KL>
-  void printLRWGraph(FILE* file, KL& kl, const Interface& I,
+  void printLRWGraph(FILE* file, KL& kl, const interface::Interface& I,
 		     OutputTraits& traits)
 
 /*
@@ -625,7 +627,7 @@ template <class KL>
 {
   // print element list
 
-  int d = digits(kl.size()-1,10);
+  int d = io::digits(kl.size()-1,10);
 
   io::print(file,traits.eltList);
   io::print(file,traits.eltListPrefix);
@@ -649,9 +651,9 @@ template <class KL>
 
   io::print(file,traits.prefix[lrWGraphH]);
 
-  WGraph X(0);
+  wgraph::WGraph X(0);
   cells::lrWGraph(X,kl);
-  LFlags f = leqmask[2*kl.rank()-1];
+  bits::Lflags f = constants::leqmask[2*kl.rank()-1];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[lrWGraphH]);
@@ -662,7 +664,7 @@ template <class KL>
 }
 
 template <class KL>
-  void printLWGraph(FILE* file, KL& kl, const Interface& I,
+  void printLWGraph(FILE* file, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits)
 
 /*
@@ -674,7 +676,7 @@ template <class KL>
 {
   // print element list
 
-  int d = digits(kl.size()-1,10);
+  int d = io::digits(kl.size()-1,10);
 
   io::print(file,traits.eltList);
   io::print(file,traits.eltListPrefix);
@@ -698,9 +700,9 @@ template <class KL>
 
   io::print(file,traits.prefix[lWGraphH]);
 
-  WGraph X(0);
+  wgraph::WGraph X(0);
   cells::lWGraph(X,kl);
-  LFlags f = leqmask[kl.rank()-1] << kl.rank();
+  bits::Lflags f = constants::leqmask[kl.rank()-1] << kl.rank();
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[lWGraphH]);
@@ -744,8 +746,8 @@ void printMonomial(FILE* file, const C& c, const Ulong& e,
 }
 
 template <class M>
-void printMuMark(FILE* file, const M& m, const SchubertContext& p,
-		  const Length& l, HeckeTraits& traits)
+void printMuMark(FILE* file, const M& m, const schubert::SchubertContext& p,
+		  const coxtypes::Length& l, HeckeTraits& traits)
 
 /*
   Prints a marker if the degree of the polynomial is as big as it can
@@ -753,7 +755,7 @@ void printMuMark(FILE* file, const M& m, const SchubertContext& p,
 */
 
 {
-  Length lx = p.length(m.x());
+  coxtypes::Length lx = p.length(m.x());
 
   if (static_cast<long>(2*m.pol().deg()) == static_cast<long>(l-lx-1))
     io::print(file,traits.muMark);
@@ -798,12 +800,12 @@ void printPolynomial(FILE* file, const P& p, PolynomialTraits& traits,
 }
 
 template <class KL>
-void printRCOrder(FILE* file, KL& kl, const Interface& I, OutputTraits& traits)
+void printRCOrder(FILE* file, KL& kl, const interface::Interface& I, OutputTraits& traits)
 
 {
   // make graph
 
-  OrientedGraph X(0);
+  wgraph::OrientedGraph X(0);
   cells::rGraph(X,kl);
 
   // printout data
@@ -817,7 +819,7 @@ void printRCOrder(FILE* file, KL& kl, const Interface& I, OutputTraits& traits)
 }
 
 template <class KL>
-void printRCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
+void printRCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
 		 OutputTraits& traits)
 
 {
@@ -833,11 +835,11 @@ void printRCells(FILE* file, const Partition& lp, KL& kl, const Interface& I,
 }
 
 template <class KL>
-void printRCellWGraphs(FILE* file, const Partition& lp, KL& kl,
-		       const Interface& I, OutputTraits& traits)
+void printRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
+		       const interface::Interface& I, OutputTraits& traits)
 
 {
-  LFlags f = leqmask[kl.rank()-1];
+  bits::Lflags f = constants::leqmask[kl.rank()-1];
 
   io::print(file,traits.prefix[rCellWGraphsH]);
   printWGraphList(file,lp,f,kl,I,traits);
@@ -848,7 +850,7 @@ void printRCellWGraphs(FILE* file, const Partition& lp, KL& kl,
 }
 
 template <class KL>
-  void printRWGraph(FILE* file, KL& kl, const Interface& I,
+  void printRWGraph(FILE* file, KL& kl, const interface::Interface& I,
 		    OutputTraits& traits)
 
 /*
@@ -860,7 +862,7 @@ template <class KL>
 {
   // print element list
 
-  int d = digits(kl.size()-1,10);
+  int d = io::digits(kl.size()-1,10);
 
   io::print(file,traits.eltList);
   io::print(file,traits.eltListPrefix);
@@ -884,9 +886,9 @@ template <class KL>
 
   io::print(file,traits.prefix[rWGraphH]);
 
-  WGraph X(0);
+  wgraph::WGraph X(0);
   cells::rWGraph(X,kl);
-  LFlags f = leqmask[kl.rank()-1];
+  bits::Lflags f = constants::leqmask[kl.rank()-1];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[rWGraphH]);
@@ -897,11 +899,11 @@ template <class KL>
 }
 
 template <class KL>
-  void printSingularLocus(FILE* file, const CoxNbr& y, KL& kl,
-			  const Interface& I, OutputTraits& traits)
+  void printSingularLocus(FILE* file, const coxtypes::CoxNbr& y, KL& kl,
+			  const interface::Interface& I, OutputTraits& traits)
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   kl::HeckeElt hs(0);
   genericSingularities(hs,y,kl);
@@ -912,7 +914,7 @@ template <class KL>
     return;
   }
 
-  Length ly = p.length(y);
+  coxtypes::Length ly = p.length(y);
 
   io::print(file,traits.prefix[slocusH]);
   printHeckeElt(file,hs,p,I,traits,ly);
@@ -930,16 +932,16 @@ template <class KL>
 }
 
 template <class KL>
-  void printSingularStratification(FILE* file, const CoxNbr& y, KL& kl,
-				   const Interface& I, OutputTraits& traits)
+  void printSingularStratification(FILE* file, const coxtypes::CoxNbr& y, KL& kl,
+				   const interface::Interface& I, OutputTraits& traits)
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   kl::HeckeElt h(0);
   kl.row(h,y);
-  if (ERRNO) {
-    Error(ERRNO);
+  if (error::ERRNO) {
+    error::Error(error::ERRNO);
     return;
   }
   kl::HeckeElt hs(0);
@@ -951,7 +953,7 @@ template <class KL>
     return;
   }
 
-  Length ly = p.length(y);
+  coxtypes::Length ly = p.length(y);
 
   io::print(file,traits.prefix[sstratificationH]);
   printHeckeElt(file,hs,p,I,traits,ly);
@@ -969,8 +971,8 @@ template <class KL>
 }
 
 template <class KL>
-void printWGraphList(FILE* file, const Partition& pi, const LFlags& f, KL& kl,
-		     const Interface& I, OutputTraits& traits)
+void printWGraphList(FILE* file, const bits::Partition& pi, const bits::Lflags& f, KL& kl,
+		     const interface::Interface& I, OutputTraits& traits)
 
 /*
   This function prints out the W-graphs of the classes of the partition pi.
@@ -983,20 +985,20 @@ void printWGraphList(FILE* file, const Partition& pi, const LFlags& f, KL& kl,
 */
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   // write out cells
 
-  List<List<CoxNbr> > lc(0);
+  list::List<list::List<coxtypes::CoxNbr> > lc(0);
   writeClasses(lc,pi);
 
   // sort cells
 
   schubert::NFCompare nfc(p,I.order());
-  Permutation a(0);
+  bits::Permutation a(0);
   sortLists(lc,nfc,a);
 
-  int d = digits(lc.size()-1,10);
+  int d = io::digits(lc.size()-1,10);
   WgraphTraits& wTraits = traits.wgraphTraits;
   Ulong oldPadSize = wTraits.padSize;
   wTraits.padSize = d + traits.cellNumberPrefix.length() +
@@ -1012,7 +1014,7 @@ void printWGraphList(FILE* file, const Partition& pi, const LFlags& f, KL& kl,
       fprintf(file,"%*lu",d,j);
       io::print(file,traits.cellNumberPostfix);
     }
-    WGraph X(0);
+    wgraph::WGraph X(0);
     makeWGraph(X,lc[a[j]],f,kl);
     printWGraph(file,X,f,I,wTraits);
     if (j+1 < lc.size())
@@ -1027,9 +1029,10 @@ void printWGraphList(FILE* file, const Partition& pi, const LFlags& f, KL& kl,
 }
 
 template <class H>
-bool setTwoSided(const H& h, const Permutation& a, const SchubertContext& p,
-		 const Interface& I, HeckeTraits& hTraits,
-		 PolynomialTraits& pTraits, const Length& l)
+bool setTwoSided(const H& h, const bits::Permutation& a,
+		 const schubert::SchubertContext& p,
+		 const interface::Interface& I, HeckeTraits& hTraits,
+		 PolynomialTraits& pTraits, const coxtypes::Length& l)
 
 /*
   This function decides between one- and two-sided output. Currently it is

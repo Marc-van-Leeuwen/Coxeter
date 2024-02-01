@@ -86,7 +86,7 @@ template <class T> T* BinaryTree<T>::find(const T& a)
   /* at this point c points to the insertion point */
 
   *c = new TreeNode<T>(a);
-  if (ERRNO) /* memory overflow */
+  if (error::ERRNO) /* memory overflow */
     return 0;
 
   d_size++;

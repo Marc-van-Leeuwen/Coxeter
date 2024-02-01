@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace stack {
-  using namespace globals;
-};
-
 /* class declarations */
 
 namespace stack {
@@ -26,21 +22,17 @@ namespace stack {
 #include "list.h"
 
 namespace stack {
-  using namespace list;
-};
-
-namespace stack {
 
 template <class T> class Fifo {
  private:
-  List<T> d_list;
+  list::List<T> d_list;
   Ulong d_first;
   Ulong d_last;
   Ulong d_size;
  public:
 /* constructors and destructors */
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(Fifo));}
+    {return memory::arena().free(ptr,sizeof(Fifo));}
   Fifo();
   ~Fifo() {};
 /* modifiers */
@@ -53,11 +45,11 @@ template <class T> class Fifo {
 
 template <class T> class Stack {
  private:
-  List<T> d_list;
+  list::List<T> d_list;
  public:
 /* constructors and destructors */
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(Stack));}
+    {return memory::arena().free(ptr,sizeof(Stack));}
   Stack<T>();
   ~Stack<T>();
 /* modifiers */

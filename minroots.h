@@ -10,10 +10,9 @@
 
 #include <limits.h>
 #include "globals.h"
-
-namespace minroots {
-  using namespace globals;
-};
+#include "graph.h"
+#include "list.h"
+#include "memory.h"
 
 /******** type declarations *************************************************/
 
@@ -41,81 +40,71 @@ namespace minroots {
 #include "io.h"
 
 namespace minroots {
-  using namespace bits;
-  using namespace coxtypes;
-  using namespace dotval;
-  using namespace io;
-};
-
-namespace minroots {
-  std::string& append(std::string& str, const DotVal& a);
-  LFlags descent(MinTable& T, MinNbr r);
-  Length depth(MinTable& T, MinNbr r);
+  std::string& append(std::string& str, const dotval::DotVal& a);
+  bits::Lflags descent(MinTable& T, MinNbr r);
+  coxtypes::Length depth(MinTable& T, MinNbr r);
   void print(FILE *file, MinTable& T);
-  CoxWord& reduced(MinTable& T, MinNbr r);
-  LFlags support(MinTable& T, MinNbr r);
+  coxtypes::CoxWord& reduced(MinTable& T, MinNbr r);
+  bits::Lflags support(MinTable& T, MinNbr r);
 };
 
 /******* type definitions ****************************************************/
 
-#include "graph.h"
-#include "list.h"
-#include "memory.h"
-
-namespace minroots {
-  using namespace graph;
-  using namespace list;
-  using namespace memory;
-};
 
 class minroots::MinTable {
  protected:
-  Rank d_rank;
+  coxtypes::Rank d_rank;
   MinNbr d_size;
-  List<MinNbr*> d_min;
-  List<DotProduct*> d_dot;
+  list::List<MinNbr*> d_min;
+  list::List<DotProduct*> d_dot;
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(MinTable));}
+  {return memory::arena().free(ptr,sizeof(MinTable));}
   void* operator new(size_t, void* ptr) {return ptr;}
   void operator delete(void* ptr, void* placement) {};
   MinTable() {};
-  MinTable(CoxGraph& G);
+  MinTable(graph::CoxGraph& G);
   ~MinTable();
 /* manipulators */
-  void fill(CoxGraph& G);
+  void fill(graph::CoxGraph& G);
 /* accessors */
-  LFlags descent(const CoxWord& g) const;
-  DotVal dot(MinNbr r, Generator s) const;                        /* inlined */
-  int insert(CoxWord& g, const Generator& s, const Permutation& order) const;
-  const CoxWord& inverse(CoxWord& g) const;
-  bool inOrder(const CoxWord& g, const CoxWord& h) const;
-  bool inOrder(List<Length>& a, const CoxWord& g, const CoxWord& h) const;
-  bool isDescent(const CoxWord& g, const Generator& s) const;
-  LFlags ldescent(const CoxWord& g) const;
-  const CoxWord& normalForm(CoxWord& g, const Permutation& order) const;
-  MinNbr min(MinNbr r, Generator s) const;                        /* inlined */
-  int prod(CoxWord& g, const Generator& s) const;
-  int prod(CoxWord& g, CoxLetter *const h, const Ulong& n) const;
-  int prod(CoxWord& g, const CoxWord& h) const;
-  Rank rank() const;                                              /* inlined */
-  LFlags rdescent(const CoxWord& g) const;
-  const CoxWord& reduced(CoxWord& g, CoxWord& h) const;
+  bits::Lflags descent(const coxtypes::CoxWord& g) const;
+  dotval::DotVal dot(MinNbr r, coxtypes::Generator s) const;                /* inlined */
+  int insert(coxtypes::CoxWord& g, const coxtypes::Generator& s, const bits::Permutation& order) const;
+  const coxtypes::CoxWord& inverse(coxtypes::CoxWord& g) const;
+  bool inOrder(const coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
+  bool inOrder
+    (list::List<coxtypes::Length>& a,
+     const coxtypes::CoxWord& g, const coxtypes::CoxWord& h)
+    const;
+  bool isDescent(const coxtypes::CoxWord& g, const coxtypes::Generator& s) const;
+  bits::Lflags ldescent(const coxtypes::CoxWord& g) const;
+  const coxtypes::CoxWord& normalForm
+    (coxtypes::CoxWord& g, const bits::Permutation& order) const;
+  MinNbr min(MinNbr r, coxtypes::Generator s) const;              /* inlined */
+  int prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const;
+  int prod
+    (coxtypes::CoxWord& g, coxtypes::CoxLetter *const h, const Ulong& n) const;
+  int prod(coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
+  coxtypes::Rank rank() const;                                    /* inlined */
+  bits::Lflags rdescent(const coxtypes::CoxWord& g) const;
+  const coxtypes::CoxWord& reduced
+    (coxtypes::CoxWord& g, coxtypes::CoxWord& h) const;
   MinNbr size() const;                                            /* inlined */
-  const CoxWord& power(CoxWord& a, const Ulong& m) const;
+  const coxtypes::CoxWord& power(coxtypes::CoxWord& a, const Ulong& m) const;
 };
 
 /******** Inline definitions **********************************************/
 
 namespace minroots {
 
-inline DotVal MinTable::dot(MinNbr r, Generator s) const
-  {return DotVal(d_dot[r][s]);}
-inline MinNbr MinTable::min(MinNbr r, Generator s) const
+inline dotval::DotVal MinTable::dot(MinNbr r, coxtypes::Generator s) const
+  {return dotval::DotVal(d_dot[r][s]);}
+inline MinNbr MinTable::min(MinNbr r, coxtypes::Generator s) const
   {return d_min[r][s];}
-inline Rank MinTable::rank() const {return d_rank;}
+inline coxtypes::Rank MinTable::rank() const {return d_rank;}
 inline MinNbr MinTable::size() const {return d_size;}
 
 };

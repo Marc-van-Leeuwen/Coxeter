@@ -11,10 +11,6 @@
 #include "globals.h"
 
 namespace help {
-  using namespace globals;
-};
-
-namespace help {
 /* modes */
   void main_help();
   void interface_help();

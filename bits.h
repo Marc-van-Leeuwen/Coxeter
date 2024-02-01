@@ -16,11 +16,6 @@
 
 #include "list.h"
 
-namespace bits {
-  using namespace globals;
-  using namespace list;
-};
-
 /******** type declarations *************************************************/
 
 namespace bits {
@@ -30,9 +25,9 @@ namespace bits {
   class Permutation;
   class SubSet;
   typedef unsigned char Flags;
-  typedef Ulong LFlags;
+  typedef Ulong Lflags;
   typedef Ulong SetElt;
-  typedef List<SetElt> Set;
+  typedef list::List<SetElt> Set;
 };
 
 /******** function declarations *********************************************/
@@ -40,25 +35,22 @@ namespace bits {
 #include "io.h"
 
 namespace bits {
-  unsigned bitCount(const LFlags& f);
+  unsigned bitCount(const Lflags& f);
   bool isRefinement(const Partition& pi1, const Partition& pi2);
   void memSet(void *dest, void *source, Ulong size, Ulong count);
   void print(FILE* file, const BitMap& map);
-  template <class T> void rightRangePermute(List<T>& r, const Permutation& a);
-  template <class T> void sortI(const List<T>& r, Permutation& a);
-  template <class T, class C> void sortI(const List<T>& r, C& inOrder,
+  template <class T> void rightRangePermute
+    (list::List<T>& r, const Permutation& a);
+  template <class T> void sortI(const list::List<T>& r, Permutation& a);
+  template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
 					 Permutation& a);
-  template <class T, class F> void sortI_f(const List<T>& r, F& f,
+  template <class T, class F> void sortI_f(const list::List<T>& r, F& f,
 					   Permutation& a);
 };
 
 /******** type definitions **************************************************/
 
 #include "constants.h"
-
-namespace bits {
-  using namespace constants;
-};
 
 class bits::Permutation:public Set {
  public:
@@ -75,7 +67,7 @@ class bits::Permutation:public Set {
 
 class bits::BitMap {
  private:
-  List<LFlags> d_map;
+  list::List<Lflags> d_map;
   Ulong d_size;
  public:
 /* constructors and destructors */
@@ -99,11 +91,11 @@ class bits::BitMap {
   void andnot(const BitMap& map);
 /* accessors */
   Ulong bitCount() const;
-  LFlags chunk(const Ulong& m) const;                            /* inlined */
+  Lflags chunk(const Ulong& m) const;                            /* inlined */
   Ulong firstBit() const;
   bool isEmpty(const Ulong& m) const;
   Ulong lastBit() const;
-  LFlags lastchunk() const;                                      /* inlined */
+  Lflags lastchunk() const;                                      /* inlined */
   bool getBit(const Ulong& n) const;                             /* inlined */
   Ulong size() const;                                            /* inlined */
 /* iterator */
@@ -118,11 +110,11 @@ class bits::BitMap {
 
 class bits::BitMap::Iterator { /* is really a constant iterator */
  private:
-  static const LFlags posBits = BITS(LFlags) - 1;  /* BITS(LFlags) should be a
+  static const Lflags posBits = BITS(Lflags) - 1;  /* BITS(Lflags) should be a
 						      power of two */
-  static const LFlags baseBits = ~posBits;
+  static const Lflags baseBits = ~posBits;
   const BitMap* d_b;
-  const LFlags* d_chunk;
+  const Lflags* d_chunk;
   Ulong d_bitAddress;
  public:
   Iterator();
@@ -154,7 +146,7 @@ class bits::BitMap::ReverseIterator {
 
 class bits::Partition {
  private:
-  List<Ulong> d_list;
+  list::List<Ulong> d_list;
   Ulong d_classCount;
  public:
 /* class definitions */
@@ -163,7 +155,7 @@ class bits::Partition {
   Partition();
   Partition(const Ulong &n);
   Partition(const Partition& a, const BitMap& b);
-  template <class T, class F> Partition(const List<T>& r, F& f);
+  template <class T, class F> Partition(const list::List<T>& r, F& f);
   template <class I, class F> Partition(const I& first, const I& last, F& f);
   ~Partition();
 /* accessors */
@@ -205,7 +197,7 @@ class bits::PartitionIterator {
 class bits::SubSet {
  private:
   BitMap d_bitmap;
-  List<Ulong> d_list;
+  list::List<Ulong> d_list;
  public:
 /* constructors and destructors */
   SubSet() {};
@@ -236,15 +228,15 @@ namespace bits {
 
   inline BitMap& BitMap::operator= (const BitMap& map) {return assign(map);}
   inline void BitMap::clearBit(const Ulong& n)
-    {d_map[n/BITS(LFlags)] &= ~(lmask[n%BITS(LFlags)]);}
-  inline LFlags BitMap::chunk(const Ulong& m) const {return d_map[m];}
+    {d_map[n/BITS(Lflags)] &= ~(constants::lmask[n%BITS(Lflags)]);}
+  inline Lflags BitMap::chunk(const Ulong& m) const {return d_map[m];}
   inline bool BitMap::getBit(const Ulong& n) const
-    {return d_map[n/BITS(LFlags)] & lmask[n%BITS(LFlags)];}
-  inline LFlags BitMap::lastchunk() const
-    {return leqmask[(size()-1)%BITS(LFlags)];}
+    {return d_map[n/BITS(Lflags)] & constants::lmask[n%BITS(Lflags)];}
+  inline Lflags BitMap::lastchunk() const
+    {return constants::leqmask[(size()-1)%BITS(Lflags)];}
   inline void BitMap::reset() {d_map.setZero();}
   inline void BitMap::setBit(const Ulong& n)
-    {d_map[n/BITS(LFlags)] |= lmask[n%BITS(LFlags)];}
+    {d_map[n/BITS(Lflags)] |= constants::lmask[n%BITS(Lflags)];}
   inline void BitMap::setBit(const Ulong& n, const bool& t)
     {if (t) setBit(n); else clearBit(n);}
   inline Ulong BitMap::size() const {return d_size;}
@@ -309,7 +301,7 @@ namespace bits {
 
 namespace bits {
 
-template <class T, class F> Partition::Partition(const List<T>& r, F& f)
+template <class T, class F> Partition::Partition(const list::List<T>& r, F& f)
   :d_list(0)
 
 /*
@@ -320,7 +312,7 @@ template <class T, class F> Partition::Partition(const List<T>& r, F& f)
 */
 
 {
-  List<typename F::valueType> c(0);
+  list::List<typename F::valueType> c(0);
 
   for (Ulong j = 0; j < r.size(); ++j) {
     insert(c,f(r[j]));
@@ -347,7 +339,7 @@ template <class I, class F> Partition::Partition(const I& first, const I& last,
 */
 
 {
-  List<typename F::valueType> c(0);
+  list::List<typename F::valueType> c(0);
 
   Ulong count = 0;
 
@@ -369,7 +361,7 @@ template <class I, class F> Partition::Partition(const I& first, const I& last,
 }
 
 template <class T>
-void rightRangePermute(List<T>& r, const Permutation& a)
+void rightRangePermute(list::List<T>& r, const Permutation& a)
 
 /*
   Applies the permutation a to the range of the list, on the right (this
@@ -408,7 +400,7 @@ void rightRangePermute(List<T>& r, const Permutation& a)
   return;
 }
 
-template <class T> void sortI(const List<T>& r, Permutation& a)
+template <class T> void sortI(const list::List<T>& r, Permutation& a)
 
 /*
   General sort function for lists. It is assumed that operator <= is defined
@@ -443,7 +435,7 @@ template <class T> void sortI(const List<T>& r, Permutation& a)
   return;
 }
 
-template <class T, class C> void sortI(const List<T>& r, C& inOrder,
+template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
 				      Permutation& a)
 
 /*
@@ -481,7 +473,7 @@ template <class T, class C> void sortI(const List<T>& r, C& inOrder,
   return;
 }
 
-template <class T, class F> void sortI_f(const List<T>& r, F& f,
+template <class T, class F> void sortI_f(const list::List<T>& r, F& f,
 					 Permutation& a)
 
 /*

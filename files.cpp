@@ -40,14 +40,15 @@ namespace files {
 
 namespace {
   using namespace files;
-  Ulong maxLength(const Homology& h);
+  Ulong maxLength(const schubert::Homology& h);
 };
 
 namespace {
   using namespace files;
 
   void makeVersionString(std::string& vstr, const std::string& str);
-  void makeTypeString(std::string& tstr, const std::string& str, const CoxGraph& G);
+  void makeTypeString
+    (std::string& tstr, const std::string& str, const graph::CoxGraph& G);
 };
 
 /****************************************************************************
@@ -69,7 +70,7 @@ namespace {
 
 namespace files {
 
-OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Pretty)
+OutputTraits::OutputTraits(const graph::CoxGraph& G, const interface::Interface& I, io::Pretty)
   :version_string(""),
    type_string(""),
    closureSeparator1("P_{x,y} for x extremal w.r.t. y:\n\n"),
@@ -125,13 +126,13 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Pretty)
    lengthPostfix(""),
    close_string("\n"),
    bettiHyphens("h"),
-   lineSize(LINESIZE),
-   polTraits(Pretty()),
-   heckeTraits(I,Pretty()),
-   addHeckeTraits(I,Pretty()),
-   partitionTraits(Pretty()),
-   wgraphTraits(Pretty()),
-   posetTraits(Pretty()),
+   lineSize(io::LINESIZE),
+   polTraits(io::Pretty()),
+   heckeTraits(I,io::Pretty()),
+   addHeckeTraits(I,io::Pretty()),
+   partitionTraits(io::Pretty()),
+   wgraphTraits(io::Pretty()),
+   posetTraits(io::Pretty()),
    printBettiRank(true),
    printCellNumber(true),
    printClosureSize(true),
@@ -212,7 +213,7 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Pretty)
   hasHeader[sstratificationH] = false;
 }
 
-OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Terse)
+OutputTraits::OutputTraits(const graph::CoxGraph& G, const interface::Interface& I, io::Terse)
   :version_string(""),
    type_string(""),
    closureSeparator1("# extremal pairs\n"),
@@ -246,12 +247,12 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Terse)
    graphListPostfix(""),
    graphListSeparator("\n#\n"),
    close_string(""),
-   polTraits(Terse()),
-   heckeTraits(I,Terse()),
-   addHeckeTraits(I,Terse()),
-   partitionTraits(Terse()),
-   wgraphTraits(Terse()),
-   posetTraits(Terse()),
+   polTraits(io::Terse()),
+   heckeTraits(I,io::Terse()),
+   addHeckeTraits(I,io::Terse()),
+   partitionTraits(io::Terse()),
+   wgraphTraits(io::Terse()),
+   posetTraits(io::Terse()),
    printBettiRank(false),
    printCellNumber(false),
    printClosureSize(false),
@@ -354,7 +355,7 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, Terse)
   makeTypeString(type_string,"#",G);
 }
 
-OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, GAP)
+OutputTraits::OutputTraits(const graph::CoxGraph& G, const interface::Interface& I, io::GAP)
   :version_string(""),
    type_string(""),
    closureSeparator1(""),
@@ -388,12 +389,12 @@ OutputTraits::OutputTraits(const CoxGraph& G, const Interface& I, GAP)
    graphListPostfix("]"),
    graphListSeparator(",\n"),
    close_string(";"),
-   polTraits(GAP()),
-   heckeTraits(I,GAP()),
-   addHeckeTraits(I,GAP()),
-   partitionTraits(GAP()),
-   wgraphTraits(GAP()),
-   posetTraits(GAP()),
+   polTraits(io::GAP()),
+   heckeTraits(I,io::GAP()),
+   addHeckeTraits(I,io::GAP()),
+   partitionTraits(io::GAP()),
+   wgraphTraits(io::GAP()),
+   posetTraits(io::GAP()),
    printBettiRank(false),
    printCellNumber(false),
    printClosureSize(false),
@@ -526,7 +527,7 @@ OutputTraits::~OutputTraits()
 
 namespace files {
 
-HeckeTraits::HeckeTraits(const Interface& I, Pretty)
+HeckeTraits::HeckeTraits(const interface::Interface& I, io::Pretty)
   :prefix(""),
    postfix(""),
    evenSeparator(""),
@@ -536,9 +537,9 @@ HeckeTraits::HeckeTraits(const Interface& I, Pretty)
    monomialSeparator(" : "),
    muMark(" *"),
    hyphens("+"),
-   lineSize(LINESIZE),
+   lineSize(io::LINESIZE),
    indent(4),
-   evenWidth(HALFLINESIZE),
+   evenWidth(io::HALFLINESIZE),
    oddWidth(0),
    padChar(' '),
    doShift(false),
@@ -547,7 +548,7 @@ HeckeTraits::HeckeTraits(const Interface& I, Pretty)
 
 {}
 
-HeckeTraits::HeckeTraits(const Interface& I, Terse)
+HeckeTraits::HeckeTraits(const interface::Interface& I, io::Terse)
   :prefix(""),
    postfix(""),
    evenSeparator(""),
@@ -566,7 +567,7 @@ HeckeTraits::HeckeTraits(const Interface& I, Terse)
 
 {}
 
-HeckeTraits::HeckeTraits(const Interface& I, GAP)
+HeckeTraits::HeckeTraits(const interface::Interface& I, io::GAP)
   :prefix("[\n"),
    postfix("]"),
    evenSeparator(""),
@@ -588,26 +589,26 @@ HeckeTraits::~HeckeTraits()
 
 {}
 
-AddHeckeTraits::AddHeckeTraits(const Interface& I, Pretty)
-  :HeckeTraits(I,Pretty())
+AddHeckeTraits::AddHeckeTraits(const interface::Interface& I, io::Pretty)
+  :HeckeTraits(I,io::Pretty())
 
 {
-  eltTraits = new GroupEltInterface(I.outInterface());
+  eltTraits = new interface::GroupEltInterface(I.outInterface());
 }
 
-AddHeckeTraits::AddHeckeTraits(const Interface& I, Terse)
-  :HeckeTraits(I,Terse())
+AddHeckeTraits::AddHeckeTraits(const interface::Interface& I, io::Terse)
+  :HeckeTraits(I,io::Terse())
 
 {
-  eltTraits = new GroupEltInterface(I.outInterface());
+  eltTraits = new interface::GroupEltInterface(I.outInterface());
   doShift = true;
 }
 
-AddHeckeTraits::AddHeckeTraits(const Interface& I, GAP)
-  :HeckeTraits(I,GAP())
+AddHeckeTraits::AddHeckeTraits(const interface::Interface& I, io::GAP)
+  :HeckeTraits(I,io::GAP())
 
 {
-  eltTraits = new GroupEltInterface(I.outInterface());
+  eltTraits = new interface::GroupEltInterface(I.outInterface());
 
   prefix = "";
   postfix = "";
@@ -646,7 +647,7 @@ AddHeckeTraits::~AddHeckeTraits()
 
 namespace files {
 
-PartitionTraits::PartitionTraits(Pretty)
+PartitionTraits::PartitionTraits(io::Pretty)
   :prefix(""),
    postfix(""),
    separator("\n"),
@@ -659,7 +660,7 @@ PartitionTraits::PartitionTraits(Pretty)
 
 {}
 
-PartitionTraits::PartitionTraits(Terse)
+PartitionTraits::PartitionTraits(io::Terse)
   :prefix(""),
    postfix(""),
    separator("\n"),
@@ -672,7 +673,7 @@ PartitionTraits::PartitionTraits(Terse)
 
 {}
 
-PartitionTraits::PartitionTraits(GAP)
+PartitionTraits::PartitionTraits(io::GAP)
   :prefix("[\n"),
    postfix("]"),
    separator(",\n"),
@@ -707,7 +708,7 @@ PartitionTraits::~PartitionTraits()
 
 namespace files {
 
-PolynomialTraits::PolynomialTraits(Pretty)
+PolynomialTraits::PolynomialTraits(io::Pretty)
   :prefix(""),
    postfix(""),
    indeterminate("q"),
@@ -729,7 +730,7 @@ PolynomialTraits::PolynomialTraits(Pretty)
 
 {}
 
-PolynomialTraits::PolynomialTraits(Terse)
+PolynomialTraits::PolynomialTraits(io::Terse)
   :prefix("["),
    postfix("]"),
    indeterminate(""),
@@ -751,7 +752,7 @@ PolynomialTraits::PolynomialTraits(Terse)
 
 {}
 
-PolynomialTraits::PolynomialTraits(GAP)
+PolynomialTraits::PolynomialTraits(io::GAP)
   :prefix(""),
    postfix(""),
    indeterminate("q"),
@@ -796,7 +797,7 @@ PolynomialTraits::~PolynomialTraits()
 
 namespace files {
 
-PosetTraits::PosetTraits(Pretty)
+PosetTraits::PosetTraits(io::Pretty)
   :prefix(""),
    postfix(""),
    separator("\n"),
@@ -810,7 +811,7 @@ PosetTraits::PosetTraits(Pretty)
 
 {}
 
-PosetTraits::PosetTraits(Terse)
+PosetTraits::PosetTraits(io::Terse)
   :prefix(""),
    postfix(""),
    separator("\n"),
@@ -824,7 +825,7 @@ PosetTraits::PosetTraits(Terse)
 
 {}
 
-PosetTraits::PosetTraits(GAP)
+PosetTraits::PosetTraits(io::GAP)
   :prefix("[\n"),
    postfix("]"),
    separator(",\n"),
@@ -861,7 +862,7 @@ PosetTraits::~PosetTraits()
 
 namespace files {
 
-WgraphTraits::WgraphTraits(Pretty)
+WgraphTraits::WgraphTraits(io::Pretty)
   :prefix(""),
    postfix(""),
    separator("\n"),
@@ -882,7 +883,7 @@ WgraphTraits::WgraphTraits(Pretty)
 
 {}
 
-WgraphTraits::WgraphTraits(Terse)
+WgraphTraits::WgraphTraits(io::Terse)
   :prefix(""),
    postfix(""),
    separator("\n"),
@@ -902,7 +903,7 @@ WgraphTraits::WgraphTraits(Terse)
 
 {}
 
-WgraphTraits::WgraphTraits(GAP)
+WgraphTraits::WgraphTraits(io::GAP)
   :prefix("[\n"),
    postfix("]"),
    separator(",\n"),
@@ -950,7 +951,7 @@ WgraphTraits::~WgraphTraits()
 
 namespace files {
 
-void appendHomology(std::string& str, const Homology& h, OutputTraits& traits)
+void appendHomology(std::string& str, const schubert::Homology& h, OutputTraits& traits)
 
 /*
   Appends the homology vector to str.
@@ -980,11 +981,12 @@ void appendHomology(std::string& str, const Homology& h, OutputTraits& traits)
   return;
 }
 
-void printBetti(FILE* file, const CoxNbr& y, const SchubertContext& p,
+void printBetti(FILE* file, const coxtypes::CoxNbr& y,
+		const schubert::SchubertContext& p,
 		OutputTraits& traits)
 
 {
-  Homology h(0);
+  schubert::Homology h(0);
   betti(h,y,p);
 
   io::print(file,traits.prefix[bettiH]);
@@ -996,7 +998,7 @@ void printBetti(FILE* file, const CoxNbr& y, const SchubertContext& p,
 }
 
 void printCellOrder(FILE* file, const OrientedGraph& X,
-		    const SchubertContext& p, const Interface& I,
+		    const schubert::SchubertContext& p, const interface::Interface& I,
 		    PosetTraits& traits)
 
 /*
@@ -1007,17 +1009,17 @@ void printCellOrder(FILE* file, const OrientedGraph& X,
 
 {
   OrientedGraph P(0);
-  Partition pi(0);
+  bits::Partition pi(0);
   X.cells(pi,&P);
   posets::Poset Q(P);
   OrientedGraph H(0);
   Q.hasseDiagram(H);
 
-  List<List<CoxNbr> > lc(0);
+  list::List<list::List<coxtypes::CoxNbr> > lc(0);
   writeClasses(lc,pi);
 
   schubert::NFCompare nfc(p,I.order());
-  Permutation a(0);
+  bits::Permutation a(0);
   sortLists(lc,nfc,a);
   a.inverse();
   H.permute(a);
@@ -1048,15 +1050,15 @@ void printCellOrder(FILE* file, const OrientedGraph& X,
   return;
 }
 
-void printCoatoms(FILE* file, const CoxNbr& y, const SchubertContext& p,
-		  const Interface& I, OutputTraits& traits)
+void printCoatoms(FILE* file, const coxtypes::CoxNbr& y, const schubert::SchubertContext& p,
+		  const interface::Interface& I, OutputTraits& traits)
 
 /*
   Prints out the coatoms of y.
 */
 
 {
-  const CoatomList& c = p.hasse(y);
+  const schubert::CoatomList& c = p.hasse(y);
 
   io::print(file,traits.coatomPrefix);
 
@@ -1071,8 +1073,8 @@ void printCoatoms(FILE* file, const CoxNbr& y, const SchubertContext& p,
   return;
 }
 
-void printDescents(FILE* file, const LFlags& df, const LFlags& f,
-		   const Interface& I, WgraphTraits& traits)
+void printDescents(FILE* file, const bits::Lflags& df, const bits::Lflags& f,
+		   const interface::Interface& I, WgraphTraits& traits)
 
 {
   if (!(f&1)) { // left descents
@@ -1088,8 +1090,8 @@ void printDescents(FILE* file, const LFlags& df, const LFlags& f,
   return;
 }
 
-void printEltData(FILE* file, const CoxNbr& y, const SchubertContext& p,
-		  const Interface& I, OutputTraits& traits)
+void printEltData(FILE* file, const coxtypes::CoxNbr& y, const schubert::SchubertContext& p,
+		  const interface::Interface& I, OutputTraits& traits)
 
 /*
   This function prints out some data about the element y :
@@ -1144,12 +1146,12 @@ void printHeader(FILE* file, const Header& header, OutputTraits& traits)
   if (traits.printType)
     io::print(file,traits.type_string);
   if (traits.hasHeader[header])
-    printFile(file,traits.header[header].c_str(),HEADER_DIR);
+    io::printFile(file,traits.header[header].c_str(),HEADER_DIR);
 
   return;
 }
 
-void printHomology(FILE* file, const Homology& h, OutputTraits& traits)
+void printHomology(FILE* file, const schubert::Homology& h, OutputTraits& traits)
 
 {
   std::string buf;
@@ -1157,7 +1159,7 @@ void printHomology(FILE* file, const Homology& h, OutputTraits& traits)
   appendHomology(buf,h,traits);
 
   if (traits.lineSize)
-    foldLine(file,buf,traits.lineSize,0,traits.bettiHyphens.c_str());
+    io::foldLine(file,buf,traits.lineSize,0,traits.bettiHyphens.c_str());
   else
     io::print(file,buf);
 
@@ -1174,26 +1176,27 @@ void printHomology(FILE* file, const Homology& h, OutputTraits& traits)
   return;
 }
 
-void printPartition(FILE* file, const Partition& pi, const SchubertContext& p,
-		    const Interface& I, PartitionTraits& traits)
+void printPartition(FILE* file, const bits::Partition& pi,
+		    const schubert::SchubertContext& p,
+		    const interface::Interface& I, PartitionTraits& traits)
 
 /*
   Prints out the classes of the partition, according to the given traits.
 */
 
 {
-  List<List<CoxNbr> > lc(0);
+  list::List<list::List<coxtypes::CoxNbr> > lc(0);
   writeClasses(lc,pi);
 
   schubert::NFCompare nfc(p,I.order());
-  Permutation a(0);
+  bits::Permutation a(0);
   sortLists(lc,nfc,a);
 
-  int d = digits(lc.size()-1,10);
+  int d = io::digits(lc.size()-1,10);
   io::print(file,traits.prefix);
 
   for (Ulong j = 0; j < lc.size(); ++j) {
-    List<CoxNbr> l = lc[a[j]];
+    list::List<coxtypes::CoxNbr> l = lc[a[j]];
     if (traits.printClassNumber) {
       io::print(file,traits.classNumberPrefix);
       fprintf(file,"%*lu",d,j);
@@ -1215,8 +1218,8 @@ void printPartition(FILE* file, const Partition& pi, const SchubertContext& p,
   return;
 }
 
-void printWGraph(FILE* file, const WGraph& X, const LFlags& f,
-		 const Interface& I, WgraphTraits& traits)
+void printWGraph(FILE* file, const WGraph& X, const bits::Lflags& f,
+		 const interface::Interface& I, WgraphTraits& traits)
 
 /*
   This function prints out a W-graph. We represent a W-graph as a list of
@@ -1226,7 +1229,7 @@ void printWGraph(FILE* file, const WGraph& X, const LFlags& f,
 */
 
 {
-  int d = digits(X.size()-1,10);
+  int d = io::digits(X.size()-1,10);
 
   io::print(file,traits.prefix);
 
@@ -1325,7 +1328,7 @@ void appendSeparator(std::string& str, const Ulong& n, HeckeTraits& traits)
   return;
 }
 
-void minReps(List<CoxNbr>& min, const Partition& pi, schubert::NFCompare& c)
+void minReps(list::List<coxtypes::CoxNbr>& min, const bits::Partition& pi, schubert::NFCompare& c)
 
 /*
   Extracts the minimal representative from each class in pi, for the comparison
@@ -1333,8 +1336,8 @@ void minReps(List<CoxNbr>& min, const Partition& pi, schubert::NFCompare& c)
 */
 
 {
-  for (PartitionIterator i(pi); i; ++i) {
-    CoxNbr x = schubert::min(i(),c);
+  for (bits::PartitionIterator i(pi); i; ++i) {
+    coxtypes::CoxNbr x = schubert::min(i(),c);
     min.append(x);
   }
 
@@ -1404,8 +1407,8 @@ void printSeparator(FILE* file, const Ulong& n, HeckeTraits& traits)
   return;
 }
 
-void sortLists(List<List<CoxNbr> >& lc, schubert::NFCompare& nfc,
-	       Permutation& a)
+void sortLists(list::List<list::List<coxtypes::CoxNbr> >& lc, schubert::NFCompare& nfc,
+	       bits::Permutation& a)
 
 /*
   This function sorts the various rows in lc, and puts in a the permutation
@@ -1413,7 +1416,7 @@ void sortLists(List<List<CoxNbr> >& lc, schubert::NFCompare& nfc,
 */
 
 {
-  List<CoxNbr> lfirst(0);
+  list::List<coxtypes::CoxNbr> lfirst(0);
   lfirst.setSize(lc.size());
 
   for (Ulong j = 0; j < lc.size(); ++j) {
@@ -1426,7 +1429,7 @@ void sortLists(List<List<CoxNbr> >& lc, schubert::NFCompare& nfc,
   return;
 }
 
-void writeClasses(List<List<CoxNbr> >& lc, const Partition& pi)
+void writeClasses(list::List<list::List<coxtypes::CoxNbr> >& lc, const bits::Partition& pi)
 
 /*
   This function writes out in lc the various classes of the partition pi.
@@ -1436,8 +1439,8 @@ void writeClasses(List<List<CoxNbr> >& lc, const Partition& pi)
   lc.setSize(pi.classCount());
   Ulong j = 0;
 
-  for (PartitionIterator i(pi); i; ++i) {
-    new(&lc[j]) List<CoxNbr>(i().begin(),i().end());
+  for (bits::PartitionIterator i(pi); i; ++i) {
+    new(&lc[j]) list::List<coxtypes::CoxNbr>(i().begin(),i().end());
     ++j;
   }
 
@@ -1463,7 +1466,8 @@ void makeVersionString(std::string& vstr, const std::string& str)
   vstr.push_back('\n');
 }
 
-void makeTypeString(std::string& tstr, const std::string& str, const CoxGraph& G)
+void makeTypeString
+  (std::string& tstr, const std::string& str, const graph::CoxGraph& G)
 
 {
   tstr.append(str);
@@ -1481,7 +1485,7 @@ namespace {
 
 
 // Return the maximal length of an entry in h.
-Ulong maxLength(const Homology& h)
+Ulong maxLength(const schubert::Homology& h)
 {
   static std::string buf;
 

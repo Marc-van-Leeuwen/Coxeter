@@ -10,14 +10,13 @@
 #include <cstring> // for |memcpy|, |memset|
 #include <cassert>
 
+#include "globals.h"
 #include "error.h"
 
 namespace memory {
   using namespace error;
-};
 
 namespace {
-  using namespace memory;
   const Ulong MEMORY_MAX = ULONG_MAX;
   const Ulong ABYTES = sizeof(Align);
   const Ulong ARENA_BITS = 16;
@@ -49,8 +48,6 @@ namespace {
 
  ****************************************************************************/
 
-namespace memory {
-
 Arena& arena()
 
 {
@@ -58,15 +55,12 @@ Arena& arena()
   return a;
 }
 
-};
 
 /****************************************************************************
 
         Chapter I -- The Arena class.
 
  ****************************************************************************/
-
-namespace memory {
 
 Arena::Arena(Ulong bsBits)
   : d_bsBits(bsBits), d_count(0)
@@ -313,15 +307,10 @@ void Arena::print(FILE *file) const
 	  used_count,static_cast<Ulong>(d_count),ABYTES);
 }
 
-};
-
-
-namespace memory {
-
 void pause()
 
 {
   ;
 }
 
-};
+}; // |namespace memory|

@@ -99,7 +99,7 @@ Polynomial<T>& Polynomial<T>::operator*= (const Polynomial<T>& q)
 */
 
 {
-  static Vector<T> tmp;
+  static vector::Vector<T> tmp;
 
   if ( isZero() || q.isZero() )  /* result is 0 */
     {
@@ -466,7 +466,7 @@ std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
 
 template <class T>
 std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
-	       const long& m, const char *x, GAP)
+	       const long& m, const char *x, io::GAP)
 
 /*
   Appends the GAP representation of p to str, using the string x to
@@ -528,7 +528,7 @@ std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
 
 template <class T>
 std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
-	       const long& m, const char *x, Terse)
+	       const long& m, const char *x, io::Terse)
 
 /*
   Appends the Terse representation of p to str, using the string x to
@@ -614,7 +614,7 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 
 template <class T> void print(FILE* file, const Polynomial<T>& p,
 			      const Degree& d, const long& m, const char* x,
-			      GAP)
+			      io::GAP)
 
 /*
   Prints the polynomial with x^d substituted for x, and shifted by m (so that
@@ -625,7 +625,7 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
   static std::string buf;
 
   buf.clear();
-  append(buf,p,d,m,x,GAP());
+  append(buf,p,d,m,x,io::GAP());
   io::print(file,buf);
 
   return;
@@ -633,7 +633,7 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 
 template <class T> void print(FILE* file, const Polynomial<T>& p,
 			      const Degree& d, const long& m, const char* x,
-			      Terse)
+			      io::Terse)
 
 /*
   Prints the polynomial in terse style.
@@ -643,7 +643,7 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
   static std::string buf;
 
   buf.clear();
-  append(buf,p,d,m,x,Terse());
+  append(buf,p,d,m,x,io::Terse());
   io::print(file,buf);
 
   return;

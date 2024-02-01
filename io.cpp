@@ -203,7 +203,7 @@ void printFile(FILE* file, const char *name, const char *dir_name)
   inputfile = fopen(buf.c_str(),"r");
 
   if (inputfile == 0) {
-    Error(FILE_NOT_FOUND,buf.c_str());
+    Error(error::FILE_NOT_FOUND,buf.c_str());
     return;
   }
 
@@ -222,7 +222,7 @@ void printFile(FILE* file, const char *name)
   inputfile = fopen(name,"r");
 
   if (inputfile == 0) {
-    Error(FILE_NOT_FOUND,name);
+    Error(error::FILE_NOT_FOUND,name);
     return;
   }
 

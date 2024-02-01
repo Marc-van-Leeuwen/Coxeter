@@ -39,7 +39,7 @@ namespace schubert {
   - descent sets :
 
     - descent(x) : returns the two-sided descent set of x, flagged in a
-      LFlags;
+      Lflags;
     - ldescent(x), rdescent(x) : same for left (right) descent sets;
     - firstDescent(x), firstLDescent(); firstRDescent(x) : returns the
       first set bit in the corresponding descent sets;
@@ -91,7 +91,7 @@ namespace {
 
   const char* undef_str = "undefined";
 
-  void resetOne(SubSet& q);
+  void resetOne(bits::SubSet& q);
 
 };
 
@@ -144,7 +144,7 @@ namespace schubert {
 
 /******** constructors ******************************************************/
 
-StandardSchubertContext::StandardSchubertContext(const CoxGraph& G)
+StandardSchubertContext::StandardSchubertContext(const graph::CoxGraph& G)
   :d_graph(G), d_rank(G.rank()), d_maxlength(0), d_size(1), d_length(1),
   d_hasse(1), d_descent(1), d_shift(1), d_star(1), d_subset(1)
 
@@ -162,21 +162,21 @@ StandardSchubertContext::StandardSchubertContext(const CoxGraph& G)
   d_shift.setSizeValue(1);
   d_star.setSizeValue(1);
 
-  d_shift[0] = new(arena()) CoxNbr[2*rank()];
+  d_shift[0] = new(memory::arena()) coxtypes::CoxNbr[2*rank()];
   for (Ulong j = 0; j < 2*static_cast<Ulong>(d_rank); ++j)
-    d_shift[0][j] = undef_coxnbr;
+    d_shift[0][j] = coxtypes::undef_coxnbr;
 
-  d_star[0] = new(arena()) CoxNbr[2*nStarOps()];
-  for (StarOp j = 0; j < 2*nStarOps(); ++j)
-    d_star[0][j] = undef_coxnbr;
+  d_star[0] = new(memory::arena()) coxtypes::CoxNbr[2*nStarOps()];
+  for (coxtypes::StarOp j = 0; j < 2*nStarOps(); ++j)
+    d_star[0][j] = coxtypes::undef_coxnbr;
 
-  d_downset = new(arena()) BitMap[2*d_rank];
+  d_downset = new(memory::arena()) bits::BitMap[2*d_rank];
   for (Ulong j = 0; j < 2*static_cast<Ulong>(d_rank); ++j)
-    new(d_downset+j) BitMap(1);
+    new(d_downset+j) bits::BitMap(1);
 
-  d_parity = new(arena()) BitMap[2];
-  new(d_parity) BitMap(1);
-  new(d_parity+1) BitMap(1);
+  d_parity = new(memory::arena()) bits::BitMap[2];
+  new(d_parity) bits::BitMap(1);
+  new(d_parity+1) bits::BitMap(1);
   d_parity[0].setBit(0);
 }
 
@@ -211,13 +211,13 @@ StandardSchubertContext::~StandardSchubertContext()
   d_parity[0].~BitMap();
   d_parity[1].~BitMap();
 
-  arena().free(d_star[0],2*nStarOps()*sizeof(CoxNbr));
-  arena().free(d_shift[0],2*rank()*sizeof(CoxNbr));
+  memory::arena().free(d_star[0],2*nStarOps()*sizeof(coxtypes::CoxNbr));
+  memory::arena().free(d_shift[0],2*rank()*sizeof(coxtypes::CoxNbr));
 }
 
 /******** accessors ********************************************************/
 
-CoxWord& StandardSchubertContext::append(CoxWord& g, const CoxNbr& d_x) const
+coxtypes::CoxWord& StandardSchubertContext::append(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x) const
 
 /*
   This function appends to g the ShortLex normal form of x. The normal form is
@@ -228,10 +228,10 @@ CoxWord& StandardSchubertContext::append(CoxWord& g, const CoxNbr& d_x) const
 */
 
 {
-  CoxNbr x = d_x;
+  coxtypes::CoxNbr x = d_x;
 
   while (x) {
-    Generator s = firstBit(ldescent(x));
+    coxtypes::Generator s = constants::firstBit(ldescent(x));
     g.append(s+1);
     x = lshift(x,s);
   }
@@ -239,27 +239,27 @@ CoxWord& StandardSchubertContext::append(CoxWord& g, const CoxNbr& d_x) const
   return g;
 }
 
-CoxNbr StandardSchubertContext::contextNumber(const CoxWord& g) const
+coxtypes::CoxNbr StandardSchubertContext::contextNumber(const coxtypes::CoxWord& g) const
 
 /*
   This functions returns the number corresponding to g in the current
-  context; returns undef_coxnbr if g is not in the context.
+  context; returns coxtypes::undef_coxnbr if g is not in the context.
 */
 
 {
-  CoxNbr x = 0;
+  coxtypes::CoxNbr x = 0;
 
   for (Ulong j = 0; j < g.length(); ++j) {
-    Generator s = g[j]-1;
+    coxtypes::Generator s = g[j]-1;
     x = rshift(x,s);
-    if (x == undef_coxnbr)
+    if (x == coxtypes::undef_coxnbr)
       break;
   }
 
   return x;
 }
 
-void StandardSchubertContext::extractClosure(BitMap& b, const CoxNbr& x) const
+void StandardSchubertContext::extractClosure(bits::BitMap& b, const coxtypes::CoxNbr& x) const
 
 /*
   This function puts in b the subset [e,x] of p. It is assumed that b
@@ -270,11 +270,11 @@ void StandardSchubertContext::extractClosure(BitMap& b, const CoxNbr& x) const
 */
 
 {
-  SubSet q(d_size);
+  bits::SubSet q(d_size);
   resetOne(q);
 
-  for (CoxNbr x1 = x; x1;) {
-    Generator s = firstLDescent(x1);
+  for (coxtypes::CoxNbr x1 = x; x1;) {
+    coxtypes::Generator s = firstLDescent(x1);
     extendSubSet(q,s);
     x1 = d_shift[x1][s+d_rank];
   }
@@ -284,7 +284,7 @@ void StandardSchubertContext::extractClosure(BitMap& b, const CoxNbr& x) const
   return;
 }
 
-bool StandardSchubertContext::inOrder(CoxNbr x, CoxNbr y) const
+bool StandardSchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
 
 /*
   Checks if x <= y in the Bruhat ordering, using the well-known recursive
@@ -302,10 +302,10 @@ bool StandardSchubertContext::inOrder(CoxNbr x, CoxNbr y) const
   if (x > y)
     return false;
 
-  Generator s = firstDescent(y);
+  coxtypes::Generator s = firstDescent(y);
 
-  CoxNbr xs = d_shift[x][s];
-  CoxNbr ys = d_shift[y][s];
+  coxtypes::CoxNbr xs = d_shift[x][s];
+  coxtypes::CoxNbr ys = d_shift[y][s];
 
   if (xs < x)
     return inOrder(xs,ys);
@@ -313,24 +313,24 @@ bool StandardSchubertContext::inOrder(CoxNbr x, CoxNbr y) const
     return inOrder(x,ys);
 }
 
-CoxNbr StandardSchubertContext::maximize(const CoxNbr& x, const LFlags& f)
+coxtypes::CoxNbr StandardSchubertContext::maximize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
   const
 
 /*
   This function maximizes x w.r.t. the flags in f. The return value is
-  undef_coxnbr if the extremalization takes us outside the context. It
+  coxtypes::undef_coxnbr if the extremalization takes us outside the context. It
   is assumed that f is a valid set of flags, i.e., contained in S \coprod S.
 */
 
 {
-  CoxNbr x1 = x;
-  LFlags g = f & ~d_descent[x1];
+  coxtypes::CoxNbr x1 = x;
+  bits::Lflags g = f & ~d_descent[x1];
 
   while (g)
     {
-      Generator s = firstBit(g);
+      coxtypes::Generator s = constants::firstBit(g);
       x1 = d_shift[x1][s];
-      if (x1 == undef_coxnbr)
+      if (x1 == coxtypes::undef_coxnbr)
 	break;
       g = f & ~d_descent[x1];
     }
@@ -338,7 +338,7 @@ CoxNbr StandardSchubertContext::maximize(const CoxNbr& x, const LFlags& f)
   return x1;
 }
 
-CoxNbr StandardSchubertContext::minimize(const CoxNbr& x, const LFlags& f)
+coxtypes::CoxNbr StandardSchubertContext::minimize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
   const
 
 /*
@@ -348,12 +348,12 @@ CoxNbr StandardSchubertContext::minimize(const CoxNbr& x, const LFlags& f)
 */
 
 {
-  CoxNbr x1 = x;
-  LFlags g = f & d_descent[x1];
+  coxtypes::CoxNbr x1 = x;
+  bits::Lflags g = f & d_descent[x1];
 
   while (g)
     {
-      Generator s = firstBit(g);
+      coxtypes::Generator s = constants::firstBit(g);
       x1 = d_shift[x1][s];
       g = f & d_descent[x1];
     }
@@ -361,8 +361,8 @@ CoxNbr StandardSchubertContext::minimize(const CoxNbr& x, const LFlags& f)
   return x1;
 }
 
-CoxWord& StandardSchubertContext::normalForm(CoxWord& g, const CoxNbr& d_x,
-		                          const Permutation& order) const
+coxtypes::CoxWord& StandardSchubertContext::normalForm(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x,
+		                          const bits::Permutation& order) const
 
 /*
   This function returns the normal form of x for the given ordering of the
@@ -375,10 +375,10 @@ CoxWord& StandardSchubertContext::normalForm(CoxWord& g, const CoxNbr& d_x,
 
 {
   g.reset();
-  CoxNbr x = d_x;
+  coxtypes::CoxNbr x = d_x;
 
   while (x) {
-    Generator s = minDescent(ldescent(x),order);
+    coxtypes::Generator s = minDescent(ldescent(x),order);
     g.append(s+1);
     x = lshift(x,s);
   }
@@ -386,7 +386,7 @@ CoxWord& StandardSchubertContext::normalForm(CoxWord& g, const CoxNbr& d_x,
   return g;
 }
 
-LFlags StandardSchubertContext::twoDescent(const CoxNbr& x) const
+bits::Lflags StandardSchubertContext::twoDescent(const coxtypes::CoxNbr& x) const
 
 /*
   Returns the "super-descent" set of x; this is the union of the descent
@@ -395,11 +395,11 @@ LFlags StandardSchubertContext::twoDescent(const CoxNbr& x) const
 */
 
 {
-  LFlags f = descent(x);
+  bits::Lflags f = descent(x);
 
-  for (LFlags f1 = f; f1; f1 &= f1-1) {
-    Generator s = firstBit(f1);
-    CoxNbr xs = shift(x,s);
+  for (bits::Lflags f1 = f; f1; f1 &= f1-1) {
+    coxtypes::Generator s = constants::firstBit(f1);
+    coxtypes::CoxNbr xs = shift(x,s);
     f |= descent(xs);
   }
 
@@ -408,7 +408,7 @@ LFlags StandardSchubertContext::twoDescent(const CoxNbr& x) const
 
 /******** modifiers ********************************************************/
 
-CoxNbr StandardSchubertContext::extendContext(const CoxWord& g)
+coxtypes::CoxNbr StandardSchubertContext::extendContext(const coxtypes::CoxWord& g)
 
 /*
   This function extends the context to the smallest one containing the
@@ -427,8 +427,8 @@ CoxNbr StandardSchubertContext::extendContext(const CoxWord& g)
 */
 
 {
-  CoxNbr y = 0;
-  SubSet& q = d_subset;
+  coxtypes::CoxNbr y = 0;
+  bits::SubSet& q = d_subset;
 
   resetOne(q);
 
@@ -437,8 +437,8 @@ CoxNbr StandardSchubertContext::extendContext(const CoxWord& g)
   CATCH_MEMORY_OVERFLOW = true;
 
   for (; j < g.length(); ++j) {
-    Generator s = g[j]-1;
-    if (rshift(y,s) == undef_coxnbr)
+    coxtypes::Generator s = g[j]-1;
+    if (rshift(y,s) == coxtypes::undef_coxnbr)
       break;
     extendSubSet(q,s);
     if (ERRNO)
@@ -447,7 +447,7 @@ CoxNbr StandardSchubertContext::extendContext(const CoxWord& g)
   }
 
   for (; j < g.length(); ++j) {
-    Generator s = g[j]-1;
+    coxtypes::Generator s = g[j]-1;
     fullExtension(q,s);
     if (ERRNO)
       goto error_handling;
@@ -463,11 +463,11 @@ CoxNbr StandardSchubertContext::extendContext(const CoxWord& g)
  error_handling:
   Error(ERRNO);
   ERRNO = EXTENSION_FAIL;
-  return(undef_coxnbr);
+  return(coxtypes::undef_coxnbr);
 }
 
 
-void StandardSchubertContext::extendSubSet(SubSet& q, const Generator& s) const
+void StandardSchubertContext::extendSubSet(bits::SubSet& q, const coxtypes::Generator& s) const
 
 /*
   Given a subset q of p holding a decreasing subset, and a geneator s s.t.
@@ -481,8 +481,8 @@ void StandardSchubertContext::extendSubSet(SubSet& q, const Generator& s) const
   Ulong a = q.size();
 
   for (Ulong j = 0; j < a; ++j) { /* run through q */
-    CoxNbr x = (CoxNbr)q[j];
-    CoxNbr xs = d_shift[x][s];
+    coxtypes::CoxNbr x = (coxtypes::CoxNbr)q[j];
+    coxtypes::CoxNbr xs = d_shift[x][s];
     if (xs < x)
       continue;
     if (q.isMember(xs))
@@ -496,7 +496,7 @@ void StandardSchubertContext::extendSubSet(SubSet& q, const Generator& s) const
   return;
 }
 
-void StandardSchubertContext::permute(const Permutation& a)
+void StandardSchubertContext::permute(const bits::Permutation& a)
 
 /*
   This function applies the permutation a to the context. We have explained
@@ -508,28 +508,28 @@ void StandardSchubertContext::permute(const Permutation& a)
      has range in the context; in addition the permuted rows should be sorted;
    - d_descent : a table with range in the context;
    - d_shift : a table with range in the context; each row has values in the
-     context, or undef_coxnbr;
+     context, or coxtypes::undef_coxnbr;
    - d_downset : a table of bitmaps ranging over the context;
    - d_parity : a pair of bitmaps ranging over the context;
 */
 
 {
-  static BitMap b(0);
+  static bits::BitMap b(0);
   static CoatomList hasse_buf; /* quick fix; can go when all lists are
 				pointer lists */
 
   /* permute values */
 
-  for (CoxNbr x = 0; x < d_size; ++x) {
+  for (coxtypes::CoxNbr x = 0; x < d_size; ++x) {
     CoatomList& c = d_hasse[x];
     for (Ulong j = 0; j < c.size(); ++j)
       c[j] = a[c[j]];
     c.sort();
   }
 
-  for (CoxNbr x = 0; x < d_size; ++x) {
-    for (Generator s = 0; s < 2*d_rank; ++s) {
-      if (d_shift[x][s] != undef_coxnbr)
+  for (coxtypes::CoxNbr x = 0; x < d_size; ++x) {
+    for (coxtypes::Generator s = 0; s < 2*d_rank; ++s) {
+      if (d_shift[x][s] != coxtypes::undef_coxnbr)
 	d_shift[x][s] = a[d_shift[x][s]];
     }
   }
@@ -539,7 +539,7 @@ void StandardSchubertContext::permute(const Permutation& a)
   b.setSize(a.size());
   b.reset();
 
-  for (CoxNbr x = 0; x < this->size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < this->size(); ++x) {
     if (b.getBit(x))
       continue;
     if (a[x] == x) {
@@ -547,14 +547,14 @@ void StandardSchubertContext::permute(const Permutation& a)
       continue;
     }
 
-    for (CoxNbr y = a[x]; y != x; y = a[y]) {
+    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y]) {
 
       /* back up values for y */
 
-      Length length_buf = d_length[y];
+      coxtypes::Length length_buf = d_length[y];
       hasse_buf.shallowCopy(d_hasse[y]);
-      LFlags descent_buf = d_descent[y];
-      CoxNbr* shift_buf = d_shift[y];
+      bits::Lflags descent_buf = d_descent[y];
+      coxtypes::CoxNbr* shift_buf = d_shift[y];
 
       /* put values for x in y */
 
@@ -572,7 +572,7 @@ void StandardSchubertContext::permute(const Permutation& a)
 
       /* modify downsets */
 
-      for (Generator s = 0; s < 2*this->rank(); ++s) {
+      for (coxtypes::Generator s = 0; s < 2*this->rank(); ++s) {
 	bool t = d_downset[s].getBit(y);
 	d_downset[s].setBit(y,d_downset[s].getBit(x));
 	d_downset[s].setBit(x,t);
@@ -661,11 +661,11 @@ void StandardSchubertContext::setSize(const Ulong& n)
 
 /******** input/output ****************************************************/
 
-std::string& StandardSchubertContext::append(std::string& str, const CoxNbr& x)
+std::string& StandardSchubertContext::append(std::string& str, const coxtypes::CoxNbr& x)
   const
 
 {
-  if (x == undef_coxnbr)
+  if (x == coxtypes::undef_coxnbr)
     str.append(undef_str);
   else
     coxtypes::append(str,x);
@@ -673,23 +673,24 @@ std::string& StandardSchubertContext::append(std::string& str, const CoxNbr& x)
   return str;
 }
 
-std::string& StandardSchubertContext::append(std::string& str, const CoxNbr& x,
-				     const Interface& I) const
+std::string& StandardSchubertContext::append
+  (std::string& str, const coxtypes::CoxNbr& x,
+   const interface::Interface& I) const
 
 {
-  if (x == undef_coxnbr)
+  if (x == coxtypes::undef_coxnbr)
     return str.append(undef_str);
   else {
-    CoxWord g(0);
+    coxtypes::CoxWord g(0);
     normalForm(g,x,I.order());
     return I.append(str,g);
   }
 }
 
-void StandardSchubertContext::print(FILE* file, const CoxNbr& x) const
+void StandardSchubertContext::print(FILE* file, const coxtypes::CoxNbr& x) const
 
 {
-  if (x == undef_coxnbr)
+  if (x == coxtypes::undef_coxnbr)
     fprintf(file,"%s",undef_str);
   else
     fprintf(file,"%lu",static_cast<Ulong>(x));
@@ -697,14 +698,14 @@ void StandardSchubertContext::print(FILE* file, const CoxNbr& x) const
   return;
 }
 
-void StandardSchubertContext::print(FILE* file, const CoxNbr& x,
-				    const Interface& I) const
+void StandardSchubertContext::print(FILE* file, const coxtypes::CoxNbr& x,
+				    const interface::Interface& I) const
 
 {
-  if (x == undef_coxnbr)
+  if (x == coxtypes::undef_coxnbr)
     fprintf(file,"%s",undef_str);
   else {
-    CoxWord g(0);
+    coxtypes::CoxWord g(0);
     normalForm(g,x,I.order());
     I.print(file,g);
   }
@@ -732,7 +733,7 @@ void StandardSchubertContext::print(FILE* file, const CoxNbr& x,
 *****************************************************************************/
 
 void StandardSchubertContext::fillCoatoms(const Ulong& first,
-					  const Generator& s)
+					  const coxtypes::Generator& s)
 
 /*
   This auxiliary fills the coatom lists of the new elements in p.
@@ -742,13 +743,13 @@ void StandardSchubertContext::fillCoatoms(const Ulong& first,
 */
 
 {
-  static List<CoxNbr> c(1);
+  static list::List<coxtypes::CoxNbr> c(1);
 
-  for (CoxNbr x = first; x < d_size; ++x) {
+  for (coxtypes::CoxNbr x = first; x < d_size; ++x) {
 
     /* put coatom list in c */
 
-    CoxNbr xs = d_shift[x][s];
+    coxtypes::CoxNbr xs = d_shift[x][s];
 
     c.setSize(0);
     c.append(xs);
@@ -756,8 +757,8 @@ void StandardSchubertContext::fillCoatoms(const Ulong& first,
     CoatomList& cs = d_hasse[xs];
 
     for (Ulong j = 0; j < cs.size(); ++j) {
-      CoxNbr z = cs[j];
-      CoxNbr zs = d_shift[z][s];
+      coxtypes::CoxNbr z = cs[j];
+      coxtypes::CoxNbr zs = d_shift[z][s];
       if (zs > z) /* z moves up */
 	insert(c,zs);
     }
@@ -770,8 +771,8 @@ void StandardSchubertContext::fillCoatoms(const Ulong& first,
   return;
 }
 
-void StandardSchubertContext::fillDihedralShifts(const CoxNbr& x,
-					     const Generator& s)
+void StandardSchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
+					     const coxtypes::Generator& s)
 
 /*
   This function fills in the shifts for x in the dihedral case. It is
@@ -782,12 +783,12 @@ void StandardSchubertContext::fillDihedralShifts(const CoxNbr& x,
 */
 
 {
-  CoxNbr xs = d_shift[x][s];
+  coxtypes::CoxNbr xs = d_shift[x][s];
 
   /* find the other generator involved, on the same side as s */
 
-  Generator s1, t, t1;
-  CoxEntry m;
+  coxtypes::Generator s1, t, t1;
+  graph::CoxEntry m;
 
   if (s < d_rank) { /* action is on the right */
     t = firstRDescent(xs);
@@ -803,7 +804,7 @@ void StandardSchubertContext::fillDihedralShifts(const CoxNbr& x,
   }
 
   const CoatomList& c = d_hasse[x];
-  CoxNbr z; /* the other coatom of x */
+  coxtypes::CoxNbr z; /* the other coatom of x */
 
   if (c[0] == xs)
     z = c[1];
@@ -811,7 +812,7 @@ void StandardSchubertContext::fillDihedralShifts(const CoxNbr& x,
     z = c[0];
 
   if (d_length[x] == m) { /* descents for s,t on both sides */
-    d_descent[x] |= lmask[t] | lmask[s1] | lmask[t1];
+    d_descent[x] |= constants::lmask[t] | constants::lmask[s1] | constants::lmask[t1];
     d_downset[t].setBit(x);
     d_downset[s1].setBit(x);
     d_downset[t1].setBit(x);
@@ -834,13 +835,13 @@ void StandardSchubertContext::fillDihedralShifts(const CoxNbr& x,
     if (d_length[x] % 2) { /* xs and sx */
       d_shift[x][s1] = z;
       d_shift[z][s1] = x;
-      d_descent[x] |= lmask[s1];
+      d_descent[x] |= constants::lmask[s1];
       d_downset[s1].setBit(x);
     }
     else { /* xs and tx */
       d_shift[x][t1] = z;
       d_shift[z][t1] = x;
-      d_descent[x] |= lmask[t1];
+      d_descent[x] |= constants::lmask[t1];
       d_downset[t1].setBit(x);
     }
   }
@@ -848,8 +849,8 @@ void StandardSchubertContext::fillDihedralShifts(const CoxNbr& x,
   return;
 }
 
-void StandardSchubertContext::fillShifts(const CoxNbr& first,
-					 const Generator& s)
+void StandardSchubertContext::fillShifts(const coxtypes::CoxNbr& first,
+					 const coxtypes::Generator& s)
 
 /*
   This function fills in the shift tables of the new elements in p. It is
@@ -859,20 +860,20 @@ void StandardSchubertContext::fillShifts(const CoxNbr& first,
 */
 
 {
-  CoxNbr x = first;
+  coxtypes::CoxNbr x = first;
 
   /* check if something happens in length one; if there is a new element
    of length one, it is unique and equal to s */
 
   if (d_length[x] == 1) { /* x = s */
-    Generator t;
+    coxtypes::Generator t;
     if (s < d_rank) /* s acts on the right */
       t = s + d_rank;
     else /* s acts on the left */
       t = s - d_rank;
     d_shift[0][t] = x;
     d_shift[x][t] = 0;
-    d_descent[x] |= lmask[t];
+    d_descent[x] |= constants::lmask[t];
     d_downset[t].setBit(x);
     ++x;
   }
@@ -885,13 +886,13 @@ void StandardSchubertContext::fillShifts(const CoxNbr& first,
       continue;
     }
 
-    for (Generator t = 0; t < 2*d_rank; ++t) { /* examine shift by t */
+    for (coxtypes::Generator t = 0; t < 2*d_rank; ++t) { /* examine shift by t */
       if (t == s)
 	continue;
       bool firstplus = true;
-      CoxNbr z = undef_coxnbr;
+      coxtypes::CoxNbr z = coxtypes::undef_coxnbr;
       for (Ulong j = 0; j < c.size(); ++j) {
-	if (!(lmask[t] & d_descent[c[j]])) { /* coatom has ascent */
+	if (!(constants::lmask[t] & d_descent[c[j]])) { /* coatom has ascent */
 	  if (firstplus) { /* it's the first time */
 	    firstplus = false;
 	    z = c[j]; // z is the coatom that goes up
@@ -904,7 +905,7 @@ void StandardSchubertContext::fillShifts(const CoxNbr& first,
       /* if we reach this point there was exactly one ascent */
       d_shift[x][t] = z;
       d_shift[z][t] = x;
-      d_descent[x] |= lmask[t];
+      d_descent[x] |= constants::lmask[t];
       d_downset[t].setBit(x);
     nextt:
       continue;
@@ -914,12 +915,12 @@ void StandardSchubertContext::fillShifts(const CoxNbr& first,
   return;
 }
 
-void StandardSchubertContext::fillStar(const CoxNbr& first)
+void StandardSchubertContext::fillStar(const coxtypes::CoxNbr& first)
 
 /*
   This function fills in the star operations for the new elements. Each
   star operation is a partially defined involution. The tables have
-  already been initially set to undef_coxnbr; we fill in the operation in
+  already been initially set to coxtypes::undef_coxnbr; we fill in the operation in
   pairs, using the element that goes down.
 
   Recall that a star operation is associated to each edge {s,t} in the
@@ -928,7 +929,7 @@ void StandardSchubertContext::fillStar(const CoxNbr& first)
   exactly (in other words, the elements that are neither minimal nor maximal
   in the left coset under the dihedral subgroup generated by s and t.)
 
-  NOTE : a value undef_coxnbr means that either the element is not in the
+  NOTE : a value coxtypes::undef_coxnbr means that either the element is not in the
   domain of the star operation, or that the star operation takes us out
   of context; hence an undefined value may become defined after extension;
   but this will always happen for elements paired up with a new element,
@@ -936,25 +937,25 @@ void StandardSchubertContext::fillStar(const CoxNbr& first)
 */
 
 {
-  const List<LFlags>& ops = d_graph.starOps();
+  const list::List<bits::Lflags>& ops = d_graph.starOps();
 
-  for (CoxNbr x = first; x < d_size; ++x) {
+  for (coxtypes::CoxNbr x = first; x < d_size; ++x) {
 
-    LFlags fx = rdescent(x);
-    for (StarOp j = 0; j < nStarOps(); ++j) {
+    bits::Lflags fx = rdescent(x);
+    for (coxtypes::StarOp j = 0; j < nStarOps(); ++j) {
 
       /* determine if x is in right domain */
-      LFlags f = fx & ops[j];
+      bits::Lflags f = fx & ops[j];
       if ((f == 0) || (f == ops[j]))
 	continue;
 
-      CoxNbr x_min = minimize(x,ops[j]);
-      Length d = d_length[x] - d_length[x_min];
-      Generator s = firstBit(f); /* the _only_ bit in f, actually */
-      Generator t = firstBit(ops[j] & ~f);
-      CoxEntry m = d_graph.M(s,t);
+      coxtypes::CoxNbr x_min = minimize(x,ops[j]);
+      coxtypes::Length d = d_length[x] - d_length[x_min];
+      coxtypes::Generator s = constants::firstBit(f); /* the _only_ bit in f, actually */
+      coxtypes::Generator t = constants::firstBit(ops[j] & ~f);
+      graph::CoxEntry m = d_graph.M(s,t);
 
-      if (2*d < m) /* star is either undef_coxnbr or increasing */
+      if (2*d < m) /* star is either coxtypes::undef_coxnbr or increasing */
 	continue;
 
       /* if we get here we fill in a pair in d_star */
@@ -962,10 +963,10 @@ void StandardSchubertContext::fillStar(const CoxNbr& first)
       if (2*d == m)
 	d_star[x][j] = x;
       else {
-	CoxNbr x1 = x;
+	coxtypes::CoxNbr x1 = x;
 	while ((d_length[x1] - d_length[x_min]) > (m - d)) {
-	  LFlags f1 = rdescent(x1) & ops[j];
-	  Generator s1 = firstBit(f1);
+	  bits::Lflags f1 = rdescent(x1) & ops[j];
+	  coxtypes::Generator s1 = constants::firstBit(f1);
 	  x1 = d_shift[x1][s1];
 	}
 	d_star[x][j] = x1;
@@ -974,19 +975,20 @@ void StandardSchubertContext::fillStar(const CoxNbr& first)
     }
 
     fx = ldescent(x);
-    for (StarOp j = 0; j < nStarOps(); ++j) {
+    for (coxtypes::StarOp j = 0; j < nStarOps(); ++j) {
       /* determine if x is in left domain */
-      LFlags f = fx & ops[j];
+      bits::Lflags f = fx & ops[j];
       if ((f == 0) || (f == ops[j]))
 	continue;
-      LFlags lops = ops[j] << d_rank;
-      CoxNbr x_min = minimize(x,lops);
-      Length d = d_length[x] - d_length[x_min];
-      Generator s = firstBit(f); /* the _only_ bit in f, actually */
-      Generator t = firstBit(ops[j] & ~f);
-      CoxEntry m = d_graph.M(s,t);
+      bits::Lflags lops = ops[j] << d_rank;
+      coxtypes::CoxNbr x_min = minimize(x,lops);
+      coxtypes::Length d = d_length[x] - d_length[x_min];
+      coxtypes::Generator s =
+	constants::firstBit(f); /* the _only_ bit in f, actually */
+      coxtypes::Generator t = constants::firstBit(ops[j] & ~f);
+      graph::CoxEntry m = d_graph.M(s,t);
 
-      if (2*d < m) /* star is either undef_coxnbr or increasing */
+      if (2*d < m) /* star is either coxtypes::undef_coxnbr or increasing */
 	continue;
 
       /* if we get here we fill in a pair in d_star */
@@ -994,10 +996,10 @@ void StandardSchubertContext::fillStar(const CoxNbr& first)
       if (2*d == m)
 	d_star[x][j+nStarOps()] = x;
       else {
-	CoxNbr x1 = x;
+	coxtypes::CoxNbr x1 = x;
 	while ((d_length[x1] - d_length[x_min]) > (m - d)) {
-	  LFlags f1 = ldescent(x1) & ops[j];
-	  Generator s1 = firstBit(f1);
+	  bits::Lflags f1 = ldescent(x1) & ops[j];
+	  coxtypes::Generator s1 = constants::firstBit(f1);
 	  x1 = d_shift[x1][s1+d_rank];
 	}
 	d_star[x][j+nStarOps()] = x1;
@@ -1009,7 +1011,7 @@ void StandardSchubertContext::fillStar(const CoxNbr& first)
   return;
 }
 
-void StandardSchubertContext::fullExtension(SubSet& q, const Generator& s)
+void StandardSchubertContext::fullExtension(bits::SubSet& q, const coxtypes::Generator& s)
 
 /*
   Given a context p, a subset q of p holding [e,y], and a generator s s.t.
@@ -1035,48 +1037,48 @@ void StandardSchubertContext::fullExtension(SubSet& q, const Generator& s)
 {
   /* check length overflow */
 
-  CoxNbr y = q[q.size()-1]; /* largest element in q */
+  coxtypes::CoxNbr y = q[q.size()-1]; /* largest element in q */
 
-  if (d_length[y] == LENGTH_MAX) { /* overflow */
+  if (d_length[y] == coxtypes::LENGTH_MAX) { /* overflow */
     ERRNO = LENGTH_OVERFLOW;
     return;
   }
 
   /* determine the size of the extension */
 
-  CoxNbr c = 0;
+  coxtypes::CoxNbr c = 0;
 
   for (Ulong j = 0; j < q.size(); ++j) { /* run through q */
-    if (d_shift[q[j]][s] == undef_coxnbr)
+    if (d_shift[q[j]][s] == coxtypes::undef_coxnbr)
       ++c;
   }
 
   /* check for size overflow */
 
-  if (c > COXNBR_MAX - d_size) { /* overflow */
+  if (c > coxtypes::COXNBR_MAX - d_size) { /* overflow */
     ERRNO = COXNBR_OVERFLOW;
     return;
   }
 
   /* resize context */
 
-  CoxNbr prev_size = d_size;
+  coxtypes::CoxNbr prev_size = d_size;
   setSize(d_size+c);
   if (ERRNO) /* memory overflow */
     goto revert;
 
   /* fill in lengths and shifts by s */
 
-  { CoxNbr xs = prev_size; /* first new element */
+  { coxtypes::CoxNbr xs = prev_size; /* first new element */
 
   for (Ulong j = 0; j < q.size(); ++j) {
-    CoxNbr x = q[j];
-    if (d_shift[x][s] == undef_coxnbr) {
+    coxtypes::CoxNbr x = q[j];
+    if (d_shift[x][s] == coxtypes::undef_coxnbr) {
       d_shift[x][s] = xs;
       d_shift[xs][s] = x;
       d_length[xs] = d_length[x] + 1;
       d_parity[d_length[xs]%2].setBit(xs);
-      d_descent[xs] |= lmask[s];
+      d_descent[xs] |= constants::lmask[s];
       d_downset[s].setBit(xs);
       xs++;
     }
@@ -1159,17 +1161,17 @@ StandardSchubertContext::ContextExtension::ContextExtension
 
   /* make room for shift tables and star tables */
 
-  d_shift = new(arena()) CoxNbr[2*p.rank()*c];
+  d_shift = new(memory::arena()) coxtypes::CoxNbr[2*p.rank()*c];
   if (ERRNO)
     goto revert;
-  memset(d_shift,0xFF,2*p.rank()*c*sizeof(CoxNbr));
+  memset(d_shift,0xFF,2*p.rank()*c*sizeof(coxtypes::CoxNbr));
   p.d_shift[p.d_size] = d_shift;
   for (Ulong j = p.d_size+1; j < n; ++j)
     p.d_shift[j] = p.d_shift[j-1] + 2*p.rank();
-  d_star = new(arena()) CoxNbr[2*p.nStarOps()*c];
+  d_star = new(memory::arena()) coxtypes::CoxNbr[2*p.nStarOps()*c];
   if (ERRNO)
     goto revert;
-  memset(d_star,0xFF,2*p.nStarOps()*c*sizeof(CoxNbr));
+  memset(d_star,0xFF,2*p.nStarOps()*c*sizeof(coxtypes::CoxNbr));
   p.d_star[p.d_size] = d_star;
   for (Ulong j = p.d_size+1; j < n; ++j)
     p.d_star[j] = p.d_star[j-1] + 2*p.nStarOps();
@@ -1210,7 +1212,7 @@ StandardSchubertContext::ContextExtension::~ContextExtension()
 
   NOTE : this is currently unfinished, and usable only for the destruction
   of a whole context. It should resize the lists downwards, and put
-  undef_coxnbr values where appropriate (this can be determined by running
+  coxtypes::undef_coxnbr values where appropriate (this can be determined by running
   through the deleted elements.) Also, it could take care of freeing
   the superfluous coatom lists.
 */
@@ -1221,8 +1223,8 @@ StandardSchubertContext::ContextExtension::~ContextExtension()
 
   /* the pointers d_shift  and d_star were allocated previously */
 
-  arena().free(d_shift,2*p.rank()*d_size*sizeof(CoxNbr));
-  arena().free(d_star,2*p.nStarOps()*d_size*sizeof(CoxNbr));
+  memory::arena().free(d_shift,2*p.rank()*d_size*sizeof(coxtypes::CoxNbr));
+  memory::arena().free(d_star,2*p.nStarOps()*d_size*sizeof(coxtypes::CoxNbr));
 
   p.d_size = prev_size;
 
@@ -1282,7 +1284,7 @@ void ClosureIterator::operator++()
   stack. What we do is traverse in the lexicographical order of normal forms
   (so it will be Lex rather than ShortLex).
 
-  The control structure that manages the traversal is a CoxWord, representing
+  The control structure that manages the traversal is a coxtypes::CoxWord, representing
   the normal form of the current element. The current element is initially
   zero. On update, the next element is the first extension of the current
   element within the context if there is such; otherwise the next extension
@@ -1295,12 +1297,12 @@ void ClosureIterator::operator++()
 
   /* look at extensions of the current word */
 
-  LFlags f = p.S() & ~p.rdescent(d_current);
+  bits::Lflags f = p.S() & ~p.rdescent(d_current);
 
   for (; f; f &= f-1) {
-    Generator s = firstBit(f);
-    CoxNbr x = p.shift(d_current,s);
-    if (x == undef_coxnbr)
+    coxtypes::Generator s = constants::firstBit(f);
+    coxtypes::CoxNbr x = p.shift(d_current,s);
+    if (x == coxtypes::undef_coxnbr)
       continue;
     if (d_visited.getBit(x))
       continue;
@@ -1312,14 +1314,14 @@ void ClosureIterator::operator++()
   /* if we get here, there are no extensions of the current word */
 
   while (p.length(d_current)) {
-    Length r = p.length(d_current);
-    Generator s = d_g[r-1]-1;
+    coxtypes::Length r = p.length(d_current);
+    coxtypes::Generator s = d_g[r-1]-1;
     d_current = p.shift(d_current,s);
-    for (Generator t = s+1; t < p.rank(); ++t) {
+    for (coxtypes::Generator t = s+1; t < p.rank(); ++t) {
       if (p.isDescent(d_current,t))
 	continue;
-      CoxNbr x = p.shift(d_current,t);
-      if (x == undef_coxnbr)
+      coxtypes::CoxNbr x = p.shift(d_current,t);
+      if (x == coxtypes::undef_coxnbr)
 	continue;
       if (d_visited.getBit(x))
 	continue;
@@ -1337,7 +1339,7 @@ void ClosureIterator::operator++()
 
 /******** private functions *************************************************/
 
-void ClosureIterator::update(const CoxNbr& x, const Generator& s)
+void ClosureIterator::update(const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
 
 /*
   Updates the structure, where the new current element is x, gotten through
@@ -1351,15 +1353,15 @@ void ClosureIterator::update(const CoxNbr& x, const Generator& s)
 
   d_current = x;
   d_visited.setBit(x);
-  Length r = p.length(x);
+  coxtypes::Length r = p.length(x);
   d_g.setLength(r);
   d_g[r-1] = s+1;
-  Length prev_r = d_subSize.size();
+  coxtypes::Length prev_r = d_subSize.size();
 
   /* erase top of subset */
 
   for (Ulong j = d_subSize[r-1]; j < d_subSize[prev_r-1]; ++j) {
-    CoxNbr z = d_subSet[j];
+    coxtypes::CoxNbr z = d_subSet[j];
     d_subSet.bitMap().clearBit(z);
   }
 
@@ -1391,7 +1393,7 @@ void ClosureIterator::update(const CoxNbr& x, const Generator& s)
 
 namespace schubert {
 
-void extractInvolutions(const SchubertContext& p, BitMap& b)
+void extractInvolutions(const SchubertContext& p, bits::BitMap& b)
 
 /*
   This function extracts from b the involutions contained in it. First
@@ -1399,18 +1401,18 @@ void extractInvolutions(const SchubertContext& p, BitMap& b)
 */
 
 {
-  BitMap::Iterator last = b.end();
+  bits::BitMap::Iterator last = b.end();
 
-  for (BitMap::Iterator i = b.begin(); i != last; ++i) {
-    CoxNbr x = *i;
+  for (bits::BitMap::Iterator i = b.begin(); i != last; ++i) {
+    coxtypes::CoxNbr x = *i;
     if (p.rdescent(x) != p.ldescent(x))
       goto not_involution;
     /* check if x.x = e */
     {
-      CoxNbr xl = x;
-      CoxNbr xr = x;
+      coxtypes::CoxNbr xl = x;
+      coxtypes::CoxNbr xr = x;
       while (xl) {
-	Generator s = p.firstRDescent(xl);
+	coxtypes::Generator s = p.firstRDescent(xl);
 	xl = p.rshift(xl,s);
 	xr = p.lshift(xr,s);
 	if (p.rdescent(xl) != p.ldescent(xr))
@@ -1425,7 +1427,7 @@ void extractInvolutions(const SchubertContext& p, BitMap& b)
   }
 }
 
-void maximize(const SchubertContext& p, BitMap& b, const LFlags& f)
+void maximize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
 
 /*
   This function extracts from b the maximal elements w.r.t. f, by
@@ -1433,10 +1435,10 @@ void maximize(const SchubertContext& p, BitMap& b, const LFlags& f)
 */
 
 {
-  LFlags f1 = f;
+  bits::Lflags f1 = f;
 
   while(f1) {
-    Generator s = firstBit(f1);
+    coxtypes::Generator s = constants::firstBit(f1);
     b &= p.downset(s);
     f1 &= f1-1;
   }
@@ -1444,7 +1446,7 @@ void maximize(const SchubertContext& p, BitMap& b, const LFlags& f)
   return;
 }
 
-void minimize(const SchubertContext& p, BitMap& b, const LFlags& f)
+void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
 
 /*
   This function extracts from b the minimal elements w.r.t. f, by
@@ -1452,10 +1454,10 @@ void minimize(const SchubertContext& p, BitMap& b, const LFlags& f)
 */
 
 {
-  LFlags f1 = f;
+  bits::Lflags f1 = f;
 
   while(f1) {
-    Generator s = firstBit(f1);
+    coxtypes::Generator s = constants::firstBit(f1);
     b.andnot(p.downset(s));
     f1 &= f1-1;
   }
@@ -1463,8 +1465,8 @@ void minimize(const SchubertContext& p, BitMap& b, const LFlags& f)
   return;
 }
 
-bool shortLexOrder(const SchubertContext& p, const CoxNbr& d_x,
-		   const CoxNbr& d_y, const Permutation& order)
+bool shortLexOrder(const SchubertContext& p, const coxtypes::CoxNbr& d_x,
+		   const coxtypes::CoxNbr& d_y, const bits::Permutation& order)
 
 /*
   This function checks if x <= y in the ShortLex order of the normal forms
@@ -1482,11 +1484,11 @@ bool shortLexOrder(const SchubertContext& p, const CoxNbr& d_x,
   if (p.length(d_x) > p.length(d_y))
     return false;
 
-  CoxNbr x = d_x;
-  CoxNbr y = d_y;
+  coxtypes::CoxNbr x = d_x;
+  coxtypes::CoxNbr y = d_y;
 
-  Generator s_x = p.firstLDescent(x,order);
-  Generator s_y = p.firstLDescent(y,order);
+  coxtypes::Generator s_x = p.firstLDescent(x,order);
+  coxtypes::Generator s_y = p.firstLDescent(y,order);
 
   while (s_x == s_y) {
     x = p.lshift(x,s_x);
@@ -1531,19 +1533,19 @@ void print(FILE* file, const SchubertContext& p)
 	  static_cast<Ulong>(p.maxlength()));
   fprintf(file,"\n\n");
 
-  for (CoxNbr x = 0; x < p.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
     fprintf(file,"%4lu : ",static_cast<Ulong>(x));
 
-    for (Generator s = 0; s < p.rank(); ++s) {
-      if (p.rshift(x,s) == undef_coxnbr)
+    for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
+      if (p.rshift(x,s) == coxtypes::undef_coxnbr)
 	fprintf(file,"%4s","*");
       else
 	fprintf(file,"%4lu",static_cast<Ulong>(p.rshift(x,s)));
     }
     fprintf(file,";");
 
-    for (Generator s = 0; s < p.rank(); ++s) {
-      if (p.lshift(x,s) == undef_coxnbr)
+    for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
+      if (p.lshift(x,s) == coxtypes::undef_coxnbr)
 	fprintf(file,"%4s","*");
       else
 	fprintf(file,"%4lu",static_cast<Ulong>(p.lshift(x,s)));
@@ -1560,8 +1562,8 @@ void print(FILE* file, const SchubertContext& p)
     fprintf(file,"}");
 
     fprintf(file,"  R:(");
-    for (LFlags f = p.rdescent(x); f;) {
-      fprintf(file,"%lu",static_cast<Ulong>(firstBit(f)+1));
+    for (bits::Lflags f = p.rdescent(x); f;) {
+      fprintf(file,"%lu",static_cast<Ulong>(constants::firstBit(f)+1));
       f &= f-1;
       if (f) /* there is more to come */
 	fprintf(file,",");
@@ -1569,8 +1571,8 @@ void print(FILE* file, const SchubertContext& p)
     fprintf(file,")");
 
     fprintf(file,"  L:(");
-    for (LFlags f = p.ldescent(x); f;) {
-      fprintf(file,"%lu",static_cast<Ulong>(firstBit(f)+1));
+    for (bits::Lflags f = p.ldescent(x); f;) {
+      fprintf(file,"%lu",static_cast<Ulong>(constants::firstBit(f)+1));
       f &= f-1;
       if (f) /* there is more to come */
 	fprintf(file,",");
@@ -1582,10 +1584,10 @@ void print(FILE* file, const SchubertContext& p)
 
   fprintf(file,"\nStar operations :\n\n");
 
-  for (CoxNbr x = 0; x < p.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
     fprintf(file,"%4lu : ",static_cast<Ulong>(x));
     for (Ulong r = 0; r < 2*p.nStarOps(); ++r) {
-      if (p.star(x,r) == undef_coxnbr)
+      if (p.star(x,r) == coxtypes::undef_coxnbr)
 	fprintf(file,"%5s","*");
       else
 	fprintf(file,"%5lu",static_cast<Ulong>(p.star(x,r)));
@@ -1598,8 +1600,8 @@ void print(FILE* file, const SchubertContext& p)
   return;
 }
 
-void printBitMap(FILE* file, const BitMap& b, const SchubertContext& p,
-		    const Interface& I)
+void printBitMap(FILE* file, const bits::BitMap& b, const SchubertContext& p,
+		    const interface::Interface& I)
 
 /*
   This function prints the elements of the bitmap (assumed to hold a subset
@@ -1611,12 +1613,12 @@ void printBitMap(FILE* file, const BitMap& b, const SchubertContext& p,
 
   fprintf(file,"{");
 
-  for (BitMap::Iterator i = b.begin(); i != b.end(); ++i) {
+  for (bits::BitMap::Iterator i = b.begin(); i != b.end(); ++i) {
     if (first)
       first = false;
     else
       fprintf(file,",");
-    CoxWord g(0);
+    coxtypes::CoxWord g(0);
     p.append(g,*i);
     I.print(file,g);
   }
@@ -1624,8 +1626,8 @@ void printBitMap(FILE* file, const BitMap& b, const SchubertContext& p,
   fprintf(file,"}");
 }
 
-void printPartition(FILE* file, const Partition& pi, const SchubertContext& p,
-		    const Interface& I)
+void printPartition(FILE* file, const bits::Partition& pi, const SchubertContext& p,
+		    const interface::Interface& I)
 
 /*
   This function prints the partition pi, assumed to hold a partition of the
@@ -1635,11 +1637,11 @@ void printPartition(FILE* file, const Partition& pi, const SchubertContext& p,
 {
   Ulong count = 0;
 
-  for (PartitionIterator i(pi); i; ++i) {
+  for (bits::PartitionIterator i(pi); i; ++i) {
     const Set& c = i();
     fprintf(file,"%lu(%lu):{",count,c.size());
     for (Ulong j = 0; j < c.size(); ++j) {
-      CoxWord g(0);
+      coxtypes::CoxWord g(0);
       p.append(g,c[j]);
       I.print(file,g);
       if (j+1 < c.size()) /* there is more to come */
@@ -1652,24 +1654,24 @@ void printPartition(FILE* file, const Partition& pi, const SchubertContext& p,
   return;
 }
 
-void printPartition(FILE* file, const Partition& pi, const BitMap& b,
-		    const SchubertContext& p, const Interface& I)
+void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b,
+		    const SchubertContext& p, const interface::Interface& I)
 
 /*
   Prints the partition pi restricted to the subset flagged by b.
 */
 
 {
-  List<Ulong> q(b.begin(),b.end()); // replaces readBitMap
-  Partition pi_b(b.begin(),b.end(),pi);
+  list::List<Ulong> q(b.begin(),b.end()); // replaces readBitMap
+  bits::Partition pi_b(b.begin(),b.end(),pi);
 
   Ulong count = 0;
 
-  for (PartitionIterator i(pi_b); i; ++i) {
+  for (bits::PartitionIterator i(pi_b); i; ++i) {
     const Set& c = i();
     fprintf(file,"%lu(%lu):{",count,c.size());
     for (Ulong j = 0; j < c.size(); ++j) {
-      CoxWord g(0);
+      coxtypes::CoxWord g(0);
       p.append(g,q[c[j]]);
       I.print(file,g);
       if (j+1 < c.size()) /* there is more to come */
@@ -1703,7 +1705,7 @@ void printPartition(FILE* file, const Partition& pi, const BitMap& b,
 
 namespace schubert {
 
-void betti(Homology& h, const CoxNbr& y, const SchubertContext& p)
+void betti(Homology& h, const coxtypes::CoxNbr& y, const SchubertContext& p)
 
 /*
   This function puts the ordinary betti numbers of the row in h, in a
@@ -1713,15 +1715,15 @@ void betti(Homology& h, const CoxNbr& y, const SchubertContext& p)
 */
 
 {
-  BitMap b(0);
+  bits::BitMap b(0);
   p.extractClosure(b,y);
 
   h.setSize(p.length(y)+1);
   h.setZero();
 
-  BitMap::Iterator b_end = b.end();
+  bits::BitMap::Iterator b_end = b.end();
 
-  for (BitMap::Iterator x = b.begin(); x != b_end; ++x) {
+  for (bits::BitMap::Iterator x = b.begin(); x != b_end; ++x) {
     h[p.length(*x)]++;
   }
 
@@ -1732,13 +1734,13 @@ Ulong min(const Set& c, NFCompare& nfc)
 
 /*
   This function extracts the minimal element form c. It is defined for
-  Set instead of List<CoxNbr> so as to be able to apply it directly to
+  Set instead of list::List<coxtypes::CoxNbr> so as to be able to apply it directly to
   partition classes.
 */
 
 {
   if (c.size() == 0)
-    return undef_coxnbr;
+    return coxtypes::undef_coxnbr;
 
   Ulong m = c[0];
 
@@ -1750,7 +1752,7 @@ Ulong min(const Set& c, NFCompare& nfc)
   return m;
 }
 
-void extractMaximals(const SchubertContext& p, List<CoxNbr>& c)
+void extractMaximals(const SchubertContext& p, list::List<coxtypes::CoxNbr>& c)
 
 /*
   This function erases from c all elements that are not maximal elements for
@@ -1782,8 +1784,8 @@ void extractMaximals(const SchubertContext& p, List<CoxNbr>& c)
   return;
 }
 
-void extractMaximals(const SchubertContext& p, List<CoxNbr>& c,
-		     List<Ulong>& a)
+void extractMaximals(const SchubertContext& p, list::List<coxtypes::CoxNbr>& c,
+		     list::List<Ulong>& a)
 
 /*
   Like the previous one, but puts the indices in c of the maximal elements
@@ -1791,7 +1793,7 @@ void extractMaximals(const SchubertContext& p, List<CoxNbr>& c,
 */
 
 {
-  List<CoxNbr> e(0);
+  list::List<coxtypes::CoxNbr> e(0);
   a.setSize(0);
 
   for (Ulong j = c.size(); j;) {
@@ -1811,23 +1813,23 @@ void extractMaximals(const SchubertContext& p, List<CoxNbr>& c,
   return;
 }
 
-Ulong minDescent(const LFlags& d_f, const Permutation& order)
+Ulong minDescent(const bits::Lflags& d_f, const bits::Permutation& order)
 
 /*
   Returns the set bit position in f for which order is smallest. In practice,
   order is the external numbering of the generators; so this gives the
   internal number of the descent generator with smallest external number.
 
-  NOTE : the return value is BITS(LFlags) if f is empty.
+  NOTE : the return value is BITS(bits::Lflags) if f is empty.
 */
 
 {
-  LFlags f = d_f;
-  Ulong m = firstBit(f);
+  bits::Lflags f = d_f;
+  Ulong m = constants::firstBit(f);
   f &= f-1;
 
   for (; f; f &= f-1) {
-    Ulong m1 = firstBit(f);
+    Ulong m1 = constants::firstBit(f);
     if (order[m1] < order[m])
       m = m1;
   }
@@ -1835,7 +1837,7 @@ Ulong minDescent(const LFlags& d_f, const Permutation& order)
   return m;
 }
 
-void readBitMap(List<CoxNbr>& c, const BitMap& b)
+void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b)
 
 /*
   This function reads in c from b (analogous to readBitMap in bits::SubSet).
@@ -1844,7 +1846,7 @@ void readBitMap(List<CoxNbr>& c, const BitMap& b)
 {
   c.setSize(b.bitCount());
 
-  BitMap::Iterator i =  b.begin();
+  bits::BitMap::Iterator i =  b.begin();
 
   for (Ulong j = 0; j < c.size(); ++j) {
     c[j] = *i;
@@ -1856,7 +1858,7 @@ void readBitMap(List<CoxNbr>& c, const BitMap& b)
 
 namespace {
 
-void resetOne(SubSet& q)
+void resetOne(bits::SubSet& q)
 
 /*
   Resets q to hold the one-element subset {0}.
@@ -1877,7 +1879,7 @@ void resetOne(SubSet& q)
 
 namespace schubert {
 
-void setBitMap(BitMap& b, const List<CoxNbr>& c)
+void setBitMap(bits::BitMap& b, const list::List<coxtypes::CoxNbr>& c)
 
 /*
   Reads c into b. It is assumed that b has already been set to the current

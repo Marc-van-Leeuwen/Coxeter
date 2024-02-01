@@ -37,18 +37,18 @@ namespace {
 
   template<class P>
   void appendStar(std::string& str, const HeckeMonomial<P>& m,
-		  const SchubertContext& p, const Length& l);
+		  const schubert::SchubertContext& p, const coxtypes::Length& l);
   template<class P>
-  Ulong maxLength(const List<HeckeMonomial<P> >& h, const SchubertContext& p,
-		    const Interface& I, const Length& l);
+  Ulong maxLength(const list::List<HeckeMonomial<P> >& h, const schubert::SchubertContext& p,
+		    const interface::Interface& I, const coxtypes::Length& l);
   template<class P>
-  void oneColumnPrint(FILE* file, const List<HeckeMonomial<P> >& h,
-		      const Permutation& a, const SchubertContext& p,
-		      const Interface& I, const Length& l, const Ulong& ls);
+  void oneColumnPrint(FILE* file, const list::List<HeckeMonomial<P> >& h,
+		      const bits::Permutation& a, const schubert::SchubertContext& p,
+		      const interface::Interface& I, const coxtypes::Length& l, const Ulong& ls);
   template<class P>
-  void twoColumnPrint(FILE* file, const List<HeckeMonomial<P> >& h,
-		      const Permutation&a, const SchubertContext& p,
-		      const Interface& I, const Length& l, const Ulong& ls);
+  void twoColumnPrint(FILE* file, const list::List<HeckeMonomial<P> >& h,
+		      const bits::Permutation&a, const schubert::SchubertContext& p,
+		      const interface::Interface& I, const coxtypes::Length& l, const Ulong& ls);
 };
 
 /*****************************************************************************
@@ -76,7 +76,7 @@ namespace {
 namespace hecke {
 
 template <class P>
-HeckeMonomial<P>::HeckeMonomial(const CoxNbr& x, const P* pol)
+HeckeMonomial<P>::HeckeMonomial(const coxtypes::CoxNbr& x, const P* pol)
   :d_x(x), d_pol(pol)
 
 {}
@@ -113,8 +113,8 @@ template<class P> HeckeMonomial<P>::~HeckeMonomial()
 namespace hecke {
 
 template<class P>
-void append(std::string& str, const HeckeMonomial<P>& m, const SchubertContext& p,
-	    const Interface& I)
+void append(std::string& str, const HeckeMonomial<P>& m, const schubert::SchubertContext& p,
+	    const interface::Interface& I)
 
 /*
   Outputs m to str.
@@ -134,10 +134,10 @@ namespace {
 
 template<class P>
 void appendStar(std::string& str, const HeckeMonomial<P>& m,
-		  const SchubertContext& p, const Length& l)
+		  const schubert::SchubertContext& p, const coxtypes::Length& l)
 
 {
-  Length lx = p.length(m.x());
+  coxtypes::Length lx = p.length(m.x());
 
   if (static_cast<long>(2*m.pol().deg()) == static_cast<long>(l-lx-1))
     str.append(" *");
@@ -146,8 +146,8 @@ void appendStar(std::string& str, const HeckeMonomial<P>& m,
 }
 
 template<class P>
-Ulong maxLength(const List<HeckeMonomial<P> >& h, const SchubertContext& p,
-		  const Interface& I, const Length& l)
+Ulong maxLength(const list::List<HeckeMonomial<P> >& h, const schubert::SchubertContext& p,
+		  const interface::Interface& I, const coxtypes::Length& l)
 
 /*
   Returns the length of the longest line that would be printed out by
@@ -173,11 +173,11 @@ Ulong maxLength(const List<HeckeMonomial<P> >& h, const SchubertContext& p,
 
 template<class P>
 void oneColumnPrint(FILE* file,
-		    const List<HeckeMonomial<P> >& h,
-		    const Permutation& a,
-		    const SchubertContext& p,
-		    const Interface& I,
-		    const Length& l,
+		    const list::List<HeckeMonomial<P> >& h,
+		    const bits::Permutation& a,
+		    const schubert::SchubertContext& p,
+		    const interface::Interface& I,
+		    const coxtypes::Length& l,
 		    const Ulong& ls)
 
 /*
@@ -192,7 +192,7 @@ void oneColumnPrint(FILE* file,
     buf.clear();
     hecke::append(buf,h[a[j]],p,I);
     appendStar(buf,h[a[j]],p,l);
-    foldLine(file,buf,ls,4,"+");
+    io::foldLine(file,buf,ls,4,"+");
     fprintf(file,"\n");
   }
 }
@@ -203,11 +203,11 @@ namespace hecke {
 
 template<class P>
 void prettyPrint(FILE* file,
-		 const List<HeckeMonomial<P> >& h,
-		 const Permutation& a,
-		 const SchubertContext& p,
-		 const Interface& I,
-		 const Length& l,
+		 const list::List<HeckeMonomial<P> >& h,
+		 const bits::Permutation& a,
+		 const schubert::SchubertContext& p,
+		 const interface::Interface& I,
+		 const coxtypes::Length& l,
 		 const Ulong& ls)
 
 /*
@@ -234,9 +234,9 @@ void prettyPrint(FILE* file,
 }
 
 template<class P>
-void singularStratification(List<HeckeMonomial<P> >& hs,
-			    const List<HeckeMonomial<P> >& h,
-			    const SchubertContext& p)
+void singularStratification(list::List<HeckeMonomial<P> >& hs,
+			    const list::List<HeckeMonomial<P> >& h,
+			    const schubert::SchubertContext& p)
 
 /*
   This function extracts the "rational singular stratification". By this we
@@ -269,19 +269,19 @@ void singularStratification(List<HeckeMonomial<P> >& hs,
   /* sort row by kl-polynomial */
 
   PPtrF<P> f;
-  Partition pi(h.begin(),h.end(),f);
+  bits::Partition pi(h.begin(),h.end(),f);
 
   /* find maximal elements in each class */
 
   Ulong count = 0;
 
-  for (PartitionIterator i(pi); i; ++i) {
+  for (bits::PartitionIterator i(pi); i; ++i) {
     Ulong m = i()[0];
     if (h[m].pol().deg() == 0) // polynomial is one
       continue;
     ToCoxNbr<P> f(&h);
-    List<CoxNbr> c(i().begin(),i().end(),f);
-    List<Ulong> a(0);
+    list::List<coxtypes::CoxNbr> c(i().begin(),i().end(),f);
+    list::List<Ulong> a(0);
     extractMaximals(p,c,a);
     hs.setSize(count+a.size());
     for (Ulong j = 0; j < a.size(); ++j)
@@ -298,11 +298,11 @@ namespace {
 
 template<class P>
 void twoColumnPrint(FILE* file,
-		    const List<HeckeMonomial<P> >& h,
-		    const Permutation& a,
-		    const SchubertContext& p,
-		    const Interface& I,
-		    const Length& l,
+		    const list::List<HeckeMonomial<P> >& h,
+		    const bits::Permutation& a,
+		    const schubert::SchubertContext& p,
+		    const interface::Interface& I,
+		    const coxtypes::Length& l,
 		    const Ulong& ls)
 
 /*
@@ -324,12 +324,12 @@ void twoColumnPrint(FILE* file,
     buf.clear();
     hecke::append(buf,h[a[i]],p,I);
     appendStar(buf,h[a[i]],p,l);
-    pad(buf,ls-hl);
+    io::pad(buf,ls-hl);
     i++;
     hecke::append(buf,h[a[i]],p,I);
     appendStar(buf,h[a[i]],p,l);
     i++;
-    print(file,buf);
+    io::print(file,buf);
     fprintf(file,"\n");
   }
 
@@ -337,7 +337,7 @@ void twoColumnPrint(FILE* file,
     buf.clear();
     hecke::append(buf,h[a[i]],p,I);
     appendStar(buf,h[a[i]],p,l);
-    print(file,buf);
+    io::print(file,buf);
     fprintf(file,"\n");
   }
 

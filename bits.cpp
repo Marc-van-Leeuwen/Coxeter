@@ -185,7 +185,7 @@ namespace bits {
 /********** constructors and destructors *************************************/
 
 BitMap::BitMap(const Ulong& n)
-  :d_map(n/BITS(LFlags)+(bool)(n%BITS(LFlags))), d_size(n)
+  :d_map(n/BITS(Lflags)+(bool)(n%BITS(Lflags))), d_size(n)
 
 /*
   Constructor for the BitMap class; constructs a bitmap capable of
@@ -193,7 +193,7 @@ BitMap::BitMap(const Ulong& n)
 */
 
 {
-  d_map.setSize(n/BITS(LFlags)+(bool)(n%BITS(LFlags)));
+  d_map.setSize(n/BITS(Lflags)+(bool)(n%BITS(Lflags)));
 }
 
 BitMap::~BitMap()
@@ -231,7 +231,7 @@ Ulong BitMap::firstBit() const
 
 {
   Ulong first = 0;
-  LFlags f = (LFlags)1;
+  Lflags f = (Lflags)1;
 
   for (Ulong j = 0; j < d_map.size(); ++j) {
     if (d_map[j]) { /* first bit found */
@@ -239,10 +239,10 @@ Ulong BitMap::firstBit() const
       return f;
     }
     else
-      first += BITS(LFlags);
+      first += BITS(Lflags);
   }
 
-  return first + bits::firstBit(f);
+  return first + constants::firstBit(f);
 }
 
 bool BitMap::isEmpty(const Ulong& m) const
@@ -253,14 +253,14 @@ bool BitMap::isEmpty(const Ulong& m) const
 */
 
 {
-  Ulong lsize = d_size/BITS(LFlags)+(bool)(d_size%BITS(LFlags));
+  Ulong lsize = d_size/BITS(Lflags)+(bool)(d_size%BITS(Lflags));
 
   /* look at word containing m */
 
-  Ulong ml = m/BITS(LFlags);
-  Ulong mr = m%BITS(LFlags);
-  Ulong mc = BITS(LFlags)-1 - mr;
-  LFlags f = leqmask[mc] << mr;
+  Ulong ml = m/BITS(Lflags);
+  Ulong mr = m%BITS(Lflags);
+  Ulong mc = BITS(Lflags)-1 - mr;
+  Lflags f = constants::leqmask[mc] << mr;
 
   if (d_map[ml]&f)
     return(false);
@@ -284,13 +284,13 @@ Ulong BitMap::lastBit() const
   if (d_size == 0)
     return 0;
 
-  Ulong base = (d_size-1)/BITS(LFlags)+1;
+  Ulong base = (d_size-1)/BITS(Lflags)+1;
 
   while(base) {
     base--;
-    LFlags f = d_map[base];
+    Lflags f = d_map[base];
     if (f)
-      return (base*BITS(LFlags)+constants::lastBit(f));
+      return (base*BITS(Lflags)+constants::lastBit(f));
   }
 
   /* if we reach this point, the bitmap is empty */
@@ -353,12 +353,12 @@ void BitMap::setSize(const Ulong& n)
 */
 
 {
-  d_map.setSize(n/BITS(LFlags) + (bool)(n%BITS(LFlags)));
+  d_map.setSize(n/BITS(Lflags) + (bool)(n%BITS(Lflags)));
 
   if (n > size()) { /* set new bits to zero  */
-    Ulong f = size()/BITS(LFlags);  /* word holding first new bit */
-    Ulong fb = size()%BITS(LFlags); /* bit address of first new bit in f */
-    LFlags old = ((1L << fb) - 1L);     /* flags old bits */
+    Ulong f = size()/BITS(Lflags);  /* word holding first new bit */
+    Ulong fb = size()%BITS(Lflags); /* bit address of first new bit in f */
+    Lflags old = ((1L << fb) - 1L);     /* flags old bits */
     d_map[f] &= old;
     d_map.setZero(f+1,d_map.size()-f-1);
   }
@@ -440,7 +440,7 @@ void BitMap::andnot(const BitMap& map)
   bitCount returns zero.)
 
   The data in the Iterator class have the following meaning. Recall that
-  a BitMap is implemented as a list of LFlags. There is a current such
+  a BitMap is implemented as a list of Lflags. There is a current such
   LFlag, which is pointed by d_chunk; d_bitAddress is the bit address
   of the current set bit. The past-the-end iterator is the one with
   bitAddress equal to the size of the bitmap.
@@ -477,9 +477,9 @@ BitMap::Iterator::Iterator(const BitMap& b)
   d_bitAddress = 0;
 
   for (d_bitAddress = 0; d_bitAddress < d_b->size();
-       d_bitAddress += BITS(LFlags)) {
+       d_bitAddress += BITS(Lflags)) {
     if (*d_chunk) {
-      d_bitAddress += bits::firstBit(*d_chunk);
+      d_bitAddress += constants::firstBit(*d_chunk);
       break;
     }
     ++d_chunk;
@@ -504,19 +504,19 @@ BitMap::Iterator& BitMap::Iterator::operator++ ()
 */
 
 {
-  LFlags f = *d_chunk >> bitPos();
+  Lflags f = *d_chunk >> bitPos();
   f >>= 1;
 
   if (f) {
-    d_bitAddress += bits::firstBit(f)+1;
+    d_bitAddress += constants::firstBit(f)+1;
   }
   else { /* go to next chunk */
     d_bitAddress &= baseBits;
     ++d_chunk;
-    for (d_bitAddress += BITS(LFlags) ; d_bitAddress < d_b->size();
-	 d_bitAddress += BITS(LFlags)) {
+    for (d_bitAddress += BITS(Lflags) ; d_bitAddress < d_b->size();
+	 d_bitAddress += BITS(Lflags)) {
       if (*d_chunk) {
-	d_bitAddress += bits::firstBit(*d_chunk);
+	d_bitAddress += constants::firstBit(*d_chunk);
 	break;
       }
       ++d_chunk;
@@ -536,23 +536,23 @@ BitMap::Iterator& BitMap::Iterator::operator-- ()
 */
 
 {
-  LFlags f = 0;
+  Lflags f = 0;
 
   if (bitPos()) {
-    f = *d_chunk & leqmask[bitPos()-1];
+    f = *d_chunk & constants::leqmask[bitPos()-1];
   }
 
   if (f) {
     d_bitAddress &= baseBits;
-    d_bitAddress += bits::lastBit(f);
+    d_bitAddress += constants::lastBit(f);
   }
   else { /* go to previous chunk */
     d_bitAddress &= baseBits;
     while (d_bitAddress) {
-      d_bitAddress -= BITS(LFlags);
+      d_bitAddress -= BITS(Lflags);
       --d_chunk;
       if (*d_chunk) {
-	d_bitAddress += bits::lastBit(*d_chunk);
+	d_bitAddress += constants::lastBit(*d_chunk);
 	break;
       }
     }
@@ -666,7 +666,7 @@ void Partition::sort(Permutation& a) const
   if (size() == 0)
     return;
 
-  static List<Ulong> count(0);
+  static list::List<Ulong> count(0);
 
   /* count class cardinalities */
 
@@ -711,7 +711,7 @@ void Partition::sortI(Permutation& a) const
   if (size() == 0)
     return;
 
-  static List<Ulong> count(0);
+  static list::List<Ulong> count(0);
 
   /* count class cardinalities */
 
@@ -771,7 +771,7 @@ void Partition::normalize()
 */
 
 {
-  static List<Ulong> a(0);
+  static list::List<Ulong> a(0);
   static BitMap b(0);
 
   a.setSize(d_classCount);
@@ -898,7 +898,7 @@ void Partition::printClassSizes(FILE* file) const
 */
 
 {
-  static List<Ulong> count(0);
+  static list::List<Ulong> count(0);
 
   count.setSize(d_classCount);
   count.setZero();
@@ -1100,12 +1100,12 @@ void SubSet::reset()
 
   This section contains functions for counting bits in bitmaps :
 
-  - bitCount(f) : counts the number of set bits in an LFlags;
+  - bitCount(f) : counts the number of set bits in an Lflags;
 
  *****************************************************************************/
 
 
-unsigned bits::bitCount(const LFlags& d_f)
+unsigned bits::bitCount(const Lflags& d_f)
 
 /*
   Returns the number of set bits in f.
@@ -1114,7 +1114,7 @@ unsigned bits::bitCount(const LFlags& d_f)
 {
   unsigned count = 0;
 
-  for (LFlags f = d_f; f; f &= f-1)
+  for (Lflags f = d_f; f; f &= f-1)
     count++;	/* see K&R */
 
   return count;

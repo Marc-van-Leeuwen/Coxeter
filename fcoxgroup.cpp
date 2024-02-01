@@ -9,7 +9,7 @@
 
 #include "cells.h"
 
-#define undefined (ParNbr)(PARNBR_MAX + 1)
+#define undefined (coxtypes::ParNbr)(coxtypes::PARNBR_MAX + 1)
 
 namespace fcoxgroup {
   using namespace cells;
@@ -21,20 +21,20 @@ namespace {
   using namespace fcoxgroup;
 
   class Workspace {
-    List<ParNbr> d_ica_arr;
-    List<ParNbr> d_nfca_arr;
-    List<ParNbr> d_prca_arr;
-    List<ParNbr> d_rdcw_arr;
+    list::List<coxtypes::ParNbr> d_ica_arr;
+    list::List<coxtypes::ParNbr> d_nfca_arr;
+    list::List<coxtypes::ParNbr> d_prca_arr;
+    list::List<coxtypes::ParNbr> d_rdcw_arr;
   public:
     Workspace();
     void setSize(Ulong n);
-    ParNbr *ica_arr() {return d_ica_arr.ptr();}
-    ParNbr *nfca_arr() {return d_nfca_arr.ptr();}
-    ParNbr *prca_arr() {return d_prca_arr.ptr();}
-    ParNbr *rdcw_arr() {return d_rdcw_arr.ptr();}
+    coxtypes::ParNbr *ica_arr() {return d_ica_arr.ptr();}
+    coxtypes::ParNbr *nfca_arr() {return d_nfca_arr.ptr();}
+    coxtypes::ParNbr *prca_arr() {return d_prca_arr.ptr();}
+    coxtypes::ParNbr *rdcw_arr() {return d_rdcw_arr.ptr();}
   };
 
-  CoxSize order(FiniteCoxGroup *W);
+  coxtypes::CoxSize order(FiniteCoxGroup *W);
   Workspace& workspace();
 };
 
@@ -47,7 +47,7 @@ namespace {
   compact than the CoxWord representation.
 
   The first one, which will work for any rank <= 255, represents the elements
-  as arrays of rank ParNbr's. The computations in this representation are
+  as arrays of rank coxtypes::ParNbr's. The computations in this representation are
   made through a cascade of small transducers. The drawback of this
   representation is that the size of the automata depends strongly on the
   choice of ordering (as opposed to the minimal root machine, which is
@@ -135,7 +135,7 @@ namespace fcoxgroup {
 
 /******** constructor *******************************************************/
 
-FiniteCoxGroup::FiniteCoxGroup(const Type& x, const Rank& l)
+FiniteCoxGroup::FiniteCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :CoxGroup(x,l)
 
 /*
@@ -143,22 +143,22 @@ FiniteCoxGroup::FiniteCoxGroup(const Type& x, const Rank& l)
 */
 
 {
-  d_transducer = new Transducer(graph());
+  d_transducer = new transducer::Transducer(graph());
 
   workspace().setSize(l);
-  for (Rank j = 0; j < rank(); ++j)
+  for (coxtypes::Rank j = 0; j < rank(); ++j)
     transducer(j)->fill(graph());
 
-  d_longest_coxarr = new(arena()) ParNbr[rank()];
+  d_longest_coxarr = new(memory::arena()) coxtypes::ParNbr[rank()];
 
   /* fill longest elements */
 
-  for (FiltrationTerm* X = transducer(); X; X = X->next())
+  for (transducer::FiltrationTerm* X = transducer(); X; X = X->next())
     d_longest_coxarr[X->rank()-1] = X->size()-1;
 
   Ulong maxlength = length(d_longest_coxarr);
 
-  new(&d_longest_coxword) CoxWord(maxlength);
+  new(&d_longest_coxword) coxtypes::CoxWord(maxlength);
   reducedArr(d_longest_coxword,d_longest_coxarr);
   d_longest_coxword.setLength(maxlength);
 
@@ -175,7 +175,7 @@ FiniteCoxGroup::~FiniteCoxGroup()
 */
 
 {
-  arena().free(d_longest_coxarr,rank()*sizeof(ParNbr));
+  memory::arena().free(d_longest_coxarr,rank()*sizeof(coxtypes::ParNbr));
   delete d_transducer;
 
   return;
@@ -192,8 +192,8 @@ bool FiniteCoxGroup::isFullContext() const
 */
 
 {
-  CoxNbr x = schubert().size()-1;
-  LFlags f = ldescent(x);
+  coxtypes::CoxNbr x = schubert().size()-1;
+  bits::Lflags f = ldescent(x);
 
   if (f == graph().supp())
     return true;
@@ -203,7 +203,7 @@ bool FiniteCoxGroup::isFullContext() const
 
 /******** operations with arrays ********************************************/
 
-const CoxArr& FiniteCoxGroup::assign(CoxArr& a, const CoxWord& g) const
+const coxtypes::CoxArr& FiniteCoxGroup::assign(coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const
 
 /*
   This functions returns the array-form of the element of W represented
@@ -213,14 +213,14 @@ const CoxArr& FiniteCoxGroup::assign(CoxArr& a, const CoxWord& g) const
 {
   setZero(a);
 
-  for(Length i = 0; g[i]; ++i)
+  for(coxtypes::Length i = 0; g[i]; ++i)
     prodArr(a,g[i]-1);
 
   return a;
 }
 
 
-const CoxArr& FiniteCoxGroup::inverseArr(CoxArr& a) const
+const coxtypes::CoxArr& FiniteCoxGroup::inverseArr(coxtypes::CoxArr& a) const
 
 /*
   Inverse a. This is a "composite-assignment" type function, in consistency
@@ -230,14 +230,14 @@ const CoxArr& FiniteCoxGroup::inverseArr(CoxArr& a) const
 */
 
 {
-  CoxArr b = workspace().ica_arr();
+  coxtypes::CoxArr b = workspace().ica_arr();
 
   assign(b,a);
   setZero(a);
 
-  for (const FiltrationTerm* X = transducer(); X; X = X->next())
+  for (const transducer::FiltrationTerm* X = transducer(); X; X = X->next())
     {
-      const CoxWord& g = X->np(b[X->rank()-1]);
+      const coxtypes::CoxWord& g = X->np(b[X->rank()-1]);
       Ulong j = g.length();
       while (j) {
 	j--;
@@ -249,25 +249,25 @@ const CoxArr& FiniteCoxGroup::inverseArr(CoxArr& a) const
 }
 
 
-Length FiniteCoxGroup::length(const CoxArr& a) const
+coxtypes::Length FiniteCoxGroup::length(const coxtypes::CoxArr& a) const
 
 /*
   Returns the length of a --- overflow is not checked.
 */
 
 {
-  Length c = 0;
+  coxtypes::Length c = 0;
 
-  for (const FiltrationTerm* X = transducer(); X; X = X->next())
+  for (const transducer::FiltrationTerm* X = transducer(); X; X = X->next())
     {
-      ParNbr x = a[X->rank()-1];
+      coxtypes::ParNbr x = a[X->rank()-1];
       c += X->length(x);
     }
 
   return c;
 }
 
-const CoxArr& FiniteCoxGroup::powerArr(CoxArr& a, const Ulong& m) const
+const coxtypes::CoxArr& FiniteCoxGroup::powerArr(coxtypes::CoxArr& a, const Ulong& m) const
 
 /*
   Raises a to the m-th power. This can be done very quickly, by squarings
@@ -277,7 +277,7 @@ const CoxArr& FiniteCoxGroup::powerArr(CoxArr& a, const Ulong& m) const
 
 {
   static Ulong hi_bit = (Ulong)1 << (BITS(Ulong)-1);
-  static List<ParNbr> buf(0);
+  static list::List<coxtypes::ParNbr> buf(0);
 
   if (m == 0) {
     setZero(a);
@@ -285,7 +285,7 @@ const CoxArr& FiniteCoxGroup::powerArr(CoxArr& a, const Ulong& m) const
   }
 
   buf.setSize(rank());
-  CoxArr b = buf.ptr();
+  coxtypes::CoxArr b = buf.ptr();
   Ulong p;
 
   assign(b,a);
@@ -305,7 +305,7 @@ const CoxArr& FiniteCoxGroup::powerArr(CoxArr& a, const Ulong& m) const
 }
 
 
-int FiniteCoxGroup::prodArr(CoxArr& a, const CoxArr& b) const
+int FiniteCoxGroup::prodArr(coxtypes::CoxArr& a, const coxtypes::CoxArr& b) const
 
 /*
   Composite assignment operator : increments a by b (i.e., does a *= b).
@@ -316,7 +316,7 @@ int FiniteCoxGroup::prodArr(CoxArr& a, const CoxArr& b) const
 */
 
 {
-  CoxArr c = workspace().prca_arr();
+  coxtypes::CoxArr c = workspace().prca_arr();
 
   assign(c,b);
   int l = 0;
@@ -328,17 +328,17 @@ int FiniteCoxGroup::prodArr(CoxArr& a, const CoxArr& b) const
 }
 
 
-int FiniteCoxGroup::prodArr(CoxArr& a, Generator s) const
+int FiniteCoxGroup::prodArr(coxtypes::CoxArr& a, coxtypes::Generator s) const
 
 /*
   Transforms the contents of a into a.s.
 */
 
 {
-  for (const FiltrationTerm* X = transducer(); X; X = X->next())
+  for (const transducer::FiltrationTerm* X = transducer(); X; X = X->next())
     {
-      ParNbr x = a[X->rank()-1];
-      ParNbr xs = X->shift(a[X->rank()-1],s);
+      coxtypes::ParNbr x = a[X->rank()-1];
+      coxtypes::ParNbr xs = X->shift(a[X->rank()-1],s);
       if (xs < undefined) {
 	a[X->rank()-1] = xs;
 	if (xs < x)
@@ -353,7 +353,7 @@ int FiniteCoxGroup::prodArr(CoxArr& a, Generator s) const
 }
 
 
-int FiniteCoxGroup::prodArr(CoxArr& a, const CoxWord& g) const
+int FiniteCoxGroup::prodArr(coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const
 
 /*
   Shifts a by the whole string g. Returns the increase in length.
@@ -362,14 +362,14 @@ int FiniteCoxGroup::prodArr(CoxArr& a, const CoxWord& g) const
 {
   int l = 0;
 
-  for (Length j = 0; g[j]; ++j)
+  for (coxtypes::Length j = 0; g[j]; ++j)
     l += prodArr(a,g[j]-1);
 
   return l;
 }
 
 
-LFlags FiniteCoxGroup::rDescent(const CoxArr& a) const
+bits::Lflags FiniteCoxGroup::rDescent(const coxtypes::CoxArr& a) const
 
 /*
   Returns the right descent set of a.
@@ -378,18 +378,18 @@ LFlags FiniteCoxGroup::rDescent(const CoxArr& a) const
 */
 
 {
-  LFlags f = 0;
+  bits::Lflags f = 0;
 
-  for (Generator s = 0; s < rank(); s++) /* multiply by s */
+  for (coxtypes::Generator s = 0; s < rank(); s++) /* multiply by s */
     {
-      Generator t = s;
-      for (const FiltrationTerm* X = transducer(); X; X = X->next())
+      coxtypes::Generator t = s;
+      for (const transducer::FiltrationTerm* X = transducer(); X; X = X->next())
 	{
-	  ParNbr x = a[X->rank()-1];
-	  ParNbr xt = X->shift(x,t);
+	  coxtypes::ParNbr x = a[X->rank()-1];
+	  coxtypes::ParNbr xt = X->shift(x,t);
 	  if (xt <= undefined) { /* we can decide */
 	    if (xt < x)
-	    f |= bits::lmask[s];
+	    f |= constants::lmask[s];
 	    break;
 	  }
 	  t = xt - undefined - 1;
@@ -400,7 +400,7 @@ LFlags FiniteCoxGroup::rDescent(const CoxArr& a) const
 }
 
 
-const CoxWord& FiniteCoxGroup::reducedArr(CoxWord& g, const CoxArr& a) const
+const coxtypes::CoxWord& FiniteCoxGroup::reducedArr(coxtypes::CoxWord& g, const coxtypes::CoxArr& a) const
 
 /*
   Returns in g a reduced expression (actually the ShortLex normal form in
@@ -410,12 +410,12 @@ const CoxWord& FiniteCoxGroup::reducedArr(CoxWord& g, const CoxArr& a) const
 */
 
 {
-  Length p = length(a);
+  coxtypes::Length p = length(a);
   g[p] = '\0';
 
-  for (const FiltrationTerm* X = transducer(); X; X = X->next())
+  for (const transducer::FiltrationTerm* X = transducer(); X; X = X->next())
     {
-      ParNbr x = a[X->rank()-1];
+      coxtypes::ParNbr x = a[X->rank()-1];
       p -= X->length(x);
       g.setSubWord(X->np(x),p,X->length(x));
     }
@@ -425,7 +425,8 @@ const CoxWord& FiniteCoxGroup::reducedArr(CoxWord& g, const CoxArr& a) const
 
 /******** input/output ******************************************************/
 
-void FiniteCoxGroup::modify(ParseInterface& P, const Token& tok) const
+void FiniteCoxGroup::modify
+  (interface::ParseInterface& P, const interface::Token& tok) const
 
 /*
   Executes the modification indicated by tok, which is assumed to be of
@@ -437,21 +438,21 @@ void FiniteCoxGroup::modify(ParseInterface& P, const Token& tok) const
 */
 
 {
-  if (isLongest(tok)) {
+  if (interface::isLongest(tok)) {
     CoxGroup::prod(P.c,d_longest_coxword);
   }
 
-  if (isInverse(tok)) {
+  if (interface::isInverse(tok)) {
     CoxGroup::inverse(P.c);
   }
 
-  if (isPower(tok)) {
+  if (interface::isPower(tok)) {
     Ulong m = readCoxNbr(P,ULONG_MAX);
     CoxGroup::power(P.c,m);
   }
 }
 
-bool FiniteCoxGroup::parseModifier(ParseInterface& P) const
+bool FiniteCoxGroup::parseModifier(interface::ParseInterface& P) const
 
 /*
   This function parses a modifier from P.str at P.offset, and acts upon
@@ -461,15 +462,15 @@ bool FiniteCoxGroup::parseModifier(ParseInterface& P) const
 */
 
 {
-  Token tok = 0;
-  const Interface& I = interface();
+  interface::Token tok = 0;
+  const interface::Interface& I = interface();
 
   Ulong p = I.getToken(P,tok);
 
   if (p == 0)
     return false;
 
-  if (!isModifier(tok))
+  if (not interface::isModifier(tok))
     return false;
 
   P.offset += p;
@@ -480,7 +481,7 @@ bool FiniteCoxGroup::parseModifier(ParseInterface& P) const
 
 /******** kazhdan-lusztig cells *********************************************/
 
-const List<CoxNbr>& FiniteCoxGroup::duflo()
+const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
 
 /*
   This function returns the list of Duflo involutions in the group, in the
@@ -500,9 +501,9 @@ const List<CoxNbr>& FiniteCoxGroup::duflo()
   if (d_duflo.size() == 0) { /* find duflo involutions */
 
     kl::KLContext& kl = d_kl[0];
-    const SchubertContext& p = kl.schubert();
+    const schubert::SchubertContext& p = kl.schubert();
 
-    SubSet q(0);
+    bits::SubSet q(0);
 
     /* make sure left cell partition is available */
 
@@ -515,7 +516,7 @@ const List<CoxNbr>& FiniteCoxGroup::duflo()
 
     /* partition involutions by left cells */
 
-    Partition pi(q.size());
+    bits::Partition pi(q.size());
     for (Ulong j = 0; j < q.size(); ++j) {
       pi[j] = d_lcell[q[j]];
     }
@@ -523,18 +524,18 @@ const List<CoxNbr>& FiniteCoxGroup::duflo()
 
     /* find Duflo involution in each cell */
 
-    for (PartitionIterator i(pi); i; ++i) {
-      const List<Ulong>& c = i();
+    for (bits::PartitionIterator i(pi); i; ++i) {
+      const list::List<Ulong>& c = i();
       if (c.size() == 1) { /* cell has single involution */
 	d_duflo.append(q[c[0]]);
 	continue;
       }
-      Length m = d_maxlength;
-      CoxNbr d = c[0];
+      coxtypes::Length m = d_maxlength;
+      coxtypes::CoxNbr d = c[0];
       for (Ulong j = 0; j < c.size(); ++j) {
-	CoxNbr x = q[c[j]]; /* current involution */
+	coxtypes::CoxNbr x = q[c[j]]; /* current involution */
 	const kl::KLPol& pol = kl.klPol(0,x);
-	Length m1 = p.length(x) - 2*pol.deg();
+	coxtypes::Length m1 = p.length(x) - 2*pol.deg();
 	if (m1 < m) {
 	  m = m1;
 	  d = x;
@@ -548,7 +549,7 @@ const List<CoxNbr>& FiniteCoxGroup::duflo()
   return d_duflo;
 }
 
-const Partition& FiniteCoxGroup::lCell()
+const bits::Partition& FiniteCoxGroup::lCell()
 
 /*
   Returns the partition into left cells, making it from the right cell
@@ -559,11 +560,11 @@ const Partition& FiniteCoxGroup::lCell()
   if (d_lcell.classCount()) /* partition was already computed */
     return d_lcell;
 
-  const Partition& r = rCell();
+  const bits::Partition& r = rCell();
   d_lcell.setSize(r.size());
   d_lcell.setClassCount(r.classCount());
 
-  for (CoxNbr x = 0; x < r.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < r.size(); ++x) {
     d_lcell[x] = r(CoxGroup::inverse(x));
   }
 
@@ -571,7 +572,7 @@ const Partition& FiniteCoxGroup::lCell()
   return d_lcell;
 }
 
-const Partition& FiniteCoxGroup::lrCell()
+const bits::Partition& FiniteCoxGroup::lrCell()
 
 /*
   Similar to rCell, but for two-sided cells.
@@ -583,10 +584,10 @@ const Partition& FiniteCoxGroup::lrCell()
 
   if (!isFullContext()) {
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
     kl().fillMu();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
@@ -596,11 +597,11 @@ const Partition& FiniteCoxGroup::lrCell()
   return d_lrcell;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_lrcell;
 }
 
-const Partition& FiniteCoxGroup::lrUneqCell()
+const bits::Partition& FiniteCoxGroup::lrUneqCell()
 
 /*
   Similar to lCell, but for two-sided cells.
@@ -612,15 +613,15 @@ const Partition& FiniteCoxGroup::lrUneqCell()
 
   if (!isFullContext()) {
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
     uneqkl().fillMu();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
   {
-    OrientedGraph X(0);
+    wgraph::OrientedGraph X(0);
     lrGraph(X,uneqkl());
     X.cells(d_lruneqcell);
   }
@@ -628,11 +629,11 @@ const Partition& FiniteCoxGroup::lrUneqCell()
   return d_lruneqcell;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_lruneqcell;
 }
 
-const Partition& FiniteCoxGroup::lUneqCell()
+const bits::Partition& FiniteCoxGroup::lUneqCell()
 
 /*
   Returns the partition in left cells for unequal parameters. The partition
@@ -643,11 +644,11 @@ const Partition& FiniteCoxGroup::lUneqCell()
   if (d_luneqcell.classCount()) /* partition was already computed */
     return d_luneqcell;
 
-  const Partition& r = rUneqCell();
+  const bits::Partition& r = rUneqCell();
   d_luneqcell.setSize(r.size());
   d_luneqcell.setClassCount(r.classCount());
 
-  for (CoxNbr x = 0; x < r.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < r.size(); ++x) {
     d_luneqcell[x] = r(CoxGroup::inverse(x));
   }
 
@@ -655,7 +656,7 @@ const Partition& FiniteCoxGroup::lUneqCell()
   return d_luneqcell;
 }
 
-const Partition& FiniteCoxGroup::rCell()
+const bits::Partition& FiniteCoxGroup::rCell()
 
 /*
   This function returns the partition of the group in right cells.
@@ -678,12 +679,12 @@ const Partition& FiniteCoxGroup::rCell()
 
   if (!isFullContext()) {
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
   kl().fillMu();
-  if (ERRNO)
+  if (error::ERRNO)
     goto abort;
 
   cells::rCells(d_rcell,kl());
@@ -692,12 +693,12 @@ const Partition& FiniteCoxGroup::rCell()
   return d_rcell;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_rcell;
 
 }
 
-const Partition& FiniteCoxGroup::rUneqCell()
+const bits::Partition& FiniteCoxGroup::rUneqCell()
 
 /*
   This function returns the partition of the group in right cells for unequal
@@ -717,16 +718,16 @@ const Partition& FiniteCoxGroup::rUneqCell()
 
   if (!isFullContext()) {
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
   d_uneqkl->fillMu();
-  if (ERRNO)
+  if (error::ERRNO)
     goto abort;
 
   {
-    OrientedGraph Y(0);
+    wgraph::OrientedGraph Y(0);
     rGraph(Y,uneqkl());
     Y.cells(d_runeqcell);
     d_runeqcell.normalize();
@@ -735,11 +736,11 @@ const Partition& FiniteCoxGroup::rUneqCell()
   return d_runeqcell;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_runeqcell;
 }
 
-const Partition& FiniteCoxGroup::lDescent()
+const bits::Partition& FiniteCoxGroup::lDescent()
 
 /*
   Returns the partition of the group in left descent classes, where two
@@ -755,13 +756,13 @@ const Partition& FiniteCoxGroup::lDescent()
 
   if (!isFullContext()) {
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
   d_ldescent.setSize(order());
 
-  for (CoxNbr x = 0; x < order(); ++x)
+  for (coxtypes::CoxNbr x = 0; x < order(); ++x)
     d_ldescent[x] = ldescent(x);
 
   d_ldescent.setClassCount(1<<rank());
@@ -769,11 +770,11 @@ const Partition& FiniteCoxGroup::lDescent()
   return d_ldescent;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_ldescent;
 }
 
-const Partition& FiniteCoxGroup::rDescent()
+const bits::Partition& FiniteCoxGroup::rDescent()
 
 /*
   Returns the partition of the group in right descent classes, where two
@@ -789,13 +790,13 @@ const Partition& FiniteCoxGroup::rDescent()
 
   if (!isFullContext()) {
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
   d_rdescent.setSize(order());
 
-  for (CoxNbr x = 0; x < order(); ++x)
+  for (coxtypes::CoxNbr x = 0; x < order(); ++x)
     d_rdescent[x] = rdescent(x);
 
   d_rdescent.setClassCount(1<<rank());
@@ -803,11 +804,11 @@ const Partition& FiniteCoxGroup::rDescent()
   return d_rdescent;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_rdescent;
 }
 
-const Partition& FiniteCoxGroup::lString()
+const bits::Partition& FiniteCoxGroup::lString()
 
 /*
   Returns the partition of the group in "left string classes" : the smallest
@@ -828,7 +829,7 @@ const Partition& FiniteCoxGroup::lString()
 
   if (!isFullContext()) { /* x is not the longest element */
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
@@ -837,11 +838,11 @@ const Partition& FiniteCoxGroup::lString()
   return d_lstring;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_lstring;
 }
 
-const Partition& FiniteCoxGroup::rString()
+const bits::Partition& FiniteCoxGroup::rString()
 
 /*
   The same as lString(), but on the right. Finer than the partition by right
@@ -854,7 +855,7 @@ const Partition& FiniteCoxGroup::rString()
 
   if (!isFullContext()) { /* x is not the longest element */
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
@@ -863,11 +864,11 @@ const Partition& FiniteCoxGroup::rString()
   return d_rstring;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_rstring;
 }
 
-const Partition& FiniteCoxGroup::lTau()
+const bits::Partition& FiniteCoxGroup::lTau()
 
 /*
   This is the left generalized-tau partition; in brief, the left-descent
@@ -881,11 +882,11 @@ const Partition& FiniteCoxGroup::lTau()
   if (d_ltau.classCount()) /* partition was already computed */
     return d_ltau;
 
-  const Partition& r = rTau();
+  const bits::Partition& r = rTau();
   d_ltau.setSize(r.size());
   d_ltau.setClassCount(r.classCount());
 
-  for (CoxNbr x = 0; x < r.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < r.size(); ++x) {
     d_ltau[x] = r(CoxGroup::inverse(x));
   }
 
@@ -893,7 +894,7 @@ const Partition& FiniteCoxGroup::lTau()
   return d_ltau;
 }
 
-const Partition& FiniteCoxGroup::rTau()
+const bits::Partition& FiniteCoxGroup::rTau()
 
 /*
   Like lTau, but on the right. Coarser than the partition by left cells.
@@ -905,7 +906,7 @@ const Partition& FiniteCoxGroup::rTau()
 
   if (!isFullContext()) { /* x is not the longest element */
     fullContext();
-    if (ERRNO)
+    if (error::ERRNO)
       goto abort;
   }
 
@@ -915,7 +916,7 @@ const Partition& FiniteCoxGroup::rTau()
   return d_rtau;
 
  abort:
-  Error(ERRNO);
+  error::Error(error::ERRNO);
   return d_rtau;
 }
 
@@ -934,7 +935,7 @@ const Partition& FiniteCoxGroup::rTau()
 
 namespace fcoxgroup {
 
-FiniteBigRankCoxGroup::FiniteBigRankCoxGroup(const Type& x, const Rank& l)
+FiniteBigRankCoxGroup::FiniteBigRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :FiniteCoxGroup(x,l)
 
 /*
@@ -952,7 +953,7 @@ FiniteBigRankCoxGroup::~FiniteBigRankCoxGroup()
 
 {}
 
-GeneralFBRCoxGroup::GeneralFBRCoxGroup(const Type& x, const Rank& l)
+GeneralFBRCoxGroup::GeneralFBRCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :FiniteBigRankCoxGroup(x,l)
 
 {}
@@ -965,7 +966,7 @@ GeneralFBRCoxGroup::~GeneralFBRCoxGroup()
 
 {}
 
-FiniteMedRankCoxGroup::FiniteMedRankCoxGroup(const Type& x, const Rank& l)
+FiniteMedRankCoxGroup::FiniteMedRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :FiniteCoxGroup(x,l)
 
 /*
@@ -989,7 +990,7 @@ FiniteMedRankCoxGroup::~FiniteMedRankCoxGroup()
 
 {}
 
-GeneralFMRCoxGroup::GeneralFMRCoxGroup(const Type& x, const Rank& l)
+GeneralFMRCoxGroup::GeneralFMRCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :FiniteMedRankCoxGroup(x,l)
 
 {}
@@ -1002,7 +1003,7 @@ GeneralFMRCoxGroup::~GeneralFMRCoxGroup()
 
 {}
 
-FiniteSmallRankCoxGroup::FiniteSmallRankCoxGroup(const Type& x, const Rank& l)
+FiniteSmallRankCoxGroup::FiniteSmallRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :FiniteMedRankCoxGroup(x,l)
 
 /*
@@ -1020,7 +1021,7 @@ FiniteSmallRankCoxGroup::~FiniteSmallRankCoxGroup()
 
 {}
 
-GeneralFSRCoxGroup::GeneralFSRCoxGroup(const Type& x, const Rank& l)
+GeneralFSRCoxGroup::GeneralFSRCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :FiniteSmallRankCoxGroup(x,l)
 
 {}
@@ -1035,7 +1036,7 @@ GeneralFSRCoxGroup::~GeneralFSRCoxGroup()
 
 /********  The SmallCoxGroup class ******************************************/
 
-SmallCoxGroup::SmallCoxGroup(const Type& x, const Rank& l)
+SmallCoxGroup::SmallCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :FiniteSmallRankCoxGroup(x,l)
 
 {}
@@ -1049,7 +1050,7 @@ SmallCoxGroup::~SmallCoxGroup()
 
 {}
 
-GeneralSCoxGroup::GeneralSCoxGroup(const Type& x, const Rank& l)
+GeneralSCoxGroup::GeneralSCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :SmallCoxGroup(x,l)
 
 {}
@@ -1062,18 +1063,18 @@ GeneralSCoxGroup::~GeneralSCoxGroup()
 
 {}
 
-const CoxArr& SmallCoxGroup::assign(CoxArr& a, const DenseArray& d_x) const
+const coxtypes::CoxArr& SmallCoxGroup::assign(coxtypes::CoxArr& a, const DenseArray& d_x) const
 
 /*
   Unpacks the DenseArray x into a.
 */
 
 {
-  const Transducer& T = d_transducer[0];
+  const transducer::Transducer& T = d_transducer[0];
   DenseArray x = d_x;
 
   for (Ulong j = 0; j < rank(); ++j) {
-    const FiltrationTerm& X = T.transducer(rank()-1-j)[0];
+    const transducer::FiltrationTerm& X = T.transducer(rank()-1-j)[0];
     a[j] = x%X.size();
     x /= X.size();
   }
@@ -1081,7 +1082,7 @@ const CoxArr& SmallCoxGroup::assign(CoxArr& a, const DenseArray& d_x) const
   return a;
 }
 
-void SmallCoxGroup::assign(DenseArray& x, const CoxArr& a) const
+void SmallCoxGroup::assign(DenseArray& x, const coxtypes::CoxArr& a) const
 
 /*
   Packs the array a into x.
@@ -1090,13 +1091,13 @@ void SmallCoxGroup::assign(DenseArray& x, const CoxArr& a) const
 {
   x = 0;
 
-  for (const FiltrationTerm* X = transducer(); X; X = X->next()) {
+  for (const transducer::FiltrationTerm* X = transducer(); X; X = X->next()) {
     x *= X->size();
     x += a[X->rank()-1];
   }
 }
 
-bool SmallCoxGroup::parseDenseArray(ParseInterface& P) const
+bool SmallCoxGroup::parseDenseArray(interface::ParseInterface& P) const
 
 /*
   Tries to parse a DenseArray from P. This is a '#' character, followed
@@ -1105,29 +1106,29 @@ bool SmallCoxGroup::parseDenseArray(ParseInterface& P) const
 */
 
 {
-  const Interface& I = interface();
+  const interface::Interface& I = interface();
 
-  Token tok = 0;
+  interface::Token tok = 0;
   Ulong p = I.getToken(P,tok);
 
   if (p == 0)
     return false;
 
-  if (!isDenseArray(tok))
+  if (not interface::isDenseArray(tok))
     return false;
 
   // if we get to this point, we must read a valid integer
 
   P.offset += p;
-  CoxNbr x = interface::readCoxNbr(P,d_order);
+  coxtypes::CoxNbr x = interface::readCoxNbr(P,d_order);
 
-  if (x == undef_coxnbr) { //error
+  if (x == coxtypes::undef_coxnbr) { //error
     P.offset -= p;
-    Error(DENSEARRAY_OVERFLOW,d_order);
-    ERRNO = PARSE_ERROR;
+    error::Error(error::DENSEARRAY_OVERFLOW,d_order);
+    error::ERRNO = error::PARSE_ERROR;
   }
   else { // x is valid
-    CoxWord g(0);
+    coxtypes::CoxWord g(0);
     prodD(g,x);
     CoxGroup::prod(P.c,g);
   }
@@ -1135,7 +1136,7 @@ bool SmallCoxGroup::parseDenseArray(ParseInterface& P) const
   return true;
 }
 
-bool SmallCoxGroup::parseGroupElement(ParseInterface& P) const
+bool SmallCoxGroup::parseGroupElement(interface::ParseInterface& P) const
 
 /*
   This is the parseGroupElement function for the SmallCoxGroup type. In
@@ -1152,26 +1153,26 @@ bool SmallCoxGroup::parseGroupElement(ParseInterface& P) const
   Ulong r = P.offset;
 
   if (parseContextNumber(P)) { // next token is a context number
-    if (ERRNO) // parse error
+    if (error::ERRNO) // parse error
       return true;
     else
       goto modify;
   }
 
   if (parseDenseArray(P)) { // next token is a dense array
-    if (ERRNO) // parse error
+    if (error::ERRNO) // parse error
       return true;
     else
       goto modify;
   }
 
-  // if we get to this point, we have to read a CoxWord
+  // if we get to this point, we have to read a coxtypes::CoxWord
 
   interface().parseCoxWord(P,mintable());
 
-  if (ERRNO) { // no CoxWord could be parsed
+  if (error::ERRNO) { // no coxtypes::CoxWord could be parsed
     if (P.offset == r) { // nothing was parsed
-      ERRNO = 0;
+      error::ERRNO = 0;
       return false;
     }
     else // parse error
@@ -1183,7 +1184,7 @@ bool SmallCoxGroup::parseGroupElement(ParseInterface& P) const
   // if we get to this point, a group element was successfully read
 
   while (parseModifier(P)) {
-    if (ERRNO)
+    if (error::ERRNO)
       return true;
   }
 
@@ -1198,7 +1199,7 @@ bool SmallCoxGroup::parseGroupElement(ParseInterface& P) const
     return true;
 }
 
-int SmallCoxGroup::prodD(CoxWord& g, const DenseArray& d_x) const
+int SmallCoxGroup::prodD(coxtypes::CoxWord& g, const DenseArray& d_x) const
 
 /*
   Does the multiplication of g by x, by recovering the normal pieces of x.
@@ -1206,14 +1207,14 @@ int SmallCoxGroup::prodD(CoxWord& g, const DenseArray& d_x) const
 */
 
 {
-  const Transducer& T = d_transducer[0];
+  const transducer::Transducer& T = d_transducer[0];
 
   DenseArray x = d_x;
   int l = 0;
 
   for (Ulong j = 0; j < rank(); ++j) {
-    const FiltrationTerm& X = T.transducer(rank()-1-j)[0];
-    ParNbr c = x%X.size();
+    const transducer::FiltrationTerm& X = T.transducer(rank()-1-j)[0];
+    coxtypes::ParNbr c = x%X.size();
     l += CoxGroup::prod(g,X.np(c));
     x /= X.size();
   }
@@ -1221,17 +1222,17 @@ int SmallCoxGroup::prodD(CoxWord& g, const DenseArray& d_x) const
   return l;
 }
 
-int SmallCoxGroup::prodD(DenseArray& x, const CoxWord& g) const
+int SmallCoxGroup::prodD(DenseArray& x, const coxtypes::CoxWord& g) const
 
 /*
   Does the multiplication of x by g.
 */
 
 {
-  static List<ParNbr> al(0);
+  static list::List<coxtypes::ParNbr> al(0);
 
   al.setSize(rank());
-  CoxArr a = al.ptr();
+  coxtypes::CoxArr a = al.ptr();
   assign(a,x);
   int l = prodArr(a,g);
   assign(x,a);
@@ -1265,7 +1266,7 @@ namespace {
 */
 
 
-CoxSize order(FiniteCoxGroup *W)
+coxtypes::CoxSize order(FiniteCoxGroup *W)
 
 /*
   This function fills in the order of W. It sets order to the order
@@ -1276,11 +1277,11 @@ CoxSize order(FiniteCoxGroup *W)
 */
 
 {
-  CoxSize order = 1;
+  coxtypes::CoxSize order = 1;
 
-  for (const FiltrationTerm* X = W->transducer(); X; X = X->next())
+  for (const transducer::FiltrationTerm* X = W->transducer(); X; X = X->next())
     {
-      if (X->size() > COXSIZE_MAX/order) /* overflow */
+      if (X->size() > coxtypes::COXSIZE_MAX/order) /* overflow */
 	return 0;
       order *= X->size();
     }
@@ -1306,7 +1307,7 @@ CoxSize order(FiniteCoxGroup *W)
 
  ****************************************************************************/
 
-bool fcoxgroup::isFiniteType(CoxGroup *W)
+bool fcoxgroup::isFiniteType(coxgroup::CoxGroup *W)
 
 /*
   Recognizes the type of a finite group. Non-irreducible types are
@@ -1321,7 +1322,7 @@ bool fcoxgroup::isFiniteType(CoxGroup *W)
 }
 
 
-Rank fcoxgroup::maxSmallRank(const Type& x)
+coxtypes::Rank fcoxgroup::maxSmallRank(const type::Type& x)
 
 /*
   Returns the smallest rank for which a CoxNbr holds the given element.
@@ -1329,15 +1330,15 @@ Rank fcoxgroup::maxSmallRank(const Type& x)
 */
 
 {
-  Rank l;
+  coxtypes::Rank l;
   unsigned long c;
 
   switch(x[0])
     {
     case 'A':
       c = 1;
-      for (l = 1; l < RANK_MAX; l++) {
-	if (c > COXNBR_MAX/(l+1))  /* l is too big */
+      for (l = 1; l < coxtypes::RANK_MAX; l++) {
+	if (c > coxtypes::COXNBR_MAX/(l+1))  /* l is too big */
 	  return l-1;
 	c *= (l+1);
       }
@@ -1345,25 +1346,25 @@ Rank fcoxgroup::maxSmallRank(const Type& x)
     case 'B':
     case 'C':
       c = 2;
-      for (l = 2; l < RANK_MAX; l++) {
-	if (c > COXNBR_MAX/2*l)  /* l is too big */
+      for (l = 2; l < coxtypes::RANK_MAX; l++) {
+	if (c > coxtypes::COXNBR_MAX/2*l)  /* l is too big */
 	  return l-1;
 	c *= 2*l;
       }
       return l;
     case 'D':
       c = 4;
-      for (l = 3; l < RANK_MAX; l++) {
-	if (c > COXNBR_MAX/2*l)  /* l is too big */
+      for (l = 3; l < coxtypes::RANK_MAX; l++) {
+	if (c > coxtypes::COXNBR_MAX/2*l)  /* l is too big */
 	  return l-1;
 	c *= 2*l;
       }
       return l;
 	return l;
     case 'E':
-      if (COXNBR_MAX < 2903040)
+      if (coxtypes::COXNBR_MAX < 2903040)
 	return 6;
-      else if (COXNBR_MAX < 696729600)
+      else if (coxtypes::COXNBR_MAX < 696729600)
 	return 7;
       else
 	return 8;

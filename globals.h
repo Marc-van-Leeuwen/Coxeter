@@ -9,11 +9,10 @@
 #define GLOBALS_H
 
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 
-namespace globals {
-  typedef unsigned long Ulong; /* shorthand */
-};
+// these definitions are in the global namspace
+// so it suffices to #include this file to have them
+using Ulong = unsigned long;
 
 #endif

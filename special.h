@@ -11,10 +11,6 @@
 
 #include "globals.h"
 
-namespace special {
-  using namespace globals;
-};
-
 /******** function declarations *********************************************/
 
 #include "commands.h"

@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace interactive {
-  using namespace globals;
-};
-
 /******** type declarations *************************************************/
 
 namespace interactive {
@@ -27,41 +23,35 @@ namespace interactive {
 #include "transducer.h"
 #include "type.h"
 
-namespace interactive {
-  using namespace bits;
-  using namespace coxgroup;
-  using namespace coxtypes;
-  using namespace graph;
-  using namespace interface;
-  using namespace transducer;
-  using namespace type;
-};
-
 /******** function declarations **********************************************/
 
 namespace interactive {
-  CoxGroup* allocCoxGroup();
-  CoxGroup* allocCoxGroup(const Type& x);
-  void changeOrdering(CoxGroup *W, Permutation& order);
-  CoxGroup* coxeterGroup(const Type& x, const Rank& l);
+  coxgroup::CoxGroup* allocCoxGroup();
+  coxgroup::CoxGroup* allocCoxGroup(const type::Type& x);
+  void changeOrdering(coxgroup::CoxGroup *W, bits::Permutation& order);
+  coxgroup::CoxGroup* coxeterGroup(const type::Type& x, const coxtypes::Rank& l);
   int endOfLine(FILE *f);
-  const Type& getType();
-  CoxEntry getCoxEntry(const Rank& i, const Rank& j);
-  CoxArr& getCoxArr(Transducer& T) /* not implemented */;
-  CoxNbr& getCoxNbr(Transducer& T) /* not implemented */;
-  const CoxWord& getCoxWord(CoxGroup *W);
-  Generator getGenerator(CoxGroup *W);
-  Generator getGenerator(CoxGroup *W, const LFlags& f);
-  void getLength(List<Length>& L, const CoxGraph& G, const Interface& I);
-  Rank getRank(const Type& type);
-  void printInterface(FILE* file, const GroupEltInterface& GI,
-			const Permutation& a);
-  void printInterface(FILE* file, const GroupEltInterface& GI,
-		      const GroupEltInterface& WI, const Permutation& a);
-  void printMatrix(FILE *file, const CoxGroup* W);
-  void printOrdering(FILE* file, const CoxGroup* W);
-  void printRepresentation(FILE *file, const CoxGroup* W);
-  CoxEntry readCoxEntry(const Rank& i, const Rank& j, FILE *inputfile);
+  const type::Type& getType();
+  graph::CoxEntry getCoxEntry(const coxtypes::Rank& i, const coxtypes::Rank& j);
+  coxtypes::CoxArr& getCoxArr(transducer::Transducer& T) /* not implemented */;
+  coxtypes::CoxNbr& getCoxNbr(transducer::Transducer& T) /* not implemented */;
+  const coxtypes::CoxWord& getCoxWord(coxgroup::CoxGroup *W);
+  coxtypes::Generator getGenerator(coxgroup::CoxGroup *W);
+  coxtypes::Generator getGenerator(coxgroup::CoxGroup *W, const bits::Lflags& f);
+  void getLength
+    (list::List<coxtypes::Length>& L, const graph::CoxGraph& G,
+     const interface::Interface& I);
+  coxtypes::Rank getRank(const type::Type& type);
+  void printInterface(FILE* file, const interface::GroupEltInterface& GI,
+			const bits::Permutation& a);
+  void printInterface(FILE* file, const interface::GroupEltInterface& GI,
+		      const interface::GroupEltInterface& WI,
+		      const bits::Permutation& a);
+  void printMatrix(FILE *file, const coxgroup::CoxGroup* W);
+  void printOrdering(FILE* file, const coxgroup::CoxGroup* W);
+  void printRepresentation(FILE *file, const coxgroup::CoxGroup* W);
+  graph::CoxEntry readCoxEntry
+    (const coxtypes::Rank& i, const coxtypes::Rank& j, FILE *inputfile);
   bool yesNo();
 };
 

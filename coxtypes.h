@@ -19,10 +19,6 @@
 #include "io.h"
 #include <limits.h>
 
-namespace coxtypes {
-  using namespace globals;
-};
-
 /* type declarations and bounds */
 
 namespace coxgroup {
@@ -48,9 +44,9 @@ namespace coxtypes {
 /* constants */
 
   // const Rank RANK_MAX = 255;          /* to enable string representations */
-  // MEDRANK_MAX bits should fit in a LFlags
+  // MEDRANK_MAX bits should fit in a Lflags
   const Rank MEDRANK_MAX = BITS(Ulong);
-  // 2*SMALLRANK_MAX bits should fit in a LFlags
+  // 2*SMALLRANK_MAX bits should fit in a Lflags
   const Rank SMALLRANK_MAX = BITS(Ulong)/2;
   const Rank RANK_MAX = SMALLRANK_MAX;              /* temporary restriction */
   const Generator GENERATOR_MAX = RANK_MAX-1;       /* top value is reserved */
@@ -85,18 +81,14 @@ namespace coxtypes {
 #include "list.h"
 
 namespace coxtypes {
-  using namespace list;
-};
-
-namespace coxtypes {
 
 class CoxWord {
  private:
-  List<CoxLetter> d_list;
+  list::List<CoxLetter> d_list;
  public:
 /* constructors */
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(CoxWord));}
+    {return memory::arena().free(ptr,sizeof(CoxWord));}
   CoxWord():d_list(0) {};  /* empty word */
   CoxWord(const Ulong& n);
   ~CoxWord();

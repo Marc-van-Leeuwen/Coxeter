@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace type {
-  using namespace globals;
-};
-
 /******** type declarations *************************************************/
 
 namespace type {
@@ -34,10 +30,6 @@ namespace type {
 #include "io.h"
 
 namespace type {
-  using namespace io;
-};
-
-namespace type {
 
 class Type {
  private:
@@ -45,7 +37,7 @@ class Type {
  public:
 // constructors and destructors
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(Type));}
+    {return memory::arena().free(ptr,sizeof(Type));}
   Type();
   Type(const char*);
   ~Type();

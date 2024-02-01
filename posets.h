@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace posets {
-  using namespace globals;
-};
-
 /******** type declarations *************************************************/
 
 namespace posets {
@@ -29,29 +25,23 @@ namespace posets {
 #include "wgraph.h"
 
 namespace posets {
-  using namespace bits;
-  using namespace list;
-  using namespace wgraph;
-};
-
-namespace posets {
 
 class Poset {
-  List<BitMap> d_closure;
+  list::List<bits::BitMap> d_closure;
  public:
 /* constructors and destructors */
   void operator delete(void* ptr, size_t size)
-    {return arena().free(ptr,sizeof(Poset));}
+    {return memory::arena().free(ptr,sizeof(Poset));}
   Poset();
   Poset(const Ulong &n);
-  Poset(const OrientedGraph& G);
+  Poset(const wgraph::OrientedGraph& G);
   ~Poset();
 /* manipulators */
 /* accessors */
-  void findMaximals(const BitMap& D, Set& a) const;
+  void findMaximals(const bits::BitMap& D, bits::Set& a) const;
   bool isTriangular() const;
   Ulong size() const;
-  void hasseDiagram(OrientedGraph& H);
+  void hasseDiagram(wgraph::OrientedGraph& H);
 /* input/output */
 };
 

@@ -11,10 +11,6 @@
 #include "globals.h"
 #include <limits.h>
 
-namespace constants {
-  using namespace globals;
-};
-
 #define BITS(x) (CHAR_BIT*sizeof(x))  /* size of x in bits */
 
 namespace constants {

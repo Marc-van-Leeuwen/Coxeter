@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace automata {
-  using namespace globals;
-};
-
 /******** type declarations **************************************************/
 
 namespace automata {

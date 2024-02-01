@@ -10,10 +10,8 @@
 
 #include <string>
 #include "globals.h"
-
-namespace commands {
-  using namespace globals;
-};
+#include "dictionary.h"
+#include "io.h"
 
 #include "coxgroup.h"
 
@@ -38,7 +36,9 @@ namespace commands {
   CommandTree* mainCommandTree(); // for ordinary computation commands
   CommandTree* uneqCommandTree(); // for commands for unequal-parameter groups
   CommandTree* interfaceCommandTree();
-  namespace interface {
+  namespace interf {
+    // this namespace used to be called |interface|, but that makes it
+    // hard to refer to the global namespace of the same name, so don't
     CommandTree* inCommandTree();
     CommandTree* outCommandTree();
   };
@@ -49,13 +49,6 @@ namespace commands {
 
 /******** Type definitions *************************************************/
 
-#include "dictionary.h"
-#include "io.h"
-
-namespace commands {
-  using namespace dictionary;
-  using namespace io;
-};
 
 namespace commands {
 
@@ -66,15 +59,15 @@ struct CommandData {
   void (*help)();
   bool autorepeat;
 /* Constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(CommandData));}
+    {return memory::arena().free(ptr,sizeof(CommandData));}
   CommandData(const char* str, const char* t, void (*a)(),
 	      void (*h)(), bool rep);
   ~CommandData();
 };
 
-class CommandTree:public Dictionary<CommandData> {
+class CommandTree:public dictionary::Dictionary<CommandData> {
  private:
   std::string d_prompt;
   CommandTree* d_help;
@@ -83,9 +76,9 @@ class CommandTree:public Dictionary<CommandData> {
   void (*d_exit)();
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(CommandTree));}
+    {return memory::arena().free(ptr,sizeof(CommandTree));}
   CommandTree(const char *str, void (*action)(),
 	      void (*filler)(CommandTree& tree), // function filling the tree
 	      void (*entry)() = &relax_f,

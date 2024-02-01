@@ -19,11 +19,6 @@
 #include "globals.h"
 #include "fcoxgroup.h"
 
-namespace typeA {
-  using namespace globals;
-  using namespace fcoxgroup;
-};
-
 /******** type declarations *************************************************/
 
 namespace typeA {
@@ -42,8 +37,8 @@ namespace typeA {
 /******** function declarations *********************************************/
 
 namespace typeA {
-  void coxWordToPermutation(CoxWord& a, const CoxWord& g);
-  void permutationToCoxWord(CoxWord& g, const CoxWord& a);
+  void coxWordToPermutation(coxtypes::CoxWord& a, const coxtypes::CoxWord& g);
+  void permutationToCoxWord(coxtypes::CoxWord& g, const coxtypes::CoxWord& a);
 };
 
 /******** type definitions **************************************************/
@@ -54,143 +49,143 @@ class TypeACoxGroup:public fcoxgroup::FiniteCoxGroup {
   TypeAInterface* d_typeAInterface;
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(TypeACoxGroup));}
+    {return memory::arena().free(ptr,sizeof(TypeACoxGroup));}
 
-  TypeACoxGroup(const Rank& l);
+  TypeACoxGroup(const coxtypes::Rank& l);
   virtual ~TypeACoxGroup();
 // accessors
-  void coxWordToPermutation(CoxWord& a, const CoxWord& g) const;
+  void coxWordToPermutation(coxtypes::CoxWord& a, const coxtypes::CoxWord& g) const;
   bool hasPermutationInput() const;                              /* inlined */
   bool hasPermutationOutput() const;                             /* inlined */
-  void permutationToCoxWord(CoxWord& g, const CoxWord& a) const;
+  void permutationToCoxWord(coxtypes::CoxWord& g, const coxtypes::CoxWord& a) const;
   const TypeAInterface& typeAInterface() const;                  /* inlined */
 // manipulators
   void setPermutationInput(bool b);                              /* inlined */
   void setPermutationOutput(bool b);                             /* inlined */
   TypeAInterface& typeAInterface();                              /* inlined */
 // i/o
-  virtual bool parseGroupElement(ParseInterface& P) const;
+  virtual bool parseGroupElement(interface::ParseInterface& P) const;
 };
 
 class TypeABigRankCoxGroup:public TypeACoxGroup {
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(TypeABigRankCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(TypeABigRankCoxGroup));}
 
-  TypeABigRankCoxGroup(const Rank& l):TypeACoxGroup(l) {};
+  TypeABigRankCoxGroup(const coxtypes::Rank& l):TypeACoxGroup(l) {};
   virtual ~TypeABigRankCoxGroup() {};
 };
 
 class GeneralTypeABRCoxGroup:public TypeABigRankCoxGroup { // leaf class
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(GeneralTypeABRCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(GeneralTypeABRCoxGroup));}
 
-  GeneralTypeABRCoxGroup(const Rank& l):TypeABigRankCoxGroup(l) {};
+  GeneralTypeABRCoxGroup(const coxtypes::Rank& l):TypeABigRankCoxGroup(l) {};
   ~GeneralTypeABRCoxGroup() {};
 };
 
 class TypeAMedRankCoxGroup:public TypeACoxGroup {
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(TypeAMedRankCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(TypeAMedRankCoxGroup));}
 
-  TypeAMedRankCoxGroup(const Rank& l);
+  TypeAMedRankCoxGroup(const coxtypes::Rank& l);
   virtual ~TypeAMedRankCoxGroup();
 };
 
 class GeneralTypeAMRCoxGroup:public TypeAMedRankCoxGroup { // leaf class
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(GeneralTypeAMRCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(GeneralTypeAMRCoxGroup));}
 
-  GeneralTypeAMRCoxGroup(const Rank& l):TypeAMedRankCoxGroup(l) {};
+  GeneralTypeAMRCoxGroup(const coxtypes::Rank& l):TypeAMedRankCoxGroup(l) {};
   ~GeneralTypeAMRCoxGroup() {};
 };
 
 class TypeASmallRankCoxGroup:public TypeAMedRankCoxGroup {
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(TypeASmallRankCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(TypeASmallRankCoxGroup));}
 
-  TypeASmallRankCoxGroup(const Rank& l):TypeAMedRankCoxGroup(l) {};
+  TypeASmallRankCoxGroup(const coxtypes::Rank& l):TypeAMedRankCoxGroup(l) {};
   virtual ~TypeASmallRankCoxGroup() {};
 };
 
 class GeneralTypeASRCoxGroup:public TypeASmallRankCoxGroup { // leaf class
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(GeneralTypeASRCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(GeneralTypeASRCoxGroup));}
 
-  GeneralTypeASRCoxGroup(const Rank& l):TypeASmallRankCoxGroup(l) {};
+  GeneralTypeASRCoxGroup(const coxtypes::Rank& l):TypeASmallRankCoxGroup(l) {};
   ~GeneralTypeASRCoxGroup() {};
 };
 
 class TypeASmallCoxGroup: public TypeASmallRankCoxGroup {
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(TypeASmallCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(TypeASmallCoxGroup));}
 
-  TypeASmallCoxGroup(const Rank& l):TypeASmallRankCoxGroup(l) {};
+  TypeASmallCoxGroup(const coxtypes::Rank& l):TypeASmallRankCoxGroup(l) {};
   virtual ~TypeASmallCoxGroup() {};
 // accessors
-  int prodD(CoxWord& g, const DenseArray& d_x) const;
+  int prodD(coxtypes::CoxWord& g, const fcoxgroup::DenseArray& d_x) const;
 // i/o
-  bool parseDenseArray(ParseInterface& P) const;
-  virtual bool parseGroupElement(ParseInterface& P) const;
+  bool parseDenseArray(interface::ParseInterface& P) const;
+  virtual bool parseGroupElement(interface::ParseInterface& P) const;
 };
 
 class GeneralTypeASCoxGroup:public TypeASmallCoxGroup { // leaf class
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(GeneralTypeASCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(GeneralTypeASCoxGroup));}
 
-  GeneralTypeASCoxGroup(const Rank& l):TypeASmallCoxGroup(l) {};
+  GeneralTypeASCoxGroup(const coxtypes::Rank& l):TypeASmallCoxGroup(l) {};
   ~GeneralTypeASCoxGroup() {};
 };
 
-class TypeAInterface:public Interface {
-  Interface* d_pInterface;
+class TypeAInterface:public interface::Interface {
+  interface::Interface* d_pInterface;
   bool d_hasPermutationInput;
   bool d_hasPermutationOutput;
  public:
 // constructors and destructors
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(TypeAInterface));}
+    {return memory::arena().free(ptr,sizeof(TypeAInterface));}
 
-  TypeAInterface(const Rank& l);
+  TypeAInterface(const coxtypes::Rank& l);
   virtual ~TypeAInterface();
 // accessors
   bool hasPermutationInput() const;                              /* inlined */
   bool hasPermutationOutput() const;                             /* inlined */
-  bool parsePermutation(ParseInterface& P) const;
+  bool parsePermutation(interface::ParseInterface& P) const;
 // manipulators
-  virtual void setIn(const GroupEltInterface& i);
-  virtual void setOut(const GroupEltInterface& i);
+  virtual void setIn(const interface::GroupEltInterface& i);
+  virtual void setOut(const interface::GroupEltInterface& i);
   void setPermutationInput(bool b);                              /* inlined */
   void setPermutationOutput(bool b);                             /* inlined */
 // i/o
-  virtual std::string& append(std::string& str, const CoxWord& g) const;
-  virtual void print(FILE* file, const CoxWord& g) const;
+  virtual std::string& append(std::string& str, const coxtypes::CoxWord& g) const;
+  virtual void print(FILE* file, const coxtypes::CoxWord& g) const;
 };
 
 };

@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace iterator {
-  using namespace globals;
-};
-
 /******** type declarations **************************************************/
 
 namespace iterator {

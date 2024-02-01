@@ -8,12 +8,9 @@
 #ifndef MEMORY_H  /* guard against multiple inclusions */
 #define MEMORY_H
 
+#include <stdio.h> // for |FILE|
 #include "globals.h"
 #include "constants.h"
-
-namespace memory {
-  using namespace globals;
-};
 
 /******** type declarations *************************************************/
 

@@ -20,9 +20,9 @@ namespace transducer {
 namespace {
   using namespace transducer;
 
-  ParNbr dihedralMin(SubQuotient *X, ParNbr y, Generator s, Generator t);
-  ParNbr dihedralShift(SubQuotient *X, ParNbr y, Generator s,
-		       Generator t, Ulong c);
+  coxtypes::ParNbr dihedralMin(SubQuotient *X, coxtypes::ParNbr y, coxtypes::Generator s, coxtypes::Generator t);
+  coxtypes::ParNbr dihedralShift(SubQuotient *X, coxtypes::ParNbr y, coxtypes::Generator s,
+		       coxtypes::Generator t, Ulong c);
 };
 
 /****************************************************************************
@@ -61,7 +61,7 @@ namespace {
 
 namespace transducer {
 
-FiltrationTerm::FiltrationTerm(CoxGraph& G, Rank l, FiltrationTerm* p)
+FiltrationTerm::FiltrationTerm(graph::CoxGraph& G, coxtypes::Rank l, FiltrationTerm* p)
   :d_next(p)
 
 /*
@@ -71,7 +71,7 @@ FiltrationTerm::FiltrationTerm(CoxGraph& G, Rank l, FiltrationTerm* p)
 {
   d_X = new SubQuotient(G,l);
   d_np.setSize(1);
-  new(d_np.ptr()) CoxWord(0);
+  new(d_np.ptr()) coxtypes::CoxWord(0);
 }
 
 FiltrationTerm::~FiltrationTerm()
@@ -105,14 +105,14 @@ void FiltrationTerm::fillNormalPieces()
   d_np.setSize(size());
 
   for (Ulong j = old_size; j < size(); ++j)
-    new(d_np.ptr()+j) CoxWord(length(j));
+    new(d_np.ptr()+j) coxtypes::CoxWord(length(j));
 
-  for (ParNbr x = old_size; x < size(); ++x) {
+  for (coxtypes::ParNbr x = old_size; x < size(); ++x) {
 
-    ParNbr y = x;
-    Generator t = undef_generator;
+    coxtypes::ParNbr y = x;
+    coxtypes::Generator t = coxtypes::undef_generator;
 
-    for (Generator s = 0; s < rank(); ++s) {
+    for (coxtypes::Generator s = 0; s < rank(); ++s) {
       if (shift(x,s) < y) { /* this s is better than what we had */
 	y = shift(x,s);
 	t = s;
@@ -137,7 +137,7 @@ void FiltrationTerm::fillNormalPieces()
   class :
 
    - SubQuotient(CoxGraph&, Rank);
-   - extend(ParNbr, Generator) : extends the transducer;
+   - extend(ParNbr, coxtypes::Generator) : extends the transducer;
    - fill(CoxGraph&) : fills in the full transducer;
    - schubertClosure(SubSet,ParNbr) : extracts an interval from the origin;
 
@@ -165,7 +165,7 @@ void FiltrationTerm::fillNormalPieces()
 
 namespace transducer {
 
-SubQuotient::SubQuotient(CoxGraph& G, Rank l)
+SubQuotient::SubQuotient(graph::CoxGraph& G, coxtypes::Rank l)
   :d_rank(l),d_size(1),d_graph(G),d_shift(l),d_length(1)
 
 /*
@@ -176,7 +176,7 @@ SubQuotient::SubQuotient(CoxGraph& G, Rank l)
 {
   d_shift.setSize(l);
 
-  for (Generator s = 0; s < l-1; ++s)
+  for (coxtypes::Generator s = 0; s < l-1; ++s)
     shiftref(0,s) = undef_parnbr + s+1;
 
   shiftref(0,l-1) = undef_parnbr;
@@ -194,7 +194,7 @@ SubQuotient::~SubQuotient()
 
 /******* manipulators *****************************************************/
 
-ParNbr SubQuotient::extend(ParNbr x, Generator s)
+coxtypes::ParNbr SubQuotient::extend(coxtypes::ParNbr x, coxtypes::Generator s)
 
 /*
   The program always maintains the automata in the following state :
@@ -241,12 +241,12 @@ ParNbr SubQuotient::extend(ParNbr x, Generator s)
   if (shift(x,s) != undef_parnbr)  /* no need to extend */
     return shift(x,s);
 
-  if (length(x) == LENGTH_MAX)  /* overflow */ {
+  if (length(x) == coxtypes::LENGTH_MAX)  /* overflow */ {
     ERRNO = LENGTH_OVERFLOW;
     return undef_parnbr;
   }
 
-  static SubSet Q;
+  static Sub_set Q;
 
   schubertClosure(Q,x);
   Ulong c = 0;
@@ -255,7 +255,7 @@ ParNbr SubQuotient::extend(ParNbr x, Generator s)
     if (shift(Q[j],s) == undef_parnbr)
       ++c;
 
-  if (c > PARNBR_MAX - d_size) { /* overflow --- quite possible! */
+  if (c > coxtypes::PARNBR_MAX - d_size) { /* overflow --- quite possible! */
     ERRNO = PARNBR_OVERFLOW;
     return undef_parnbr;
   }
@@ -279,20 +279,20 @@ ParNbr SubQuotient::extend(ParNbr x, Generator s)
 
   /* fill in remaining shifts */
 
-  for (ParNbr z = prev_size; z < d_size; ++z) {
-    for (Generator t = 0; t < d_rank; ++t) {
+  for (coxtypes::ParNbr z = prev_size; z < d_size; ++z) {
+    for (coxtypes::Generator t = 0; t < d_rank; ++t) {
 
       if (t == s)
 	continue;
 
       shiftref(z,t) = undef_parnbr;  /* initialzation */
-      CoxEntry m = d_graph.M(s,t);
+      graph::CoxEntry m = d_graph.M(s,t);
 
       if (m == 0)
 	continue;
 
-      ParNbr y = dihedralMin(this,z,s,t);
-      Length d = length(z) - length(y);
+      coxtypes::ParNbr y = dihedralMin(this,z,s,t);
+      coxtypes::Length d = length(z) - length(y);
 
       if (d < m-1)  /* zt > z, no transduction */
 	continue;
@@ -323,7 +323,7 @@ ParNbr SubQuotient::extend(ParNbr x, Generator s)
 }
 
 
-void SubQuotient::fill(const CoxGraph& G)
+void SubQuotient::fill(const graph::CoxGraph& G)
 
 /*
   This function fills the subquotient of rank l for the group defined by
@@ -342,7 +342,7 @@ void SubQuotient::fill(const CoxGraph& G)
 
 {
   for (Ulong x = 0; x < d_size; ++x) { /* find all extensions of x */
-    for (Generator s = 0; s < rank(); ++s) {
+    for (coxtypes::Generator s = 0; s < rank(); ++s) {
       if (shift(x,s) == undef_parnbr) { /* extend */
 
 	d_shift.setSize(d_rank*(d_size+1));
@@ -352,16 +352,16 @@ void SubQuotient::fill(const CoxGraph& G)
 	shiftref(x,s) = d_size;
 	lengthref(d_size) = length(x) + 1;
 
-	for (Generator t = 0; t < rank(); t++) {  /* find shifts */
+	for (coxtypes::Generator t = 0; t < rank(); t++) {  /* find shifts */
 
 	  if (t == s)
 	    continue;  /* next t */
 
 	  shiftref(d_size,t) = undef_parnbr;
 
-	  CoxEntry m = G.M(s,t);
-	  ParNbr y = dihedralMin(this,d_size,s,t);
-	  Length d = length(d_size) - length(y);
+	  graph::CoxEntry m = G.M(s,t);
+	  coxtypes::ParNbr y = dihedralMin(this,d_size,s,t);
+	  coxtypes::Length d = length(d_size) - length(y);
 
 	  if (d < m-1)
 	    continue;  /* next t */
@@ -396,7 +396,7 @@ void SubQuotient::fill(const CoxGraph& G)
 
 /******* accessors *********************************************************/
 
-Generator SubQuotient::firstDescent(const ParNbr& x) const
+coxtypes::Generator SubQuotient::firstDescent(const coxtypes::ParNbr& x) const
 
 /*
   Returns the smallest s such that x.s < x, rank() if there is no such
@@ -404,7 +404,7 @@ Generator SubQuotient::firstDescent(const ParNbr& x) const
 */
 
 {
-  for (Generator s = 0; s < rank(); ++s)
+  for (coxtypes::Generator s = 0; s < rank(); ++s)
     if (shift(x,s) < x)
       return s;
 
@@ -412,7 +412,7 @@ Generator SubQuotient::firstDescent(const ParNbr& x) const
 }
 
 
-void SubQuotient::schubertClosure(SubSet& Q, ParNbr x)
+void SubQuotient::schubertClosure(Sub_set& Q, coxtypes::ParNbr x)
 
 /*
   This function returns in Q the set of all z in X such that z <= x in the
@@ -421,7 +421,7 @@ void SubQuotient::schubertClosure(SubSet& Q, ParNbr x)
 
 {
   static bits::BitMap f;  /* should become bitmap type */
-  static CoxWord g;
+  static coxtypes::CoxWord g;
 
   f.setSize(size());
   f.reset();
@@ -436,7 +436,7 @@ void SubQuotient::schubertClosure(SubSet& Q, ParNbr x)
   for (Ulong j = 0; j < g.length(); ++j) {
 
     Ulong c = 0;
-    Generator s = g[j]-1;
+    coxtypes::Generator s = g[j]-1;
 
     for (Ulong z = 0; z < prev_size; ++z) { /* count new elements */
       if (shift(z,s) > undef_parnbr)  /* undef_parnbr is impossible */
@@ -446,7 +446,7 @@ void SubQuotient::schubertClosure(SubSet& Q, ParNbr x)
     }
 
     Q.setSize(Q.size() + c);  /* should become Q += c ? */
-    ParNbr firstfree = prev_size;
+    coxtypes::ParNbr firstfree = prev_size;
 
     for (Ulong z = 0; z < prev_size; ++z) {
       if (shift(z,s) > undef_parnbr)
@@ -463,14 +463,15 @@ void SubQuotient::schubertClosure(SubSet& Q, ParNbr x)
   return;
 }
 
-CoxWord& SubQuotient::reduced(CoxWord& g, ParNbr x) const
+coxtypes::CoxWord& SubQuotient::reduced
+  (coxtypes::CoxWord& g, coxtypes::ParNbr x) const
 
 {
-  Length p = length(x);
+  coxtypes::Length p = length(x);
   g.setLength(p);
 
   for (Ulong j = 1; x; ++j) { /* take off last generator */
-    Generator s = firstDescent(x);
+    coxtypes::Generator s = firstDescent(x);
     g[p-j] = s + 1;
     x = shift(x,s);
   }
@@ -495,12 +496,12 @@ CoxWord& SubQuotient::reduced(CoxWord& g, ParNbr x) const
 
 namespace transducer {
 
-Transducer::Transducer(CoxGraph& G):d_filtration(G.rank())
+Transducer::Transducer(graph::CoxGraph& G):d_filtration(G.rank())
 
 {
-  Rank l = G.rank();
+  coxtypes::Rank l = G.rank();
 
-  for (Rank j = 0; j < l-1; j++)
+  for (coxtypes::Rank j = 0; j < l-1; j++)
     new(d_filtration.ptr()+j) FiltrationTerm(G,l-j,d_filtration.ptr()+j+1);
   new(d_filtration.ptr() + l-1) FiltrationTerm(G,1);
   d_filtration.setSize(l);
@@ -534,7 +535,7 @@ Transducer::~Transducer()
 
 namespace {
 
-ParNbr dihedralMin(SubQuotient* X, ParNbr y, Generator s, Generator t)
+coxtypes::ParNbr dihedralMin(SubQuotient* X, coxtypes::ParNbr y, coxtypes::Generator s, coxtypes::Generator t)
 
 /*
   Given a legal element y in X, and two generators s and t, returns the
@@ -547,7 +548,7 @@ ParNbr dihedralMin(SubQuotient* X, ParNbr y, Generator s, Generator t)
 */
 
 {
-  Generator u;
+  coxtypes::Generator u;
 
   if (X->shift(y,s) >= y)
     u = t;
@@ -568,8 +569,8 @@ ParNbr dihedralMin(SubQuotient* X, ParNbr y, Generator s, Generator t)
 }
 
 
-ParNbr dihedralShift(SubQuotient* X, ParNbr y, Generator s,
-			      Generator t, Ulong c)
+coxtypes::ParNbr dihedralShift(SubQuotient* X, coxtypes::ParNbr y, coxtypes::Generator s,
+			      coxtypes::Generator t, Ulong c)
 
 /*
   Given a legal element y in the automaton for V, and two generators
@@ -581,7 +582,7 @@ ParNbr dihedralShift(SubQuotient* X, ParNbr y, Generator s,
 */
 
 {
-  Generator u = s;
+  coxtypes::Generator u = s;
 
   for (Ulong j = 0; j < c; j++)
     {

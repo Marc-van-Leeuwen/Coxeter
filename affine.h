@@ -11,11 +11,6 @@
 #include "globals.h"
 #include "coxgroup.h"
 
-namespace affine {
-  using namespace globals;
-  using namespace coxgroup;
-};
-
 /******** type declarations *************************************************/
 
 namespace affine {
@@ -32,76 +27,76 @@ namespace affine {
 
 namespace affine {
 
-class AffineCoxGroup : public CoxGroup {
+class AffineCoxGroup : public coxgroup::CoxGroup {
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(AffineCoxGroup));}
+    {return memory::arena().free(ptr,sizeof(AffineCoxGroup));}
 
-  AffineCoxGroup(const Type& x, const Rank& l);
+  AffineCoxGroup(const type::Type& x, const coxtypes::Rank& l);
   virtual ~AffineCoxGroup();
 /* accessors */
-  CoxSize order() const;                                         /* inlined */
+  coxtypes::CoxSize order() const;                                         /* inlined */
 };
 
 class AffineBigRankCoxGroup : public AffineCoxGroup {
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(AffineBigRankCoxGroup));}
-  AffineBigRankCoxGroup(const Type& x, const Rank& l);
+    {return memory::arena().free(ptr,sizeof(AffineBigRankCoxGroup));}
+  AffineBigRankCoxGroup(const type::Type& x, const coxtypes::Rank& l);
   virtual ~AffineBigRankCoxGroup();
 };
 
 class GeneralABRCoxGroup:public AffineBigRankCoxGroup {
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(GeneralABRCoxGroup));}
-  GeneralABRCoxGroup(const Type& x, const Rank& l);
+    {return memory::arena().free(ptr,sizeof(GeneralABRCoxGroup));}
+  GeneralABRCoxGroup(const type::Type& x, const coxtypes::Rank& l);
   ~GeneralABRCoxGroup();
 };
 
 class AffineMedRankCoxGroup : public AffineCoxGroup {
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(AffineMedRankCoxGroup));}
-  AffineMedRankCoxGroup(const Type& x, const Rank& l);
+    {return memory::arena().free(ptr,sizeof(AffineMedRankCoxGroup));}
+  AffineMedRankCoxGroup(const type::Type& x, const coxtypes::Rank& l);
   virtual ~AffineMedRankCoxGroup();
 };
 
 class GeneralAMRCoxGroup:public AffineMedRankCoxGroup {
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(GeneralAMRCoxGroup));}
-  GeneralAMRCoxGroup(const Type& x, const Rank& l);
+    {return memory::arena().free(ptr,sizeof(GeneralAMRCoxGroup));}
+  GeneralAMRCoxGroup(const type::Type& x, const coxtypes::Rank& l);
   ~GeneralAMRCoxGroup();
 };
 
 class AffineSmallRankCoxGroup : public AffineMedRankCoxGroup {
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(AffineSmallRankCoxGroup));}
-  AffineSmallRankCoxGroup(const Type& x, const Rank& l);
+    {return memory::arena().free(ptr,sizeof(AffineSmallRankCoxGroup));}
+  AffineSmallRankCoxGroup(const type::Type& x, const coxtypes::Rank& l);
   virtual ~AffineSmallRankCoxGroup();
 };
 
 class GeneralASRCoxGroup:public AffineSmallRankCoxGroup {
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(GeneralASRCoxGroup));}
-  GeneralASRCoxGroup(const Type& x, const Rank& l);
+    {return memory::arena().free(ptr,sizeof(GeneralASRCoxGroup));}
+  GeneralASRCoxGroup(const type::Type& x, const coxtypes::Rank& l);
   ~GeneralASRCoxGroup();
 };
 
@@ -111,7 +106,7 @@ class GeneralASRCoxGroup:public AffineSmallRankCoxGroup {
 
 namespace affine {
 
-inline CoxSize AffineCoxGroup::order() const {return infinite_coxsize;}
+inline coxtypes::CoxSize AffineCoxGroup::order() const {return coxtypes::infinite_coxsize;}
 
 };
 

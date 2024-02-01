@@ -50,7 +50,7 @@ namespace cells {
 namespace {
   using namespace cells;
 
-  typedef List<CoxNbr> CoxList;
+  typedef list::List<coxtypes::CoxNbr> CoxList;
 };
 
 /****************************************************************************
@@ -74,7 +74,7 @@ namespace {
 
 namespace cells {
 
-void lCells(Partition& pi, kl::KLContext& kl)
+void lCells(bits::Partition& pi, kl::KLContext& kl)
 
 /*
   This function puts in pi the partition of p into left cells --- in the case
@@ -88,16 +88,16 @@ void lCells(Partition& pi, kl::KLContext& kl)
 */
 
 {
-  static SubSet q(0);
-  static SubSet a(0);
-  static WGraph X(0);
-  static Partition qcells(0);
-  static List<Ulong> cell_count(0);
-  static List<Ulong> qcell_count(0);
-  static OrientedGraph P(0);
+  static bits::SubSet q(0);
+  static bits::SubSet a(0);
+  static wgraph::WGraph X(0);
+  static bits::Partition qcells(0);
+  static list::List<Ulong> cell_count(0);
+  static list::List<Ulong> qcell_count(0);
+  static wgraph::OrientedGraph P(0);
   static Fifo<Ulong> orbit;
 
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
   q.setBitMapSize(p.size());
   a.setBitMapSize(p.size());
   a.reset();
@@ -105,7 +105,7 @@ void lCells(Partition& pi, kl::KLContext& kl)
 
   rGeneralizedTau(pi,p);
 
-  for (CoxNbr x = 0; x < p.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
 
     /* a holds the elements already processed */
 
@@ -132,8 +132,8 @@ void lCells(Partition& pi, kl::KLContext& kl)
 
     /* get class counts and mark off cells in q */
 
-    for (PartitionIterator i(qcells); i; ++i) {
-      const Set& c = i();
+    for (bits::PartitionIterator i(qcells); i; ++i) {
+      const bits::Set& c = i();
       qcell_count.append(c.size());
       cell_count.append(c.size());
       for (Ulong j = 0; j < c.size(); ++j)
@@ -147,13 +147,13 @@ void lCells(Partition& pi, kl::KLContext& kl)
     while (orbit.size()) {
 
       Ulong c = orbit.pop();
-      CoxNbr z = a[c];
+      coxtypes::CoxNbr z = a[c];
 
-      for (StarOp j = 0; j < p.nStarOps(); ++j) {
+      for (coxtypes::StarOp j = 0; j < p.nStarOps(); ++j) {
 
-	CoxNbr zj = p.star(z,j);
+	coxtypes::CoxNbr zj = p.star(z,j);
 
-	if (zj == undef_coxnbr)
+	if (zj == coxtypes::undef_coxnbr)
 	  continue;
 	if (a.isMember(zj))
 	  continue;
@@ -163,8 +163,8 @@ void lCells(Partition& pi, kl::KLContext& kl)
 	orbit.push(a.size());
 
 	for (Ulong i = 0; i < q.size(); ++i) {
-	  CoxNbr y = a[c+i];
-	  CoxNbr yj = p.star(y,j);
+	  coxtypes::CoxNbr y = a[c+i];
+	  coxtypes::CoxNbr yj = p.star(y,j);
 	  a.add(yj);
 	}
 
@@ -192,24 +192,24 @@ void lCells(Partition& pi, kl::KLContext& kl)
   return;
 }
 
-void rCells(Partition& pi, kl::KLContext& kl)
+void rCells(bits::Partition& pi, kl::KLContext& kl)
 
 /*
   Same as lCells, but does the partition into right cells.
 */
 
 {
-  static SubSet q(0);
-  static SubSet a(0);
-  static WGraph X(0);
-  static Partition qcells(0);
-  static List<Ulong> cell_count(0);
-  static List<Ulong> qcell_count(0);
-  static OrientedGraph P(0);
+  static bits::SubSet q(0);
+  static bits::SubSet a(0);
+  static wgraph::WGraph X(0);
+  static bits::Partition qcells(0);
+  static list::List<Ulong> cell_count(0);
+  static list::List<Ulong> qcell_count(0);
+  static wgraph::OrientedGraph P(0);
   static Fifo<Ulong> orbit;
-  static Permutation v(0);
+  static bits::Permutation v(0);
 
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
   q.setBitMapSize(p.size());
   a.setBitMapSize(p.size());
   a.reset();
@@ -217,7 +217,7 @@ void rCells(Partition& pi, kl::KLContext& kl)
 
   lGeneralizedTau(pi,p);
 
-  for (CoxNbr x = 0; x < p.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
 
     if (a.isMember(x))
       continue;
@@ -242,8 +242,8 @@ void rCells(Partition& pi, kl::KLContext& kl)
 
     /* get class counts and mark off cells in q */
 
-    for (PartitionIterator i(qcells); i; ++i) {
-      const Set& c = i();
+    for (bits::PartitionIterator i(qcells); i; ++i) {
+      const bits::Set& c = i();
       qcell_count.append(c.size());
       cell_count.append(c.size());
       for (Ulong j = 0; j < c.size(); ++j)
@@ -255,13 +255,13 @@ void rCells(Partition& pi, kl::KLContext& kl)
     while (orbit.size()) {
 
       Ulong c = orbit.pop();
-      CoxNbr z = a[c];
+      coxtypes::CoxNbr z = a[c];
 
-      for (StarOp j = p.nStarOps(); j < 2*p.nStarOps(); ++j) {
+      for (coxtypes::StarOp j = p.nStarOps(); j < 2*p.nStarOps(); ++j) {
 
-	CoxNbr zj = p.star(z,j);
+	coxtypes::CoxNbr zj = p.star(z,j);
 
-	if (zj == undef_coxnbr)
+	if (zj == coxtypes::undef_coxnbr)
 	  continue;
 	if (a.isMember(zj))
 	  continue;
@@ -271,8 +271,8 @@ void rCells(Partition& pi, kl::KLContext& kl)
 	orbit.push(a.size());
 
 	for (Ulong i = 0; i < q.size(); ++i) {
-	  CoxNbr y = a[c+i];
-	  CoxNbr yj = p.star(y,j);
+	  coxtypes::CoxNbr y = a[c+i];
+	  coxtypes::CoxNbr yj = p.star(y,j);
 	  a.add(yj);
 	}
 
@@ -300,7 +300,7 @@ void rCells(Partition& pi, kl::KLContext& kl)
   return;
 }
 
-void lrCells(Partition& pi, kl::KLContext& kl)
+void lrCells(bits::Partition& pi, kl::KLContext& kl)
 
 /*
   This function computes the two-sided cells in the context. There are
@@ -311,14 +311,14 @@ void lrCells(Partition& pi, kl::KLContext& kl)
 {
   kl.fillMu();
 
-  WGraph X(0);
+  wgraph::WGraph X(0);
   lrWGraph(X,kl);
   X.graph().cells(pi);
 
   return;
 }
 
-void lDescentPartition(Partition& pi, const SchubertContext& p)
+void lDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   This function writes in pi the partition of p according to the left
@@ -326,15 +326,15 @@ void lDescentPartition(Partition& pi, const SchubertContext& p)
 */
 
 {
-  static List<LFlags> d(0); /* holds the appearing descent sets */
+  static list::List<bits::Lflags> d(0); /* holds the appearing descent sets */
 
   pi.setSize(p.size());
   d.setSize(0);
 
-  for (CoxNbr x = 0; x < p.size(); ++x)
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
     insert(d,p.ldescent(x));
 
-  for (CoxNbr x = 0; x < p.size(); ++x)
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
     pi[x] = find(d,p.ldescent(x));
 
   pi.setClassCount(d.size());
@@ -342,7 +342,7 @@ void lDescentPartition(Partition& pi, const SchubertContext& p)
   return;
 }
 
-void lStringEquiv(Partition& pi, const SchubertContext& p)
+void lStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   This function writes in pi the partition of p according to the (left)
@@ -354,8 +354,8 @@ void lStringEquiv(Partition& pi, const SchubertContext& p)
 */
 
 {
-  static BitMap b(0);
-  static Fifo<CoxNbr> orbit;
+  static bits::BitMap b(0);
+  static Fifo<coxtypes::CoxNbr> orbit;
 
   b.setSize(p.size());
   b.reset();
@@ -363,21 +363,21 @@ void lStringEquiv(Partition& pi, const SchubertContext& p)
   pi.setSize(p.size());
   Ulong count = 0;
 
-  for (CoxNbr x = 0; x < p.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
     if (b.getBit(x))
       continue;
     b.setBit(x);
     pi[x] = count;
     orbit.push(x);
     while (orbit.size()) {
-      CoxNbr z = orbit.pop();
-      for (Generator s = 0; s < p.rank(); ++s) {
-	CoxNbr sz = p.lshift(z,s);
+      coxtypes::CoxNbr z = orbit.pop();
+      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
+	coxtypes::CoxNbr sz = p.lshift(z,s);
 	if (b.getBit(sz))
 	  continue;
-	LFlags fz = p.ldescent(z);
-	LFlags fsz = p.ldescent(sz);
-	LFlags f = fz & fsz;
+	bits::Lflags fz = p.ldescent(z);
+	bits::Lflags fsz = p.ldescent(sz);
+	bits::Lflags f = fz & fsz;
 	if ((f == fz) || (f == fsz)) /* inclusion */
 	  continue;
 	b.setBit(sz);
@@ -393,7 +393,7 @@ void lStringEquiv(Partition& pi, const SchubertContext& p)
   return;
 }
 
-void lStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p)
+void lStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p)
 
 /*
   Does the partition of the subset q into left string classes. It is assumed
@@ -401,8 +401,8 @@ void lStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p)
 */
 
 {
-  static BitMap b(0);
-  static Fifo<CoxNbr> orbit;
+  static bits::BitMap b(0);
+  static Fifo<coxtypes::CoxNbr> orbit;
 
   b.setSize(p.size());
   b.reset();
@@ -411,25 +411,25 @@ void lStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p)
   Ulong count = 0;
 
   for (Ulong j = 0; j < q.size(); ++j) {
-    const CoxNbr x = q[j];
+    const coxtypes::CoxNbr x = q[j];
     if (b.getBit(x))
       continue;
     b.setBit(x);
     pi[j] = count;
     orbit.push(x);
     while (orbit.size()) {
-      CoxNbr z = orbit.pop();
-      for (Generator s = 0; s < p.rank(); ++s) {
-	CoxNbr sz = p.lshift(z,s);
+      coxtypes::CoxNbr z = orbit.pop();
+      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
+	coxtypes::CoxNbr sz = p.lshift(z,s);
 	if (b.getBit(sz))
 	  continue;
-	LFlags fz = p.ldescent(z);
-	LFlags fsz = p.ldescent(sz);
-	LFlags f = fz & fsz;
+	bits::Lflags fz = p.ldescent(z);
+	bits::Lflags fsz = p.ldescent(sz);
+	bits::Lflags f = fz & fsz;
 	if ((f == fz) || (f == fsz)) /* inclusion */
 	  continue;
 	if (!q.isMember(sz)) { // q is not stable! this shouldn't happen
-	  ERRNO = ERROR_WARNING;
+	  error::ERRNO = error::ERROR_WARNING;
 	  return;
 	}
 	b.setBit(sz);
@@ -444,7 +444,7 @@ void lStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p)
   return;
 }
 
-void rDescentPartition(Partition& pi, const SchubertContext& p)
+void rDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   This function writes in pi the partition of p according to the right
@@ -452,15 +452,15 @@ void rDescentPartition(Partition& pi, const SchubertContext& p)
 */
 
 {
-  static List<LFlags> d(0); /* holds the appearing descent sets */
+  static list::List<bits::Lflags> d(0); /* holds the appearing descent sets */
 
   pi.setSize(p.size());
   d.setSize(0);
 
-  for (CoxNbr x = 0; x < p.size(); ++x)
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
     insert(d,p.rdescent(x));
 
-  for (CoxNbr x = 0; x < p.size(); ++x)
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
     pi[x] = find(d,p.rdescent(x));
 
   pi.setClassCount(d.size());
@@ -468,15 +468,15 @@ void rDescentPartition(Partition& pi, const SchubertContext& p)
   return;
 }
 
-void rStringEquiv(Partition& pi, const SchubertContext& p)
+void rStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   Same as lStringEquiv, but on the other side.
 */
 
 {
-  static BitMap b(0);
-  static Fifo<CoxNbr> orbit;
+  static bits::BitMap b(0);
+  static Fifo<coxtypes::CoxNbr> orbit;
 
   b.setSize(p.size());
   b.reset();
@@ -484,21 +484,21 @@ void rStringEquiv(Partition& pi, const SchubertContext& p)
   pi.setSize(p.size());
   Ulong count = 0;
 
-  for (CoxNbr x = 0; x < p.size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
     if (b.getBit(x))
       continue;
     b.setBit(x);
     pi[x] = count;
     orbit.push(x);
     while (orbit.size()) {
-      CoxNbr z = orbit.pop();
-      for (Generator s = 0; s < p.rank(); ++s) {
-	CoxNbr zs = p.rshift(z,s);
+      coxtypes::CoxNbr z = orbit.pop();
+      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
+	coxtypes::CoxNbr zs = p.rshift(z,s);
 	if (b.getBit(zs))
 	  continue;
-	LFlags fz = p.rdescent(z);
-	LFlags fzs = p.rdescent(zs);
-	LFlags f = fz & fzs;
+	bits::Lflags fz = p.rdescent(z);
+	bits::Lflags fzs = p.rdescent(zs);
+	bits::Lflags f = fz & fzs;
 	if ((f == fz) || (f == fzs)) /* inclusion */
 	  continue;
 	b.setBit(zs);
@@ -514,15 +514,15 @@ void rStringEquiv(Partition& pi, const SchubertContext& p)
   return;
 }
 
-void rStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p)
+void rStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p)
 
 /*
   Same as lStringEquiv, but on the other side.
 */
 
 {
-  static BitMap b(0);
-  static Fifo<CoxNbr> orbit;
+  static bits::BitMap b(0);
+  static Fifo<coxtypes::CoxNbr> orbit;
 
   b.setSize(p.size());
   b.reset();
@@ -531,25 +531,25 @@ void rStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p)
   Ulong count = 0;
 
   for (Ulong j = 0; j < q.size(); ++j) {
-    const CoxNbr x = q[j];
+    const coxtypes::CoxNbr x = q[j];
     if (b.getBit(x))
       continue;
     b.setBit(x);
     pi[j] = count;
     orbit.push(x);
     while (orbit.size()) {
-      CoxNbr z = orbit.pop();
-      for (Generator s = 0; s < p.rank(); ++s) {
-	CoxNbr zs = p.rshift(z,s);
+      coxtypes::CoxNbr z = orbit.pop();
+      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
+	coxtypes::CoxNbr zs = p.rshift(z,s);
 	if (b.getBit(zs))
 	  continue;
-	LFlags fz = p.rdescent(z);
-	LFlags fzs = p.rdescent(zs);
-	LFlags f = fz & fzs;
+	bits::Lflags fz = p.rdescent(z);
+	bits::Lflags fzs = p.rdescent(zs);
+	bits::Lflags f = fz & fzs;
 	if ((f == fz) || (f == fzs)) /* inclusion */
 	  continue;
 	if (!q.isMember(zs)) { // q is not stable! this shouldn't happen
-	  ERRNO = ERROR_WARNING;
+	  error::ERRNO = error::ERROR_WARNING;
 	  return;
 	}
 	b.setBit(zs);
@@ -564,17 +564,17 @@ void rStringEquiv(Partition& pi, const SubSet& q, const SchubertContext& p)
   return;
 }
 
-void lGeneralizedTau(Partition& pi, const SchubertContext& p)
+void lGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   Like rGeneralizedTau, but on the left.
 */
 
 {
-  static Permutation v(0);
-  static List<Ulong> b(0);
-  static List<Ulong> cc(0);
-  static List<Ulong> a(0);
+  static bits::Permutation v(0);
+  static list::List<Ulong> b(0);
+  static list::List<Ulong> cc(0);
+  static list::List<Ulong> a(0);
 
   /* initialize pi with partition into right descent sets */
 
@@ -601,9 +601,9 @@ void lGeneralizedTau(Partition& pi, const SchubertContext& p)
 
       for (Ulong c = 0; c < pi.classCount(); ++c) {
 
-	CoxNbr x = v[i]; /* first element in class */
+	coxtypes::CoxNbr x = v[i]; /* first element in class */
 
-	if (p.star(x,r) == undef_coxnbr)
+	if (p.star(x,r) == coxtypes::undef_coxnbr)
 	  goto next_class;
 
 	/* find possibilities for v[.]*r */
@@ -640,7 +640,7 @@ void lGeneralizedTau(Partition& pi, const SchubertContext& p)
   return;
 }
 
-void rGeneralizedTau(Partition& pi, const SchubertContext& p)
+void rGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   This is the most delicate of the partition functions. It is the maximal
@@ -657,10 +657,10 @@ void rGeneralizedTau(Partition& pi, const SchubertContext& p)
 */
 
 {
-  static Permutation v(0);
-  static List<Ulong> b(0);
-  static List<Ulong> cc(0);
-  static List<Ulong> a(0);
+  static bits::Permutation v(0);
+  static list::List<Ulong> b(0);
+  static list::List<Ulong> cc(0);
+  static list::List<Ulong> a(0);
 
   /* initialize pi with partition into right descent sets */
 
@@ -687,9 +687,9 @@ void rGeneralizedTau(Partition& pi, const SchubertContext& p)
 
       for (Ulong c = 0; c < pi.classCount(); ++c) {
 
-	CoxNbr x = v[i]; /* first element in class */
+	coxtypes::CoxNbr x = v[i]; /* first element in class */
 
-	if (p.star(x,r) == undef_coxnbr)
+	if (p.star(x,r) == coxtypes::undef_coxnbr)
 	  goto next_class;
 
 	/* find possibilities for v[.]*r */
@@ -746,27 +746,27 @@ void rGeneralizedTau(Partition& pi, const SchubertContext& p)
 
 namespace cells {
 
-void lGraph(OrientedGraph& X, kl::KLContext& kl)
+void lGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   X.setSize(kl.size());
   X.reset();
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
     const kl::MuRow& mu = kl.muList(y);
     for (Ulong j = 0; j < mu.size(); ++j) {
       if (mu[j].mu != 0) {
-	CoxNbr x = mu[j].x;
+	coxtypes::CoxNbr x = mu[j].x;
 	if (p.ldescent(x) != p.ldescent(y)) /* make an edge from x to y */
 	  X.edge(x).append(y);
       }
     }
   }
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
-    const CoatomList& c = p.hasse(y);
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
+    const schubert::CoatomList& c = p.hasse(y);
     for (Ulong j = 0; j < c.size(); ++j) {
       if ((p.ldescent(c[j])&p.ldescent(y)) != p.ldescent(c[j]))
 	X.edge(c[j]).append(y);
@@ -778,27 +778,27 @@ void lGraph(OrientedGraph& X, kl::KLContext& kl)
   return;
 }
 
-void lrGraph(OrientedGraph& X, kl::KLContext& kl)
+void lrGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   X.setSize(kl.size());
   X.reset();
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
     const kl::MuRow& mu = kl.muList(y);
     for (Ulong j = 0; j < mu.size(); ++j) {
       if (mu[j].mu != 0) {
-	CoxNbr x = mu[j].x;
+	coxtypes::CoxNbr x = mu[j].x;
 	if (p.descent(x) != p.descent(y)) /* make an edge from x to y */
 	  X.edge(x).append(y);
       }
     }
   }
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
-    const CoatomList& c = p.hasse(y);
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
+    const schubert::CoatomList& c = p.hasse(y);
     for (Ulong j = 0; j < c.size(); ++j) {
       if ((p.descent(c[j])&p.descent(y)) != p.descent(c[j]))
 	X.edge(c[j]).append(y);
@@ -810,27 +810,27 @@ void lrGraph(OrientedGraph& X, kl::KLContext& kl)
   return;
 }
 
-void rGraph(OrientedGraph& X, kl::KLContext& kl)
+void rGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
 
   X.setSize(kl.size());
   X.reset();
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
     const kl::MuRow& mu = kl.muList(y);
     for (Ulong j = 0; j < mu.size(); ++j) {
       if (mu[j].mu != 0) {
-	CoxNbr x = mu[j].x;
+	coxtypes::CoxNbr x = mu[j].x;
 	if (p.rdescent(x) != p.rdescent(y)) /* make an edge from x to y */
 	  X.edge(x).append(y);
       }
     }
   }
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
-    const CoatomList& c = p.hasse(y);
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
+    const schubert::CoatomList& c = p.hasse(y);
     for (Ulong j = 0; j < c.size(); ++j) {
       if ((p.rdescent(c[j])&p.rdescent(y)) != p.rdescent(c[j]))
 	X.edge(c[j]).append(y);
@@ -842,7 +842,7 @@ void rGraph(OrientedGraph& X, kl::KLContext& kl)
   return;
 }
 
-void lWGraph(WGraph& X, kl::KLContext& kl)
+void lWGraph(wgraph::WGraph& X, kl::KLContext& kl)
 
 /*
   This function constructs a W-graph directly from the k-l data. In other
@@ -861,8 +861,8 @@ void lWGraph(WGraph& X, kl::KLContext& kl)
 
 {
   X.setSize(kl.size());
-  const SchubertContext& p = kl.schubert();
-  OrientedGraph& Y = X.graph();
+  const schubert::SchubertContext& p = kl.schubert();
+  wgraph::OrientedGraph& Y = X.graph();
 
   // fill in Y
 
@@ -870,14 +870,14 @@ void lWGraph(WGraph& X, kl::KLContext& kl)
 
   // fill in coefficients
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
-    CoeffList& c = X.coeffList(y);
-    const EdgeList& e = X.edge(y);
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
+    wgraph::CoeffList& c = X.coeffList(y);
+    const wgraph::EdgeList& e = X.edge(y);
     c.setSize(e.size());
-    Length ly = p.length(y);
+    coxtypes::Length ly = p.length(y);
     for (Ulong j = 0; j < c.size(); ++j) {
-      CoxNbr x = e[j];
-      Length lx = p.length(x);
+      coxtypes::CoxNbr x = e[j];
+      coxtypes::Length lx = p.length(x);
       if ((lx < ly) || (lx-ly) == 1)
 	c[j] = 1;
       else
@@ -887,13 +887,13 @@ void lWGraph(WGraph& X, kl::KLContext& kl)
 
   // fill in descent sets
 
-  for (CoxNbr y = 0; y < kl.size(); ++y)
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y)
     X.descent(y) = p.ldescent(y);
 
   return;
 }
 
-void lWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
+void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 /*
   This function constructs the left W-graph for the subset q. It is
@@ -908,19 +908,19 @@ void lWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 */
 
 {
-  static List<Ulong> qr(0);
+  static list::List<Ulong> qr(0);
 
   X.setSize(q.size());
-  const SchubertContext& p = kl.schubert();
-  OrientedGraph& Y = X.graph();
-  BitMap b(p.size());
+  const schubert::SchubertContext& p = kl.schubert();
+  wgraph::OrientedGraph& Y = X.graph();
+  bits::BitMap b(p.size());
 
   Y.reset();
 
   for (Ulong j = 0; j < q.size(); ++j) {
 
-    CoxNbr y = q[j];
-    Length ly = p.length(y);
+    coxtypes::CoxNbr y = q[j];
+    coxtypes::Length ly = p.length(y);
 
     // set descent set
 
@@ -939,8 +939,8 @@ void lWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 
     for (Ulong i = 0; i < qr.size(); ++i) {
 
-      CoxNbr x = q[qr[i]];
-      Length lx = p.length(x);
+      coxtypes::CoxNbr x = q[qr[i]];
+      coxtypes::Length lx = p.length(x);
 
       if ((ly-lx)%2 == 0)
 	continue;
@@ -956,7 +956,7 @@ void lWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 	continue;
       }
 
-      KLCoeff mu = kl.mu(x,y);
+      klsupport::KLCoeff mu = kl.mu(x,y);
 
       if (mu != 0) {
 	if (p.ldescent(x) != p.ldescent(y)) {
@@ -970,7 +970,7 @@ void lWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
   return;
 }
 
-void lrWGraph(WGraph& X, kl::KLContext& kl)
+void lrWGraph(wgraph::WGraph& X, kl::KLContext& kl)
 
 /*
   Like lWGraph, but for two-sided W-graphs.
@@ -978,8 +978,8 @@ void lrWGraph(WGraph& X, kl::KLContext& kl)
 
 {
   X.setSize(kl.size());
-  const SchubertContext& p = kl.schubert();
-  OrientedGraph& Y = X.graph();
+  const schubert::SchubertContext& p = kl.schubert();
+  wgraph::OrientedGraph& Y = X.graph();
 
   // fill in Y
 
@@ -987,14 +987,14 @@ void lrWGraph(WGraph& X, kl::KLContext& kl)
 
   // fill in coefficients
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
-    CoeffList& c = X.coeffList(y);
-    const EdgeList& e = X.edge(y);
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
+    wgraph::CoeffList& c = X.coeffList(y);
+    const wgraph::EdgeList& e = X.edge(y);
     c.setSize(e.size());
-    Length ly = p.length(y);
+    coxtypes::Length ly = p.length(y);
     for (Ulong j = 0; j < c.size(); ++j) {
-      CoxNbr x = e[j];
-      Length lx = p.length(x);
+      coxtypes::CoxNbr x = e[j];
+      coxtypes::Length lx = p.length(x);
       if ((lx < ly) || (lx-ly) == 1)
 	c[j] = 1;
       else
@@ -1004,13 +1004,13 @@ void lrWGraph(WGraph& X, kl::KLContext& kl)
 
   // fill in descent sets
 
-  for (CoxNbr y = 0; y < kl.size(); ++y)
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y)
     X.descent(y) = p.descent(y);
 
   return;
 }
 
-void lrWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
+void lrWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 /*
   This function constructs the left W-graph for the subset q. It is
@@ -1025,19 +1025,19 @@ void lrWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 */
 
 {
-  static List<Ulong> qr(0);
+  static list::List<Ulong> qr(0);
 
   X.setSize(q.size());
-  const SchubertContext& p = kl.schubert();
-  OrientedGraph& Y = X.graph();
-  BitMap b(p.size());
+  const schubert::SchubertContext& p = kl.schubert();
+  wgraph::OrientedGraph& Y = X.graph();
+  bits::BitMap b(p.size());
 
   Y.reset();
 
   for (Ulong j = 0; j < q.size(); ++j) {
 
-    CoxNbr y = q[j];
-    Length ly = p.length(y);
+    coxtypes::CoxNbr y = q[j];
+    coxtypes::Length ly = p.length(y);
 
     // set descent set
 
@@ -1056,8 +1056,8 @@ void lrWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 
     for (Ulong i = 0; i < qr.size(); ++i) {
 
-      CoxNbr x = q[qr[i]];
-      Length lx = p.length(x);
+      coxtypes::CoxNbr x = q[qr[i]];
+      coxtypes::Length lx = p.length(x);
 
       if ((ly-lx)%2 == 0)
 	continue;
@@ -1073,7 +1073,7 @@ void lrWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 	continue;
       }
 
-      KLCoeff mu = kl.mu(x,y);
+      klsupport::KLCoeff mu = kl.mu(x,y);
 
       if (mu != 0) {
 	if (p.descent(x) != p.descent(y)) {
@@ -1087,7 +1087,7 @@ void lrWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
   return;
 }
 
-void rWGraph(WGraph& X, kl::KLContext& kl)
+void rWGraph(wgraph::WGraph& X, kl::KLContext& kl)
 
 /*
   Like lWGraph, but for right W-graphs.
@@ -1095,8 +1095,8 @@ void rWGraph(WGraph& X, kl::KLContext& kl)
 
 {
   X.setSize(kl.size());
-  const SchubertContext& p = kl.schubert();
-  OrientedGraph& Y = X.graph();
+  const schubert::SchubertContext& p = kl.schubert();
+  wgraph::OrientedGraph& Y = X.graph();
 
   // fill in Y
 
@@ -1104,14 +1104,14 @@ void rWGraph(WGraph& X, kl::KLContext& kl)
 
   // fill in coefficients
 
-  for (CoxNbr y = 0; y < kl.size(); ++y) {
-    CoeffList& c = X.coeffList(y);
-    const EdgeList& e = X.edge(y);
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
+    wgraph::CoeffList& c = X.coeffList(y);
+    const wgraph::EdgeList& e = X.edge(y);
     c.setSize(e.size());
-    Length ly = p.length(y);
+    coxtypes::Length ly = p.length(y);
     for (Ulong j = 0; j < c.size(); ++j) {
-      CoxNbr x = e[j];
-      Length lx = p.length(x);
+      coxtypes::CoxNbr x = e[j];
+      coxtypes::Length lx = p.length(x);
       if ((lx < ly) || (lx-ly) == 1)
 	c[j] = 1;
       else
@@ -1121,32 +1121,32 @@ void rWGraph(WGraph& X, kl::KLContext& kl)
 
   // fill in descent sets
 
-  for (CoxNbr y = 0; y < kl.size(); ++y)
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y)
     X.descent(y) = p.rdescent(y);
 
   return;
 }
 
-void rWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
+void rWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 /*
   Like lWGraph, but for right W-graphs.
 */
 
 {
-  static List<Ulong> qr(0);
+  static list::List<Ulong> qr(0);
 
   X.setSize(q.size());
-  const SchubertContext& p = kl.schubert();
-  OrientedGraph& Y = X.graph();
-  BitMap b(p.size());
+  const schubert::SchubertContext& p = kl.schubert();
+  wgraph::OrientedGraph& Y = X.graph();
+  bits::BitMap b(p.size());
 
   Y.reset();
 
   for (Ulong j = 0; j < q.size(); ++j) {
 
-    CoxNbr y = q[j];
-    Length ly = p.length(y);
+    coxtypes::CoxNbr y = q[j];
+    coxtypes::Length ly = p.length(y);
 
     X.descent(j) = p.rdescent(y);
 
@@ -1161,8 +1161,8 @@ void rWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 
     for (Ulong i = 0; i < qr.size(); ++i) {
 
-      CoxNbr x = q[qr[i]];
-      Length lx = p.length(x);
+      coxtypes::CoxNbr x = q[qr[i]];
+      coxtypes::Length lx = p.length(x);
 
       if ((ly-lx)%2 == 0)
 	continue;
@@ -1178,7 +1178,7 @@ void rWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 	continue;
       }
 
-      KLCoeff mu = kl.mu(x,y);
+      klsupport::KLCoeff mu = kl.mu(x,y);
 
       if (mu != 0) {
 	if (p.rdescent(x) != p.rdescent(y)) {
@@ -1211,7 +1211,7 @@ void rWGraph(WGraph& X, const SubSet& q, kl::KLContext& kl)
 
 namespace cells {
 
-void lGraph(OrientedGraph& X, uneqkl::KLContext& kl)
+void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
 /*
   Puts in X the graph corresponding to the left edges in the context. It
@@ -1219,46 +1219,46 @@ void lGraph(OrientedGraph& X, uneqkl::KLContext& kl)
 */
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  LFlags S = leqmask[kl.rank()-1];
+  bits::Lflags S = constants::leqmask[kl.rank()-1];
 
   /* reset X */
 
-  for (CoxNbr y = 0; y < X.size(); ++y) {
-    EdgeList& e = X.edge(y);
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+    wgraph::EdgeList& e = X.edge(y);
     e.setSize(0);
   }
 
   /* fill edgelists */
 
-  for (CoxNbr y = 0; y < X.size(); ++y) {
-    CoxNbr yi = kl.inverse(y);
-    for (LFlags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
-      Generator s = firstBit(f);
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+    coxtypes::CoxNbr yi = kl.inverse(y);
+    for (bits::Lflags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
+      coxtypes::Generator s = constants::firstBit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
       for (Ulong j = 0; j < muRow.size(); ++j) {
-	Vertex x = kl.inverse(muRow[j].x);
-	EdgeList& e = X.edge(x);
+	wgraph::Vertex x = kl.inverse(muRow[j].x);
+	wgraph::EdgeList& e = X.edge(x);
 	e.append(yi);
       }
-      Vertex sy  = kl.inverse(p.shift(y,s));
-      EdgeList& e = X.edge(sy);
+      wgraph::Vertex sy  = kl.inverse(p.shift(y,s));
+      wgraph::EdgeList& e = X.edge(sy);
       e.append(yi);
     }
    }
 
   /* sort edgelists */
 
-  for (CoxNbr y = 0; y < X.size(); ++y) {
-    EdgeList& e = X.edge(y);
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+    wgraph::EdgeList& e = X.edge(y);
     e.sort();
   }
 
   return;
 }
 
-void lrGraph(OrientedGraph& X, uneqkl::KLContext& kl)
+void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
 /*
   Puts in X the graph corresponding to the edges in the context. It assumes
@@ -1267,9 +1267,9 @@ void lrGraph(OrientedGraph& X, uneqkl::KLContext& kl)
 */
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  LFlags S = leqmask[kl.rank()-1];
+  bits::Lflags S = constants::leqmask[kl.rank()-1];
 
   /* write down right edges */
 
@@ -1277,18 +1277,18 @@ void lrGraph(OrientedGraph& X, uneqkl::KLContext& kl)
 
   /* add left edges */
 
-  for (CoxNbr y = 0; y < X.size(); ++y) {
-    Vertex yi = kl.inverse(y);
-    for (LFlags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
-      Generator s = firstBit(f);
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+    wgraph::Vertex yi = kl.inverse(y);
+    for (bits::Lflags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
+      coxtypes::Generator s = constants::firstBit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
       for (Ulong j = 0; j < muRow.size(); ++j) {
-	Vertex x = kl.inverse(muRow[j].x);
-	EdgeList& e = X.edge(x);
+	wgraph::Vertex x = kl.inverse(muRow[j].x);
+	wgraph::EdgeList& e = X.edge(x);
 	insert(e,yi);
       }
-      Vertex sy  = kl.inverse(p.shift(y,s));
-      EdgeList& e = X.edge(sy);
+      wgraph::Vertex sy  = kl.inverse(p.shift(y,s));
+      wgraph::EdgeList& e = X.edge(sy);
       insert(e,yi);
     }
    }
@@ -1296,7 +1296,7 @@ void lrGraph(OrientedGraph& X, uneqkl::KLContext& kl)
   return;
 }
 
-void rGraph(OrientedGraph& X, uneqkl::KLContext& kl)
+void rGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
 /*
   Puts in X the graph corresponding to the edges in the context. It assumes
@@ -1304,37 +1304,37 @@ void rGraph(OrientedGraph& X, uneqkl::KLContext& kl)
 */
 
 {
-  const SchubertContext& p = kl.schubert();
+  const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  LFlags S = leqmask[kl.rank()-1];
+  bits::Lflags S = constants::leqmask[kl.rank()-1];
 
   /* reset X */
 
-  for (CoxNbr y = 0; y < X.size(); ++y) {
-    EdgeList& e = X.edge(y);
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+    wgraph::EdgeList& e = X.edge(y);
     e.setSize(0);
   }
 
   /* make edges */
 
-  for (CoxNbr y = 0; y < X.size(); ++y) {
-    for (LFlags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
-      Generator s = firstBit(f);
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+    for (bits::Lflags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
+      coxtypes::Generator s = constants::firstBit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
       for (Ulong j = 0; j < muRow.size(); ++j) {
-	EdgeList& e = X.edge(muRow[j].x);
+	wgraph::EdgeList& e = X.edge(muRow[j].x);
 	e.append(y);
       }
-      CoxNbr ys = p.shift(y,s);
-      EdgeList& e = X.edge(ys);
+      coxtypes::CoxNbr ys = p.shift(y,s);
+      wgraph::EdgeList& e = X.edge(ys);
       e.append(y);
     }
   }
 
   /* sort lists */
 
-  for (CoxNbr y = 0; y < X.size(); ++y) {
-    EdgeList& e = X.edge(y);
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+    wgraph::EdgeList& e = X.edge(y);
     e.sort();
   }
 
@@ -1354,7 +1354,8 @@ void rGraph(OrientedGraph& X, uneqkl::KLContext& kl)
 
 namespace cells {
 
-CoxNbr checkClasses (const Partition& pi, const SchubertContext& p)
+coxtypes::CoxNbr checkClasses
+  (const bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   This function checks if the classes of a refined partition are stable
@@ -1362,9 +1363,9 @@ CoxNbr checkClasses (const Partition& pi, const SchubertContext& p)
 */
 
 {
-  static Permutation v(0);
-  static Partition pi_q(0);
-  static SubSet q(0);
+  static bits::Permutation v(0);
+  static bits::Partition pi_q(0);
+  static bits::SubSet q(0);
 
   q.setBitMapSize(p.size());
 
@@ -1379,7 +1380,7 @@ CoxNbr checkClasses (const Partition& pi, const SchubertContext& p)
       q.add(v[i]);
     }
     lStringEquiv(pi_q,q,p);
-    if (ERRNO) {
+    if (error::ERRNO) {
       printf("error in class #%lu\n",j);
       return q[0];
     }

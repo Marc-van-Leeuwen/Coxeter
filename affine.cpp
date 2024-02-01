@@ -57,7 +57,7 @@ namespace affine {
 
 namespace affine {
 
-AffineCoxGroup::AffineCoxGroup(const Type& x, const Rank& l):CoxGroup(x,l)
+AffineCoxGroup::AffineCoxGroup(const type::Type& x, const coxtypes::Rank& l):CoxGroup(x,l)
 
 {}
 
@@ -70,7 +70,7 @@ AffineCoxGroup::~AffineCoxGroup()
 
 {}
 
-AffineBigRankCoxGroup::AffineBigRankCoxGroup(const Type& x, const Rank& l)
+AffineBigRankCoxGroup::AffineBigRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :AffineCoxGroup(x,l)
 
 {}
@@ -84,7 +84,7 @@ AffineBigRankCoxGroup::~AffineBigRankCoxGroup()
 
 {}
 
-GeneralABRCoxGroup::GeneralABRCoxGroup(const Type& x, const Rank& l)
+GeneralABRCoxGroup::GeneralABRCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :AffineBigRankCoxGroup(x,l)
 
 {}
@@ -93,7 +93,7 @@ GeneralABRCoxGroup::~GeneralABRCoxGroup()
 
 {}
 
-AffineMedRankCoxGroup::AffineMedRankCoxGroup(const Type& x, const Rank& l)
+AffineMedRankCoxGroup::AffineMedRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :AffineCoxGroup(x,l)
 
 {
@@ -111,7 +111,7 @@ AffineMedRankCoxGroup::~AffineMedRankCoxGroup()
 
 {}
 
-GeneralAMRCoxGroup::GeneralAMRCoxGroup(const Type& x, const Rank& l)
+GeneralAMRCoxGroup::GeneralAMRCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :AffineMedRankCoxGroup(x,l)
 
 {}
@@ -125,7 +125,7 @@ GeneralAMRCoxGroup::~GeneralAMRCoxGroup()
 
 {}
 
-AffineSmallRankCoxGroup::AffineSmallRankCoxGroup(const Type& x, const Rank& l)
+AffineSmallRankCoxGroup::AffineSmallRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :AffineMedRankCoxGroup(x,l)
 
 {}
@@ -139,7 +139,8 @@ AffineSmallRankCoxGroup::~AffineSmallRankCoxGroup()
 
 {}
 
-GeneralASRCoxGroup::GeneralASRCoxGroup(const Type& x, const Rank& l)
+GeneralASRCoxGroup::GeneralASRCoxGroup
+  (const type::Type& x, const coxtypes::Rank& l)
   :AffineSmallRankCoxGroup(x,l)
 
 {}

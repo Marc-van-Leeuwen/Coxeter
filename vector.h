@@ -10,10 +10,6 @@
 
 #include "globals.h"
 
-namespace vector {
-  using namespace globals;
-};
-
 /* type declarations */
 
 namespace vector {
@@ -27,17 +23,11 @@ namespace vector {
 #include "memory.h"
 
 namespace vector {
-  using namespace io;
-  using namespace list;
-  using namespace memory;
-};
-
-namespace vector {
 
 template <class T> class Vector
   {
   private:
-    List<T> d_list;
+    list::List<T> d_list;
   public:
 /* constructors and destructors */
     Vector(){};
@@ -66,7 +56,7 @@ template <class T> class Vector
 /* accessors */
     const T& operator[] (const Ulong& j) const;                   /* inlined */
     const Ulong& dim() const;                                     /* inlined */
-    const List<T>& list() const;                                  /* inlined */
+    const list::List<T>& list() const;                                  /* inlined */
     const T* ptr() const;                                         /* inlined */
   };
 
@@ -106,7 +96,7 @@ template<class T>
 template<class T>
   inline const Ulong& Vector<T>::dim() const {return d_list.size();}
 template<class T>
-  inline const List<T>& Vector<T>::list() const {return d_list;}
+  inline const list::List<T>& Vector<T>::list() const {return d_list;}
 template<class T>
   inline const T* Vector<T>::ptr() const {return d_list.ptr();}
 

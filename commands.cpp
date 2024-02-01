@@ -18,9 +18,6 @@
 namespace commands {
 
   using namespace error;
-  using namespace fcoxgroup;
-  using namespace help;
-  using namespace interactive;
 };
 
 namespace {
@@ -38,7 +35,7 @@ namespace {
   struct Uneq_tag {};
 
   Stack<CommandTree *> treeStack;
-  CoxGroup* W = 0;
+  coxgroup::CoxGroup* W = 0;
 
   void activate(CommandTree& tree); // push |tree| onto the command stack
   void ambigAction(CommandTree* tree, const std::string& str);
@@ -175,9 +172,9 @@ namespace commands {
 
 namespace commands {
 
-  namespace interface {
+  namespace interf {
 
-    GroupEltInterface* in_buf = 0;
+    interface::GroupEltInterface* in_buf = 0;
 
     struct In_tag {};
     struct Out_tag {};
@@ -272,7 +269,7 @@ namespace commands {
       const char* symbol_tag = "resets an output symbol";
       const char* terse_tag = "sets terse conventions for output";
     }; // |namespace out|
-  }; // |namespace interface|
+  }; // |namespace interf|
 
 }; // |namespace commands|
 
@@ -342,7 +339,7 @@ void run()
   while (1) { /* the only way to exit from this loop is the "qq" command */
     CommandTree* tree = treeStack.top();
     tree->prompt();
-    getInput(stdin,name);
+    io::getInput(stdin,name);
     bool ambiguous_prefix; // will be set when |find| finds cell but no action
     CommandData* cd = tree->find(name,ambiguous_prefix);
     if (ambiguous_prefix) {
@@ -372,7 +369,7 @@ void default_error(const char* str)
   Error(COMMAND_NOT_FOUND,str);
 }
 
-};
+}; // |namespace commands|
 
 namespace {
 
@@ -407,9 +404,9 @@ void ambigAction(CommandTree* tree, const std::string& str)
 {
   bool b = true;
 
-  print(stderr,str);
+  io::print(stderr,str);
   fprintf(stderr," : ambiguous (");
-  DictCell<CommandData>* cell = tree->findCell(str);
+  dictionary::DictCell<CommandData>* cell = tree->findCell(str);
   std::string name = str; // copy string to a variable, to lose the |const|
   dictionary::printExtensions(stderr,cell,name,b);
   fprintf(stderr,")\n");
@@ -467,7 +464,7 @@ void startup()
     Error(ERRNO);
 }
 
-};
+}; // |namespace|
 
 /*****************************************************************************
 
@@ -553,8 +550,8 @@ CommandTree::CommandTree(const char* prompt,
   d_root->ptr = std::make_shared<CommandData>("","",a,&relax_f,false);
 
   if (h!=nullptr) { /* add help functionality */
-    d_help = new CommandTree("help",&cr_h,&help_filler,h);
-    add("help",help_tag,&help_f,&help_h,false);
+    d_help = new CommandTree("help",&help::cr_h,&help_filler,h);
+    add("help",help_tag,&help_f,&help::help_h,false);
   }
   filler(*this); // add all mode-specific nodes
   install_command_completion();
@@ -624,7 +621,7 @@ void CommandTree::setRepeat(const char* str, bool b)
   cd->autorepeat = b;
 }
 
-};
+}; // |namespace|
 
 /*****************************************************************************
 
@@ -654,7 +651,7 @@ CommandData::~CommandData()
 
 {}
 
-};
+}; // |namespace commands|
 
 /*****************************************************************************
 
@@ -697,9 +694,9 @@ namespace {
 template<> void initCommandTree<Empty_tag>(CommandTree& tree)
 {
   tree.add("author","author_tag",&author_f,&relax_f,false);
-  tree.add("qq",qq_tag,&qq_f,&qq_h,false);
+  tree.add("qq",qq_tag,&qq_f,&help::qq_h,false);
 
-  tree.helpMode()->add("intro",intro_tag,&intro_h,0,false);
+  tree.helpMode()->add("intro",intro_tag,&help::intro_h,0,false);
 }
 
 
@@ -712,7 +709,7 @@ CommandTree* emptyCommandTree()
 {
   static CommandTree empty_tree
     ("empty",&startup,&initCommandTree<Empty_tag>,
-     &relax_f,&empty_error,&relax_f,&intro_h);
+     &relax_f,&empty_error,&relax_f,&help::intro_h);
   return &empty_tree;
 }
 
@@ -725,40 +722,40 @@ CommandTree* emptyCommandTree()
 
 template<> void initCommandTree<Interface_tag>(CommandTree& tree)
 {
-  tree.add("alphabetic",commands::interface::alphabetic_tag,
-	   &commands::interface::alphabetic_f,&help::interface::alphabetic_h);
-  tree.add("bourbaki",commands::interface::bourbaki_tag,
-	   &commands::interface::bourbaki_f,&help::interface::bourbaki_h);
-  tree.add("decimal",commands::interface::decimal_tag,
-	   &commands::interface::decimal_f,&help::interface::decimal_h);
-  tree.add("default",commands::interface::default_tag,
-	   &commands::interface::default_f,&help::interface::default_h);
-  tree.add("gap",commands::interface::out::gap_tag,
-	   &commands::interface::out::gap_f, &help::interface::gap_h);
-  tree.add("hexadecimal",commands::interface::hexadecimal_tag,
-	   &commands::interface::hexadecimal_f,
+  tree.add("alphabetic",commands::interf::alphabetic_tag,
+	   &commands::interf::alphabetic_f,&help::interface::alphabetic_h);
+  tree.add("bourbaki",commands::interf::bourbaki_tag,
+	   &commands::interf::bourbaki_f,&help::interface::bourbaki_h);
+  tree.add("decimal",commands::interf::decimal_tag,
+	   &commands::interf::decimal_f,&help::interface::decimal_h);
+  tree.add("default",commands::interf::default_tag,
+	   &commands::interf::default_f,&help::interface::default_h);
+  tree.add("gap",commands::interf::out::gap_tag,
+	   &commands::interf::out::gap_f, &help::interface::gap_h);
+  tree.add("hexadecimal",commands::interf::hexadecimal_tag,
+	   &commands::interf::hexadecimal_f,
 	   &help::interface::hexadecimal_h);
-  tree.add("in",commands::interface::in_tag,&commands::interface::in_f,
+  tree.add("in",commands::interf::in_tag,&commands::interf::in_f,
 	   help::interface::in_h,false);
-  tree.add("ordering",commands::interface::ordering_tag,
-	   &commands::interface::ordering_f,help::interface::ordering_h,false);
-  tree.add("out",commands::interface::out_tag,&commands::interface::out_f,
+  tree.add("ordering",commands::interf::ordering_tag,
+	   &commands::interf::ordering_f,help::interface::ordering_h,false);
+  tree.add("out",commands::interf::out_tag,&commands::interf::out_f,
 	   help::interface::out_h,false);
-  tree.add("permutation",commands::interface::permutation_tag,
-	   &commands::interface::permutation_f,
+  tree.add("permutation",commands::interf::permutation_tag,
+	   &commands::interf::permutation_f,
 	   &help::interface::permutation_h);
   tree.add("q",q_tag,&q_f,0,false);
-  tree.add("terse",commands::interface::out::terse_tag,
-	   &commands::interface::out::terse_f, &help::interface::out::terse_h);
+  tree.add("terse",commands::interf::out::terse_tag,
+	   &commands::interf::out::terse_f, &help::interface::out::terse_h);
 }
 
 
 /*
   This function builds the command tree for the input-modification mode.
 */
-template<> void initCommandTree<commands::interface::In_tag>(CommandTree& tree)
+template<> void initCommandTree<commands::interf::In_tag>(CommandTree& tree)
 {
-  using namespace commands::interface;
+  using namespace commands::interf;
 
   tree.add("q",q_tag,&q_f,0,false);
 
@@ -792,9 +789,9 @@ template<> void initCommandTree<commands::interface::In_tag>(CommandTree& tree)
   This function builds the command tree for the output-modification mode.
 */
 
-template<> void initCommandTree<commands::interface::Out_tag>(CommandTree& tree)
+template<> void initCommandTree<commands::interf::Out_tag>(CommandTree& tree)
 {
-  using namespace commands::interface;
+  using namespace commands::interf;
 
   tree.add("q",q_tag,&q_f,0,false);
 
@@ -837,11 +834,11 @@ CommandTree* interfaceCommandTree()
 {
   static CommandTree interface_tree
     ("interface",&relax_f,&initCommandTree<Interface_tag>,
-     &interface_entry,&default_error,&interface_exit,&interface_help);
+     &interface_entry,&default_error,&interface_exit,&help::interface_help);
   return &interface_tree;
 }
 
-CommandTree* interface::inCommandTree()
+CommandTree* interf::inCommandTree()
 {
   static CommandTree in_tree
     ("in",&relax_f,&initCommandTree<In_tag>,
@@ -849,7 +846,7 @@ CommandTree* interface::inCommandTree()
   return &in_tree;
 }
 
-CommandTree* interface::outCommandTree()
+CommandTree* interf::outCommandTree()
 {
   static CommandTree out_tree
     ("out",&relax_f,&initCommandTree<Out_tag>,
@@ -871,6 +868,7 @@ namespace {
 */
 template<> void initCommandTree<Main_tag>(CommandTree& tree)
 {
+  using namespace help;
   tree.add("author",author_tag,&author_f,&relax_f,false);
   tree.add("betti",betti_tag,&betti_f,&betti_h,false);
   tree.add("coatoms",coatoms_tag,&coatoms_f,&coatoms_h);
@@ -918,7 +916,7 @@ template<> void initCommandTree<Main_tag>(CommandTree& tree)
   tree.helpMode()->add("input",input_tag,&input_h,0,false);
 }
 
-};
+}; // |namespace|
 
 namespace commands {
 
@@ -932,11 +930,11 @@ CommandTree* mainCommandTree()
 {
   static CommandTree main_tree
     ("coxeter",&relax_f,&initCommandTree<Main_tag>,
-     &main_entry,&default_error, &main_exit,&main_help);
+     &main_entry,&default_error, &main_exit,&help::main_help);
   return &main_tree;
 }
 
-};
+}; // |namespace commands|
 
 namespace {
 
@@ -949,6 +947,7 @@ namespace {
 */
 template<> void initCommandTree<Uneq_tag>(CommandTree& tree)
 {
+  using namespace help;
   tree.add("author",author_tag,&author_f,&relax_f,false);
   tree.add("coatoms",coatoms_tag,&coatoms_f,&coatoms_h);
   tree.add("compute",compute_tag,&compute_f,&compute_h);
@@ -975,7 +974,7 @@ template<> void initCommandTree<Uneq_tag>(CommandTree& tree)
   tree.add("qq",qq_tag,&qq_f,&qq_h,false);
 }
 
-};
+}; // |namespace|
 
 namespace commands {
 
@@ -987,7 +986,7 @@ CommandTree* uneqCommandTree()
 {
   static CommandTree uneq_tree
     ("uneq",&relax_f,&initCommandTree<Uneq_tag>,
-     &uneq_entry,&default_error,&uneq_exit,&uneq_help);
+     &uneq_entry,&default_error,&uneq_exit,&help::uneq_help);
   return &uneq_tree;
 }
 
@@ -1098,7 +1097,7 @@ namespace {
 // Print a message about the author.
 void author_f()
 {
-  printFile(stderr,"author.mess",directories::MESSAGE_DIR);
+  io::printFile(stderr,"author.mess",directories::MESSAGE_DIR);
 }
 
 void betti_f()
@@ -1111,7 +1110,7 @@ void betti_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("enter your element (finish with a carriage return) :\n");
   g = interactive::getCoxWord(W);
@@ -1120,13 +1119,13 @@ void betti_f()
     return;
   }
 
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
-  OutputTraits& traits = W->outputTraits();
+  files::OutputTraits& traits = W->outputTraits();
   printBetti(stdout,y,W->schubert(),traits);
 }
 
@@ -1138,7 +1137,7 @@ void coatoms_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("enter your element (finish with a carriage return) :\n");
   g = interactive::getCoxWord(W);
@@ -1147,7 +1146,7 @@ void coatoms_f()
     return;
   }
 
-  List<CoxWord> c(0);
+  list::List<coxtypes::CoxWord> c(0);
   W->coatoms(c,g);
 
   for (Ulong j = 0; j < c.size(); ++j) {
@@ -1163,7 +1162,7 @@ void compute_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("enter your element (finish with a carriage return) :\n");
   g = interactive::getCoxWord(W);
@@ -1173,13 +1172,13 @@ void compute_f()
   }
   W->normalForm(g);
   W->print(stdout,g);
-  if (SmallCoxGroup* Ws = dynamic_cast<SmallCoxGroup*> (W)) {
-    CoxNbr x = 0;
+  if (auto* Ws = dynamic_cast<fcoxgroup::SmallCoxGroup*> (W)) {
+    coxtypes::CoxNbr x = 0;
     Ws->prodD(x,g);
     printf(" (#%lu)",static_cast<Ulong>(x));
   }
-  CoxNbr x = W->contextNumber(g);
-  if (x != undef_coxnbr)
+  coxtypes::CoxNbr x = W->contextNumber(g);
+  if (x != coxtypes::undef_coxnbr)
     printf(" (%s%lu)","%",static_cast<Ulong>(x));
   printf("\n");
 }
@@ -1191,7 +1190,7 @@ void descent_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("enter your element (finish with a carriage return) :\n");
   g = interactive::getCoxWord(W);
@@ -1200,7 +1199,7 @@ void descent_f()
     return;
   }
 
-  LFlags f = W->ldescent(g);
+  bits::Lflags f = W->ldescent(g);
   printf("L:");
   W->printFlags(stdout,f);
   printf("; R:");
@@ -1216,12 +1215,12 @@ void duflo_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"duflo.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"duflo.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -1235,10 +1234,10 @@ void duflo_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),dufloH,traits);
+  printHeader(file.f(),files::dufloH,traits);
   printDuflo(file.f(),Wf->duflo(),Wf->lCell(),Wf->kl(),W->interface(),traits);
 }
 
@@ -1250,7 +1249,7 @@ void extremals_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("Enter your element (finish with a carriage-return) :\n");
   g = interactive::getCoxWord(W);
@@ -1259,16 +1258,16 @@ void extremals_f()
     return;
   }
 
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
   interactive::OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),extremalsH,traits);
+  printHeader(file.f(),files::extremalsH,traits);
   printExtremals(file.f(),y,W->kl(),W->interface(),traits);
 }
 
@@ -1280,12 +1279,12 @@ void fullcontext_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"fullcontext.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"fullcontext.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -1307,7 +1306,7 @@ void ihbetti_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("enter your element (finish with a carriage return) :\n");
   g = interactive::getCoxWord(W);
@@ -1316,13 +1315,13 @@ void ihbetti_f()
     return;
   }
 
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
-  OutputTraits& traits = W->outputTraits();
+  files::OutputTraits& traits = W->outputTraits();
   printIHBetti(stdout,y,W->kl(),traits);
 }
 
@@ -1343,8 +1342,8 @@ void interval_f()
 */
 
 {
-  CoxWord g(0);
-  CoxWord h(0);
+  coxtypes::CoxWord g(0);
+  coxtypes::CoxWord h(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
@@ -1366,29 +1365,29 @@ void interval_f()
 
   W->extendContext(h);
 
-  CoxNbr x = W->contextNumber(g);
-  CoxNbr y = W->contextNumber(h);
+  coxtypes::CoxNbr x = W->contextNumber(g);
+  coxtypes::CoxNbr y = W->contextNumber(h);
 
-  OutputFile file;
+  interactive::OutputFile file;
 
-  BitMap b(W->contextSize());
+  bits::BitMap b(W->contextSize());
   W->extractClosure(b,y);
 
-  BitMap::ReverseIterator b_rend = b.rend();
-  List<CoxNbr> res(0);
+  bits::BitMap::ReverseIterator b_rend = b.rend();
+  list::List<coxtypes::CoxNbr> res(0);
 
-  for (BitMap::ReverseIterator i = b.rbegin(); i != b_rend; ++i)
+  for (bits::BitMap::ReverseIterator i = b.rbegin(); i != b_rend; ++i)
     if (not W->inOrder(x,*i)) {
-      BitMap bi(W->contextSize());
+      bits::BitMap bi(W->contextSize());
       W->extractClosure(bi,*i);
-      CoxNbr z = *i; // andnot will invalidate iterator
+      coxtypes::CoxNbr z = *i; // andnot will invalidate iterator
       b.andnot(bi);
       b.setBit(z);   // otherwise the decrement will not be correct
     } else
       res.append(*i);
 
   schubert::NFCompare nfc(W->schubert(),W->ordering());
-  Permutation a(res.size());
+  bits::Permutation a(res.size());
   sortI(res,nfc,a);
 
   for (size_t j = 0; j < res.size(); ++j) {
@@ -1406,9 +1405,9 @@ void inorder_f()
 */
 
 {
-  CoxWord g(0);
-  CoxWord h(0);
-  List<Length> a(0);
+  coxtypes::CoxWord g(0);
+  coxtypes::CoxWord h(0);
+  list::List<coxtypes::Length> a(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
@@ -1452,7 +1451,7 @@ void invpol_f()
 */
 
 {
-  CoxWord g(0);
+  coxtypes::CoxWord g(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
@@ -1460,7 +1459,7 @@ void invpol_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr x = W->extendContext(g);
+  coxtypes::CoxNbr x = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -1472,7 +1471,7 @@ void invpol_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -1501,7 +1500,7 @@ void klbasis_f()
 */
 
 {
-  CoxWord g(0);
+  coxtypes::CoxWord g(0);
 
   printf("enter your element (finish with a carriage return) :\n");
   g = interactive::getCoxWord(W);
@@ -1510,7 +1509,7 @@ void klbasis_f()
     return;
   }
 
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -1525,9 +1524,9 @@ void klbasis_f()
   }
 
   interactive::OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),basisH,traits);
+  printHeader(file.f(),files::basisH,traits);
   printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
 }
 
@@ -1539,12 +1538,12 @@ void lcorder_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lcorder.mess",directories::MESSAGE_DIR);
+  if (!fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -1558,10 +1557,10 @@ void lcorder_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lCOrderH,traits);
+  printHeader(file.f(),files::lCOrderH,traits);
   printLCOrder(file.f(),Wf->kl(),Wf->interface(),traits);
 }
 
@@ -1572,17 +1571,17 @@ void lcells_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lCellsH,traits);
+  printHeader(file.f(),files::lCellsH,traits);
   printLCells(file.f(),Wf->lCell(),Wf->kl(),Wf->interface(),traits);
 }
 
@@ -1594,17 +1593,17 @@ void lcwgraphs_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lCellWGraphsH,traits);
+  printHeader(file.f(),files::lCellWGraphsH,traits);
   printLCellWGraphs(file.f(),Wf->lCell(),Wf->kl(),W->interface(),traits);
 }
 
@@ -1616,12 +1615,12 @@ void lrcorder_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lrcorder.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lrcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -1635,10 +1634,10 @@ void lrcorder_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lrCOrderH,traits);
+  printHeader(file.f(),files::lrCOrderH,traits);
   printLRCOrder(file.f(),Wf->kl(),Wf->interface(),traits);
 }
 
@@ -1650,12 +1649,12 @@ void lrcells_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lrcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lrcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -1669,10 +1668,10 @@ void lrcells_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lrCellsH,traits);
+  printHeader(file.f(),files::lrCellsH,traits);
   printLRCells(file.f(),Wf->lrCell(),Wf->kl(),Wf->interface(),traits);
 }
 
@@ -1684,17 +1683,17 @@ void lrcwgraphs_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lrCellWGraphsH,traits);
+  printHeader(file.f(),files::lrCellWGraphsH,traits);
   printLRCellWGraphs(file.f(),Wf->lrCell(),Wf->kl(),W->interface(),traits);
 }
 
@@ -1706,12 +1705,12 @@ void lrwgraph_f()
 
 {
   if (!W->isFullContext() && wgraph_warning) {
-    printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
+    io::printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
     printf("continue ? y/n\n");
-    if (!yesNo())
+    if (not interactive::yesNo())
       return;
     printf("print this message next time ? y/n\n");
-    if (!yesNo())
+    if (not interactive::yesNo())
       wgraph_warning = false;
   }
 
@@ -1721,10 +1720,10 @@ void lrwgraph_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),lrWGraphH,traits);
+  printHeader(file.f(),files::lrWGraphH,traits);
   printLRWGraph(file.f(),W->kl(),W->interface(),traits);
 }
 
@@ -1736,12 +1735,12 @@ void lwgraph_f()
 
 {
   if (!W->isFullContext() && wgraph_warning) {
-    printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
+    io::printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
     printf("continue ? y/n\n");
-    if (!yesNo())
+    if (not interactive::yesNo())
       return;
     printf("print this message next time ? y/n\n");
-    if (!yesNo())
+    if (not interactive::yesNo())
       wgraph_warning = false;
   }
 
@@ -1751,10 +1750,10 @@ void lwgraph_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),lWGraphH,traits);
+  printHeader(file.f(),files::lWGraphH,traits);
   printLWGraph(file.f(),W->kl(),W->interface(),traits);
 }
 
@@ -1776,11 +1775,11 @@ void mu_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
-  CoxNbr x = W->extendContext(g);
+  coxtypes::CoxNbr x = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -1792,7 +1791,7 @@ void mu_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -1803,7 +1802,7 @@ void mu_f()
     return;
   }
 
-  KLCoeff mu = W->mu(x,y);
+  klsupport::KLCoeff mu = W->mu(x,y);
   if (ERRNO) {
     Error(ERRNO,x,y);
     return;
@@ -1820,7 +1819,7 @@ void pol_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
@@ -1828,7 +1827,7 @@ void pol_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr x = W->extendContext(g);
+  coxtypes::CoxNbr x = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -1840,7 +1839,7 @@ void pol_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -1903,7 +1902,7 @@ void rank_f()
 */
 
 {
-  CoxGroup* Wloc = interactive::allocCoxGroup(W->type());
+  coxgroup::CoxGroup* Wloc = interactive::allocCoxGroup(W->type());
 
   if (ERRNO) {
     Error(ERRNO);
@@ -1921,12 +1920,12 @@ void rcorder_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"rcorder.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"rcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -1940,10 +1939,10 @@ void rcorder_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),rCOrderH,traits);
+  printHeader(file.f(),files::rCOrderH,traits);
   printRCOrder(file.f(),Wf->kl(),Wf->interface(),traits);
 }
 
@@ -1955,12 +1954,12 @@ void rcells_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"rcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"rcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -1974,10 +1973,10 @@ void rcells_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),rCellsH,traits);
+  printHeader(file.f(),files::rCellsH,traits);
   printRCells(file.f(),Wf->rCell(),Wf->kl(),Wf->interface(),traits);
 }
 
@@ -1989,17 +1988,17 @@ void rcwgraphs_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),rCellWGraphsH,traits);
+  printHeader(file.f(),files::rCellWGraphsH,traits);
   printRCellWGraphs(file.f(),Wf->rCell(),Wf->kl(),W->interface(),traits);
 }
 
@@ -2011,12 +2010,12 @@ void rwgraph_f()
 
 {
   if (!W->isFullContext() && wgraph_warning) {
-    printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
+    io::printFile(stderr,"wgraph.mess",directories::MESSAGE_DIR);
     printf("continue ? y/n\n");
-    if (!yesNo())
+    if (not interactive::yesNo())
       return;
     printf("print this message next time ? y/n\n");
-    if (!yesNo())
+    if (not interactive::yesNo())
       wgraph_warning = false;
   }
 
@@ -2026,10 +2025,10 @@ void rwgraph_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),rWGraphH,traits);
+  printHeader(file.f(),files::rWGraphH,traits);
   printRWGraph(file.f(),W->kl(),W->interface(),traits);
 }
 
@@ -2043,7 +2042,7 @@ void schubert_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("Enter your element (finish with a carriage-return) :\n");
   g = interactive::getCoxWord(W);
@@ -2052,16 +2051,16 @@ void schubert_f()
     return;
   }
 
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
   interactive::OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),closureH,traits);
+  printHeader(file.f(),files::closureH,traits);
   printClosure(file.f(),y,W->kl(),W->interface(),traits);
 }
 
@@ -2075,7 +2074,7 @@ void show_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
@@ -2083,7 +2082,7 @@ void show_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr x = W->extendContext(g);
+  coxtypes::CoxNbr x = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2095,7 +2094,7 @@ void show_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2107,8 +2106,8 @@ void show_f()
   }
 
   fprintf(stdout,"generator (carriage return for default) : ");
-  LFlags f = W->descent(y);
-  Generator s = interactive::getGenerator(W,f);
+  bits::Lflags f = W->descent(y);
+  coxtypes::Generator s = interactive::getGenerator(W,f);
   if (ERRNO) {
     Error (ERRNO);
     return;
@@ -2128,7 +2127,7 @@ void showmu_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
@@ -2136,7 +2135,7 @@ void showmu_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr x = W->extendContext(g);
+  coxtypes::CoxNbr x = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2148,7 +2147,7 @@ void showmu_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2171,7 +2170,7 @@ void slocus_f ()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("Enter your element (finish with a carriage-return) :\n");
 
@@ -2180,16 +2179,16 @@ void slocus_f ()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),slocusH,traits);
+  printHeader(file.f(),files::slocusH,traits);
   printSingularLocus(file.f(),y,W->kl(),W->interface(),traits);
 }
 
@@ -2201,7 +2200,7 @@ void sstratification_f ()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   printf("Enter your element (finish with a carriage-return) :\n");
 
@@ -2210,16 +2209,16 @@ void sstratification_f ()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),sstratificationH,traits);
+  printHeader(file.f(),files::sstratificationH,traits);
   printSingularStratification(file.f(),y,W->kl(),W->interface(),traits);
 }
 
@@ -2231,7 +2230,7 @@ void type_f()
 */
 
 {
-  CoxGroup* Wloc = interactive::allocCoxGroup();
+  coxgroup::CoxGroup* Wloc = interactive::allocCoxGroup();
 
   if (ERRNO) {
     Error(ERRNO);
@@ -2263,7 +2262,7 @@ void klbasis_f()
 */
 
 {
-  CoxWord g(0);
+  coxtypes::CoxWord g(0);
 
   printf("enter your element (finish with a carriage return) :\n");
   g = interactive::getCoxWord(W);
@@ -2272,7 +2271,7 @@ void klbasis_f()
     return;
   }
 
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2287,9 +2286,9 @@ void klbasis_f()
   }
 
   interactive::OutputFile file;
-  OutputTraits& traits = W->outputTraits();
+  files::OutputTraits& traits = W->outputTraits();
 
-  printHeader(file.f(),basisH,traits);
+  printHeader(file.f(),files::basisH,traits);
   printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
 }
 
@@ -2300,12 +2299,12 @@ void lcells_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -2319,10 +2318,10 @@ void lcells_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lCellsH,traits);
+  printHeader(file.f(),files::lCellsH,traits);
   printLCells(file.f(),Wf->lUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
@@ -2334,12 +2333,12 @@ void lcorder_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"lcorder.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"lcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -2353,10 +2352,10 @@ void lcorder_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lCOrderH,traits);
+  printHeader(file.f(),files::lCOrderH,traits);
   printLCOrder(file.f(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
@@ -2368,12 +2367,12 @@ void lrcorder_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"uneq/lrcorder.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"uneq/lrcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -2387,10 +2386,10 @@ void lrcorder_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lrCOrderH,traits);
+  printHeader(file.f(),files::lrCOrderH,traits);
   printLRCOrder(file.f(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
@@ -2402,12 +2401,12 @@ void lrcells_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"uneq/lrcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"uneq/lrcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -2421,10 +2420,10 @@ void lrcells_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),lrCellsH,traits);
+  printHeader(file.f(),files::lrCellsH,traits);
   printLRCells(file.f(),Wf->lrUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
@@ -2438,11 +2437,11 @@ void mu_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
   bool leftAction = false;
 
   fprintf(stdout,"generator : ");
-  Generator s = getGenerator(W);
+  coxtypes::Generator s = interactive::getGenerator(W);
 
   if (s >= W->rank()) { // action is on the left
     s -= W->rank();
@@ -2457,7 +2456,7 @@ void mu_f()
     fprintf(stderr,"xs is greater than x\n");
     return;
   }
-  CoxNbr x = W->extendContext(g);
+  coxtypes::CoxNbr x = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2475,7 +2474,7 @@ void mu_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2508,7 +2507,7 @@ void pol_f()
 */
 
 {
-  static CoxWord g(0);
+  static coxtypes::CoxWord g(0);
 
   fprintf(stdout,"first : ");
   g = interactive::getCoxWord(W);
@@ -2516,7 +2515,7 @@ void pol_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr x = W->extendContext(g);
+  coxtypes::CoxNbr x = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2528,7 +2527,7 @@ void pol_f()
     Error(ERRNO);
     return;
   }
-  CoxNbr y = W->extendContext(g);
+  coxtypes::CoxNbr y = W->extendContext(g);
   if (ERRNO) {
     Error(ERRNO);
     return;
@@ -2557,12 +2556,12 @@ void rcells_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"rcells.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"rcells.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -2576,10 +2575,10 @@ void rcells_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),rCellsH,traits);
+  printHeader(file.f(),files::rCellsH,traits);
   printRCells(file.f(),Wf->rUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
@@ -2591,12 +2590,12 @@ void rcorder_f()
 */
 
 {
-  if (!isFiniteType(W)) {
-    printFile(stderr,"rcorder.mess",directories::MESSAGE_DIR);
+  if (not fcoxgroup::isFiniteType(W)) {
+    io::printFile(stderr,"rcorder.mess",directories::MESSAGE_DIR);
     return;
   }
 
-  FiniteCoxGroup* Wf = dynamic_cast<FiniteCoxGroup*> (W);
+  auto* Wf = dynamic_cast<fcoxgroup::FiniteCoxGroup*> (W);
 
   Wf->fullContext();
   if (ERRNO) {
@@ -2610,10 +2609,10 @@ void rcorder_f()
     return;
   }
 
-  OutputFile file;
-  OutputTraits& traits = Wf->outputTraits();
+  interactive::OutputFile file;
+  files::OutputTraits& traits = Wf->outputTraits();
 
-  printHeader(file.f(),rCOrderH,traits);
+  printHeader(file.f(),files::rCOrderH,traits);
   printRCOrder(file.f(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
@@ -2623,10 +2622,10 @@ void rcorder_f()
 
 namespace commands {
 
-void interface::abort_f()
+void interf::abort_f()
 
 /*
-  Aborts the interface modification. Bypasses the exit function,
+  Aborts the interf::modification. Bypasses the exit function,
   so that there is no further checking of the abandoned choices.
 */
 
@@ -2636,7 +2635,7 @@ void interface::abort_f()
   treeStack.pop();
 }
 
-void interface::alphabetic_f()
+void interf::alphabetic_f()
 
 /*
   Sets i/o to the standard alphabetic conventions : the symbols are the
@@ -2646,12 +2645,12 @@ void interface::alphabetic_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),Alphabetic());
+  in_buf = new interface::GroupEltInterface(W->rank(),interface::Alphabetic());
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 }
 
-void interface::bourbaki_f()
+void interf::bourbaki_f()
 
 /*
   Sets Bourbaki conventions. This means that the ordering is reverted in
@@ -2662,17 +2661,17 @@ void interface::bourbaki_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->interface().inInterface());
+  in_buf = new interface::GroupEltInterface(W->interface().inInterface());
   in::bourbaki_f();
   W->interface().setIn(*in_buf);
 
   delete in_buf;
-  in_buf = new GroupEltInterface(W->interface().outInterface());
+  in_buf = new interface::GroupEltInterface(W->interface().outInterface());
   out::bourbaki_f();
   W->interface().setOut(*in_buf);
 }
 
-void interface::decimal_f()
+void interf::decimal_f()
 
 /*
   Sets i/o to the standard decimal conventions : the symbols are the
@@ -2682,12 +2681,12 @@ void interface::decimal_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),Decimal());
+  in_buf = new interface::GroupEltInterface(W->rank(),interface::Decimal());
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 }
 
-void interface::default_f()
+void interf::default_f()
 
 /*
   Sets i/o settings to the default style. This means that we use decimal
@@ -2697,17 +2696,17 @@ void interface::default_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank());
+  in_buf = new interface::GroupEltInterface(W->rank());
 
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 
-  W->interface().setOrder(identityOrder(W->rank()));
-  W->interface().setDescent(Default());
-  W->setOutputTraits(Pretty());
+  W->interface().setOrder(interface::identityOrder(W->rank()));
+  W->interface().setDescent(io::Default());
+  W->setOutputTraits(io::Pretty());
 }
 
-void interface::gap_f()
+void interf::gap_f()
 
 /*
   Sets i/o settings to GAP style. This means first of all that Bourbaki
@@ -2719,18 +2718,18 @@ void interface::gap_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),GAP());
+  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
 
   in::bourbaki_f();
   W->interface().setIn(*in_buf);
 
   out::bourbaki_f();
   W->interface().setOut(*in_buf);
-  W->interface().setDescent(GAP());
-  W->setOutputTraits(GAP());
+  W->interface().setDescent(io::GAP());
+  W->setOutputTraits(io::GAP());
 }
 
-void interface::hexadecimal_f()
+void interf::hexadecimal_f()
 
 /*
   Sets i/o to the standard hexadecimal conventions : the symbols are the
@@ -2740,28 +2739,28 @@ void interface::hexadecimal_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),Hexadecimal());
+  in_buf = new interface::GroupEltInterface(W->rank(),interface::Hexadecimal());
   W->interface().setIn(*in_buf);
 
   W->interface().setOut(*in_buf);
 }
 
-void interface::in_f()
+void interf::in_f()
 
 {
   activate(*inCommandTree());
 }
 
-void interface::ordering_f()
+void interf::ordering_f()
 
 /*
   Allows the user to change the generator ordering.
 */
 
 {
-  static Permutation in_order(W->rank());
+  static bits::Permutation in_order(W->rank());
 
-  changeOrdering(W,in_order);
+  interactive::changeOrdering(W,in_order);
 
   if (ERRNO) {
     Error(ERRNO);
@@ -2771,13 +2770,13 @@ void interface::ordering_f()
   W->setOrdering(in_order);
 }
 
-void interface::out_f()
+void interf::out_f()
 
 {
   activate(*outCommandTree());
 }
 
-void interface::permutation_f()
+void interf::permutation_f()
 
 /*
   Activates permutation i/o.
@@ -2787,7 +2786,7 @@ void interface::permutation_f()
   using namespace typeA;
 
   if (!isTypeA(W->type())) {
-    printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
+    io::printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2796,9 +2795,9 @@ void interface::permutation_f()
   WA->setPermutationInput(true);
   WA->setPermutationOutput(true);
 
-  W->interface().setOrder(identityOrder(W->rank()));
-  W->interface().setDescent(Default());
-  W->setOutputTraits(Pretty());
+  W->interface().setOrder(interface::identityOrder(W->rank()));
+  W->interface().setDescent(io::Default());
+  W->setOutputTraits(io::Pretty());
 }
 
 
@@ -2806,12 +2805,12 @@ void interface::permutation_f()
   Reset a symbol in |in_buf| (this will become either an input or an output
   symbol).
 */
-void interface::symbol_f()
+void interf::symbol_f()
 {
   static std::string buf;
 
-  const Interface& I = W->interface();
-  Generator s = undef_generator;
+  const interface::Interface& I = W->interface();
+  coxtypes::Generator s = coxtypes::undef_generator;
   buf.clear();
 
   do {
@@ -2822,53 +2821,54 @@ void interface::symbol_f()
     if (buf[0] == '?')
       return;
     io::skipSpaces(buf,0);
-    Token tok;
+    interface::Token tok;
     I.symbolTree().find(buf,0,tok);
-    if (tokenType(tok) != generator_type)/* error */
+    if (interface::tokenType(tok) != interface::generator_type)/* error */
       ERRNO = NOT_GENERATOR;
     else
       s = tok-1;
   } while (ERRNO);
 
   printf("enter the new symbol (finish with a carriage return):\n");
-  getInput(stdin,buf,0);
+  io::getInput(stdin,buf,0);
   in_buf->setSymbol(s,buf);
 }
 
-void interface::terse_f()
+void interf::terse_f()
 
 /*
   Sets i/o settings to terse style. This style is meant for outputting files
-  that are easily parsed by computer. Th ordering of the generators is left
+  that are easily parsed by computer. The ordering of the generators is left
   untouched, and can be set independently by the user. Decimal output symbols
   are chosen, prefix is set to "[", postfix to "]" and separator to ",".
 */
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),GAP());
+  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 
-  W->interface().setDescent(Default());
-  W->setOutputTraits(Terse());
+  W->interface().setDescent(io::Default());
+  W->setOutputTraits(io::Terse());
 }
 
-void interface::in::alphabetic_f()
+void interf::in::alphabetic_f()
 
 /*
   Sets the input symbols to the alphabetic sequence.
 */
 
 {
-  const std::string* alpha = alphabeticSymbols(in_buf->symbol.size());
+  const std::string* alpha =
+    interface::alphabeticSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = alpha[j];
   }
 }
 
-void interface::in::bourbaki_f()
+void interf::in::bourbaki_f()
 
 /*
   Sets Bourbaki conventions for input. This means reverting the ordering
@@ -2876,33 +2876,33 @@ void interface::in::bourbaki_f()
 */
 
 {
-  const Type& x = W->type();
+  const type::Type& x = W->type();
 
   if (!isFiniteType(x))
     return;
   if (!(isTypeB(x) || isTypeD(x)))
     return;
 
-  for (Generator s = 0; s < W->rank(); ++s) {
+  for (coxtypes::Generator s = 0; s < W->rank(); ++s) {
     in_buf->symbol[s] = W->interface().inSymbol(W->rank()-s-1);
   }
 }
 
-void interface::in::decimal_f()
+void interf::in::decimal_f()
 
 /*
   Sets the input symbols to the decimal sequence.
 */
 
 {
-  const std::string* dec = decimalSymbols(in_buf->symbol.size());
+  const std::string* dec = interface::decimalSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = dec[j];
   }
 }
 
-void interface::in::default_f()
+void interf::in::default_f()
 
 /*
   Sets the input interface to the default style.
@@ -2910,10 +2910,10 @@ void interface::in::default_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank());
+  in_buf = new interface::GroupEltInterface(W->rank());
 }
 
-void interface::in::gap_f()
+void interf::in::gap_f()
 
 /*
   Sets the input interface to GAP style, and enforces Bourbaki conventions.
@@ -2921,25 +2921,25 @@ void interface::in::gap_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),GAP());
+  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
   in::bourbaki_f();
 }
 
-void interface::in::hexadecimal_f()
+void interf::in::hexadecimal_f()
 
 /*
   Sets the input symbols to the hexadecimal sequence.
 */
 
 {
-  const std::string* hex = hexSymbols(in_buf->symbol.size());
+  const std::string* hex = interface::hexSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = hex[j];
   }
 }
 
-void interface::in::permutation_f()
+void interf::in::permutation_f()
 
 /*
   Sets input to permutation mode (type A only.)
@@ -2949,7 +2949,7 @@ void interface::in::permutation_f()
   using namespace typeA;
 
   if (!isTypeA(W->type())) {
-    printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
+    io::printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -2960,7 +2960,7 @@ void interface::in::permutation_f()
   in_buf = 0;
 }
 
-void interface::in::postfix_f()
+void interf::in::postfix_f()
 
 /*
   Resets the input postfix.
@@ -2969,11 +2969,11 @@ void interface::in::postfix_f()
 {
   printf("Enter the new input postfix (finish with a carriage return):\n");
   std::string buf;
-  getInput(stdin,buf,0);
+  io::getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
 }
 
-void interface::in::prefix_f()
+void interf::in::prefix_f()
 
 /*
   Resets the input prefix.
@@ -2982,11 +2982,11 @@ void interface::in::prefix_f()
 {
   printf("Enter the new input prefix (finish with a carriage return):\n");
   std::string buf;
-  getInput(stdin,buf,0);
+  io::getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
 }
 
-void interface::in::separator_f()
+void interf::in::separator_f()
 
 /*
   Resets the input separator.
@@ -2995,11 +2995,11 @@ void interface::in::separator_f()
 {
   printf("Enter the new input separator (finish with a carriage return):\n");
   std::string buf;
-  getInput(stdin,buf,0);
+  io::getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
 }
 
-void interface::in::terse_f()
+void interf::in::terse_f()
 
 /*
   Sets the input interface to terse style (the same as GAP style).
@@ -3007,24 +3007,25 @@ void interface::in::terse_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),GAP());
+  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
 }
 
-void interface::out::alphabetic_f()
+void interf::out::alphabetic_f()
 
 /*
   Changes the output symbols to hexadecimal.
 */
 
 {
-  const std::string* alpha = alphabeticSymbols(in_buf->symbol.size());
+  const std::string* alpha =
+    interface::alphabeticSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = alpha[j];
   }
 }
 
-void interface::out::bourbaki_f()
+void interf::out::bourbaki_f()
 
 /*
   Sets Bourbaki conventions for input. This means reverting the ordering
@@ -3033,43 +3034,43 @@ void interface::out::bourbaki_f()
 */
 
 {
-  const Type& x = W->type();
+  const type::Type& x = W->type();
 
   if (!isFiniteType(x))
     return;
   if (!(isTypeB(x) || isTypeD(x))) {
-    W->setOrdering(identityOrder(W->rank()));
+    W->setOrdering(interface::identityOrder(W->rank()));
     return;
   }
 
-  for (Generator s = 0; s < W->rank(); ++s) {
+  for (coxtypes::Generator s = 0; s < W->rank(); ++s) {
     in_buf->symbol[s] = W->interface().outSymbol(W->rank()-s-1);
   }
 
-  Permutation a(W->rank());
+  bits::Permutation a(W->rank());
 
-  for (Generator s = 0; s < W->rank(); ++s) {
+  for (coxtypes::Generator s = 0; s < W->rank(); ++s) {
     a[s] = W->rank()-1-s;
   }
 
   W->setOrdering(a);
 }
 
-void interface::out::decimal_f()
+void interf::out::decimal_f()
 
 /*
   Changes the output symbols to decimal.
 */
 
 {
-  const std::string* dec = decimalSymbols(in_buf->symbol.size());
+  const std::string* dec = interface::decimalSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = dec[j];
   }
 }
 
-void interface::out::default_f()
+void interf::out::default_f()
 
 /*
   Sets output styles to the default style.
@@ -3077,13 +3078,13 @@ void interface::out::default_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank());
-  W->setOrdering(identityOrder(W->rank()));
+  in_buf = new interface::GroupEltInterface(W->rank());
+  W->setOrdering(interface::identityOrder(W->rank()));
 
-  W->setOutputTraits(Pretty());
+  W->setOutputTraits(io::Pretty());
 }
 
-void interface::out::gap_f()
+void interf::out::gap_f()
 
 /*
   Sets output styles to GAP style, and enforces Bourbaki conventions.
@@ -3091,31 +3092,31 @@ void interface::out::gap_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),GAP());
-  W->setOrdering(identityOrder(W->rank()));
+  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
+  W->setOrdering(interface::identityOrder(W->rank()));
   out::bourbaki_f();
 
-  W->interface().setDescent(GAP());
+  W->interface().setDescent(io::GAP());
   W->interface().setOut(*in_buf); // has to be done here so that output traits
                                   // will be correct.
-  W->setOutputTraits(GAP());
+  W->setOutputTraits(io::GAP());
 }
 
-void interface::out::hexadecimal_f()
+void interf::out::hexadecimal_f()
 
 /*
   Changes the output symbols to hexadecimal.
 */
 
 {
-  const std::string* hex = hexSymbols(in_buf->symbol.size());
+  const std::string* hex = interface::hexSymbols(in_buf->symbol.size());
 
   for (Ulong j = 0; j < in_buf->symbol.size(); ++j) {
     in_buf->symbol[j] = hex[j];
   }
 }
 
-void interface::out::permutation_f()
+void interf::out::permutation_f()
 
 /*
   Sets output to permutation mode (type A only.)
@@ -3125,7 +3126,7 @@ void interface::out::permutation_f()
   using namespace typeA;
 
   if (!isTypeA(W->type())) {
-    printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
+    io::printFile(stderr,"permutation.mess",directories::MESSAGE_DIR);
     return;
   }
 
@@ -3133,15 +3134,15 @@ void interface::out::permutation_f()
 
   WA->setPermutationOutput(true);
 
-  W->interface().setOrder(identityOrder(W->rank()));
-  W->interface().setDescent(Default());
-  W->setOutputTraits(Pretty());
+  W->interface().setOrder(interface::identityOrder(W->rank()));
+  W->interface().setDescent(io::Default());
+  W->setOutputTraits(io::Pretty());
 
   delete in_buf;
   in_buf = 0;
 }
 
-void interface::out::postfix_f()
+void interf::out::postfix_f()
 
 /*
   Resets the output postfix.
@@ -3150,11 +3151,11 @@ void interface::out::postfix_f()
 {
   printf("enter the new output postfix (finish with a carriage return):\n");
   std::string buf;
-  getInput(stdin,buf,0);
+  io::getInput(stdin,buf,0);
   in_buf->setPostfix(buf);
 }
 
-void interface::out::prefix_f()
+void interf::out::prefix_f()
 
 /*
   Resets the output prefix.
@@ -3163,11 +3164,11 @@ void interface::out::prefix_f()
 {
   printf("Enter the new output prefix (finish with a carriage return):\n");
   std::string buf;
-  getInput(stdin,buf,0);
+  io::getInput(stdin,buf,0);
   in_buf->setPrefix(buf);
 }
 
-void interface::out::separator_f()
+void interf::out::separator_f()
 
 /*
   Resets the output separator.
@@ -3176,11 +3177,11 @@ void interface::out::separator_f()
 {
   printf("Enter the new output separator (finish with a carriage return):\n");
   std::string buf;
-  getInput(stdin,buf,0);
+  io::getInput(stdin,buf,0);
   in_buf->setSeparator(buf);
 }
 
-void interface::out::terse_f()
+void interf::out::terse_f()
 
 /*
   Sets output styles to terse style (the same as GAP style).
@@ -3188,12 +3189,12 @@ void interface::out::terse_f()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->rank(),GAP());
+  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
 
-  W->interface().setDescent(Default());
+  W->interface().setDescent(io::Default());
   W->interface().setOut(*in_buf); // has to be done here so that output
                                   // traits will be correct
-  W->setOutputTraits(Terse());
+  W->setOutputTraits(io::Terse());
 }
 
 };
@@ -3208,10 +3209,10 @@ void interface::out::terse_f()
     on the tree;
   - interface_entry() : entry function for the interface mode;
   - interface_exit() : exit function for the interface mode;
-  - interface::in_entry() : entry function for the interface::in mode;
-  - interface::in_exit() : exit function for the interface::in mode;
-  - interface::out_entry() : entry function for the interface::out mode;
-  - interface::out_exit() : exit function for the interface::out mode;
+  - interf::in_entry() : entry function for the interf::in mode;
+  - interf::in_exit() : exit function for the interf::in mode;
+  - interf::out_entry() : entry function for the interf::out mode;
+  - interf::out_exit() : exit function for the interf::out mode;
   - main_entry() : entry function for the main mode;
   - main_exit() : exit function for the main mode;
   - uneq_entry() : entry function for the uneq mode;
@@ -3245,39 +3246,23 @@ void printCommands(FILE* file, const CommandTree& tree)
 
   NOTE : this will probably have to be refined in the future.
 */
-CoxGroup* commands::currentGroup()
+coxgroup::CoxGroup* commands::currentGroup()
 {
   return W;
 }
 
 namespace {
 
-void printCommandTree(FILE* file, const DictCell<CommandData>* cell)
-
-{
-  if (cell == 0)
-    return;
-
-  if (cell->has_own_action()) {
-    auto cd = cell->ptr;
-    fprintf(file,"  - %s : %s;\n",cd->name.c_str(),cd->tag.c_str());
-  };
-
-  printCommandTree(file,cell->left);
-  printCommandTree(file,cell->right);
-}
-
 void interface_entry()
-
 {
-  commands::interface::in_buf = new GroupEltInterface(W->rank());
+  commands::interf::in_buf = new interface::GroupEltInterface(W->rank());
 }
 
 void interface_exit()
 
 {
-  delete commands::interface::in_buf;
-  commands::interface::in_buf = 0;
+  delete commands::interf::in_buf;
+  commands::interf::in_buf = 0;
 }
 
 
@@ -3301,7 +3286,7 @@ void main_entry()
 
 namespace commands {
 
-void interface::in_entry()
+void interf::in_entry()
 
 /*
   Entry function to the input interface modification mode. The global variable
@@ -3309,17 +3294,17 @@ void interface::in_entry()
 */
 
 {
-  Permutation a(W->interface().order());
+  bits::Permutation a(W->interface().order());
   a.inverse();
 
   printf("current input symbols are the following :\n\n");
-  printInterface(stdout,W->interface().inInterface(),a);
+  interactive::printInterface(stdout,W->interface().inInterface(),a);
   printf("\n");
 
-  in_buf = new GroupEltInterface(W->interface().inInterface());
+  in_buf = new interface::GroupEltInterface(W->interface().inInterface());
 }
 
-void interface::in_exit()
+void interf::in_exit()
 
 /*
   Exit function from the input modification mode. It checks if the
@@ -3333,7 +3318,7 @@ void interface::in_exit()
   if (in_buf == 0) // hack to prevent execution in special cases
     return;
 
-  Permutation a(W->interface().order());
+  bits::Permutation a(W->interface().order());
   a.inverse();
 
   /* at this point in_buf holds the full putative new interface; we
@@ -3361,7 +3346,7 @@ void interface::in_exit()
   /* if we reach this point, the new interface is ok */
 
   printf("new input symbols:\n\n");
-  printInterface(stdout,*in_buf,a);
+  interactive::printInterface(stdout,*in_buf,a);
   printf("\n");
 
   W->interface().setIn(*in_buf);
@@ -3372,7 +3357,7 @@ void interface::in_exit()
   ERRNO = ERROR_WARNING;
 }
 
-void interface::out_entry()
+void interf::out_entry()
 
 /*
   Entry function to the output interface modification mode. The global variable
@@ -3381,17 +3366,17 @@ void interface::out_entry()
 
 {
   delete in_buf;
-  in_buf = new GroupEltInterface(W->interface().outInterface());
+  in_buf = new interface::GroupEltInterface(W->interface().outInterface());
 
-  Permutation a(W->interface().order());
+  bits::Permutation a(W->interface().order());
   a.inverse();
 
   printf("current output symbols are the following :\n\n");
-  printInterface(stdout,*in_buf,W->interface().inInterface(),a);
+  interactive::printInterface(stdout,*in_buf,W->interface().inInterface(),a);
   printf("\n");
 }
 
-void interface::out_exit()
+void interf::out_exit()
 
 /*
   Exit function for the output modification mode. No checking is necessary
@@ -3402,11 +3387,11 @@ void interface::out_exit()
   if (in_buf == 0) // hack to prevent execution in special cases
     return;
 
-  Permutation a(W->interface().order());
+  bits::Permutation a(W->interface().order());
   a.inverse();
 
   printf("new output symbols:\n\n");
-  printInterface(stdout,*in_buf,W->interface().inInterface(),a);
+  interactive::printInterface(stdout,*in_buf,W->interface().inInterface(),a);
   printf("\n");
 
   W->interface().setOut(*in_buf);

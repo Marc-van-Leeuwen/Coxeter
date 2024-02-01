@@ -9,12 +9,9 @@
 #define LIST_H
 
 #include "globals.h"
+#include <stdio.h> // for |FILE|
 #include <limits.h>
 #include <algorithm>
-
-namespace list {
-  using namespace globals;
-};
 
 /******** type declarations *************************************************/
 
@@ -42,10 +39,6 @@ namespace list {
 #include "memory.h"
 
 namespace list {
-  using namespace memory;
-};
-
-namespace list {
 
 template <class T> class List {
  protected:
@@ -56,9 +49,9 @@ template <class T> class List {
  public:
   typedef T eltType;
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(List<T>));}
+    {return memory::arena().free(ptr,sizeof(List<T>));}
   void* operator new(size_t, void* ptr) {return ptr;}
   void operator delete(void* ptr, void* placement) {};
   List() : d_ptr(nullptr), d_size(0), d_allocated(0) {}

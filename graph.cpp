@@ -13,38 +13,38 @@
 namespace {
   using namespace graph;
 
-  CoxSize dihedralOrder(CoxGraph& G, LFlags I);
-  ParSize extrQuotOrder(CoxGraph& G, LFlags I, Generator s);
-  void fillCoxAMatrix(CoxMatrix& m, Rank l);
-  void fillCoxBMatrix(CoxMatrix& m, Rank l);
-  void fillCoxDMatrix(CoxMatrix& m, Rank l);
-  void fillCoxEMatrix(CoxMatrix& m, Rank l);
-  void fillCoxFMatrix(CoxMatrix& m, Rank l);
+  coxtypes::CoxSize dihedralOrder(CoxGraph& G, bits::Lflags I);
+  coxtypes::ParSize extrQuotOrder(CoxGraph& G, bits::Lflags I, coxtypes::Generator s);
+  void fillCoxAMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxBMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxDMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxEMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxFMatrix(CoxMatrix& m, coxtypes::Rank l);
   void fillCoxGMatrix(CoxMatrix& m);
-  void fillCoxHMatrix(CoxMatrix& m, Rank l);
+  void fillCoxHMatrix(CoxMatrix& m, coxtypes::Rank l);
   void fillCoxIMatrix(CoxMatrix& m);
-  void fillCoxaMatrix(CoxMatrix& m, Rank l);
-  void fillCoxbMatrix(CoxMatrix& m, Rank l);
-  void fillCoxcMatrix(CoxMatrix& m, Rank l);
-  void fillCoxdMatrix(CoxMatrix& m, Rank l);
-  void fillCoxeMatrix(CoxMatrix& m, Rank l);
-  void fillCoxfMatrix(CoxMatrix& m, Rank l);
+  void fillCoxaMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxbMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxcMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxdMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxeMatrix(CoxMatrix& m, coxtypes::Rank l);
+  void fillCoxfMatrix(CoxMatrix& m, coxtypes::Rank l);
   void fillCoxgMatrix(CoxMatrix& m);
-  void fillCoxXMatrix(CoxMatrix& m, const Rank& l, const Type& t);
-  void fillCoxYMatrix(CoxMatrix& m, Rank l);
-  CoxSize finiteOrder(const Type& type, const Rank& rank);
+  void fillCoxXMatrix(CoxMatrix& m, const coxtypes::Rank& l, const type::Type& t);
+  void fillCoxYMatrix(CoxMatrix& m, coxtypes::Rank l);
+  coxtypes::CoxSize finiteOrder(const type::Type& type, const coxtypes::Rank& rank);
   Ulong gcd(Ulong a, Ulong b);
-  const Type& irrType(CoxGraph& G, LFlags I);
-  Generator lastGenerator(CoxGraph& G, LFlags I);
-  ParSize lastQuotOrder(const Type& type, Rank rank);
-  void makeCoxMatrix(CoxMatrix& m, const Type& x, const Rank& l);
-  void makeStar(List<LFlags>&star, const CoxMatrix& m, const Rank& l);
-  void makeStarOps(List<LFlags>&, const CoxMatrix& m, const Rank& l);
-  CoxEntry maxCoefficient(CoxGraph& G, LFlags I);
-  CoxEntry minCoefficient(CoxGraph& G, LFlags I);
-  CoxSize A_order(Rank rank);
-  CoxSize B_order(Rank rank);
-  CoxSize D_order(Rank rank);
+  const type::Type& irrType(CoxGraph& G, bits::Lflags I);
+  coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I);
+  coxtypes::ParSize lastQuotOrder(const type::Type& type, coxtypes::Rank rank);
+  void makeCoxMatrix(CoxMatrix& m, const type::Type& x, const coxtypes::Rank& l);
+  void makeStar(list::List<bits::Lflags>&star, const CoxMatrix& m, const coxtypes::Rank& l);
+  void makeStarOps(list::List<bits::Lflags>&, const CoxMatrix& m, const coxtypes::Rank& l);
+  CoxEntry maxCoefficient(CoxGraph& G, bits::Lflags I);
+  CoxEntry minCoefficient(CoxGraph& G, bits::Lflags I);
+  coxtypes::CoxSize A_order(coxtypes::Rank rank);
+  coxtypes::CoxSize B_order(coxtypes::Rank rank);
+  coxtypes::CoxSize D_order(coxtypes::Rank rank);
 };
 
 /****************************************************************************
@@ -67,7 +67,7 @@ namespace {
 
 namespace graph {
 
-CoxGraph::CoxGraph(const Type& x, const Rank& l)
+CoxGraph::CoxGraph(const type::Type& x, const coxtypes::Rank& l)
   :d_type(x),d_rank(l),d_matrix(0),d_star(0)
 
 /*
@@ -77,14 +77,14 @@ CoxGraph::CoxGraph(const Type& x, const Rank& l)
 {
   makeCoxMatrix(d_matrix,x,d_rank);
 
-  if (ERRNO)
+  if (error::ERRNO)
     return;
 
   /* the restriction on the rank should be removed eventually */
 
-  if (l <= MEDRANK_MAX)
+  if (l <= coxtypes::MEDRANK_MAX)
     {
-      d_S = (LFlags)1 << (d_rank-1);
+      d_S = (bits::Lflags)1 << (d_rank-1);
       d_S += d_S - 1;
       makeStar(d_star,d_matrix,d_rank);
     }
@@ -102,21 +102,21 @@ CoxGraph::~CoxGraph()
 
 {}
 
-LFlags CoxGraph::component(LFlags I, Generator s) const
+bits::Lflags CoxGraph::component(bits::Lflags I, coxtypes::Generator s) const
 
 /*
   Returns the bitmap of the connected component of s in I.
 */
 
 {
-  LFlags nf = lmask[s];
-  LFlags f = 0;
+  bits::Lflags nf = constants::lmask[s];
+  bits::Lflags f = 0;
 
   while (nf)  /* there are new elements to be considered */
     {
       f |= nf;
-      for (LFlags f1 = nf; f1; f1 &= f1-1)
-	nf |= (I & d_star[firstBit(f1)]);
+      for (bits::Lflags f1 = nf; f1; f1 &= f1-1)
+	nf |= (I & d_star[constants::firstBit(f1)]);
       nf &= ~f;
     }
 
@@ -124,7 +124,7 @@ LFlags CoxGraph::component(LFlags I, Generator s) const
 }
 
 
-LFlags CoxGraph::extremities(LFlags I) const
+bits::Lflags CoxGraph::extremities(bits::Lflags I) const
 
 /*
   This function returns a bitmap of the set of points in I which are extremal
@@ -132,14 +132,14 @@ LFlags CoxGraph::extremities(LFlags I) const
 */
 
 {
-  LFlags f = 0;
-  LFlags f1 = I;
+  bits::Lflags f = 0;
+  bits::Lflags f1 = I;
 
   while (f1)
     {
-      Generator s = firstBit(f1);
-      if (bitCount(d_star[s]&I) == 1)  /* s is an extremity */
-	f |= lmask[s];
+      coxtypes::Generator s = constants::firstBit(f1);
+      if (bits::bitCount(d_star[s]&I) == 1)  /* s is an extremity */
+	f |= constants::lmask[s];
       f1 &= f1-1;
     }
 
@@ -147,7 +147,7 @@ LFlags CoxGraph::extremities(LFlags I) const
 }
 
 
-LFlags CoxGraph::nodes(LFlags I) const
+bits::Lflags CoxGraph::nodes(bits::Lflags I) const
 
 /*
   This function returns a bitmap of the set of points in I which are nodes
@@ -155,17 +155,17 @@ LFlags CoxGraph::nodes(LFlags I) const
 */
 
 {
-  LFlags f,f1;
-  Generator s;
+  bits::Lflags f,f1;
+  coxtypes::Generator s;
 
   f = 0;
   f1 = I;
 
   while (f1)
     {
-      s = firstBit(f1);
-      if (bitCount(d_star[s]&I) > 2)  /* s is a node */
-	f |= lmask[s];
+      s = constants::firstBit(f1);
+      if (bits::bitCount(d_star[s]&I) > 2)  /* s is a node */
+	f |= constants::lmask[s];
       f1 &= f1-1;
     }
 
@@ -224,10 +224,10 @@ LFlags CoxGraph::nodes(LFlags I) const
 
 namespace {
 
-void fillCoxAMatrix(CoxMatrix& m, Rank l)
+void fillCoxAMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
-  for (Rank j = 1; j < l; j++)
+  for (coxtypes::Rank j = 1; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -236,13 +236,13 @@ void fillCoxAMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxBMatrix(CoxMatrix& m, Rank l)
+void fillCoxBMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   m[1] = 4;
   m[l] = 4;
 
-  for (Rank j = 2; j < l; j++)
+  for (coxtypes::Rank j = 2; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -251,7 +251,7 @@ void fillCoxBMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxDMatrix(CoxMatrix& m, Rank l)
+void fillCoxDMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   if (l == 2)
@@ -262,7 +262,7 @@ void fillCoxDMatrix(CoxMatrix& m, Rank l)
   m[2*l] = 3;
   m[2*l + 1] = 3;
 
-  for (Rank j = 3; j < l; j++)
+  for (coxtypes::Rank j = 3; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -271,7 +271,7 @@ void fillCoxDMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxEMatrix(CoxMatrix& m, Rank l)
+void fillCoxEMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   m[2] = 3;
@@ -285,7 +285,7 @@ void fillCoxEMatrix(CoxMatrix& m, Rank l)
   m[3*l + 1] = 3;
   m[3*l + 2] = 3;
 
-  for (Rank j = 4; j < l; j++)
+  for (coxtypes::Rank j = 4; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -294,10 +294,10 @@ void fillCoxEMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxFMatrix(CoxMatrix& m, Rank l)
+void fillCoxFMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
-  for (Rank j = 1; j < l; j++)
+  for (coxtypes::Rank j = 1; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -319,13 +319,13 @@ void fillCoxGMatrix(CoxMatrix& m)
   return;
 }
 
-void fillCoxHMatrix(CoxMatrix& m, Rank l)
+void fillCoxHMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   m[1] = 5;
   m[l] = 5;
 
-  for (Rank j = 2; j < l; j++)
+  for (coxtypes::Rank j = 2; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -341,7 +341,7 @@ void fillCoxIMatrix(CoxMatrix& m)
 
   m_12 = interactive::getCoxEntry(1,2);
 
-  if (ERRNO)
+  if (error::ERRNO)
     return;
 
   m[1] = m_12;
@@ -351,7 +351,7 @@ void fillCoxIMatrix(CoxMatrix& m)
 }
 
 
-void fillCoxaMatrix(CoxMatrix& m, Rank l)
+void fillCoxaMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   if (l == 2)
@@ -361,7 +361,7 @@ void fillCoxaMatrix(CoxMatrix& m, Rank l)
       return;
     }
 
-  for (Rank j = 1; j < l; j++)
+  for (coxtypes::Rank j = 1; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -373,7 +373,7 @@ void fillCoxaMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxbMatrix(CoxMatrix& m, Rank l)
+void fillCoxbMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   if (l == 3) { // go over to type c3
@@ -384,7 +384,7 @@ void fillCoxbMatrix(CoxMatrix& m, Rank l)
   m[1] = 4;
   m[l] = 4;
 
-  for (Rank j = 2; j < l-1; j++)
+  for (coxtypes::Rank j = 2; j < l-1; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -396,13 +396,13 @@ void fillCoxbMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxcMatrix(CoxMatrix& m, Rank l)
+void fillCoxcMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   m[1] = 4;
   m[l] = 4;
 
-  for (Rank j = 2; j < l-1; j++)
+  for (coxtypes::Rank j = 2; j < l-1; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -414,13 +414,13 @@ void fillCoxcMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxdMatrix(CoxMatrix& m, Rank l)
+void fillCoxdMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   m[2] = 3;
   m[2*l] = 3;
 
-  for (Rank j = 2; j < l-1; j++)
+  for (coxtypes::Rank j = 2; j < l-1; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -432,7 +432,7 @@ void fillCoxdMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxeMatrix(CoxMatrix& m, Rank l)
+void fillCoxeMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
   m[2] = 3;
@@ -443,7 +443,7 @@ void fillCoxeMatrix(CoxMatrix& m, Rank l)
   m[3*l + 1] = 3;
   m[3*l + 2] = 3;
 
-  for (Rank j = 4; j < l-1; j++)
+  for (coxtypes::Rank j = 4; j < l-1; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -478,10 +478,10 @@ void fillCoxeMatrix(CoxMatrix& m, Rank l)
   return;
 }
 
-void fillCoxfMatrix(CoxMatrix& m, Rank l)
+void fillCoxfMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 {
-  for (Rank j = 1; j < l; j++)
+  for (coxtypes::Rank j = 1; j < l; j++)
     {
       m[(j-1)*l + j] = 3;
       m[j*l + (j-1)] = 3;
@@ -516,7 +516,7 @@ void fillCoxgMatrix(CoxMatrix& m)
   to renumber the generators if necessary (and then modify the matrix
   accordingly). For the time being, we leave it as is.
 */
-void fillCoxXMatrix(CoxMatrix& m, const Rank& l, const Type& t)
+void fillCoxXMatrix(CoxMatrix& m, const coxtypes::Rank& l, const type::Type& t)
 {
   static std::string buf;
   const std::string& name = t.name();
@@ -524,22 +524,22 @@ void fillCoxXMatrix(CoxMatrix& m, const Rank& l, const Type& t)
   buf = directories::coxmatrix_dir + "/" + name;
   FILE *inputfile = fopen(buf.c_str(),"r");
 
-  for (Rank i = 0; i < l; i++) {
-    for (Rank j = 0; j < l; j++) {
+  for (coxtypes::Rank i = 0; i < l; i++) {
+    for (coxtypes::Rank j = 0; j < l; j++) {
 
       /* check for EOL */
 
       if (interactive::endOfLine(inputfile)) {
-	Error(BAD_LINE,name.c_str()+1,l,i,j);
-	ERRNO = ABORT;
+	Error(error::BAD_LINE,name.c_str()+1,l,i,j);
+	error::ERRNO = error::ABORT;
 	return;
       }
 
       m[i*l + j] = interactive::readCoxEntry(i,j,inputfile);
 
-      if (ERRNO) {
-	Error(ERRNO,i,j);
-	ERRNO = ABORT;
+      if (error::ERRNO) {
+	error::Error(error::ERRNO,i,j);
+	error::ERRNO = error::ABORT;
 	return;
       }
 
@@ -547,8 +547,8 @@ void fillCoxXMatrix(CoxMatrix& m, const Rank& l, const Type& t)
 
       if (j < i)
 	if (m[i*l + j] != m[j*l + i]) {
-	  Error(NOT_SYMMETRIC,name.c_str()+1,&m,l,i,j);
-	  ERRNO = ABORT;
+	  error::Error(error::NOT_SYMMETRIC,name.c_str()+1,&m,l,i,j);
+	  error::ERRNO = error::ABORT;
 	  return;
 	}
     }
@@ -565,7 +565,7 @@ void fillCoxXMatrix(CoxMatrix& m, const Rank& l, const Type& t)
   fclose(inputfile);
 }
 
-void fillCoxYMatrix(CoxMatrix& m, Rank l)
+void fillCoxYMatrix(CoxMatrix& m, coxtypes::Rank l)
 
 /*
   This is the type for arbitrary input, where the coxeter matrix is gotten
@@ -578,12 +578,12 @@ void fillCoxYMatrix(CoxMatrix& m, Rank l)
 */
 
 {
-  for (Rank i = 0; i < l; i++)
-    for (Rank j = i+1; j < l; j++) {
+  for (coxtypes::Rank i = 0; i < l; i++)
+    for (coxtypes::Rank j = i+1; j < l; j++) {
       m[i*l + j] = interactive::getCoxEntry(i+1,j+1);
-      if (ERRNO) {
-	Error(ERRNO);
-	ERRNO = ERROR_WARNING;
+      if (error::ERRNO) {
+	error::Error(error::ERRNO);
+	error::ERRNO = error::ERROR_WARNING;
 	return;
       }
       m[j*l + i] = m[i*l + j];
@@ -593,7 +593,7 @@ void fillCoxYMatrix(CoxMatrix& m, Rank l)
 }
 
 
-void makeCoxMatrix(CoxMatrix& m, const Type& x, const Rank& l)
+void makeCoxMatrix(CoxMatrix& m, const type::Type& x, const coxtypes::Rank& l)
 
 /*
   Allocates and fills in the Coxeter matrix. In the case of type X,
@@ -637,7 +637,7 @@ void makeCoxMatrix(CoxMatrix& m, const Type& x, const Rank& l)
       break;
     case 'I':
       fillCoxIMatrix(m);
-      if (ERRNO)
+      if (error::ERRNO)
 	return;
       break;
     case 'a':
@@ -673,27 +673,27 @@ void makeCoxMatrix(CoxMatrix& m, const Type& x, const Rank& l)
 }
 
 
-void makeStar(List<LFlags>& star, const CoxMatrix& m, const Rank& l)
+void makeStar(list::List<bits::Lflags>& star, const CoxMatrix& m, const coxtypes::Rank& l)
 
 /*
   Makes the star-array of the Coxeter graph. This is an array of l
-  LFlags, flagging the "stars" of each generator in the Coxeter diagram.
+  bits::Lflags, flagging the "stars" of each generator in the Coxeter diagram.
 */
 
 {
   star.setSize(l);
 
-  for(Generator s = 0; s < l; s++) {
+  for(coxtypes::Generator s = 0; s < l; s++) {
     star[s] = 0;
-    for (Generator t = 0; t < l; t++)
+    for (coxtypes::Generator t = 0; t < l; t++)
       if ((m[s*l + t] > 2) || (m[s*l + t] == 0))
-	star[s] |= lmask[t];
+	star[s] |= constants::lmask[t];
   }
 
   return;
 }
 
-void makeStarOps(List<LFlags>& ops, const CoxMatrix& m, const Rank& l)
+void makeStarOps(list::List<bits::Lflags>& ops, const CoxMatrix& m, const coxtypes::Rank& l)
 
 /*
   Makes the starOps array of the Coxeter graph. This array has an entry for
@@ -706,8 +706,8 @@ void makeStarOps(List<LFlags>& ops, const CoxMatrix& m, const Rank& l)
 
   Ulong count = 0;
 
-  for (Generator s = 0; s < l; ++s) {
-    for (Generator t = s+1; t < l; ++t) {
+  for (coxtypes::Generator s = 0; s < l; ++s) {
+    for (coxtypes::Generator t = s+1; t < l; ++t) {
       if ((m[s*l + t] > 2) && (m[s*l + t] != infty))
 	count++;
     }
@@ -717,10 +717,10 @@ void makeStarOps(List<LFlags>& ops, const CoxMatrix& m, const Rank& l)
 
   count = 0;
 
-  for (Generator s = 0; s < l; ++s) {
-    for (Generator t = s+1; t < l; ++t) {
+  for (coxtypes::Generator s = 0; s < l; ++s) {
+    for (coxtypes::Generator t = s+1; t < l; ++t) {
       if ((m[s*l + t] > 2) && (m[s*l + t] != infty)) {
-        ops[count] = lmask[s] | lmask[t];
+        ops[count] = constants::lmask[s] | constants::lmask[t];
 	count++;
       }
     }
@@ -754,7 +754,7 @@ void makeStarOps(List<LFlags>& ops, const CoxMatrix& m, const Rank& l)
 
 namespace graph {
 
-bool isAffine(CoxGraph& G, LFlags I)
+bool isAffine(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns true if the group generated by I is affine, false otherwise. Uses the
@@ -764,7 +764,7 @@ bool isAffine(CoxGraph& G, LFlags I)
 */
 
 {
-  const Type& type = irrType(G,I);
+  const type::Type& type = irrType(G,I);
 
   if (strchr("abcdefg",type[0]))  /* group is affine */
     return true;
@@ -773,7 +773,7 @@ bool isAffine(CoxGraph& G, LFlags I)
 }
 
 
-bool isConnected(CoxGraph& G, LFlags I)
+bool isConnected(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns true if the graph induced on I is connected, false otherwise.
@@ -783,7 +783,7 @@ bool isConnected(CoxGraph& G, LFlags I)
   if (I == 0)
     return false;
 
-  Generator s = firstBit(I);
+  coxtypes::Generator s = constants::firstBit(I);
 
   if (G.component(I,s) == I)
     return true;
@@ -792,7 +792,7 @@ bool isConnected(CoxGraph& G, LFlags I)
 }
 
 
-bool isCrystallographic(CoxGraph& G, LFlags I)
+bool isCrystallographic(CoxGraph& G, bits::Lflags I)
 
 /*
   Checks if the restriction of the Coxeter graph to I is crystallographic,
@@ -800,8 +800,8 @@ bool isCrystallographic(CoxGraph& G, LFlags I)
 */
 
 {
-  for (Generator s = 0; s < G.rank(); s++)
-    for (Generator t = s+1; t < G.rank(); t++)
+  for (coxtypes::Generator s = 0; s < G.rank(); s++)
+    for (coxtypes::Generator t = s+1; t < G.rank(); t++)
       {
 	switch (G.M(s,t)) {
 	case 0:
@@ -819,7 +819,7 @@ bool isCrystallographic(CoxGraph& G, LFlags I)
 }
 
 
-bool isFinite(CoxGraph& G, LFlags I)
+bool isFinite(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns true if the group generated by I is finite, false otherwise. Uses the
@@ -829,9 +829,9 @@ bool isFinite(CoxGraph& G, LFlags I)
 {
   while (I)
     {
-      Generator s = firstBit(I);
-      LFlags f = G.component(I,s);
-      const Type& type = irrType(G,f);
+      coxtypes::Generator s = constants::firstBit(I);
+      bits::Lflags f = G.component(I,s);
+      const type::Type& type = irrType(G,f);
       if (strchr("ABCDEFGHI",type[0]) == NULL)
 	return false;
       I &= ~f;
@@ -841,7 +841,7 @@ bool isFinite(CoxGraph& G, LFlags I)
 }
 
 
-bool isLoop(CoxGraph& G, LFlags I)
+bool isLoop(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns 1 if the graph induced on I is a loop, 0 otherwise. Uses the
@@ -853,10 +853,10 @@ bool isLoop(CoxGraph& G, LFlags I)
   if (!isConnected(G,I))
     return false;
 
-  for (LFlags f = I; f; f &= f-1)
+  for (bits::Lflags f = I; f; f &= f-1)
     {
-      Generator s = firstBit(f);
-      if (bitCount(G.star(I,s)) != 2)
+      coxtypes::Generator s = constants::firstBit(f);
+      if (bits::bitCount(G.star(I,s)) != 2)
 	return false;
     }
 
@@ -868,14 +868,14 @@ bool isLoop(CoxGraph& G, LFlags I)
   Return whether the Coxeter graph restricted to I is simply laced (i.e., all
   edges have label 3).
 */
-bool isSimplyLaced(CoxGraph& G, LFlags I)
+bool isSimplyLaced(CoxGraph& G, bits::Lflags I)
 {
-  for (LFlags fs = I; fs; fs &= fs-1)
+  for (bits::Lflags fs = I; fs; fs &= fs-1)
     {
-      Generator s = firstBit(fs);
-      for (LFlags ft = fs & (fs-1); ft; ft &= ft-1)
+      coxtypes::Generator s = constants::firstBit(fs);
+      for (bits::Lflags ft = fs & (fs-1); ft; ft &= ft-1)
 	{
-	  Generator t = firstBit(ft);
+	  coxtypes::Generator t = constants::firstBit(ft);
 	  if ((G.M(s,t) == 0) || (G.M(s,t) > 3))
 	    return false;
 	}
@@ -884,7 +884,7 @@ bool isSimplyLaced(CoxGraph& G, LFlags I)
   return true;
 }
 
-bool isTree(CoxGraph& G, LFlags I)
+bool isTree(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns 1 if the graph induced on I is a tree, 0 otherwise. Uses the
@@ -898,15 +898,15 @@ bool isTree(CoxGraph& G, LFlags I)
 
   unsigned edgecount = 0;
 
-  for (LFlags f = I; f; f &= f-1)
+  for (bits::Lflags f = I; f; f &= f-1)
     {
-      Generator s = firstBit(f);
-      edgecount += bitCount(G.star(I,s));
+      coxtypes::Generator s = constants::firstBit(f);
+      edgecount += bits::bitCount(G.star(I,s));
     }
 
   edgecount /= 2;  /* each edge was counted twice */
 
-  if (edgecount == (bitCount(I) - 1))
+  if (edgecount == (bits::bitCount(I) - 1))
     return true;
   else
     return false;
@@ -916,7 +916,7 @@ bool isTree(CoxGraph& G, LFlags I)
 
 namespace {
 
-const Type& irrType(CoxGraph& G, LFlags I)
+const type::Type& irrType(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns the type of the subgraph induced on I, if this subgraph is
@@ -928,17 +928,17 @@ const Type& irrType(CoxGraph& G, LFlags I)
 */
 
 {
-  static Type type("X");
+  static type::Type type("X");
 
-  if (bitCount(I) == 1) {
+  if (bits::bitCount(I) == 1) {
     type[0] = 'A';
     return type;
   }
 
-  if (bitCount(I) == 2)
+  if (bits::bitCount(I) == 2)
     {
-      Generator s = firstBit(I);
-      Generator t = firstBit(I & (I-1));
+      coxtypes::Generator s = constants::firstBit(I);
+      coxtypes::Generator t = constants::firstBit(I & (I-1));
       CoxEntry m = G.M(s,t);
 
       switch (m)
@@ -982,19 +982,19 @@ const Type& irrType(CoxGraph& G, LFlags I)
 
   switch (m) {
   case 3: { /* simply laced : type is A, D, E, d, e if known */
-    LFlags fn = G.nodes(I);
-    switch (bitCount(fn))
+    bits::Lflags fn = G.nodes(I);
+    switch (bits::bitCount(fn))
       {
       case 0: /* type A */
 	type[0] = 'A';
 	return type;
       case 1: { /* type is D, E, e, or d5, if known */
-	Generator n = firstBit(G.nodes(I));
-	switch (bitCount(G.star(n)))
+	coxtypes::Generator n = constants::firstBit(G.nodes(I));
+	switch (bits::bitCount(G.star(n)))
 	  {
 	  case 3: { /* type is D, E or e */
-	    LFlags f = G.extremities(I);
-	    switch (bitCount(f & G.star(n)))  /* short branches */
+	    bits::Lflags f = G.extremities(I);
+	    switch (bits::bitCount(f & G.star(n)))  /* short branches */
 	      {
 	      case 3:  /* type is D4 */
 		type[0] = 'D';
@@ -1004,16 +1004,16 @@ const Type& irrType(CoxGraph& G, LFlags I)
 		return type;
 	      case 1: { /* type is E6, E7, E8, e8 or e9 */
 		/* trim branches by one */
-		LFlags J = I & ~f;
+		bits::Lflags J = I & ~f;
 		f = G.extremities(J);
-		switch (bitCount(f & G.star(n)))
+		switch (bits::bitCount(f & G.star(n)))
 		  {
 		  case 0:  /* two branches of length > 2 */
-		    if (bitCount(I) == 8)  /* type e8 */
+		    if (bits::bitCount(I) == 8)  /* type e8 */
 		      type[0] = 'e';
 		    return type;
 		  case 1:  /* one branch of length 2 */
-		    switch (bitCount(I))
+		    switch (bits::bitCount(I))
 		      {
 		      case 7:  /* type E7 */
 		      case 8:  /* type E8 */
@@ -1026,19 +1026,19 @@ const Type& irrType(CoxGraph& G, LFlags I)
 			return type;
 		      };
 		  case 2:  /* two branches of length 2 */
-		    if (bitCount(I) == 6)  /* type E6 */
+		    if (bits::bitCount(I) == 6)  /* type E6 */
 		      type[0] = 'E';
 		    return type;
 		  };
 	      }
 	      case 0:  /* type has to be e7 */
-		if (bitCount(I) == 7)
+		if (bits::bitCount(I) == 7)
 		  type[0] = 'e';
 		return type;
 	      };
 	  }
 	  case 4:  /* type is d5 */
-	    if (bitCount(I) == 5)
+	    if (bits::bitCount(I) == 5)
 	      type[0] = 'd';
 	    return type;
 	  default:  /* unknown type */
@@ -1046,11 +1046,11 @@ const Type& irrType(CoxGraph& G, LFlags I)
 	  };
       }
       case 2: {
-	LFlags f = G.extremities(I);
-	if (bitCount(f) > 4)  /* unknown type */
+	bits::Lflags f = G.extremities(I);
+	if (bits::bitCount(f) > 4)  /* unknown type */
 	  return type;
 	/* from here on each node has three branches */
-	LFlags J = I & ~f;
+	bits::Lflags J = I & ~f;
 	f = G.extremities(J);
 	if (f == fn)  /* type d */
 	  type[0] = 'd';
@@ -1061,31 +1061,31 @@ const Type& irrType(CoxGraph& G, LFlags I)
       };
   }
   case 4: { /* type is B, F, b, c or f if known */
-    switch (bitCount(G.nodes(I)))
+    switch (bits::bitCount(G.nodes(I)))
       {
       case 0: { /* graph is a string : type is B, F, c or f */
-	LFlags f = G.extremities(I);
-	LFlags J = I & ~f;
+	bits::Lflags f = G.extremities(I);
+	bits::Lflags J = I & ~f;
 	switch (maxCoefficient(G,J))
 	  {
 	  case 1:
 	  case 3: { /* type is B or c */
 	    type[0] = 'B';
-	    Generator s = firstBit(f);
-	    Generator t = firstBit(G.star(s));
+	    coxtypes::Generator s = constants::firstBit(f);
+	    coxtypes::Generator t = constants::firstBit(G.star(s));
 	    CoxEntry m1 = G.M(s,t);
 	    if (m1 == 3)
 	      return type;
 	    f &= f-1;
-	    s = firstBit(f);
-	    t = firstBit(G.star(s));
+	    s = constants::firstBit(f);
+	    t = constants::firstBit(G.star(s));
 	    m1 = G.M(s,t);
 	    if (m1 == 4)
 	      type[0] = 'c';
 	    return type;
 	  }
 	  case 4:  /* type is F or f, if known */
-	    switch (bitCount(I))
+	    switch (bits::bitCount(I))
 	      {
 	      case 4:  /* type F4 */
 		type[0] = 'F';
@@ -1104,18 +1104,18 @@ const Type& irrType(CoxGraph& G, LFlags I)
 	  };
       }
       case 1: { /* type is b if known */
-	LFlags f = G.extremities(I);
-	if (bitCount(f) > 3)  /* more than three branches */
+	bits::Lflags f = G.extremities(I);
+	if (bits::bitCount(f) > 3)  /* more than three branches */
 	  return type;
-	LFlags J = I & ~f;
+	bits::Lflags J = I & ~f;
 	if (!isSimplyLaced(G,J))  /* unknown type */
 	  return type;
-	Generator n = firstBit(G.nodes(I));
+	coxtypes::Generator n = constants::firstBit(G.nodes(I));
 	f &= G.star(n);
-	switch (bitCount(f))
+	switch (bits::bitCount(f))
 	  {
 	  case 2: /* exactly one long branch */
-	    J = f | lmask[n];
+	    J = f | constants::lmask[n];
 	    if (isSimplyLaced(G,J))  /* type is b */
 	      type[0] = 'b';
 	    return type;
@@ -1131,7 +1131,7 @@ const Type& irrType(CoxGraph& G, LFlags I)
       };
   }
   case 5: { /* type must be H3 or H4 if known */
-    switch (bitCount(I))
+    switch (bits::bitCount(I))
       {
       case 3: {
 	CoxEntry m1 = minCoefficient(G,I);
@@ -1142,14 +1142,14 @@ const Type& irrType(CoxGraph& G, LFlags I)
       case 4: {
 	if (G.nodes(I))  /* graph is not a string */
 	  return type;
-	LFlags f = G.extremities(I);
-	LFlags J = I & ~f;
+	bits::Lflags f = G.extremities(I);
+	bits::Lflags J = I & ~f;
 	if (!isSimplyLaced(G,J))  /* unknown type */
 	  return type;
 	J = 0;
 	for (; f; f &= f-1)
 	  {
-	    Generator s = firstBit(f);
+	    coxtypes::Generator s = constants::firstBit(f);
 	    J |= G.star(s);
 	  }
 	CoxEntry m1 = minCoefficient(G,J);
@@ -1163,7 +1163,7 @@ const Type& irrType(CoxGraph& G, LFlags I)
     break;
   }
   case 6: { /* type must be g3 if known */
-    switch(bitCount(I))
+    switch(bits::bitCount(I))
       {
       case 3: {
 	CoxEntry m1 = minCoefficient(G,I);
@@ -1190,20 +1190,20 @@ namespace graph {
   Returns the type of the group generated by I as a |type::Type| containing one
   letter for each component of I, in increasing order : A-I if the component is
   finite, a-g if it is affine, X otherwise. So the length of the string is the
-  number of components of the group. Returns the empty |Type| if I = 0.
+  number of components of the group. Returns the empty |type::Type| if I = 0.
 
   The result is returned as the static variable |type|, which reference is
   safe until the next call to this function (also called |type|).
 */
-const Type& type(CoxGraph& G, LFlags I)
+const type::Type& type(CoxGraph& G, bits::Lflags I)
 {
-  static Type type(0);
+  static type::Type type(0);
   type.name().resize(G.rank()); // long enough, and '\0' filled
 
   for (Ulong j = 0; I!=0; j++)  /* run through connected components */
     {
-      Generator s = firstBit(I);
-      LFlags f = G.component(I,s);
+      coxtypes::Generator s = constants::firstBit(I);
+      bits::Lflags f = G.component(I,s);
       type[j] = (irrType(G,f))[0];
       I &= ~f;
     }
@@ -1241,7 +1241,7 @@ const Type& type(CoxGraph& G, LFlags I)
 
 namespace {
 
-CoxSize A_order(Rank rank)
+coxtypes::CoxSize A_order(coxtypes::Rank rank)
 
 /*
   Returns the order of the Coxeter group of type A and rank given, if
@@ -1250,11 +1250,11 @@ CoxSize A_order(Rank rank)
 */
 
 {
-  CoxSize a = 1;
+  coxtypes::CoxSize a = 1;
 
-  for (Rank j = 1; j <= rank; j++)
+  for (coxtypes::Rank j = 1; j <= rank; j++)
     {
-      if (a > COXSIZE_MAX/(j+1))
+      if (a > coxtypes::COXSIZE_MAX/(j+1))
 	return 0;
       a *= j+1;
     }
@@ -1262,7 +1262,7 @@ CoxSize A_order(Rank rank)
   return a;
 }
 
-CoxSize B_order(Rank rank)
+coxtypes::CoxSize B_order(coxtypes::Rank rank)
 
 /*
   Returns the order of the Coxeter group of type B and rank given, if
@@ -1270,11 +1270,11 @@ CoxSize B_order(Rank rank)
 */
 
 {
-  CoxSize a = 2;
+  coxtypes::CoxSize a = 2;
 
-  for (Rank j = 2; j <= rank; j++)
+  for (coxtypes::Rank j = 2; j <= rank; j++)
     {
-      if (a > COXSIZE_MAX/(2*j))
+      if (a > coxtypes::COXSIZE_MAX/(2*j))
 	return 0;
       a *= 2*j;
     }
@@ -1283,7 +1283,7 @@ CoxSize B_order(Rank rank)
 }
 
 
-CoxSize D_order(Rank rank)
+coxtypes::CoxSize D_order(coxtypes::Rank rank)
 
 /*
   Returns the order of the Coxeter group of type D and rank given, if
@@ -1291,11 +1291,11 @@ CoxSize D_order(Rank rank)
 */
 
 {
-  CoxSize a = 24;
+  coxtypes::CoxSize a = 24;
 
-  for (Rank j = 4; j <= rank; j++)
+  for (coxtypes::Rank j = 4; j <= rank; j++)
     {
-      if (a > COXSIZE_MAX/(2*j))
+      if (a > coxtypes::COXSIZE_MAX/(2*j))
 	return 0;
       a *= 2*j;
     }
@@ -1303,7 +1303,7 @@ CoxSize D_order(Rank rank)
   return a;
 }
 
-CoxSize dihedralOrder(CoxGraph& G, LFlags I)
+coxtypes::CoxSize dihedralOrder(CoxGraph& G, bits::Lflags I)
 
 /*
   Assuming that |I| = 2, returns the order of the subgroup generated
@@ -1312,22 +1312,22 @@ CoxSize dihedralOrder(CoxGraph& G, LFlags I)
 */
 
 {
-  CoxSize m;
-  Generator s, t;
+  coxtypes::CoxSize m;
+  coxtypes::Generator s, t;
 
-  s = firstBit(I);
+  s = constants::firstBit(I);
   I &= I-1;
-  t = firstBit(I);
-  m = (CoxSize)(G.M(s,t));
+  t = constants::firstBit(I);
+  m = (coxtypes::CoxSize)(G.M(s,t));
 
-  if (m > COXSIZE_MAX/2)
+  if (m > coxtypes::COXSIZE_MAX/2)
     return 0;
 
   return 2*m;
 }
 
 
-ParSize extrQuotOrder(CoxGraph& G, LFlags I, Generator s)
+coxtypes::ParSize extrQuotOrder(CoxGraph& G, bits::Lflags I, coxtypes::Generator s)
 
 /*
   Assuming I irreducible and s extremal, this function returns
@@ -1337,42 +1337,42 @@ ParSize extrQuotOrder(CoxGraph& G, LFlags I, Generator s)
 */
 
 {
-  Rank l;
-  LFlags I1;
-  Generator s1;
+  coxtypes::Rank l;
+  bits::Lflags I1;
+  coxtypes::Generator s1;
   CoxEntry m;
 
-  const Type& t = irrType(G,I);
-  l = bitCount(I);
+  const type::Type& t = irrType(G,I);
+  l = bits::bitCount(I);
 
   if (l == 1)
-    return (ParSize)2;
+    return (coxtypes::ParSize)2;
 
-  I1 = I & ~lmask[s];
-  const Type& t1 = irrType(G,I1);
+  I1 = I & ~constants::lmask[s];
+  const type::Type& t1 = irrType(G,I1);
 
   switch (t[0])
     {
     case 'A':
-      return (ParSize)(l+1);
+      return (coxtypes::ParSize)(l+1);
     case 'B':
       switch (t1[0])
 	{
 	case 'A':  /* return 2^l */
-	  if (l == BITS(ParSize))
+	  if (l == BITS(coxtypes::ParSize))
 	    return 0;
 	  else
-	    return (ParSize)1 << l;
+	    return (coxtypes::ParSize)1 << l;
 	case 'B':
-	  return (ParSize)(2*l);
+	  return (coxtypes::ParSize)(2*l);
 	};
     case 'D':
       switch (t1[0])
 	{
 	case 'A':  /* return 2^(l-1) */
-	  return (ParSize)1 << (l-1);
+	  return (coxtypes::ParSize)1 << (l-1);
 	case 'D':
-	  return (ParSize)(2*l);
+	  return (coxtypes::ParSize)(2*l);
 	};
     case 'E':
       switch (l)
@@ -1381,69 +1381,69 @@ ParSize extrQuotOrder(CoxGraph& G, LFlags I, Generator s)
 	  switch (t1[0])
 	    {
 	    case 'A':
-	      return (ParSize)72;
+	      return (coxtypes::ParSize)72;
 	    case 'D':
-	      return (ParSize)27;
+	      return (coxtypes::ParSize)27;
 	    };
 	case 7:
 	  switch (t1[0])
 	    {
 	    case 'A':
-	      return (ParSize)576;
+	      return (coxtypes::ParSize)576;
 	    case 'D':
-	      return (ParSize)126;
+	      return (coxtypes::ParSize)126;
 	    case 'E':
-	      return (ParSize)56;
+	      return (coxtypes::ParSize)56;
 	    };
 	case 8:
 	  switch (t1[0])
 	    {
 	    case 'A':
-	      return (ParSize)17280;
+	      return (coxtypes::ParSize)17280;
 	    case 'D':
-	      return (ParSize)2160;
+	      return (coxtypes::ParSize)2160;
 	    case 'E':
-	      return (ParSize)240;
+	      return (coxtypes::ParSize)240;
 	    };
 	};
     case 'F':
-      return (ParSize)24;
+      return (coxtypes::ParSize)24;
     case 'G':
-      return (ParSize)6;
+      return (coxtypes::ParSize)6;
     case 'H':
       switch (l)
 	{
 	case 2:
-	  return (ParSize)5;
+	  return (coxtypes::ParSize)5;
 	case 3:
 	  switch (t1[0])
 	    {
 	    case 'H':
-	      return (ParSize)12;
+	      return (coxtypes::ParSize)12;
 	    case 'A':
-	      return (ParSize)20;
+	      return (coxtypes::ParSize)20;
 	    };
 	case 4:
 	  switch (t1[0])
 	    {
 	    case 'H':
-	      return (ParSize)120;
+	      return (coxtypes::ParSize)120;
 	    case 'A':
-	      return (ParSize)600;
+	      return (coxtypes::ParSize)600;
 	    };
 	};
     case 'I':
-      I &= ~(lmask[s]);
-      s1 = firstBit(I);
+      I &= ~(constants::lmask[s]);
+      s1 = constants::firstBit(I);
       m = G.M(s,s1);
-      return (ParSize)m;
+      return (coxtypes::ParSize)m;
     default:  /* group is not finite */
       return 0;
     };
 }
 
 
-CoxSize finiteOrder(const Type& type, const Rank& rank)
+coxtypes::CoxSize finiteOrder(const type::Type& type, const coxtypes::Rank& rank)
 
 /*
   This function returns the order of the group of the given type
@@ -1469,24 +1469,24 @@ CoxSize finiteOrder(const Type& type, const Rank& rank)
   case 'E':
     switch (rank) {
     case 6:
-      return static_cast<CoxSize>(51840);
+      return static_cast<coxtypes::CoxSize>(51840);
     case 7:
-      return static_cast<CoxSize>(2903040);
+      return static_cast<coxtypes::CoxSize>(2903040);
     case 8:
-      return static_cast<CoxSize>(696729600);
+      return static_cast<coxtypes::CoxSize>(696729600);
     };
   case 'F':
-    return static_cast<CoxSize>(1152);
+    return static_cast<coxtypes::CoxSize>(1152);
   case 'G':
-    return static_cast<CoxSize>(12);
+    return static_cast<coxtypes::CoxSize>(12);
   case 'H':
     switch (rank) {
     case 2:
-      return static_cast<CoxSize>(10);
+      return static_cast<coxtypes::CoxSize>(10);
     case 3:
-      return static_cast<CoxSize>(120);
+      return static_cast<coxtypes::CoxSize>(120);
     case 4:
-      return static_cast<CoxSize>(14400);
+      return static_cast<coxtypes::CoxSize>(14400);
     };
   default: // unreachable
     return 0;
@@ -1494,7 +1494,7 @@ CoxSize finiteOrder(const Type& type, const Rank& rank)
 }
 
 
-ParSize lastQuotOrder(const Type& type, Rank rank)
+coxtypes::ParSize lastQuotOrder(const type::Type& type, coxtypes::Rank rank)
 
 /*
   Returns the order of the privileged quotient in the given type and
@@ -1505,32 +1505,32 @@ ParSize lastQuotOrder(const Type& type, Rank rank)
 {
   switch (type[0]) {
   case 'A':
-    return static_cast<ParSize>(rank+1);
+    return static_cast<coxtypes::ParSize>(rank+1);
   case 'B':
   case 'C':
   case 'D':
-    return static_cast<ParSize>(2*rank);
+    return static_cast<coxtypes::ParSize>(2*rank);
   case 'E':
     switch (rank) {
     case 6:
-      return static_cast<ParSize>(27);
+      return static_cast<coxtypes::ParSize>(27);
     case 7:
-      return static_cast<ParSize>(56);
+      return static_cast<coxtypes::ParSize>(56);
     case 8:
-      return static_cast<ParSize>(240);
+      return static_cast<coxtypes::ParSize>(240);
     };
   case 'F':
-    return static_cast<ParSize>(24);
+    return static_cast<coxtypes::ParSize>(24);
   case 'G':
-    return static_cast<ParSize>(6);
+    return static_cast<coxtypes::ParSize>(6);
   case 'H':
     switch (rank) {
     case 2:
-      return static_cast<ParSize>(5);
+      return static_cast<coxtypes::ParSize>(5);
     case 3:
-      return static_cast<ParSize>(12);
+      return static_cast<coxtypes::ParSize>(12);
     case 4:
-      return static_cast<ParSize>(120);
+      return static_cast<coxtypes::ParSize>(120);
     };
   default: // unreachable
     return 0;
@@ -1542,7 +1542,7 @@ ParSize lastQuotOrder(const Type& type, Rank rank)
 
 namespace graph {
 
-CoxSize order(CoxGraph& G, LFlags I)
+coxtypes::CoxSize order(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns the order of the subgroup generated by I, if this fits
@@ -1553,20 +1553,20 @@ CoxSize order(CoxGraph& G, LFlags I)
   if (I == 0)
     return 1;
 
-  Generator s = firstBit(I);
-  LFlags J = G.component(I,s);
+  coxtypes::Generator s = constants::firstBit(I);
+  bits::Lflags J = G.component(I,s);
 
   if (J != I)  /* group is not irreducible */
     {
-      CoxSize c1 = order(G,J);
-      CoxSize c2 = order(G,I&~J);
-      if (c1 & c2 & (c2 > COXSIZE_MAX/c1))  /* overflow */
+      coxtypes::CoxSize c1 = order(G,J);
+      coxtypes::CoxSize c2 = order(G,I&~J);
+      if (c1 & c2 & (c2 > coxtypes::COXSIZE_MAX/c1))  /* overflow */
 	return 0;
       return c1*c2;
     }
 
-  const Type& t = irrType(G,I);
-  Rank l = bitCount(I);
+  const type::Type& t = irrType(G,I);
+  coxtypes::Rank l = bits::bitCount(I);
 
   if (t[0] == 'I')
     return dihedralOrder(G,I);
@@ -1575,7 +1575,7 @@ CoxSize order(CoxGraph& G, LFlags I)
 }
 
 
-ParSize quotOrder(CoxGraph& G, LFlags I, LFlags J)
+coxtypes::ParSize quotOrder(CoxGraph& G, bits::Lflags I, bits::Lflags J)
 
 /*
   Returns the number of elements of W_I/W_J, assuming that J is contained
@@ -1587,71 +1587,71 @@ ParSize quotOrder(CoxGraph& G, LFlags I, LFlags J)
   if (I == J)
     return 1;
 
-  Generator s = firstBit(I);
-  LFlags I1 = G.component(I,s);
+  coxtypes::Generator s = constants::firstBit(I);
+  bits::Lflags I1 = G.component(I,s);
 
   if (I1 != I)  /* argue by induction */
     {
-      LFlags J1 = J & I1;
-      LFlags I2 = I & ~I1;
-      LFlags J2 = J & ~J1;
-      ParSize c1 = quotOrder(G,I1,J1);
-      ParSize c2 = quotOrder(G,I2,J2);
-      if (c1 & c2 & (c2 > LPARNBR_MAX/c1))  /* overflow */
+      bits::Lflags J1 = J & I1;
+      bits::Lflags I2 = I & ~I1;
+      bits::Lflags J2 = J & ~J1;
+      coxtypes::ParSize c1 = quotOrder(G,I1,J1);
+      coxtypes::ParSize c2 = quotOrder(G,I2,J2);
+      if (c1 & c2 & (c2 > coxtypes::LPARNBR_MAX/c1))  /* overflow */
 	return 0;
       return c1*c2;
     }
 
   /* now I is irreducible */
 
-  const Type& type = irrType(G,I);
+  const type::Type& type = irrType(G,I);
   if (strchr("ABCDEFGHI",type[0]) == NULL)  /* group is infinite */
     return 0;
 
-  Rank l = bitCount(I);
+  coxtypes::Rank l = bits::bitCount(I);
 
   if (l == 2)  /* dihedral case */
     {
-      Generator s = firstBit(I);
-      Generator t = firstBit(G.star(I,s));
+      coxtypes::Generator s = constants::firstBit(I);
+      coxtypes::Generator t = constants::firstBit(G.star(I,s));
       CoxEntry m = G.M(s,t);
       if (m == 0)  /* group is infinite */
 	return 0;
 
-      switch(bitCount(J))
+      switch(bits::bitCount(J))
 	{
 	case 0:
-	  return static_cast<ParSize>(2*m);
+	  return static_cast<coxtypes::ParSize>(2*m);
 	case 1:
-	  return static_cast<ParSize>(m);
+	  return static_cast<coxtypes::ParSize>(m);
 	};
     }
 
   s = lastGenerator(G,I);
 
-  I1 = I & ~(lmask[s]);
-  LFlags J1 = J & ~(lmask[s]);
+  I1 = I & ~(constants::lmask[s]);
+  bits::Lflags J1 = J & ~(constants::lmask[s]);
 
-  ParSize c1 = lastQuotOrder(type,l);
-  ParSize c2 = quotOrder(G,I1,J1);
+  coxtypes::ParSize c1 = lastQuotOrder(type,l);
+  coxtypes::ParSize c2 = quotOrder(G,I1,J1);
   if (c2 == 0)
     return 0;
 
-  if ((J & lmask[s]) == 0)  /* s is not in J */
+  if ((J & constants::lmask[s]) == 0)  /* s is not in J */
     goto exit;
 
   J = G.component(J,s);
 
   {
-    ParSize q = extrQuotOrder(G,J,s);
-    ParSize d = gcd((Ulong)c1,(Ulong)q);
+    coxtypes::ParSize q = extrQuotOrder(G,J,s);
+    coxtypes::ParSize d = gcd((Ulong)c1,(Ulong)q);
     c1 /= d;
     q /= d;
     c2 /= q;  /* now c2 must be divisible by q */
   }
 
  exit:
-  if (c2 > LPARNBR_MAX/c1)  /* overflow */
+  if (c2 > coxtypes::LPARNBR_MAX/c1)  /* overflow */
     return 0;
 
   return c1*c2;
@@ -1703,7 +1703,7 @@ Ulong gcd(Ulong a, Ulong b)
 
 namespace graph {
 
-void getConjugacyClasses(List<LFlags>& cl, const CoxGraph& G)
+void getConjugacyClasses(list::List<bits::Lflags>& cl, const CoxGraph& G)
 
 /*
   This function returns in cl the conjugacy classes of generators in W (i.e.
@@ -1713,26 +1713,26 @@ void getConjugacyClasses(List<LFlags>& cl, const CoxGraph& G)
 */
 
 {
-  List<LFlags> odd_star(0);
+  list::List<bits::Lflags> odd_star(0);
   odd_star.setSize(G.rank());
 
-  for(Generator s = 0; s < G.rank(); ++s) {
+  for(coxtypes::Generator s = 0; s < G.rank(); ++s) {
     odd_star[s] = 0;
-    for (Generator t = 0; t < G.rank(); ++t)
+    for (coxtypes::Generator t = 0; t < G.rank(); ++t)
       if ((G.M(s,t)%2) && (G.M(s,t) > 1))
-	odd_star[s] |= lmask[t];
+	odd_star[s] |= constants::lmask[t];
   }
 
   Ulong c = 0;
 
-  for (LFlags fS = G.supp(); fS; ++c) {
-    LFlags nf = lmask[firstBit(fS)];
-    LFlags f = 0;
+  for (bits::Lflags fS = G.supp(); fS; ++c) {
+    bits::Lflags nf = constants::lmask[constants::firstBit(fS)];
+    bits::Lflags f = 0;
     while (nf)  /* there are new elements to be considered */
       {
 	f |= nf;
-	for (LFlags f1 = nf; f1; f1 &= f1-1)
-	  nf |= (odd_star[firstBit(f1)]);
+	for (bits::Lflags f1 = nf; f1; f1 &= f1-1)
+	  nf |= (odd_star[constants::firstBit(f1)]);
 	nf &= ~f;
       }
     cl.setSize(c+1);
@@ -1747,7 +1747,7 @@ void getConjugacyClasses(List<LFlags>& cl, const CoxGraph& G)
 
 namespace {
 
-Generator lastGenerator(CoxGraph& G, LFlags I)
+coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 
 /*
   Assuming that I is irreducible, this function returns an element
@@ -1755,55 +1755,55 @@ Generator lastGenerator(CoxGraph& G, LFlags I)
 */
 
 {
-  Rank l = bitCount(I);
+  coxtypes::Rank l = bits::bitCount(I);
   if (l <= 2)
-    return firstBit(I);
+    return constants::firstBit(I);
 
   /* from now on the rank is at least three */
 
-  const Type& x = irrType(G,I);
-  LFlags f = G.extremities(I);
+  const type::Type& x = irrType(G,I);
+  bits::Lflags f = G.extremities(I);
 
   switch (x[0])
     {
     case 'A':
-      return firstBit(f);
+      return constants::firstBit(f);
     case 'B': {
-      Generator s = firstBit(f);
-      Generator t = firstBit(G.star(I,s));
+      coxtypes::Generator s = constants::firstBit(f);
+      coxtypes::Generator t = constants::firstBit(G.star(I,s));
       CoxEntry m = G.M(s,t);
       switch (m)
 	{
 	case 3:
 	  return s;
 	case 4:
-	  f &= ~(lmask[s]);
-	  return firstBit(f);
+	  f &= ~(constants::lmask[s]);
+	  return constants::firstBit(f);
 	};
     }
     case 'D': {
-      Generator s = firstBit(f);
-      Generator n = firstBit(G.nodes(I));
+      coxtypes::Generator s = constants::firstBit(f);
+      coxtypes::Generator n = constants::firstBit(G.nodes(I));
       f &= ~(G.star(n));
       if (f)
-	return firstBit(f);
+	return constants::firstBit(f);
       else  /* rank is 4 */
 	return s;
     }
     case 'E': {
-      Generator n = firstBit(G.nodes(I));
+      coxtypes::Generator n = constants::firstBit(G.nodes(I));
       f &= ~(G.star(n));
-      Generator s = firstBit(f);
+      coxtypes::Generator s = constants::firstBit(f);
       switch (l)
 	{
 	case 6:
 	  return s;
 	case 7:
 	case 8: {
-	  Generator t = firstBit(G.star(I,s));
-	  if (lmask[t] & G.star(n)) {
-	    f &= ~(lmask[s]);
-	    return firstBit(f);
+	  coxtypes::Generator t = constants::firstBit(G.star(I,s));
+	  if (constants::lmask[t] & G.star(n)) {
+	    f &= ~(constants::lmask[s]);
+	    return constants::firstBit(f);
 	  }
 	  else
 	    return s;
@@ -1811,58 +1811,58 @@ Generator lastGenerator(CoxGraph& G, LFlags I)
 	};
     }
     case 'F':
-      return firstBit(f);
+      return constants::firstBit(f);
     case 'H': {
-      Generator s = firstBit(f);
-      Generator t = firstBit(G.star(I,s));
+      coxtypes::Generator s = constants::firstBit(f);
+      coxtypes::Generator t = constants::firstBit(G.star(I,s));
       CoxEntry m = G.M(s,t);
       switch (m)
 	{
 	case 3:
 	  return s;
 	case 5:
-	  f &= ~(lmask[s]);
-	  return firstBit(f);
+	  f &= ~(constants::lmask[s]);
+	  return constants::firstBit(f);
 	};
     }
     case 'a':
-      return firstBit(I);
+      return constants::firstBit(I);
     case 'b': {
-      Generator s = firstBit(f);
-      Generator t = firstBit(G.star(I,s));
+      coxtypes::Generator s = constants::firstBit(f);
+      coxtypes::Generator t = constants::firstBit(G.star(I,s));
       CoxEntry m = G.M(s,t);
       switch (m)
 	{
 	case 3:
 	  return s;
 	case 4:
-	  f &= ~(lmask[s]);
-	  return firstBit(f);
+	  f &= ~(constants::lmask[s]);
+	  return constants::firstBit(f);
 	};
     }
     case 'c':
-      return firstBit(f);
+      return constants::firstBit(f);
     case 'd':
-      return firstBit(f);
+      return constants::firstBit(f);
     case 'e': {
       switch (l)
 	{
 	case 7:
-	  return firstBit(f);
+	  return constants::firstBit(f);
 	case 8: {
-	  Generator n = firstBit(G.nodes(I));
+	  coxtypes::Generator n = constants::firstBit(G.nodes(I));
 	  f &= ~(G.star(n));
-	  return firstBit(f);
+	  return constants::firstBit(f);
 	}
 	case 9: {
-	  Generator n = firstBit(G.nodes(I));
+	  coxtypes::Generator n = constants::firstBit(G.nodes(I));
 	  f &= ~(G.star(n));
-	  Generator s = firstBit(f);
-	  Generator t = firstBit(G.star(I,s));
-	  if (lmask[t] & G.star(n))
+	  coxtypes::Generator s = constants::firstBit(f);
+	  coxtypes::Generator t = constants::firstBit(G.star(I,s));
+	  if (constants::lmask[t] & G.star(n))
 	    {
-	      f &= ~(lmask[s]);
-	      return firstBit(f);
+	      f &= ~(constants::lmask[s]);
+	      return constants::firstBit(f);
 	    }
 	  else
 	    return s;
@@ -1870,37 +1870,37 @@ Generator lastGenerator(CoxGraph& G, LFlags I)
 	};
     }
     case 'f': {
-      Generator s = firstBit(f);
-      LFlags I1 = I & ~(lmask[s]);
+      coxtypes::Generator s = constants::firstBit(f);
+      bits::Lflags I1 = I & ~(constants::lmask[s]);
       switch ((irrType(G,I1))[0])
 	{
 	case 'B':
-	  f &= ~(lmask[s]);
-	  return firstBit(f);
+	  f &= ~(constants::lmask[s]);
+	  return constants::firstBit(f);
 	case 'F':
 	  return s;
 	};
     }
     case 'g': {
-      Generator s = firstBit(f);
-      Generator t = firstBit(G.star(I,s));
+      coxtypes::Generator s = constants::firstBit(f);
+      coxtypes::Generator t = constants::firstBit(G.star(I,s));
       CoxEntry m = G.M(s,t);
       switch (m)
 	{
 	case 3:
 	  return s;
 	case 6:
-	  f &= ~(lmask[s]);
-	  return firstBit(f);
+	  f &= ~(constants::lmask[s]);
+	  return constants::firstBit(f);
 	};
     }
     default:
-      return lastBit(I);
+      return constants::lastBit(I);
     };
 }
 
 
-CoxEntry maxCoefficient(CoxGraph& G, LFlags I)
+CoxEntry maxCoefficient(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns the maximal coefficient in the Coxeter matrix restricted to
@@ -1908,17 +1908,17 @@ CoxEntry maxCoefficient(CoxGraph& G, LFlags I)
 */
 
 {
-  if (bitCount(I) == 1)
+  if (bits::bitCount(I) == 1)
     return 1;
 
   CoxEntry m = 2;
 
-  for (LFlags fs = I; fs; fs &= fs-1)
+  for (bits::Lflags fs = I; fs; fs &= fs-1)
     {
-      Generator s = firstBit(fs);
-      for (LFlags ft = fs&G.star(s); ft; ft &= ft-1)
+      coxtypes::Generator s = constants::firstBit(fs);
+      for (bits::Lflags ft = fs&G.star(s); ft; ft &= ft-1)
 	{
-	  Generator t = firstBit(ft);
+	  coxtypes::Generator t = constants::firstBit(ft);
 	  if (G.M(s,t) == 0)
 	    return 0;
 	  if (G.M(s,t) > m)
@@ -1930,7 +1930,7 @@ CoxEntry maxCoefficient(CoxGraph& G, LFlags I)
 }
 
 
-CoxEntry minCoefficient(CoxGraph& G, LFlags I)
+CoxEntry minCoefficient(CoxGraph& G, bits::Lflags I)
 
 /*
   Returns the minimal coefficient > 2 in the Coxeter matrix restricted
@@ -1939,17 +1939,17 @@ CoxEntry minCoefficient(CoxGraph& G, LFlags I)
 */
 
 {
-  if (bitCount(I) == 1)
+  if (bits::bitCount(I) == 1)
     return 1;
 
   CoxEntry m = maxCoefficient(G,I);
   if (m == 2)
     return 2;
 
-  for (Generator s = 0; s < G.rank(); s++)
-    for (LFlags f = I&G.star(s); f; f &= f-1)
+  for (coxtypes::Generator s = 0; s < G.rank(); s++)
+    for (bits::Lflags f = I&G.star(s); f; f &= f-1)
       {
-	Generator t = firstBit(f);
+	coxtypes::Generator t = constants::firstBit(f);
 	if ((G.M(s,t) != 0) && (G.M(s,t) < m))
 	  m = G.M(s,t);
       }

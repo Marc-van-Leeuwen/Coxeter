@@ -24,17 +24,17 @@ namespace {
 
   const char *alphabet = "abcdefghijklmnopqrstuvwxyz";
   // never used: |const char *affine = "abcdefg";|
-  const Token not_token = RANK_MAX+1;
-  const Token prefix_token = RANK_MAX+2;
-  const Token postfix_token = RANK_MAX+3;
-  const Token separator_token = RANK_MAX+4;
-  const Token begingroup_token = RANK_MAX+5;
-  const Token endgroup_token = RANK_MAX+6;
-  const Token longest_token = RANK_MAX+7;
-  const Token inverse_token = RANK_MAX+8;
-  const Token power_token = RANK_MAX+9;
-  const Token contextnbr_token = RANK_MAX+10;
-  const Token densearray_token = RANK_MAX+11;
+  const Token not_token = coxtypes::RANK_MAX+1;
+  const Token prefix_token = coxtypes::RANK_MAX+2;
+  const Token postfix_token = coxtypes::RANK_MAX+3;
+  const Token separator_token = coxtypes::RANK_MAX+4;
+  const Token begingroup_token = coxtypes::RANK_MAX+5;
+  const Token endgroup_token = coxtypes::RANK_MAX+6;
+  const Token longest_token = coxtypes::RANK_MAX+7;
+  const Token inverse_token = coxtypes::RANK_MAX+8;
+  const Token power_token = coxtypes::RANK_MAX+9;
+  const Token contextnbr_token = coxtypes::RANK_MAX+10;
+  const Token densearray_token = coxtypes::RANK_MAX+11;
 
   const unsigned prefix_bit = 0;
   const unsigned postfix_bit = 1;
@@ -44,17 +44,17 @@ namespace {
 namespace {
   using namespace interface;
 
-  void makeSymbols(List<std::string>& list, const std::string* const symbol, Ulong n);
-  CoxNbr toCoxNbr(char c);
-  Automaton *tokenAutomaton(LFlags f);
-  Automaton *tokenAut0();
-  Automaton *tokenAut1();
-  Automaton *tokenAut2();
-  Automaton *tokenAut3();
-  Automaton *tokenAut4();
-  Automaton *tokenAut5();
-  Automaton *tokenAut6();
-  Automaton *tokenAut7();
+  void makeSymbols(list::List<std::string>& list, const std::string* const symbol, Ulong n);
+  coxtypes::CoxNbr toCoxNbr(char c);
+  automata::Automaton *tokenAutomaton(bits::Lflags f);
+  automata::Automaton *tokenAut0();
+  automata::Automaton *tokenAut1();
+  automata::Automaton *tokenAut2();
+  automata::Automaton *tokenAut3();
+  automata::Automaton *tokenAut4();
+  automata::Automaton *tokenAut5();
+  automata::Automaton *tokenAut6();
+  automata::Automaton *tokenAut7();
 
 };
 
@@ -142,7 +142,7 @@ namespace interface {
 
 // Construct the default interface (see the introduction.)
 
-Interface::Interface(const Type& x, const Rank& l)
+Interface::Interface(const type::Type& x, const coxtypes::Rank& l)
   :d_order(l),
    d_beginGroup("("),
    d_endGroup(")"),
@@ -213,7 +213,7 @@ void Interface::readSymbols()
   if (inPostfix().length())
     d_symbolTree.insert(inPostfix(),postfix_token);
 
-  for (Generator s = 0; s < rank(); ++s) {
+  for (coxtypes::Generator s = 0; s < rank(); ++s) {
     d_symbolTree.insert(inSymbol(s),s+1);
   }
 
@@ -231,7 +231,7 @@ void Interface::readSymbols()
 void Interface::setAutomaton()
 
 {
-  LFlags f = 0;
+  bits::Lflags f = 0;
 
   using constants::lmask;
 
@@ -247,7 +247,7 @@ void Interface::setAutomaton()
   return;
 }
 
-void Interface::setDescent(Default)
+void Interface::setDescent(io::Default)
 
 /*
   Resets the DescentSetInterface to the default parameters.
@@ -258,14 +258,14 @@ void Interface::setDescent(Default)
   return;
 }
 
-void Interface::setDescent(GAP)
+void Interface::setDescent(io::GAP)
 
 /*
   Resets the DescentSetInterface to GAP parameters.
 */
 
 {
-  new(d_descent) DescentSetInterface(GAP());
+  new(d_descent) DescentSetInterface(io::GAP());
   return;
 }
 
@@ -284,7 +284,7 @@ void Interface::setIn(const GroupEltInterface& i)
   return;
 }
 
-void Interface::setOrder(const Permutation& order)
+void Interface::setOrder(const bits::Permutation& order)
 
 /*
   Resets the numbering of the generators. The given ordering is the
@@ -294,7 +294,7 @@ void Interface::setOrder(const Permutation& order)
 */
 
 {
-  for (Generator s = 0; s < rank(); ++s) {
+  for (coxtypes::Generator s = 0; s < rank(); ++s) {
     d_order[order[s]] = s;
   }
 
@@ -313,7 +313,8 @@ void Interface::setOut(const GroupEltInterface& i)
 
 /******** input-output *******************************************************/
 
-bool Interface::parseCoxWord(ParseInterface& P, const MinTable& T) const
+bool Interface::parseCoxWord
+  (interface::ParseInterface& P, const minroots::MinTable& T) const
 
 /*
   This function parses a CoxWord from the line, starting at position r, and
@@ -348,15 +349,15 @@ bool Interface::parseCoxWord(ParseInterface& P, const MinTable& T) const
   Token tok = 0;
 
   while (Ulong p = getToken(P,tok)) {
-    Letter tok_type = tokenType(tok);
+    automata::Letter tok_type = tokenType(tok);
     if (tok_type > separator_type) /* end of coxword */
       break;
-    State y = d_tokenAut->act(P.x,tok_type);
+    automata::State y = d_tokenAut->act(P.x,tok_type);
     if (d_tokenAut->isFailure(y)) /* end of coxword */
       break;
     P.x = y;
     if (tok_type == generator_type) {
-      Generator s = tok-1;
+      coxtypes::Generator s = tok-1;
       T.prod(P.c,s);
     }
     P.offset += p;
@@ -370,7 +371,7 @@ bool Interface::parseCoxWord(ParseInterface& P, const MinTable& T) const
   return true;
 }
 
-bool Interface::readCoxElt(ParseInterface& P) const
+bool Interface::readCoxElt(interface::ParseInterface& P) const
 
 /*
   This function attempts to read a Coxeter element from P. It does not
@@ -382,37 +383,37 @@ bool Interface::readCoxElt(ParseInterface& P) const
 
 {
   Token tok = 0;
-  LFlags f = 0;
+  bits::Lflags f = 0;
 
   // in case this is a second attempt after an incomplete read, make
   // f hold the part already read
 
   for (Ulong j = 0; j < P.c.length(); ++j)
-    f |= lmask[P.c[j]-1];
+    f |= constants::lmask[P.c[j]-1];
 
   // read new part
 
   while (Ulong p = getToken(P,tok)) {
-    Letter tok_type = tokenType(tok);
+    automata::Letter tok_type = tokenType(tok);
     if (tok_type > separator_type) /* end of coxword */
       break;
-    State y = d_tokenAut->act(P.x,tok_type);
+    automata::State y = d_tokenAut->act(P.x,tok_type);
     if (d_tokenAut->isFailure(y)) /* end of coxword */
       break;
     P.x = y;
     if (tok_type == generator_type) {
-      if (f & lmask[tok-1]) { // generator already appeared
+      if (f & constants::lmask[tok-1]) { // generator already appeared
 	ERRNO = NOT_COXELT;
 	return true;
       }
-      f |= lmask[tok-1];
+      f |= constants::lmask[tok-1];
       P.c.append(tok);
     }
     P.offset += p;
   }
 
   if (d_tokenAut->isAccept(P.x)) { /* input is subword of coxelt */
-    if ((f != 0) && (f != leqmask[rank()-1]))
+    if ((f != 0) && (f != constants::leqmask[rank()-1]))
       ERRNO = NOT_COXELT;
     else
       P.x = 0;
@@ -473,7 +474,7 @@ DescentSetInterface::DescentSetInterface()
 
 {}
 
-DescentSetInterface::DescentSetInterface(GAP)
+DescentSetInterface::DescentSetInterface(io::GAP)
   :prefix("["),postfix("]"),separator(","),twosidedPrefix("[["),
    twosidedPostfix("]]"),twosidedSeparator("],[")
 {}
@@ -544,7 +545,7 @@ namespace interface {
 
 
 // Construct the default interface in rank |l|.
-GroupEltInterface::GroupEltInterface(const Rank& l)
+GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l)
   :symbol(l),prefix(),postfix(),separator()
 {
   symbol.setSize(l);
@@ -556,7 +557,7 @@ GroupEltInterface::GroupEltInterface(const Rank& l)
   }
 }
 
-GroupEltInterface::GroupEltInterface(const Rank& l, Alphabetic)
+GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, Alphabetic)
   :symbol(l),prefix(""),postfix(""),separator("")
 /*
   Constructs the GAP interface in rank l. This represents Coxeter words
@@ -572,7 +573,7 @@ GroupEltInterface::GroupEltInterface(const Rank& l, Alphabetic)
     separator = ".";
 }
 
-GroupEltInterface::GroupEltInterface(const Rank& l, Decimal)
+GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, Decimal)
   :symbol(l),prefix(""),postfix(""),separator("")
 /*
   Constructs the GAP interface in rank l. This represents Coxeter words
@@ -588,7 +589,7 @@ GroupEltInterface::GroupEltInterface(const Rank& l, Decimal)
     separator = ".";
 }
 
-GroupEltInterface::GroupEltInterface(const Rank& l, GAP)
+GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, io::GAP)
   :symbol(l),prefix("["),postfix("]"),separator(",")
 /*
   Constructs the GAP interface in rank l. This represents Coxeter words
@@ -601,7 +602,7 @@ GroupEltInterface::GroupEltInterface(const Rank& l, GAP)
   makeSymbols(symbol,decimalSymbols(l),l);
 }
 
-GroupEltInterface::GroupEltInterface(const Rank& l, Hexadecimal)
+GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, Hexadecimal)
   :symbol(l),prefix(""),postfix(""),separator("")
 /*
   Constructs the hexadecimal interface in rank l. This represents Coxeter
@@ -617,7 +618,7 @@ GroupEltInterface::GroupEltInterface(const Rank& l, Hexadecimal)
     separator = ".";
 }
 
-GroupEltInterface::GroupEltInterface(const Rank& l, HexadecimalFromZero)
+GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, HexadecimalFromZero)
   :symbol(l),prefix(""),postfix(""),separator("")
 
 /*
@@ -657,7 +658,7 @@ void GroupEltInterface::print(FILE* file) const
   io::print(file,postfix);
   fprintf(file,"\n");
 
-  for (Generator s = 0; s < symbol.size(); ++s) {
+  for (coxtypes::Generator s = 0; s < symbol.size(); ++s) {
     fprintf(file,"symbol #%d: ",s+1);
     io::print(file,symbol[s]);
     fprintf(file,"\n");
@@ -689,7 +690,7 @@ void GroupEltInterface::setSeparator(const std::string& a)
   return;
 }
 
-void GroupEltInterface::setSymbol(const Generator& s, const std::string& a)
+void GroupEltInterface::setSymbol(const coxtypes::Generator& s, const std::string& a)
 
 /*
   Sets the symbol for generator s to a. Remember that the relation between
@@ -728,7 +729,7 @@ ReservedSymbols::ReservedSymbols()
 
 {}
 
-ReservedSymbols::ReservedSymbols(Default)
+  ReservedSymbols::ReservedSymbols(io::Default)
   :beginGroup("("),endGroup(")"),longest("*"),inverse("!"),power("^"),
    contextnbr("%"),densearray("#")
 
@@ -775,7 +776,7 @@ namespace interface {
 */
 const std::string* alphabeticSymbols(Ulong n)
 {
-  static List<std::string> list(0);
+  static list::List<std::string> list(0);
   static bool first = true;
 
   if (first) {
@@ -803,7 +804,7 @@ const std::string* alphabeticSymbols(Ulong n)
 */
 const std::string* decimalSymbols(Ulong n)
 {
-  static List<std::string> list(0);
+  static list::List<std::string> list(0);
 
   if (n > list.size()) { // enlarge the list
     Ulong prev_size = list.size();
@@ -824,7 +825,7 @@ const std::string* decimalSymbols(Ulong n)
 */
 const std::string* hexSymbolsFromZero(Ulong n)
 {
-  static List<std::string> list;
+  static list::List<std::string> list;
 
   if (n > list.size()) { /* enlarge the list */
     Ulong prev_size = list.size();
@@ -846,7 +847,7 @@ const std::string* hexSymbols(Ulong n)
 */
 
 {
-  static List<std::string> list;
+  static list::List<std::string> list;
 
   if (n > list.size()) { /* enlarge the list */
     Ulong prev_size = list.size();
@@ -871,7 +872,7 @@ const std::string* twohexSymbols(Ulong n)
 */
 
 {
-  static List<std::string> list;
+  static list::List<std::string> list;
 
   if (n > list.size()) { /* enlarge the list */
     Ulong prev_size = list.size();
@@ -885,10 +886,10 @@ const std::string* twohexSymbols(Ulong n)
   return list.ptr();
 }
 
-const Permutation& identityOrder(Ulong n)
+const bits::Permutation& identityOrder(Ulong n)
 
 {
-  static Permutation list(0);
+  static bits::Permutation list(0);
   static Ulong valid_range = 0;
 
   if (n > valid_range) { /* enlarge the list */
@@ -907,7 +908,7 @@ const Permutation& identityOrder(Ulong n)
 
 /****************************************************************************
 
-        Chapter VI -- The ParseInterface class.
+        Chapter VI -- The interface::ParseInterface class.
 
   This class provides a convenient interface for the delicate operation of
   parsing. The point is that we wish to be able to parse interactively, and
@@ -916,8 +917,8 @@ const Permutation& identityOrder(Ulong n)
 
   The following functions are defined :
 
-    - ParseInterface();
-    - ~ParseInterface();
+    - interface::ParseInterface();
+    - ~interface::ParseInterface();
     - reset();
 
  ****************************************************************************/
@@ -940,7 +941,7 @@ ParseInterface::~ParseInterface()
 
 {}
 
-void ParseInterface::reset()
+void interface::ParseInterface::reset()
 {
   str.resize(0);
   nestlevel = 0;
@@ -999,7 +1000,7 @@ Ulong TokenTree::find(const std::string& str, const Ulong& n, Token& val) const
 {
   TokenCell *lastfound = d_root;
   TokenCell *cell = d_root;
-  Ulong q = skipSpaces(str,n);
+  Ulong q = io::skipSpaces(str,n);
   Ulong p = 0;
 
   for (Ulong j = 0; j < str.length()-q-n; ++j) {
@@ -1079,7 +1080,7 @@ void TokenTree::insert(const std::string& str, const Token& val)
 
 namespace interface {
 
-std::string& append(std::string& str, const CoxWord& g, const GroupEltInterface& GI)
+std::string& append(std::string& str, const coxtypes::CoxWord& g, const GroupEltInterface& GI)
 
 /*
   Appends the string g to the string str in the output format defined by I.
@@ -1089,7 +1090,7 @@ std::string& append(std::string& str, const CoxWord& g, const GroupEltInterface&
   str.append(GI.prefix);
 
   for (Ulong j = 0; j < g.length(); ++j) {
-    Generator s = g[j]-1;
+    coxtypes::Generator s = g[j]-1;
     str.append(GI.symbol[s]);
     if (j+1 < g.length())  /* more to come */
       str.append(GI.separator);
@@ -1100,7 +1101,7 @@ std::string& append(std::string& str, const CoxWord& g, const GroupEltInterface&
   return str;
 }
 
-std::string& append(std::string& str, const LFlags& f, const Interface& I)
+std::string& append(std::string& str, const bits::Lflags& f, const Interface& I)
 
 /*
   Appends to str the representation of f as a one-sided descent set,
@@ -1112,9 +1113,9 @@ std::string& append(std::string& str, const LFlags& f, const Interface& I)
 
   str.append(d.prefix);
 
-  for (LFlags f1 = f; f1;)
+  for (bits::Lflags f1 = f; f1;)
     {
-      Generator s = bits::firstBit(f1);
+      coxtypes::Generator s = constants::firstBit(f1);
       appendSymbol(str,s,I);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
@@ -1126,7 +1127,7 @@ std::string& append(std::string& str, const LFlags& f, const Interface& I)
   return str;
 }
 
-std::string& appendTwosided(std::string& str, const LFlags& f, const Interface& I)
+std::string& appendTwosided(std::string& str, const bits::Lflags& f, const Interface& I)
 
 /*
   Appends to str the representation of f as a two-sided descent set,
@@ -1138,9 +1139,9 @@ std::string& appendTwosided(std::string& str, const LFlags& f, const Interface& 
 
   str.append(d.twosidedPrefix);
 
-  for (LFlags f1 = f>>I.rank(); f1;) // left descents
+  for (bits::Lflags f1 = f>>I.rank(); f1;) // left descents
     {
-      Generator s = bits::firstBit(f1);
+      coxtypes::Generator s = constants::firstBit(f1);
       appendSymbol(str,s,I);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
@@ -1149,9 +1150,9 @@ std::string& appendTwosided(std::string& str, const LFlags& f, const Interface& 
 
   str.append(d.twosidedSeparator);
 
-  for (LFlags f1 = f&leqmask[I.rank()-1]; f1;) // right descents
+  for (bits::Lflags f1 = f&constants::leqmask[I.rank()-1]; f1;) // right descents
     {
-      Generator s = bits::firstBit(f1);
+      coxtypes::Generator s = constants::firstBit(f1);
       appendSymbol(str,s,I);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
@@ -1163,7 +1164,7 @@ std::string& appendTwosided(std::string& str, const LFlags& f, const Interface& 
   return str;
 }
 
-void print(FILE *file, const CoxWord& g, const GroupEltInterface& GI)
+void print(FILE *file, const coxtypes::CoxWord& g, const GroupEltInterface& GI)
 
 /*
   Prints the CoxWord g to the file in GI's format.
@@ -1173,7 +1174,7 @@ void print(FILE *file, const CoxWord& g, const GroupEltInterface& GI)
   io::print(file,GI.prefix);
 
   for (Ulong j = 0; j < g.length(); ++j) {
-    Generator s = g[j]-1;
+    coxtypes::Generator s = g[j]-1;
     io::print(file,GI.symbol[s]);
     if (j+1 < g.length())  /* more to come */
       io::print(file,GI.separator);
@@ -1182,7 +1183,7 @@ void print(FILE *file, const CoxWord& g, const GroupEltInterface& GI)
   io::print(file,GI.postfix);
 }
 
-void print(FILE *file, const LFlags& f, const DescentSetInterface& DI,
+void print(FILE *file, const bits::Lflags& f, const DescentSetInterface& DI,
 	   const GroupEltInterface& GI)
 
 /*
@@ -1193,9 +1194,9 @@ void print(FILE *file, const LFlags& f, const DescentSetInterface& DI,
 {
   io::print(file,DI.prefix);
 
-  for (LFlags f1 = f; f1;)
+  for (bits::Lflags f1 = f; f1;)
     {
-      Generator s = bits::firstBit(f1);
+      coxtypes::Generator s = constants::firstBit(f1);
       io::print(file,GI.symbol[s]);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
@@ -1207,8 +1208,9 @@ void print(FILE *file, const LFlags& f, const DescentSetInterface& DI,
   return;
 }
 
-void printTwosided(FILE *file, const LFlags& f, const DescentSetInterface& DI,
-		   const GroupEltInterface& GI, const Rank& l)
+void printTwosided
+  (FILE *file, const bits::Lflags& f, const DescentSetInterface& DI,
+   const GroupEltInterface& GI, const coxtypes::Rank& l)
 
 /*
   Prints f as a two-sided descent set, according to the current
@@ -1218,9 +1220,9 @@ void printTwosided(FILE *file, const LFlags& f, const DescentSetInterface& DI,
 {
   io::print(file,DI.twosidedPrefix);
 
-  for (LFlags f1 = f>>l; f1;) // left descents
+  for (bits::Lflags f1 = f>>l; f1;) // left descents
     {
-      Generator s = bits::firstBit(f1);
+      coxtypes::Generator s = constants::firstBit(f1);
       io::print(file,GI.symbol[s]);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
@@ -1229,9 +1231,9 @@ void printTwosided(FILE *file, const LFlags& f, const DescentSetInterface& DI,
 
   io::print(file,DI.twosidedSeparator);
 
-  for (LFlags f1 = f&leqmask[l-1]; f1;) // right descents
+  for (bits::Lflags f1 = f&constants::leqmask[l-1]; f1;) // right descents
     {
-      Generator s = bits::firstBit(f1);
+      coxtypes::Generator s = constants::firstBit(f1);
       io::print(file,GI.symbol[s]);
       f1 &= f1-1;
       if (f1)  /* there is more to come */
@@ -1289,7 +1291,7 @@ const std::string* checkLeadingWhite(const GroupEltInterface& GI)
     return &GI.separator;
   if (isspace(GI.postfix[0]))
     return &GI.postfix;
-  for (Generator s = 0; s < GI.symbol.size(); ++s) {
+  for (coxtypes::Generator s = 0; s < GI.symbol.size(); ++s) {
     if (isspace(GI.symbol[s][0]))
       return &GI.symbol[s];
   }
@@ -1309,21 +1311,21 @@ bool checkRepeated(const GroupEltInterface& GI)
 */
 
 {
-  List<std::string> l(0);
+  list::List<std::string> l(0);
 
   if (GI.prefix.length())
     insert(l,GI.prefix);
-  if (find(l,GI.separator) != not_found)
+  if (find(l,GI.separator) != list::not_found)
     return false;
   if (GI.separator.length())
     insert(l,GI.separator);
-  if (find(l,GI.postfix) != not_found)
+  if (find(l,GI.postfix) != list::not_found)
     return false;
   if (GI.separator.length())
     insert(l,GI.postfix);
 
-  for (Generator s = 0; s < GI.symbol.size(); ++s) {
-    if (find(l,GI.symbol[s]) != not_found)
+  for (coxtypes::Generator s = 0; s < GI.symbol.size(); ++s) {
+    if (find(l,GI.symbol[s]) != list::not_found)
       return false;
     if (GI.symbol[s].length())
       insert(l,GI.symbol[s]);
@@ -1346,7 +1348,7 @@ const std::string* checkReserved(const GroupEltInterface& GI, const Interface& I
     return &GI.separator;
   if (I.isReserved(GI.postfix))
     return &GI.postfix;
-  for (Generator s = 0; s < GI.symbol.size(); ++s) {
+  for (coxtypes::Generator s = 0; s < GI.symbol.size(); ++s) {
     if (I.isReserved(GI.symbol[s]))
       return &GI.symbol[s];
   }
@@ -1354,7 +1356,7 @@ const std::string* checkReserved(const GroupEltInterface& GI, const Interface& I
   return 0;
 }
 
-Ulong descentWidth(const LFlags& f, const Interface& I)
+Ulong descentWidth(const bits::Lflags& f, const Interface& I)
 
 /*
   Returns the width of the printout of the descent set. We assume that
@@ -1364,11 +1366,11 @@ Ulong descentWidth(const LFlags& f, const Interface& I)
 {
   std::string str;
 
-  if (f == leqmask[2*I.rank()-1]) {    // two-sided descents
+  if (f == constants::leqmask[2*I.rank()-1]) {    // two-sided descents
     interface::appendTwosided(str,f,I);
   }
   else {                               // one-sided descents
-    interface::append(str,leqmask[I.rank()-1],I);
+    interface::append(str,constants::leqmask[I.rank()-1],I);
   }
 
   return(str.length());
@@ -1426,7 +1428,7 @@ bool isPower(const Token& tok)
 
 namespace {
 
-void makeSymbols(List<std::string>& list, const std::string* const symbol, Ulong n)
+void makeSymbols(list::List<std::string>& list, const std::string* const symbol, Ulong n)
 
 /*
   This function deep-copies the n first entries of symbol onto the
@@ -1447,7 +1449,7 @@ void makeSymbols(List<std::string>& list, const std::string* const symbol, Ulong
 
 namespace interface {
 
-CoxNbr readCoxNbr(ParseInterface& P, Ulong size)
+coxtypes::CoxNbr readCoxNbr(interface::ParseInterface& P, Ulong size)
 
 /*
   This function reads a CoxNbr off P.str, at position P.offset. It returns
@@ -1461,7 +1463,7 @@ CoxNbr readCoxNbr(ParseInterface& P, Ulong size)
 
 {
   std::string& str = P.str;
-  P.offset += skipSpaces(str,P.offset);
+  P.offset += io::skipSpaces(str,P.offset);
 
   Ulong c = 0;
   Ulong p = 0;
@@ -1470,28 +1472,28 @@ CoxNbr readCoxNbr(ParseInterface& P, Ulong size)
   if ((str[q] == '0') && (str[q+1] == 'x')) { /* process hex number */
     p += 2;
     while (isxdigit(str[q+p])) {
-      CoxNbr x = toCoxNbr(str[q+p]);
+      coxtypes::CoxNbr x = toCoxNbr(str[q+p]);
       if (size <= x) /* overflow */
-	return undef_coxnbr;
+	return coxtypes::undef_coxnbr;
       if (size/16 < c) /* overflow */
-	return undef_coxnbr;
+	return coxtypes::undef_coxnbr;
       c *= 16;
       if ((size-x) < c) /* overflow */
-	return undef_coxnbr;
+	return coxtypes::undef_coxnbr;
       c += x;
       p++;
     }
   }
   else { /* process decimal number */
     while (isdigit(str[q+p])) {
-      CoxNbr x = toCoxNbr(str[q+p]);
+      coxtypes::CoxNbr x = toCoxNbr(str[q+p]);
       if (size <= x) /* overflow */
-	return undef_coxnbr;
+	return coxtypes::undef_coxnbr;
       if (size/10 < c) /* overflow */
-	return undef_coxnbr;
+	return coxtypes::undef_coxnbr;
       c *= 10;
       if ((size-x) <= c) /* overflow */
-	return undef_coxnbr;
+	return coxtypes::undef_coxnbr;
       c += x;
       p++;
     }
@@ -1505,7 +1507,7 @@ CoxNbr readCoxNbr(ParseInterface& P, Ulong size)
 
 namespace {
 
-CoxNbr toCoxNbr(char c)
+coxtypes::CoxNbr toCoxNbr(char c)
 
 /*
   This is an implementation of the toint function, which is not guaranteed
@@ -1525,7 +1527,7 @@ CoxNbr toCoxNbr(char c)
   return 0;
 }
 
-Automaton *tokenAutomaton(LFlags f)
+automata::Automaton *tokenAutomaton(bits::Lflags f)
 
 {
   switch(f) {
@@ -1550,7 +1552,7 @@ Automaton *tokenAutomaton(LFlags f)
   };
 }
 
-Automaton *tokenAut0()
+automata::Automaton *tokenAut0()
 
 /*
   Word recognizer for the case where prefix, postfix and separator are all
@@ -1558,7 +1560,7 @@ Automaton *tokenAut0()
 */
 
 {
-  static ExplicitAutomaton aut(2,5);
+  static automata::ExplicitAutomaton aut(2,5);
 
   aut.setInitial(0);
   aut.setFailure(1);
@@ -1579,7 +1581,7 @@ Automaton *tokenAut0()
   return &aut;
 }
 
-Automaton *tokenAut1()
+automata::Automaton *tokenAut1()
 
 /*
   Word recognizer for the case where postfix and separator are empty, but
@@ -1587,7 +1589,7 @@ Automaton *tokenAut1()
 */
 
 {
-  static ExplicitAutomaton aut(3,5);
+  static automata::ExplicitAutomaton aut(3,5);
 
   aut.setInitial(0);
   aut.setFailure(2);
@@ -1614,7 +1616,7 @@ Automaton *tokenAut1()
   return &aut;
 }
 
-Automaton *tokenAut2()
+automata::Automaton *tokenAut2()
 
 /*
   Word recognizer for the case where prefix and separator are empty,
@@ -1622,7 +1624,7 @@ Automaton *tokenAut2()
 */
 
 {
-  static ExplicitAutomaton aut(3,5);
+  static automata::ExplicitAutomaton aut(3,5);
 
   aut.setInitial(0);
   aut.setFailure(2);
@@ -1649,7 +1651,7 @@ Automaton *tokenAut2()
   return &aut;
 }
 
-Automaton *tokenAut3()
+automata::Automaton *tokenAut3()
 
 /*
   Word recognizer for the case where prefix and postfix are non-empty,
@@ -1657,7 +1659,7 @@ Automaton *tokenAut3()
 */
 
 {
-  static ExplicitAutomaton aut(4,5);
+  static automata::ExplicitAutomaton aut(4,5);
 
   aut.setInitial(0);
   aut.setFailure(3);
@@ -1690,7 +1692,7 @@ Automaton *tokenAut3()
   return &aut;
 }
 
-Automaton *tokenAut4()
+automata::Automaton *tokenAut4()
 
 /*
   Word recognizer for the case where prefix and postfix are empty,
@@ -1698,7 +1700,7 @@ Automaton *tokenAut4()
 */
 
 {
-  static ExplicitAutomaton aut(4,5);
+  static automata::ExplicitAutomaton aut(4,5);
 
   aut.setInitial(0);
   aut.setFailure(3);
@@ -1732,7 +1734,7 @@ Automaton *tokenAut4()
   return &aut;
 }
 
-Automaton *tokenAut5()
+automata::Automaton *tokenAut5()
 
 /*
   Word recognizer for the case where prefix and separator are non-empty,
@@ -1740,7 +1742,7 @@ Automaton *tokenAut5()
 */
 
 {
-  static ExplicitAutomaton aut(5,5);
+  static automata::ExplicitAutomaton aut(5,5);
 
   aut.setInitial(0);
   aut.setFailure(4);
@@ -1780,7 +1782,7 @@ Automaton *tokenAut5()
   return &aut;
 }
 
-Automaton *tokenAut6()
+automata::Automaton *tokenAut6()
 
 /*
   Word recognizer for the case where postfix and separator are non-empty,
@@ -1788,7 +1790,7 @@ Automaton *tokenAut6()
 */
 
 {
-  static ExplicitAutomaton aut(5,5);
+  static automata::ExplicitAutomaton aut(5,5);
 
   aut.setInitial(0);
   aut.setFailure(4);
@@ -1827,7 +1829,7 @@ Automaton *tokenAut6()
   return &aut;
 }
 
-Automaton *tokenAut7()
+automata::Automaton *tokenAut7()
 
 /*
   Word recognizer for the case where prefix, postfix and separator are all
@@ -1835,7 +1837,7 @@ Automaton *tokenAut7()
 */
 
 {
-  static ExplicitAutomaton aut(6,5);
+  static automata::ExplicitAutomaton aut(6,5);
 
   aut.setInitial(0);
   aut.setFailure(5);
@@ -1896,7 +1898,7 @@ Automaton *tokenAut7()
 
 namespace interface {
 
-Letter tokenType(const Token& tok)
+automata::Letter tokenType(const Token& tok)
 
 /*
   Returns the type of the token : one of generator_type, separator_type,

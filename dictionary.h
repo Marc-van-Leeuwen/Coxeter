@@ -12,10 +12,6 @@
 #include "globals.h"
 #include "sl_list.h"
 
-namespace dictionary {
-  using namespace globals;
-};
-
 /******** type declarations *************************************************/
 
 namespace dictionary {
@@ -26,11 +22,6 @@ namespace dictionary {
 #include "memory.h"
 #include "io.h"
 #include <memory> // for |std::shared_ptr|
-
-namespace dictionary {
-  using namespace memory;
-  using namespace io;
-};
 
 /******** function declarations *********************************************/
 
@@ -50,9 +41,9 @@ template <typename T> struct DictCell {
   DictCell *right;
   char letter;
 /* constructors and destructors */
-  void* operator new(size_t size) {return arena().alloc(size);}
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return arena().free(ptr,sizeof(DictCell));}
+    {return memory::arena().free(ptr,sizeof(DictCell));}
   DictCell(char c, std::shared_ptr<T> v,
 	   DictCell *l = nullptr, DictCell *r = nullptr)
     :ptr(v), left(l), right(r), letter(c) {};

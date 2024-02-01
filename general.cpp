@@ -23,7 +23,7 @@
 
 namespace general {
 
-GeneralCoxGroup::GeneralCoxGroup(const Type& x, const Rank& l)
+GeneralCoxGroup::GeneralCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :CoxGroup(x,l)
 
 /*
@@ -31,7 +31,7 @@ GeneralCoxGroup::GeneralCoxGroup(const Type& x, const Rank& l)
 */
 
 {
-  if (ERRNO) /* problem with the CoxGroup initialization */
+  if (error::ERRNO) /* problem with the CoxGroup initialization */
     return;
 }
 
@@ -44,7 +44,7 @@ GeneralCoxGroup::~GeneralCoxGroup()
 
 {}
 
-BigRankCoxGroup::BigRankCoxGroup(const Type& x, const Rank& l)
+BigRankCoxGroup::BigRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :GeneralCoxGroup(x,l)
 
 /*
@@ -63,7 +63,7 @@ BigRankCoxGroup::~BigRankCoxGroup()
 
 {}
 
-GeneralBRCoxGroup::GeneralBRCoxGroup(const Type& x, const Rank& l)
+GeneralBRCoxGroup::GeneralBRCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :BigRankCoxGroup(x,l)
 
 {}
@@ -77,7 +77,7 @@ GeneralBRCoxGroup::~GeneralBRCoxGroup()
 
 {}
 
-MedRankCoxGroup::MedRankCoxGroup(const Type& x, const Rank& l)
+MedRankCoxGroup::MedRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :GeneralCoxGroup(x,l)
 
 /*
@@ -86,7 +86,7 @@ MedRankCoxGroup::MedRankCoxGroup(const Type& x, const Rank& l)
 */
 
 {
-  if (ERRNO)
+  if (error::ERRNO)
     return;
 
   mintable().fill(graph());
@@ -105,7 +105,7 @@ MedRankCoxGroup::~MedRankCoxGroup()
 
 {}
 
-GeneralMRCoxGroup::GeneralMRCoxGroup(const Type& x, const Rank& l)
+GeneralMRCoxGroup::GeneralMRCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :MedRankCoxGroup(x,l)
 
 {}
@@ -119,7 +119,7 @@ GeneralMRCoxGroup::~GeneralMRCoxGroup()
 
 {}
 
-SmallRankCoxGroup::SmallRankCoxGroup(const Type& x, const Rank& l)
+SmallRankCoxGroup::SmallRankCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   :MedRankCoxGroup(x,l)
 
 /*
@@ -128,7 +128,7 @@ SmallRankCoxGroup::SmallRankCoxGroup(const Type& x, const Rank& l)
 */
 
 {
-  if (ERRNO) /* error in MedRankCoxGroup initialization */
+  if (error::ERRNO) /* error in MedRankCoxGroup initialization */
     return;
 }
 
@@ -141,7 +141,8 @@ SmallRankCoxGroup::~SmallRankCoxGroup()
 
 {}
 
-GeneralSRCoxGroup::GeneralSRCoxGroup(const Type& x, const Rank& l)
+GeneralSRCoxGroup::GeneralSRCoxGroup
+  (const type::Type& x, const coxtypes::Rank& l)
   :SmallRankCoxGroup(x,l)
 
 {}

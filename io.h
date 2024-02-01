@@ -14,11 +14,6 @@
 #include "list.h"
 #include "memory.h"
 
-
-namespace io {
-  using namespace globals;
-};
-
 /******** type definitions **************************************************/
 
 namespace io {
@@ -63,12 +58,6 @@ namespace io {
 };
 
 /******** type definitions **************************************************/
-
-namespace io {
-  using namespace list;
-  using namespace memory;
-};
-
 
 /******** Inline definitions ***********************************************/
 

@@ -21,7 +21,7 @@ namespace {
 
   using namespace posets;
 
-  PosetElt firstMinimal(const OrientedGraph& G, const BitMap& b);
+  PosetElt firstMinimal(const wgraph::OrientedGraph& G, const bits::BitMap& b);
 
 }
 
@@ -41,7 +41,7 @@ namespace {
 
       - Poset();
       - Poset(const Ulong&);
-      - Poset(const OrientedGraph&);
+      - Poset(const wgraph::OrientedGraph&);
       - ~Poset();
 
     - manipulators :
@@ -71,11 +71,11 @@ Poset::Poset(const Ulong& n):d_closure(n)
   d_closure.setSizeValue(n);
 
   for (Ulong j = 0; j < n; ++j) {
-    new(d_closure.ptr()+j) BitMap(n);
+    new(d_closure.ptr()+j) bits::BitMap(n);
   }
 }
 
-Poset::Poset(const OrientedGraph& G):d_closure(G.size())
+Poset::Poset(const wgraph::OrientedGraph& G):d_closure(G.size())
 
 /*
   Constructs the poset defined by the graph G, assumed to be acyclic; i.e.,
@@ -85,12 +85,12 @@ Poset::Poset(const OrientedGraph& G):d_closure(G.size())
 */
 
 {
-  static BitMap b(0);
+  static bits::BitMap b(0);
 
   d_closure.setSizeValue(G.size());
 
   for (Ulong j = 0; j < size(); ++j) {
-    new(d_closure.ptr()+j) BitMap(size());
+    new(d_closure.ptr()+j) bits::BitMap(size());
   }
 
   /* set the bitmaps */
@@ -101,7 +101,7 @@ Poset::Poset(const OrientedGraph& G):d_closure(G.size())
   for (Ulong j = 0; j < size(); ++j) {
     PosetElt x = firstMinimal(G,b);
     b.setBit(x);
-    const EdgeList& e = G.edge(x);
+    const wgraph::EdgeList& e = G.edge(x);
     d_closure[x].setBit(x);
     for (Ulong i = 0; i < e.size(); ++i) {
       d_closure[x] |= d_closure[e[i]];
@@ -121,7 +121,7 @@ Poset::~Poset()
 
 /******** accessors *********************************************************/
 
-void Poset::findMaximals(const BitMap& D, Set& a) const
+void Poset::findMaximals(const bits::BitMap& D, bits::Set& a) const
 
 /*
   This function writes in a the maximal elements of D. It assumes that
@@ -132,7 +132,7 @@ void Poset::findMaximals(const BitMap& D, Set& a) const
 */
 
 {
-  static BitMap b(0);
+  static bits::BitMap b(0);
 
   b.assign(D);
 
@@ -159,7 +159,7 @@ bool Poset::isTriangular() const
   return true;
 }
 
-void Poset::hasseDiagram(OrientedGraph& H)
+void Poset::hasseDiagram(wgraph::OrientedGraph& H)
 
 /*
   This function returns in H the Hasse diagram of the poset, i.e. for each
@@ -193,7 +193,7 @@ void Poset::hasseDiagram(OrientedGraph& H)
 
 namespace {
 
-PosetElt firstMinimal(const OrientedGraph& G, const BitMap& b)
+PosetElt firstMinimal(const wgraph::OrientedGraph& G, const bits::BitMap& b)
 
 /*
   This function is an auxiliary to Poset(G). Given a bitmap b, which is
@@ -211,7 +211,7 @@ PosetElt firstMinimal(const OrientedGraph& G, const BitMap& b)
   for (; x < G.size(); ++x) {
     if (b.getBit(x))
       continue;
-    const EdgeList& e = G.edge(x);
+    const wgraph::EdgeList& e = G.edge(x);
     for (Ulong i = 0; i < e.size(); ++i) {
       if (!b.getBit(e[i]))
 	goto nextx;
