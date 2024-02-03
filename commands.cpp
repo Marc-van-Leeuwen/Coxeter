@@ -18,7 +18,6 @@
 namespace commands {
 
   using namespace error;
-};
 
 namespace {
 
@@ -163,14 +162,10 @@ namespace {
     const char* pol_tag = "prints out a single Kazhdan-Lusztig polynomial";
     const char* rcells_tag = "prints out the right Kazhdan-Lusztig cells";
     const char* rcorder_tag = "prints the right cell order";
-  }; // |namespace uneq|
-}; // |namespace|
+    }; // |namespace uneq|
+  }; // |namespace|
 
-namespace commands {
   void (*default_help)() = &help::default_h;
-};
-
-namespace commands {
 
   namespace interf {
 
@@ -271,7 +266,6 @@ namespace commands {
     }; // |namespace out|
   }; // |namespace interf|
 
-}; // |namespace commands|
 
 /*****************************************************************************
 
@@ -317,8 +311,6 @@ namespace commands {
   - run() : runs an interactive session;
 
  *****************************************************************************/
-
-namespace commands {
 
 void relax_f() {}
 
@@ -368,8 +360,6 @@ void default_error(const char* str)
 {
   Error(COMMAND_NOT_FOUND,str);
 }
-
-}; // |namespace commands|
 
 namespace {
 
@@ -520,9 +510,6 @@ void startup()
 
 ******************************************************************************/
 
-namespace commands {
-
-
 /*
   Initialize a command tree with the given prompt and action |a| for the
   empty command, and call |filler| to construct the remainder of the tree.
@@ -621,8 +608,6 @@ void CommandTree::setRepeat(const char* str, bool b)
   cd->autorepeat = b;
 }
 
-}; // |namespace|
-
 /*****************************************************************************
 
         Chapter III -- The CommandData class.
@@ -634,8 +619,6 @@ void CommandTree::setRepeat(const char* str, bool b)
 
  *****************************************************************************/
 
-namespace commands {
-
 CommandData::CommandData(const char* str, const char* t,
 			 void (*a)(), void (*h)(), bool rep)
   :name(str), tag(t), action(a), help(h), autorepeat(rep)
@@ -643,15 +626,13 @@ CommandData::CommandData(const char* str, const char* t,
   assert(action!=nullptr);
 }
 
-CommandData::~CommandData()
 
 /*
   No memory is allocated directly
 */
-
+CommandData::~CommandData()
 {}
 
-}; // |namespace commands|
 
 /*****************************************************************************
 
@@ -823,8 +804,6 @@ template<> void initCommandTree<commands::interf::Out_tag>(CommandTree& tree)
 
 }; // |namespace|
 
-namespace commands {
-
 /*
   Return a pointer to the interface command tree, building it on the first
   call.
@@ -855,8 +834,6 @@ CommandTree* interf::outCommandTree()
   return &out_tree;
 }
 
-
-}; // |namespace commands|
 
 namespace {
 
@@ -918,8 +895,6 @@ template<> void initCommandTree<Main_tag>(CommandTree& tree)
 
 }; // |namespace|
 
-namespace commands {
-
 
 /*
   Return a pointer to the main command tree of the program, building it on
@@ -933,8 +908,6 @@ CommandTree* mainCommandTree()
      &main_entry,&default_error, &main_exit,&help::main_help);
   return &main_tree;
 }
-
-}; // |namespace commands|
 
 namespace {
 
@@ -976,8 +949,6 @@ template<> void initCommandTree<Uneq_tag>(CommandTree& tree)
 
 }; // |namespace|
 
-namespace commands {
-
 
 /*
   Return a pointer to the uneq command tree, building it on the first call.
@@ -990,7 +961,6 @@ CommandTree* uneqCommandTree()
   return &uneq_tree;
 }
 
-};
 
 /*****************************************************************************
 
@@ -2616,11 +2586,9 @@ void rcorder_f()
   printRCOrder(file.f(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
-};
+}; // |namespace uneq|
 
-};
-
-namespace commands {
+}; // |namespace|
 
 void interf::abort_f()
 
@@ -3197,8 +3165,6 @@ void interf::out::terse_f()
   W->setOutputTraits(io::Terse());
 }
 
-};
-
 /*****************************************************************************
 
         Chapter VI -- Miscellaneous.
@@ -3220,8 +3186,6 @@ void interf::out::terse_f()
 
  *****************************************************************************/
 
-namespace commands {
-
 
 /*
   Print one line for each command on the tree (sorted in alphabetical order)
@@ -3238,7 +3202,6 @@ void printCommands(FILE* file, const CommandTree& tree)
     }
 }
 
-}; // |namespace commands|
 
 
 /*
@@ -3246,7 +3209,7 @@ void printCommands(FILE* file, const CommandTree& tree)
 
   NOTE : this will probably have to be refined in the future.
 */
-coxgroup::CoxGroup* commands::currentGroup()
+coxgroup::CoxGroup* currentGroup()
 {
   return W;
 }
@@ -3283,8 +3246,6 @@ void main_entry()
 }
 
 };
-
-namespace commands {
 
 void interf::in_entry()
 
@@ -3397,7 +3358,6 @@ void interf::out_exit()
   W->interface().setOut(*in_buf);
 }
 
-};
 
 namespace {
 
@@ -3426,4 +3386,6 @@ void uneq_entry()
 void uneq_exit()
 {}
 
-};
+}; // |namespace|
+
+}; // |namespace commands|
