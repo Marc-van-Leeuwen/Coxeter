@@ -8,6 +8,9 @@
 #include "interface.h"
 
 #include <ctype.h>
+#include <vector>
+#include <string>
+#include <algorithm>
 
 #include "bits.h"
 #include "error.h"
@@ -44,7 +47,8 @@ namespace {
 namespace {
   using namespace interface;
 
-  void makeSymbols(list::List<std::string>& list, const std::string* const symbol, Ulong n);
+  void makeSymbols // copy |n| strings from |symbol| in order to form |list|
+    (std::vector<std::string>& list, const std::string* const symbol, Ulong n);
   coxtypes::CoxNbr toCoxNbr(char c);
   automata::Automaton *tokenAutomaton(bits::Lflags f);
   automata::Automaton *tokenAut0();
@@ -139,6 +143,13 @@ namespace {
  ****************************************************************************/
 
 namespace interface {
+
+// auxiliary now that we use |std::vector<std::string> >|, not |list::List|
+void insert (std::vector<std::string>& sorted_list, const std::string& val)
+{
+  auto position = std::upper_bound(sorted_list.begin(),sorted_list.end(),val);
+  sorted_list.insert(position,val);
+}
 
 // Construct the default interface (see the introduction.)
 
@@ -548,8 +559,6 @@ namespace interface {
 GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l)
   :symbol(l),prefix(),postfix(),separator()
 {
-  symbol.setSize(l);
-
   makeSymbols(symbol,decimalSymbols(l),l);
 
   if (l > 9) { /* need separators */
@@ -566,7 +575,6 @@ GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, Alphabetic)
 */
 
 {
-  symbol.setSize(l);
   makeSymbols(symbol,alphabeticSymbols(l),l);
 
   if (l > 26)
@@ -582,7 +590,6 @@ GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, Decimal)
 */
 
 {
-  symbol.setSize(l);
   makeSymbols(symbol,decimalSymbols(l),l);
 
   if (l > 9)
@@ -598,7 +605,6 @@ GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, io::GAP)
 */
 
 {
-  symbol.setSize(l);
   makeSymbols(symbol,decimalSymbols(l),l);
 }
 
@@ -611,14 +617,14 @@ GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, Hexadecimal)
 */
 
 {
-  symbol.setSize(l);
   makeSymbols(symbol,hexSymbols(l),l);
 
   if (l > 15)
     separator = ".";
 }
 
-GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, HexadecimalFromZero)
+GroupEltInterface::GroupEltInterface
+  (const coxtypes::Rank& l, HexadecimalFromZero)
   :symbol(l),prefix(""),postfix(""),separator("")
 
 /*
@@ -628,7 +634,6 @@ GroupEltInterface::GroupEltInterface(const coxtypes::Rank& l, HexadecimalFromZer
 */
 
 {
-  symbol.setSize(l);
   makeSymbols(symbol,hexSymbolsFromZero(l),l);
 
   if (l > 16)
@@ -776,25 +781,13 @@ namespace interface {
 */
 const std::string* alphabeticSymbols(Ulong n)
 {
-  static list::List<std::string> list(0);
-  static bool first = true;
+  static std::vector<std::string> list{""};
 
-  if (first) {
-    first = false;
-    list.setSize(1);
-    new(list.ptr()) std::string("");
-  }
+  // enlarge the list if necessary to obtain size |n+1|
+  for (Ulong j = list.size()-1; j < n; ++j) // |j| lags position by 1
+    list.push_back(list[j/26]+alphabet[j%26]);
 
-  if (n+1 > list.size()) { /* enlarge the list */
-    Ulong prev = list.size()-1;
-    list.setSize(n+1);
-    for (Ulong j = prev; j < n; ++j) {  /* write symbol */
-      list[j+1].assign(list[j/26]);
-      list[j+1].push_back(alphabet[j%26]);
-    }
-  }
-
-  return list.ptr()+1;
+  return &list[1];
 }
 
 
@@ -1428,21 +1421,16 @@ bool isPower(const Token& tok)
 
 namespace {
 
-void makeSymbols(list::List<std::string>& list, const std::string* const symbol, Ulong n)
 
 /*
-  This function deep-copies the n first entries of symbol onto the
+  This function copies the n first entries of symbol onto the
   corresponding entries of list.
 */
 
+void makeSymbols
+  (std::vector<std::string>& list, const std::string* const symbol, Ulong n)
 {
-  list.setSize(n);
-
-  for (Ulong j = 0; j < n; ++j) {
-    list[j].assign(symbol[j]);
-  }
-
-  return;
+  list.assign(symbol,symbol+n);
 }
 
 };

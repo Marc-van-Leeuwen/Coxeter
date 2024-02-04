@@ -84,15 +84,14 @@ Permutation& Permutation::identity(const Ulong& n)
   return *this;
 }
 
-Permutation& Permutation::inverse()
 
 /*
-  Inverts the current permutation : new(old(x)) = x. This is a little
+  Invert the current permutation : new(old(x)) = x. This is a little
   bit more tricky than our usual inversions, because it involves the
   permutation itselves; we've opted for safety and used a buffer for the
   whole permutation.
 */
-
+Permutation& Permutation::inverse()
 {
   static Permutation i(0);
 

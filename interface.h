@@ -8,6 +8,8 @@
 #ifndef INTERFACE_H  /* guard against multiple inclusions */
 #define INTERFACE_H
 
+#include <vector>
+#include <algorithm>
 #include "globals.h"
 
 /******** type declarations *************************************************/
@@ -165,7 +167,7 @@ struct DescentSetInterface {
 };
 
 struct GroupEltInterface {
-  list::List<std::string> symbol;
+  std::vector<std::string> symbol;
   std::string prefix;
   std::string postfix;
   std::string separator;
@@ -215,7 +217,7 @@ class Interface {
   std::string d_contextNbr;
   std::string d_denseArray;
   std::string d_parseEscape;
-  list::List<std::string> d_reserved;
+  std::vector<std::string> d_reserved;
   coxtypes::Rank d_rank;
  public:
 /* constructors and destructors */
@@ -300,7 +302,7 @@ inline const std::string& Interface::inSeparator() const {return d_in->separator
 inline const std::string& Interface::inSymbol(const coxtypes::Generator& s) const
   {return d_in->symbol[s];}
 inline bool Interface::isReserved(const std::string& str) const
-  {return find(d_reserved,str) != ~static_cast<Ulong>(0);}
+ {return std::find(d_reserved.begin(),d_reserved.end(),str)!=d_reserved.end();}
 inline const GroupEltInterface& Interface::outInterface() const
   {return *d_out;}
 inline const bits::Permutation& Interface::order() const {return d_order;}

@@ -227,10 +227,10 @@ template <class T> void List<T>::append(const T& x)
   return;
 }
 
-template <class T> const List<T>& List<T>::assign(const List<T>& r)
+
 
 /*
-  Assigns r to the current list, by a one-level copy (in other words,
+  Assign r to the current list, by a one-level copy (in other words,
   treats Lists as BasicStrings).
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
@@ -239,6 +239,7 @@ template <class T> const List<T>& List<T>::assign(const List<T>& r)
   would mean that the function should really return a pointer.
 */
 
+template <class T> const List<T>& List<T>::assign(const List<T>& r)
 {
   setSize(r.size());
   if (ERRNO) /* overflow */
@@ -458,13 +459,13 @@ template <class T> Ulong insert(List<T>& l, const T& d_m)
   return j1;
 }
 
-template <class T> Ulong find(const List<T>& l, const T& m)
 
 /*
   Finds the index of m in the list. If m is not found, returns not_found.
   Uses binary search.
 */
 
+template <class T> Ulong find(const List<T>& l, const T& m)
 {
   Ulong j0 = ~0L;
 

@@ -29,7 +29,10 @@ namespace list {
 /******** functions provided by list.h **************************************/
 
 namespace list {
+  // find first index of |m| in list, or return |list::not_found|
   template <class T> Ulong find(const List<T>& l, const T& m);
+
+  // insert element |m| into ordered list |l|
   template <class T> Ulong insert(List<T>& l, const T& m);
   template <class T> void print(FILE* file, const List<T>& l);
 };
