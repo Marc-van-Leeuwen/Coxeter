@@ -8,6 +8,7 @@
 #include "commands.h"
 
 #include "directories.h"
+#include "sl_list.h"
 #include "error.h"
 #include "fcoxgroup.h"
 #include "help.h"
@@ -21,9 +22,6 @@ namespace commands {
 
 namespace {
 
-  using namespace commands;
-  using namespace stack;
-
   bool wgraph_warning = true;
 
   /* used in the definition of command trees */
@@ -33,11 +31,11 @@ namespace {
   struct Main_tag {};
   struct Uneq_tag {};
 
-  Stack<CommandTree *> treeStack;
+  containers::stack<CommandTree*> mode_stack;
   coxgroup::CoxGroup* W = 0;
 
   void activate(CommandTree& tree); // push |tree| onto the command stack
-  void ambigAction(CommandTree* tree, const std::string& str);
+  void report_ambiguous_command(const CommandTree& tree, const std::string& str);
   void empty_error(const char* str);
   CommandTree* emptyCommandTree();
   template<class C> // C is just a tag to select one of these functions
@@ -275,10 +273,10 @@ namespace {
 
   The idea is that at each point in time, there is a certain active CommandTree
   object. This is basically a dictionary of recognized command names, together
-  with the functions that will executed for them; in other words, something
-  that should be a map in STL parlance. Actually, the active command tree is
-  the top of the command tree stack treeStack; exiting the current mode means
-  popping the stack; entering a new mode means pushing it onto the stack.
+  with the functions that will executed for them; in other words, something that
+  should be a map in STL parlance. Actually, the active command tree is the top
+  of the command mode stack |mode_stack|; exiting the current mode means popping
+  the stack; entering a new mode means pushing it onto the stack.
 
   Each mode has an associated entry and exit function, which take care of
   initialization and clean-up duties. Actually, there is mostly one main mode;
@@ -304,7 +302,7 @@ namespace {
 
   This section contains the following functions :
 
-  - ambigAction(str) : what to do with an ambiguous command;
+  - report_ambiguous_command(str) : what to do with an ambiguous command;
   - mainCommandTree() : returns a pointer to the initial command tree (and
     builds it on first call);
   - relax_f() : does nothing;
@@ -328,28 +326,28 @@ void run()
     return;        // and quit program
   }
 
-  while (1) { /* the only way to exit from this loop is the "qq" command */
-    CommandTree* tree = treeStack.top();
-    tree->prompt();
+  while (true) { /* the only way to exit from this loop is the "qq" command */
+    CommandTree& mode = *mode_stack.top();
+    mode.prompt();
     io::getInput(stdin,name);
     bool ambiguous_prefix; // will be set when |find| finds cell but no action
-    CommandData* cd = tree->find(name,ambiguous_prefix);
+    CommandData* cd = mode.find(name,ambiguous_prefix);
     if (ambiguous_prefix) {
-      ambigAction(tree,name);
+      report_ambiguous_command(mode,name);
       continue;
     }
     if (cd == nullptr) {
-      tree->call_error(name.c_str());
+      mode.call_error(name.c_str());
       continue;
     }
     cd->action();
     if (cd->autorepeat) {
-      tree->set_default_action(cd->action);
-      tree->setRepeat("",true);
+      mode.set_default_action(cd->action);
+      mode.setRepeat("",true);
     }
     else {
-      tree->set_default_action(&relax_f);
-      tree->setRepeat("",false);
+      mode.set_default_action(&relax_f);
+      mode.setRepeat("",false);
     }
   }
 }
@@ -365,7 +363,7 @@ namespace {
 
 
 /*
-  Puts the tree on top of treeStack, and executes the initialization function.
+  Puts the tree on top of mode_stack, and executes the initialization function.
 
   If an error occurs, report just that and return with |MODECHANGE_FAIL|
 
@@ -373,14 +371,14 @@ namespace {
   but it probably makes little difference since the main command loot that
   uses the stack is not visited before |call_entry| finishes.
 */
-void activate(CommandTree& tree)
+void activate(CommandTree& mode)
 {
-  treeStack.push(&tree);
-  tree.call_entry();
+  mode_stack.push(&mode);
+  mode.call_entry();
 
   if (ERRNO) { /* an error occured during initialization */
     Error(ERRNO);
-    treeStack.pop();
+    mode_stack.pop();
     ERRNO = MODECHANGE_FAIL;
   }
 }
@@ -390,19 +388,19 @@ void activate(CommandTree& tree)
   Response to ambiguous commands. Prints a warning and the list of possible
   completions in the current tree on stderr.
 */
-void ambigAction(CommandTree* tree, const std::string& str)
+void report_ambiguous_command(const CommandTree& mode, const std::string& str)
 {
   bool b = true;
 
   io::print(stderr,str);
   fprintf(stderr," : ambiguous (");
-  dictionary::DictCell<CommandData>* cell = tree->findCell(str);
+  dictionary::DictCell<CommandData>* cell = mode.findCell(str);
   std::string name = str; // copy string to a variable, to lose the |const|
   dictionary::printExtensions(stderr,cell,name,b);
   fprintf(stderr,")\n");
 }
 
-// the error function for the empty mode pushes the main commands mode!
+// the error function for the empty mode pushes the main command mode!
 void empty_error(const char* str)
 {
   bool ambiguous; // whether |find| finds an ambiguous prefix
@@ -411,18 +409,18 @@ void empty_error(const char* str)
 
   assert(type_node!=nullptr and rank_node!=nullptr);
 
-  CommandTree* tree = mainCommandTree();
+  CommandTree& mode = *mainCommandTree();
 
-  auto cd = tree->find(str,ambiguous);
+  auto cd = mode.find(str,ambiguous);
   if (ambiguous) {
-    ambigAction(tree,str);
+    report_ambiguous_command(mode,str);
     return;
   }
   if (cd == nullptr) {
     default_error(str);
     return;
   }
-  activate(*tree);
+  activate(mode);
   if (ERRNO) { /* something went wrong during initialization */
     Error(ERRNO);
     return;
@@ -432,12 +430,12 @@ void empty_error(const char* str)
     cd->action();
 
   if (cd->autorepeat) {
-    tree->set_default_action(cd->action);
-    tree->setRepeat("",true);
+    mode.set_default_action(cd->action);
+    mode.setRepeat("",true);
   }
   else {
-    tree->set_default_action(&relax_f);
-    tree->setRepeat("",false);
+    mode.set_default_action(&relax_f);
+    mode.setRepeat("",false);
   }
 }
 
@@ -841,7 +839,7 @@ namespace {
 /*
   This function builds the main command tree, the one that is being run on
   startup. Auxiliary trees may be grafted onto this one (thru the pushdown
-  stack treeStack) by some functions needing to be in special modes.
+  stack mode_stack) by some functions needing to be in special modes.
 */
 template<> void initCommandTree<Main_tag>(CommandTree& tree)
 {
@@ -1266,7 +1264,7 @@ void fullcontext_f()
 // Response to the help command.
 void help_f()
 {
-  activate(*treeStack.top()->helpMode());
+  activate(*mode_stack.top()->helpMode());
 }
 
 void ihbetti_f()
@@ -1838,28 +1836,25 @@ void q_f()
 */
 
 {
-  CommandTree* tree = treeStack.top();
-  tree->call_exit();
+  const CommandTree& mode = *mode_stack.top();
+  mode.call_exit();
 
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
-  treeStack.pop();
+  mode_stack.pop();
 }
 
+
+// Exit the program after calling exit function of all active command modes
 void qq_f()
-
-/*
-  Exits the program.
-*/
-
 {
-  while(treeStack.size()) {
-    CommandTree* tree = treeStack.top();
-    tree->call_exit();
-    treeStack.pop();
+  while(not mode_stack.empty()) {
+    const CommandTree& mode = *mode_stack.top();
+    mode.call_exit();
+    mode_stack.pop();
   }
 
   exit(0);
@@ -2590,17 +2585,16 @@ void rcorder_f()
 
 }; // |namespace|
 
-void interf::abort_f()
 
 /*
-  Aborts the interf::modification. Bypasses the exit function,
+  Abort the interface modification. Bypasses the exit function,
   so that there is no further checking of the abandoned choices.
 */
-
+void interf::abort_f()
 {
   delete in_buf;
   in_buf = 0;
-  treeStack.pop();
+  mode_stack.pop();
 }
 
 void interf::alphabetic_f()
