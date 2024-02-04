@@ -34,8 +34,8 @@ template <typename T> class DictCell {
   friend class Dictionary<T>; // only that class can use our private members
 
   std::shared_ptr<T> ptr;
-  DictCell *left;
-  DictCell *right;
+  std::unique_ptr<DictCell> left;
+  std::unique_ptr<DictCell> right;
   char letter;
 public:
 /* constructors and destructors */
@@ -44,7 +44,7 @@ public:
     {return memory::arena().free(ptr,sizeof(DictCell));}
   DictCell(char c, std::shared_ptr<T> v,
 	   DictCell *l = nullptr, DictCell *r = nullptr)
-    :ptr(v), left(l), right(r), letter(c) {};
+    : ptr(std::move(v)), left(l), right(r), letter(c) {};
   ~DictCell();
   void make_complete(); // install completions downwards
   bool has_own_action() const; // whether |ptr| defined, and not as completion
@@ -55,10 +55,8 @@ public:
 
 template <typename T> class Dictionary
 {
-
- protected:
   DictCell<T>* d_root;
- public:
+public:
 /* creators and destructors */
   Dictionary(std::shared_ptr<T> v);
   virtual ~Dictionary();
