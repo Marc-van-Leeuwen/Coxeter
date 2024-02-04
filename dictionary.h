@@ -16,7 +16,8 @@
 
 namespace dictionary {
   template <typename T> class Dictionary;
-  template <typename T> struct DictCell;
+  template <typename T> class DictCell;
+  template <typename T> class dict_const_iterator;
 };
 
 #include "memory.h"
@@ -25,21 +26,18 @@ namespace dictionary {
 
 /******** function declarations *********************************************/
 
-namespace dictionary {
-  template <typename T>
-    void printExtensions(FILE* file, DictCell<T>* cell, std::string& name,
-			 bool& first, const char* sep = ",");
-};
-
 /* class definitions */
 
 namespace dictionary {
 
-template <typename T> struct DictCell {
+template <typename T> class DictCell {
+  friend class Dictionary<T>; // only that class can use our private members
+
   std::shared_ptr<T> ptr;
   DictCell *left;
   DictCell *right;
   char letter;
+public:
 /* constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
@@ -48,85 +46,65 @@ template <typename T> struct DictCell {
 	   DictCell *l = nullptr, DictCell *r = nullptr)
     :ptr(v), left(l), right(r), letter(c) {};
   ~DictCell();
-  void make_complete(); // install completions dwonwards
+  void make_complete(); // install completions downwards
   bool has_own_action() const; // whether |ptr| defined, and not as completion
+  const T* action() const { return ptr.get(); }
+  containers::sl_list<std::string> extensions(std::string name) const;
 };
 
-template <typename T>
-  class dict_const_iterator
-  : public std::iterator<std::forward_iterator_tag, T, unsigned long>
+
+template <typename T> class Dictionary
 {
-  // data
-  DictCell<T>* p;
-  containers::stack<DictCell<T>*> stack;
-
-  using self = dict_const_iterator<T>;
-
-public:
-  dict_const_iterator() : p(nullptr), stack() {} // end indicator
-  explicit dict_const_iterator(const DictCell<T>* ptr)
-    : p(const_cast<DictCell<T>*> (ptr)), stack() {}
-
-  // contents access methods; return |const| ref/ptr for |const_iterator|
-  const DictCell<T>& operator*()  const { return *p; }
-  const DictCell<T>* operator->() const { return p; }
-
-  // equality testing methods: test addresses of cells pointed to
-  bool operator==(const self& x) const { return p == x.p; }
-  bool operator!=(const self& x) const { return p != x.p; }
-
-  self operator++()
-  { if (p->left!=nullptr)
-    {
-      stack.push(p);
-      p=p->left;
-      return *this;
-    }
-    while (not stack.empty() and p->right==nullptr)
-    {
-      p=stack.top();
-      stack.pop();
-    }
-    if (p->right==nullptr) // which implies |stack.empty|
-    {
-      p=nullptr; // indicates we are at the end
-      return *this;
-    }
-    p=p->right;
-    return *this;
-  }
-
-  self operator++(int)
-  { auto old = *this;
-    operator++;
-    return old;
-  }
-};
-
-template <typename T> class Dictionary {
 
  protected:
   DictCell<T>* d_root;
  public:
 /* creators and destructors */
-  Dictionary();
+  Dictionary(std::shared_ptr<T> v);
   virtual ~Dictionary();
 /* modifiers */
   void insert(const std::string& str, std::shared_ptr<T> value);
   void remove(const std::string& str);
   void install_command_completion() { d_root->make_complete(); };
+  void set_default_action(void (*a)()) { d_root->ptr->action = a; }
 /* accessors */
   T* find (const std::string& str, bool& absent_action) const;
   DictCell<T>* findCell (const std::string& str) const;
   DictCell<T>* root() const { return d_root; }
 
-  dict_const_iterator<T> begin() const
-  { return dict_const_iterator<T>(d_root); }
-  dict_const_iterator<T> end() const
-  { return dict_const_iterator<T>(); }
-};
+  // embedded class
+  class const_iterator
+    : public std::iterator<std::forward_iterator_tag, T, unsigned long>
+  {
+    // data
+    DictCell<T>* p;
+    containers::stack<DictCell<T>*> stack;
 
-};
+    using self = const_iterator;
+
+  public:
+    const_iterator() : p(nullptr), stack() {} // end indicator
+    explicit const_iterator(const DictCell<T>* ptr)
+      : p(const_cast<DictCell<T>*> (ptr)), stack() {}
+
+    // contents access methods; return |const| ref/ptr for |const_iterator|
+    const DictCell<T>& operator*()  const { return *p; }
+    const DictCell<T>* operator->() const { return p; }
+
+    // equality testing methods: test addresses of cells pointed to
+    bool operator==(const self& x) const { return p == x.p; }
+    bool operator!=(const self& x) const { return p != x.p; }
+
+    self operator++();
+    self operator++(int) { auto old = *this; operator++; return old; }
+  }; // |class const_iterator|
+
+  const_iterator begin() const { return const_iterator(d_root); }
+  const_iterator end() const   { return const_iterator(); }
+}; // |template <typename T> class Dictionary|
+
+
+}; // namespace dictionary|
 
 #include "dictionary.hpp"
 

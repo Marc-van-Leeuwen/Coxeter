@@ -58,8 +58,8 @@ template <class T> DictCell<T>::~DictCell()
   the |letter| field is set to |'\0'| to signal a leaf node (iniitally).
 */
 
-template <class T> Dictionary<T>::Dictionary()
-  : d_root(new DictCell<T>('\0',nullptr)) {}
+template <class T> Dictionary<T>::Dictionary(std::shared_ptr<T> v)
+  : d_root(new DictCell<T>('\0',std::move(v))) {}
 
 
 /*
@@ -179,6 +179,36 @@ template <class T> void Dictionary<T>::insert(const std::string& str,
 template <class T> void Dictionary<T>::remove(const std::string& str)
 {}
 
+
+// here is how one can define an embedded class method out-of-line
+
+/* Advance from |p| pointing to a cell to making it point to the next cell.
+   In order to be able to move back up, ancestors for which we are a left
+   descendent are maintained on |stack|.
+*/
+template <typename T>
+  typename Dictionary<T>::const_iterator
+  Dictionary<T>::const_iterator::operator++()
+{
+  if (p->left!=nullptr)
+  {
+    stack.push(p);
+    p=p->left;
+    return *this;
+  }
+
+  // now we have no left descendent to advance to,
+  // move to right descendent, possibly from an ancestor when lacking any heir
+  while (p->right==nullptr and not stack.empty())
+  {
+    p=stack.top();
+    stack.pop();
+  }
+
+  p = p->right; // move to next heir in line, or |nullptr| when there is none
+  return *this;
+}
+
 }; // |namespace dictionary|
 
 
@@ -203,7 +233,7 @@ template <class T>
 }
 
 template <class T>
-bool DictCell<T>::has_own_action() const
+  bool DictCell<T>::has_own_action() const
 { if (ptr==nullptr)
     return false;
   if (left==nullptr)
@@ -212,32 +242,26 @@ bool DictCell<T>::has_own_action() const
 }
 
 /*
-  This function prints to |file| all the possible extensions of the string
-  corresponding to |cell|. The string |name| should contain the given prefix up
-  to and including |cell->letter|, it is used as a working variable but will be
-  restored to its original value (but not necessesarily original capacity) upon
-  returning from this recursive function. The output will start with |sep|
-  unless |first|, which after so suppressing |sep| once is set to |false|.
+  This method lists all the known extensions of the string |name|, which should
+  by the one corresponding to our cell.
 */
 template <class T>
-  void printExtensions(FILE* file, DictCell<T>* cell, std::string& name,
-		       bool &first, const char* sep)
+  containers::sl_list<std::string> DictCell<T>::extensions
+    (std::string name) const
 {
-  for (cell = cell->left; // use only left subtree
+  containers::sl_list<std::string> result;
+  for (auto* cell = left;  // use only left subtree
        cell != nullptr;
        cell = cell->right) // walk down right-list of left subtree
   {
     name.push_back(cell->letter);
-    if (cell->has_own_action()) { // print prefix for current cell
-      if (first) /* first time a name is found */
-	first = false;
-      else
-	fprintf(file,"%s",sep);
-      fprintf(file,"%s",name.c_str());
-    }
-    printExtensions(file,cell,name,first,sep);
-    name.pop_back(); // remove last character from |name|
+    if (cell->has_own_action())  // then append prefix for current cell
+      result.push_back(name);
+    result.append(cell->extensions(name));
+    name.pop_back(); // restore original |name| for next iteration
   }
+  return result;
 }
+
 
 };

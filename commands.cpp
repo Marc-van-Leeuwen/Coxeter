@@ -332,7 +332,7 @@ void relax_f() {}
 */
 void run()
 {
-  static std::string name;
+  std::string name;
 
   activate(*emptyCommandTree());
 
@@ -405,13 +405,12 @@ void activate(CommandTree& mode)
 */
 void report_ambiguous_command(const CommandTree& mode, const std::string& str)
 {
-  bool b = true;
+  fprintf(stderr,"%s : ambiguous (",str.c_str());
 
-  io::print(stderr,str);
-  fprintf(stderr," : ambiguous (");
-  dictionary::DictCell<CommandData>* cell = mode.findCell(str);
-  std::string name = str; // copy string to a variable, to lose the |const|
-  dictionary::printExtensions(stderr,cell,name,b);
+  bool first = true;
+  for (const auto& ext :  mode.findCell(str)->extensions(str))
+    fprintf(stderr,first ? first=false, "%s" : ",%s",ext.c_str());
+
   fprintf(stderr,")\n");
 }
 
@@ -545,10 +544,10 @@ CommandTree::CommandTree(const char* prompt,
 			 void (*error)(const char*),
 			 void (*exit)(),
 			 void (*h)())
-  :d_prompt(prompt), d_entry(entry), d_error(error), d_exit(exit)
+  : dictionary::Dictionary<CommandData>
+      (std::make_shared<CommandData>("","",a,&relax_f,false))
+  , d_prompt(prompt), d_entry(entry), d_error(error), d_exit(exit)
 {
-  d_root->ptr = std::make_shared<CommandData>("","",a,&relax_f,false);
-
   if (h!=nullptr) { /* add help functionality */
     d_help = new CommandTree("help",&help::cr_h,&help_filler,h);
     add("help",help_tag,&help_f,&help::help_h,false);
@@ -601,12 +600,6 @@ void CommandTree::add(const char* name, const char* tag, void (*a)(),
   }
 }
 
-
-// set |action| field of root node (for empty string) to |a|
-void CommandTree::set_default_action(void (*a)())
-{
-  d_root->ptr->action = a;
-}
 
 
 /*
@@ -3180,7 +3173,7 @@ void printCommands(FILE* file, const CommandTree& tree)
   for (auto it = std::next(tree.begin()); it != tree.end(); ++it)
     if (it->has_own_action())
     {
-      const auto* cd = it->ptr.get();
+      const auto* cd = it->action();
       fprintf(file,"  - %s : %s;\n",cd->name.c_str(),cd->tag.c_str());
     }
 }

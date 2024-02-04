@@ -90,7 +90,7 @@ class CommandTree:public dictionary::Dictionary<CommandData> {
 /* modifiers */
   void add(const char* name, const char* tag, void (*action)(),
 	   void (*help)() = default_help, bool rep = true);
-  void set_default_action(void (*a)()); // assign |a| to |d_root->action|
+//  void set_default_action(void (*a)()); // assign |a| to |d_root->ptr->action|
   void setRepeat(const char* str, bool b);
 /* accessors */
   void prompt() const; // print |d_prompt|
