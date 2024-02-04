@@ -29,7 +29,7 @@ namespace commands {
 namespace commands {
 
   // these are exported implicitly, since used as default function arguments
-  extern void (*default_help)(); // the constant is here, its value in help
+  extern void (*const default_help)(); // defined here, its value in help
   void default_error(const char* str); // report |COMMAND_NOT_FOUND|
 
   // the follwing are exported so that help.cpp can print command lists

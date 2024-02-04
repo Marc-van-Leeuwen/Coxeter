@@ -7,6 +7,8 @@
 
 #include "commands.h"
 
+#include <memory> // for |std::unique_ptr|
+
 #include "directories.h"
 #include "sl_list.h"
 #include "error.h"
@@ -45,7 +47,9 @@ namespace {
   template<class C> // C is just a tag to select one of these
     void initCommandTree(CommandTree&); // command initialization functions
 
-  void startup();
+  // the following are functions whose pointers will go into command trees
+
+  void startup(); // will be installed as action for an initial empty command
 
   void interface_entry();
   void interface_exit();
@@ -97,6 +101,7 @@ namespace {
   void type_f();
   void uneq_f();
 
+  // the short help strings for the above commands
   const char* author_tag = "prints a message about the author";
   const char* betti_tag = "prints the ordinary betti numbers";
   const char* coatoms_tag = "prints out the coatoms of an element";
@@ -147,6 +152,8 @@ namespace {
   const char* uneq_tag = "puts the program in unequal-parameter mode";
 
   namespace uneq {
+    // these commands have a modified definition in 'uneq' mode
+
     void klbasis_f();
     void lcorder_f();
     void lrcorder_f();
@@ -157,6 +164,7 @@ namespace {
     void rcells_f();
     void rcorder_f();
 
+    // their help tags could be different in this mode
     const char* lcorder_tag = "prints the left cell order";
     const char* lrcorder_tag = "prints the two-sided cell order";
     const char* lcells_tag = "prints out the left Kazhdan-Lusztig cells";
@@ -168,11 +176,13 @@ namespace {
     }; // |namespace uneq|
   }; // |namespace|
 
-  void (*default_help)() = &help::default_h;
+  // define the function pointer constant |default_help|, set to |default_h|
+  void (*const default_help)() = &help::default_h;
 
   namespace interf {
+    // functions to be installed in the 'interface' mode
 
-    interface::GroupEltInterface* in_buf = 0;
+    std::unique_ptr<interface::GroupEltInterface> in_buf; // mode variable
 
     struct In_tag {};
     struct Out_tag {};
@@ -687,7 +697,6 @@ template<> void initCommandTree<Empty_tag>(CommandTree& tree)
   Return a pointer to the initial command tree of the program, building it on
   the first call.
 */
-
 CommandTree* emptyCommandTree()
 {
   static CommandTree empty_tree
@@ -2596,73 +2605,67 @@ void rcorder_f()
 */
 void interf::abort_f()
 {
-  delete in_buf;
-  in_buf = 0;
+  in_buf.reset();
   mode_stack.pop();
 }
 
-void interf::alphabetic_f()
 
 /*
   Sets i/o to the standard alphabetic conventions : the symbols are the
   alphabetic sequence, prefix and postfix are empty, and the separator is
-  "." iff the rank is > 26.
+  "." whenever the rank is > 26.
 */
-
+void interf::alphabetic_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),interface::Alphabetic());
+  in_buf.reset
+    (new interface::GroupEltInterface(W->rank(),interface::Alphabetic()));
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 }
 
-void interf::bourbaki_f()
 
 /*
-  Sets Bourbaki conventions. This means that the ordering is reverted in
+  Set Bourbaki conventions. This means that the ordering is reversed in
   types B and D, and symbols as well.
 
   NOTE : currently not implemented for affine groups.
 */
-
+void interf::bourbaki_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->interface().inInterface());
+  in_buf.reset
+    (new interface::GroupEltInterface(W->interface().inInterface()));
   in::bourbaki_f();
   W->interface().setIn(*in_buf);
 
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->interface().outInterface());
+  in_buf.reset
+    (new interface::GroupEltInterface(W->interface().outInterface()));
   out::bourbaki_f();
   W->interface().setOut(*in_buf);
 }
 
-void interf::decimal_f()
 
 /*
-  Sets i/o to the standard decimal conventions : the symbols are the
+  Set i/o to the standard decimal conventions : the symbols are the
   decimal sequence, prefix and postfix are empty, and the separator is
-  "." iff the rank is > 9.
+  "." whenever the rank is > 9.
 */
-
+void interf::decimal_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),interface::Decimal());
+  in_buf.reset
+    (new interface::GroupEltInterface(W->rank(),interface::Decimal()));
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 }
 
-void interf::default_f()
 
 /*
   Sets i/o settings to the default style. This means that we use decimal
   symbols, no prefix or postfix, and separator "." only when rank is >= 10.
   The ordering is the internal default ordering.
 */
-
+void interf::default_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank());
+  in_buf.reset(new interface::GroupEltInterface(W->rank()));
 
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
@@ -2672,19 +2675,17 @@ void interf::default_f()
   W->setOutputTraits(io::Pretty());
 }
 
-void interf::gap_f()
 
 /*
-  Sets i/o settings to GAP style. This means first of all that Bourbaki
+  Set i/o settings to GAP style. This means first of all that Bourbaki
   conventions are adopted; decimal symbols are used for i/o with prefix
   "[", separator "," and postfix "]". Furthermore, output to files is
   done in GAP style, which produces files that are directly legible by
   GAP3.
 */
-
+void interf::gap_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
+  in_buf.reset(new interface::GroupEltInterface(W->rank(),io::GAP()));
 
   in::bourbaki_f();
   W->interface().setIn(*in_buf);
@@ -2695,17 +2696,16 @@ void interf::gap_f()
   W->setOutputTraits(io::GAP());
 }
 
-void interf::hexadecimal_f()
 
 /*
   Sets i/o to the standard hexadecimal conventions : the symbols are the
   hexadecimal sequence, prefix and postfix are empty, and the separator is
   "." iff the rank is > 15.
 */
-
+void interf::hexadecimal_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),interface::Hexadecimal());
+  in_buf.reset
+    (new interface::GroupEltInterface(W->rank(),interface::Hexadecimal()));
   W->interface().setIn(*in_buf);
 
   W->interface().setOut(*in_buf);
@@ -2800,18 +2800,16 @@ void interf::symbol_f()
   in_buf->setSymbol(s,buf);
 }
 
-void interf::terse_f()
 
 /*
-  Sets i/o settings to terse style. This style is meant for outputting files
+  Set i/o settings to terse style. This style is meant for outputting files
   that are easily parsed by computer. The ordering of the generators is left
   untouched, and can be set independently by the user. Decimal output symbols
   are chosen, prefix is set to "[", postfix to "]" and separator to ",".
 */
-
+void interf::terse_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
+  in_buf.reset(new interface::GroupEltInterface(W->rank(),io::GAP()));
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 
@@ -2868,26 +2866,23 @@ void interf::in::decimal_f()
   }
 }
 
-void interf::in::default_f()
 
 /*
   Sets the input interface to the default style.
 */
 
+void interf::in::default_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank());
+  in_buf.reset(new interface::GroupEltInterface(W->rank()));
 }
 
-void interf::in::gap_f()
 
 /*
   Sets the input interface to GAP style, and enforces Bourbaki conventions.
 */
-
+void interf::in::gap_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
+  in_buf.reset(new interface::GroupEltInterface(W->rank(),io::GAP()));
   in::bourbaki_f();
 }
 
@@ -2922,8 +2917,7 @@ void interf::in::permutation_f()
   TypeACoxGroup* WA = dynamic_cast<TypeACoxGroup*>(W);
   WA->setPermutationInput(true);
 
-  delete in_buf;
-  in_buf = 0;
+  in_buf.reset();
 }
 
 void interf::in::postfix_f()
@@ -2965,15 +2959,14 @@ void interf::in::separator_f()
   in_buf->setSeparator(buf);
 }
 
-void interf::in::terse_f()
 
 /*
   Sets the input interface to terse style (the same as GAP style).
 */
 
+void interf::in::terse_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
+  in_buf.reset(new interface::GroupEltInterface(W->rank(),io::GAP()));
 }
 
 void interf::out::alphabetic_f()
@@ -3036,29 +3029,25 @@ void interf::out::decimal_f()
   }
 }
 
-void interf::out::default_f()
 
 /*
   Sets output styles to the default style.
 */
-
+void interf::out::default_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank());
+  in_buf.reset(new interface::GroupEltInterface(W->rank()));
   W->setOrdering(interface::identityOrder(W->rank()));
 
   W->setOutputTraits(io::Pretty());
 }
 
-void interf::out::gap_f()
 
 /*
   Sets output styles to GAP style, and enforces Bourbaki conventions.
 */
-
+void interf::out::gap_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
+  in_buf.reset(new interface::GroupEltInterface(W->rank(),io::GAP()));
   W->setOrdering(interface::identityOrder(W->rank()));
   out::bourbaki_f();
 
@@ -3082,12 +3071,11 @@ void interf::out::hexadecimal_f()
   }
 }
 
-void interf::out::permutation_f()
 
 /*
   Sets output to permutation mode (type A only.)
 */
-
+void interf::out::permutation_f()
 {
   using namespace typeA;
 
@@ -3104,8 +3092,7 @@ void interf::out::permutation_f()
   W->interface().setDescent(io::Default());
   W->setOutputTraits(io::Pretty());
 
-  delete in_buf;
-  in_buf = 0;
+  in_buf.reset();
 }
 
 void interf::out::postfix_f()
@@ -3147,15 +3134,13 @@ void interf::out::separator_f()
   in_buf->setSeparator(buf);
 }
 
-void interf::out::terse_f()
 
 /*
   Sets output styles to terse style (the same as GAP style).
 */
-
+void interf::out::terse_f()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->rank(),io::GAP());
+  in_buf.reset(new interface::GroupEltInterface(W->rank(),io::GAP()));
 
   W->interface().setDescent(io::Default());
   W->interface().setOut(*in_buf); // has to be done here so that output
@@ -3205,14 +3190,12 @@ namespace {
 
 void interface_entry()
 {
-  commands::interf::in_buf = new interface::GroupEltInterface(W->rank());
+  commands::interf::in_buf.reset(new interface::GroupEltInterface(W->rank()));
 }
 
 void interface_exit()
-
 {
-  delete commands::interf::in_buf;
-  commands::interf::in_buf = 0;
+  commands::interf::in_buf.reset();
 }
 
 
@@ -3234,13 +3217,12 @@ void main_entry()
 
 };
 
-void interf::in_entry()
 
 /*
   Entry function to the input interface modification mode. The global variable
   in_buf is originally set to value for the current group.
 */
-
+void interf::in_entry()
 {
   bits::Permutation a(W->interface().order());
   a.inverse();
@@ -3249,10 +3231,10 @@ void interf::in_entry()
   interactive::printInterface(stdout,W->interface().inInterface(),a);
   printf("\n");
 
-  in_buf = new interface::GroupEltInterface(W->interface().inInterface());
+  in_buf.reset
+    (new interface::GroupEltInterface(W->interface().inInterface()));
 }
 
-void interf::in_exit()
 
 /*
   Exit function from the input modification mode. It checks if the
@@ -3261,9 +3243,9 @@ void interf::in_exit()
   and exits peacefully; if not, it prints out the problems and keeps
   the user in the mode.
 */
-
+void interf::in_exit()
 {
-  if (in_buf == 0) // hack to prevent execution in special cases
+  if (in_buf == nullptr) // hack to prevent execution in special cases
     return;
 
   bits::Permutation a(W->interface().order());
@@ -3275,19 +3257,19 @@ void interf::in_exit()
   const std::string* str = checkLeadingWhite(*in_buf);
 
   if (str) {
-    Error(LEADING_WHITESPACE,in_buf,&W->interface().inInterface(),&a,str);
+    Error(LEADING_WHITESPACE,in_buf.get(),&W->interface().inInterface(),&a,str);
     goto error_exit;
   }
 
   str = checkReserved(*in_buf,W->interface());
 
   if (str) {
-    Error(RESERVED_SYMBOL,in_buf,&W->interface().inInterface(),&a,str);
+    Error(RESERVED_SYMBOL,in_buf.get(),&W->interface().inInterface(),&a,str);
     goto error_exit;
   }
 
   if (!checkRepeated(*in_buf)) {
-    Error(REPEATED_SYMBOL,in_buf,&W->interface().inInterface(),&a);
+    Error(REPEATED_SYMBOL,in_buf.get(),&W->interface().inInterface(),&a);
     goto error_exit;
   }
 
@@ -3305,16 +3287,15 @@ void interf::in_exit()
   ERRNO = ERROR_WARNING;
 }
 
-void interf::out_entry()
 
 /*
   Entry function to the output interface modification mode. The global variable
   in_buf is originally set to value for the current group.
 */
-
+void interf::out_entry()
 {
-  delete in_buf;
-  in_buf = new interface::GroupEltInterface(W->interface().outInterface());
+  in_buf.reset
+    (new interface::GroupEltInterface(W->interface().outInterface()));
 
   bits::Permutation a(W->interface().order());
   a.inverse();
@@ -3324,15 +3305,14 @@ void interf::out_entry()
   printf("\n");
 }
 
-void interf::out_exit()
 
 /*
   Exit function for the output modification mode. No checking is necessary
   here.
 */
-
+void interf::out_exit()
 {
-  if (in_buf == 0) // hack to prevent execution in special cases
+  if (in_buf == nullptr) // hack to prevent execution in special cases
     return;
 
   bits::Permutation a(W->interface().order());
