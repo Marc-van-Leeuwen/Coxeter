@@ -24,15 +24,15 @@ namespace commands {
 
 /******** constants ********************************************************/
 
-namespace commands {
-  extern void (*default_help)();
-};
-
 /******** function declarations ********************************************/
 
 namespace commands {
-  coxgroup::CoxGroup* currentGroup(); // get group fixed upon main mode entry
+
+  // these are exported implicitly, since used as default function arguments
+  extern void (*default_help)(); // the constant is here, its value in help
   void default_error(const char* str); // report |COMMAND_NOT_FOUND|
+
+  // the follwing are exported so that help.cpp can print command lists
   CommandTree* mainCommandTree(); // for ordinary computation commands
   CommandTree* uneqCommandTree(); // for commands for unequal-parameter groups
   CommandTree* interfaceCommandTree();
@@ -43,8 +43,9 @@ namespace commands {
     CommandTree* outCommandTree();
   };
   void printCommands(FILE* file, const CommandTree& tree);
+
   void relax_f(); // no-op, to be used as action function
-  void run();
+  void run(); // the function called by |main| to run the main command loop
 };
 
 /******** Type definitions *************************************************/

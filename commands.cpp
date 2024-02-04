@@ -22,24 +22,29 @@ namespace commands {
 
 namespace {
 
-  bool wgraph_warning = true;
+  bool wgraph_warning = true; // a user preference about repeating warnings
 
   /* used in the definition of command trees */
-
   struct Empty_tag {};
   struct Interface_tag {};
   struct Main_tag {};
   struct Uneq_tag {};
 
   containers::stack<CommandTree*> mode_stack;
-  coxgroup::CoxGroup* W = 0;
+
+  coxgroup::CoxGroup* W = nullptr; // the current working Coxeter group
+  // this is set depending on modes on the stack, by entry and exit functions
 
   void activate(CommandTree& tree); // push |tree| onto the command stack
-  void report_ambiguous_command(const CommandTree& tree, const std::string& str);
-  void empty_error(const char* str);
-  CommandTree* emptyCommandTree();
-  template<class C> // C is just a tag to select one of these functions
+  void report_ambiguous_command
+    (const CommandTree& tree, const std::string& str);
+
+  void empty_error(const char* str); // "error" function in empty mode
+  CommandTree* emptyCommandTree(); // get pointer to static mode variable
+
+  template<class C> // C is just a tag to select one of these
     void initCommandTree(CommandTree&); // command initialization functions
+
   void startup();
 
   void interface_entry();
@@ -657,18 +662,17 @@ CommandData::~CommandData()
 namespace {
 
 /*
-  This function builds the initial command tree of the program. The idea is that
-  all commands on the main command tree will be considered entry commands, and
-  so will do the necessary initialization. This is achieved thru the
-  |empty_error| function, since almost eny command will not be recognized in
-  empty mode, so typing it will call the mode's error function, which will then
-  install the main command mode.
+  This function builds the initial (empty mode) command tree of the program.
+  The idea is that all commands on the main command tree will be considered
+  entry commands, and so will do the necessary initialization. This is achieved
+  through the |empty_error| function, since almost eny command will not be
+  recognized in empty mode, so typing it will call the mode's error function,
+  which will then install the main command mode.
 
-  Like all |initCommandTree| instances, this function should really be called
-  only once, since subsequent calls will attempt to add new functions to an
-  already complete commande tree hel in a static variable. It would be more
-  proper to have just a function that builds the tree and have the caller hold
-  the result in a static variable.
+  Like all |initCommandTree| instances, this function should be called only
+  once, to construct the tree held in a |static| variable. This is achieved by
+  passing a pointer to it to the constructor for that variable, which construtor
+  then calls the function with the object under construction as |tree| argument.
 */
 template<> void initCommandTree<Empty_tag>(CommandTree& tree)
 {
@@ -3196,17 +3200,6 @@ void printCommands(FILE* file, const CommandTree& tree)
     }
 }
 
-
-
-/*
-  Return the "current" Coxeter group.
-
-  NOTE : this will probably have to be refined in the future.
-*/
-coxgroup::CoxGroup* currentGroup()
-{
-  return W;
-}
 
 namespace {
 
