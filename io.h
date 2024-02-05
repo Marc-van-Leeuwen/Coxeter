@@ -46,6 +46,7 @@ namespace io {
   int digits(Ulong c, Ulong b);
   void foldLine(FILE* file, const std::string& str, const Ulong& ls,
 		const Ulong& h, const char* hyphens);
+  // |getInput| will return |nullptr| in case it hits |EOF| immediately
   const char* getInput(FILE *inputfile, std::string& buf, Ulong len = 0);
   std::string& pad(std::string& l, const Ulong& n);
   void print(FILE* file, const char * str);                      /* inlined */

@@ -253,17 +253,27 @@ namespace io {
   Read from |inputfile| until either |EOF| or a newline is reached;
   append the result to |buf| starting at position |len|; resize |buf|
   as needed while writing. The newline is not written on the |buf|.
-*/
 
+  If |EOF| is read before anything else, return |nullptr|, if it is read after
+  at least one other character, treat it as if it was a newline (the next call
+  will then encounter |EOF| again and return |nullptr|.
+*/
 const char* getInput(FILE *inputfile, std::string& buf, Ulong len)
 {
+  bool at_start=true;
   buf.resize(len);
   while(true)
   {
     int c = getc(inputfile);
-    if ((c == EOF) || (c == '\n'))
+    if (c == EOF)
+      { if (at_start)
+	  return nullptr;
+	break;
+      }
+    else if (c == '\n')
       break;
     buf.push_back(c);
+    at_start=false;
   }
 
   return buf.c_str();

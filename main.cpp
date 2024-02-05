@@ -26,6 +26,7 @@ int main()
   printVersion();
   commands::run();
 
+  printf("^D\n"); // signal exit through EOF
   exit(0);
 }
 

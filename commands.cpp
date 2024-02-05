@@ -341,10 +341,11 @@ void run()
     return;        // and quit program
   }
 
-  while (true) { /* the only way to exit from this loop is the "qq" command */
+  while (true) { // to exit from this loop either use "qq" command, or EOF
     CommandTree& mode = *mode_stack.top();
     mode.prompt();
-    io::getInput(stdin,name);
+    if (not io::getInput(stdin,name))
+      break;
 
     const auto* cell = mode.find_cell(name);
     if (cell == nullptr) {
@@ -2762,8 +2763,7 @@ void interf::symbol_f()
     if (ERRNO)
       Error(ERRNO);
     printf("enter the generator symbol you wish to change, ? to abort:\n");
-    io::getInput(stdin,buf,0);
-    if (buf[0] == '?')
+    if (not io::getInput(stdin,buf,0) or buf[0] == '?')
       return;
     io::skipSpaces(buf,0);
     interface::Token tok;
@@ -2775,8 +2775,8 @@ void interf::symbol_f()
   } while (ERRNO);
 
   printf("enter the new symbol (finish with a carriage return):\n");
-  io::getInput(stdin,buf,0);
-  in_buf->setSymbol(s,buf);
+  if (io::getInput(stdin,buf,0))
+    in_buf->setSymbol(s,buf);
 }
 
 
@@ -2908,8 +2908,8 @@ void interf::in::postfix_f()
 {
   printf("Enter the new input postfix (finish with a carriage return):\n");
   std::string buf;
-  io::getInput(stdin,buf,0);
-  in_buf->setPostfix(buf);
+  if (io::getInput(stdin,buf,0))
+    in_buf->setPostfix(buf);
 }
 
 void interf::in::prefix_f()
@@ -2921,8 +2921,8 @@ void interf::in::prefix_f()
 {
   printf("Enter the new input prefix (finish with a carriage return):\n");
   std::string buf;
-  io::getInput(stdin,buf,0);
-  in_buf->setPrefix(buf);
+  if (io::getInput(stdin,buf,0))
+    in_buf->setPrefix(buf);
 }
 
 void interf::in::separator_f()
@@ -2934,8 +2934,8 @@ void interf::in::separator_f()
 {
   printf("Enter the new input separator (finish with a carriage return):\n");
   std::string buf;
-  io::getInput(stdin,buf,0);
-  in_buf->setSeparator(buf);
+  if (io::getInput(stdin,buf,0))
+    in_buf->setSeparator(buf);
 }
 
 
@@ -3083,8 +3083,8 @@ void interf::out::postfix_f()
 {
   printf("enter the new output postfix (finish with a carriage return):\n");
   std::string buf;
-  io::getInput(stdin,buf,0);
-  in_buf->setPostfix(buf);
+  if (io::getInput(stdin,buf,0))
+    in_buf->setPostfix(buf);
 }
 
 void interf::out::prefix_f()
@@ -3096,8 +3096,8 @@ void interf::out::prefix_f()
 {
   printf("Enter the new output prefix (finish with a carriage return):\n");
   std::string buf;
-  io::getInput(stdin,buf,0);
-  in_buf->setPrefix(buf);
+  if (io::getInput(stdin,buf,0))
+    in_buf->setPrefix(buf);
 }
 
 void interf::out::separator_f()
@@ -3109,8 +3109,8 @@ void interf::out::separator_f()
 {
   printf("Enter the new output separator (finish with a carriage return):\n");
   std::string buf;
-  io::getInput(stdin,buf,0);
-  in_buf->setSeparator(buf);
+  if (io::getInput(stdin,buf,0))
+    in_buf->setSeparator(buf);
 }
 
 
