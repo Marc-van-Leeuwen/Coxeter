@@ -345,21 +345,27 @@ void run()
     CommandTree& mode = *mode_stack.top();
     mode.prompt();
     io::getInput(stdin,name);
-    bool ambiguous_prefix; // will be set when |find| finds cell but no action
-    const CommandData* cd = mode.find(name,ambiguous_prefix);
-    if (ambiguous_prefix) {
-      report_ambiguous_command(mode,name);
-      continue;
-    }
-    if (cd == nullptr) {
+
+    const auto* cell = mode.find_cell(name);
+    if (cell == nullptr) {
       mode.call_error(name.c_str());
       continue;
     }
+    const auto cd = cell->action();
+    if (cd==nullptr) {
+      report_ambiguous_command(mode,name);
+      continue;
+    }
+
+    if (name!=cd->name)
+      fprintf(stdout,"%s\n",cd->name.c_str()); // show completed command
+
     cd->action();
+
     if (cd!=mode.root()->action()) // whether command differs from that of ""
-      mode.set_default_action(cd->autorepeat ? cd->action : &relax_f);
+      mode.set_default_action(cd->autorepeat ? cd : nullptr);
   }
-}
+} // |run|
 
 
 // Default response to an unknown command.
@@ -402,7 +408,7 @@ void report_ambiguous_command(const CommandTree& mode, const std::string& str)
   fprintf(stderr,"%s : ambiguous (",str.c_str());
 
   bool first = true;
-  for (const auto& ext :  mode.findCell(str)->extensions(str))
+  for (const auto& ext :  mode.find_cell(str)->extensions(str))
     fprintf(stderr,first ? first=false, "%s" : ",%s",ext.c_str());
 
   fprintf(stderr,")\n");
@@ -411,34 +417,41 @@ void report_ambiguous_command(const CommandTree& mode, const std::string& str)
 // the error function for the empty mode pushes the main command mode!
 void empty_error(const char* str)
 {
-  bool ambiguous; // whether |find| finds an ambiguous prefix
-  static auto* const type_node=mainCommandTree()->find("type",ambiguous);
-  static auto* const rank_node=mainCommandTree()->find("rank",ambiguous);
+  static auto* const type_node=mainCommandTree()->find("type");
+  static auto* const rank_node=mainCommandTree()->find("rank");
 
   assert(type_node!=nullptr and rank_node!=nullptr);
 
   CommandTree& mode = *mainCommandTree();
 
-  const auto* cd = mode.find(str,ambiguous);
-  if (ambiguous) {
+  const auto* cell = mode.find_cell(str);
+  if (cell == nullptr) {
+    default_error(str); // report "command not found" after all
+    return;
+  }
+
+  const auto cd = cell->action();
+  if (cd==nullptr) {
     report_ambiguous_command(mode,str);
     return;
   }
-  if (cd == nullptr) {
-    default_error(str);
-    return;
-  }
+
+  // now that an existing command was unambiguously identified, enter main mode
   activate(mode);
   if (ERRNO) { /* something went wrong during initialization */
     Error(ERRNO);
     return;
   }
-  // type and rank are already set during |activate(tree)|; skip their action
-  if ((cd != type_node) && (cd != rank_node))
+
+  if (str!=cd->name)
+    fprintf(stdout,"%s\n",cd->name.c_str()); // show completed command
+
+  // type and rank are already set during |activate(mode)|; skip their action
+  if ((cd.get() != type_node) && (cd.get() != rank_node))
     cd->action();
 
   if (cd!=mode.root()->action()) // whether command differs from that of ""
-    mode.set_default_action(cd->autorepeat ? cd->action : &relax_f);
+    mode.set_default_action(cd->autorepeat ? cd : nullptr);
 }
 
 
@@ -510,6 +523,11 @@ void startup()
 
 ******************************************************************************/
 
+void help_filler(CommandTree& tree)
+{
+  tree.add("q",q_tag,&q_f,0,false);
+}
+
 /*
   Initialize a command tree with the given prompt and action |a| for the
   empty command, and call |filler| to construct the remainder of the tree.
@@ -519,12 +537,6 @@ void startup()
   variables will be |static| inside a function |f|, so that their constructor is
   called only once, but all following code every time that |f| is called.
 */
-
-void help_filler(CommandTree& tree)
-{
-  tree.add("q",q_tag,&q_f,0,false);
-}
-
 CommandTree::CommandTree(const char* prompt,
 			 void (*a)(),
 			 void (*filler)(CommandTree&),
@@ -532,8 +544,7 @@ CommandTree::CommandTree(const char* prompt,
 			 void (*error)(const char*),
 			 void (*exit)(),
 			 void (*h)())
-  : dictionary::Dictionary<CommandData>
-      (std::make_shared<CommandData>("","",a,&relax_f,true))
+  : dictionary::Dictionary<CommandData>(nullptr)
   , d_prompt(prompt), d_entry(entry), d_error(error), d_exit(exit)
 {
   if (h!=nullptr) { /* add help functionality */
@@ -3148,7 +3159,7 @@ void printCommands(FILE* file, const CommandTree& tree)
   for (auto it = std::next(tree.begin()); it != tree.end(); ++it)
     if (it->has_own_action())
     {
-      const auto* cd = it->action();
+      const auto cd = it->action();
       fprintf(file,"  - %s : %s;\n",cd->name.c_str(),cd->tag.c_str());
     }
 }

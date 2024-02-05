@@ -124,15 +124,11 @@ template <class T> Dictionary<T>::Dictionary(std::shared_ptr<T> v)
 
 
 template <class T>
-const T* Dictionary<T>::find(const std::string& str, bool& absent_action) const
+const T* Dictionary<T>::find(const std::string& str) const
 
 {
-  const DictCell<T>* dc = findCell(str);
-
-  if (dc == nullptr) // then |str| was not found at all; in that case
-    return absent_action=false,nullptr; // don't flag |asent_ection|
-  absent_action = dc->ptr==nullptr; // it means: |str| found but no action
-  return dc->ptr.get();
+  const DictCell<T>* dc = find_cell(str);
+  return dc==nullptr ? nullptr : dc->ptr.get();
 }
 
 
@@ -155,7 +151,7 @@ const T* Dictionary<T>::find(const std::string& str, bool& absent_action) const
   as any such prefix has a corresponding cell with data stored.
 */
 template <class T>
-  const DictCell<T>* Dictionary<T>::findCell(const std::string& str) const
+  const DictCell<T>* Dictionary<T>::find_cell(const std::string& str) const
 {
   const DictCell<T> *cell = root();
 

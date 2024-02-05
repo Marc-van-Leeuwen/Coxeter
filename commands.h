@@ -9,6 +9,8 @@
 #define COMMANDS_H
 
 #include <string>
+#include <memory>
+
 #include "globals.h"
 #include "dictionary.h"
 #include "io.h"
@@ -90,7 +92,8 @@ class CommandTree:public dictionary::Dictionary<CommandData> {
 /* modifiers */
   void add(const char* name, const char* tag, void (*action)(),
 	   void (*help)() = default_help, bool rep = true);
-  void set_default_action(void (*a)()) { root_action()->action=a; }
+  void set_default_action(const std::shared_ptr<CommandData>& cd)
+  { set_root_action(cd); }
 
 /* accessors */
   void prompt() const; // print |d_prompt|

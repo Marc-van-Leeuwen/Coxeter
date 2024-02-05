@@ -48,7 +48,7 @@ public:
   ~DictCell();
   void make_complete(); // install completions downwards
   bool has_own_action() const; // whether |ptr| defined, and not as completion
-  const T* action() const { return ptr.get(); }
+  std::shared_ptr<T> action() const { return ptr; }
   containers::sl_list<std::string> extensions(std::string name) const;
 };
 
@@ -64,10 +64,10 @@ public:
   void insert(const std::string& str, std::shared_ptr<T> value);
   void remove(const std::string& str);
   void install_command_completion() { root_cell.make_complete(); };
-  T* root_action() { return root_cell.ptr.get(); }
+  void set_root_action(const std::shared_ptr<T>& a) { root_cell.ptr=a; }
 /* accessors */
-  const T* find (const std::string& str, bool& absent_action) const;
-  const DictCell<T>* findCell (const std::string& str) const;
+  const T* find (const std::string& str) const;
+  const DictCell<T>* find_cell (const std::string& str) const;
   const DictCell<T>* root() const { return &root_cell; }
 
   // embedded class
