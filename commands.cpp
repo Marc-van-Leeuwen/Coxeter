@@ -346,7 +346,7 @@ void run()
     mode.prompt();
     io::getInput(stdin,name);
     bool ambiguous_prefix; // will be set when |find| finds cell but no action
-    CommandData* cd = mode.find(name,ambiguous_prefix);
+    const CommandData* cd = mode.find(name,ambiguous_prefix);
     if (ambiguous_prefix) {
       report_ambiguous_command(mode,name);
       continue;
@@ -356,14 +356,8 @@ void run()
       continue;
     }
     cd->action();
-    if (cd->autorepeat) {
-      mode.set_default_action(cd->action);
-      mode.setRepeat("",true);
-    }
-    else {
-      mode.set_default_action(&relax_f);
-      mode.setRepeat("",false);
-    }
+    if (cd!=mode.root()->action()) // whether command differs from that of ""
+      mode.set_default_action(cd->autorepeat ? cd->action : &relax_f);
   }
 }
 
@@ -425,7 +419,7 @@ void empty_error(const char* str)
 
   CommandTree& mode = *mainCommandTree();
 
-  auto cd = mode.find(str,ambiguous);
+  const auto* cd = mode.find(str,ambiguous);
   if (ambiguous) {
     report_ambiguous_command(mode,str);
     return;
@@ -443,14 +437,8 @@ void empty_error(const char* str)
   if ((cd != type_node) && (cd != rank_node))
     cd->action();
 
-  if (cd->autorepeat) {
-    mode.set_default_action(cd->action);
-    mode.setRepeat("",true);
-  }
-  else {
-    mode.set_default_action(&relax_f);
-    mode.setRepeat("",false);
-  }
+  if (cd!=mode.root()->action()) // whether command differs from that of ""
+    mode.set_default_action(cd->autorepeat ? cd->action : &relax_f);
 }
 
 
@@ -545,7 +533,7 @@ CommandTree::CommandTree(const char* prompt,
 			 void (*exit)(),
 			 void (*h)())
   : dictionary::Dictionary<CommandData>
-      (std::make_shared<CommandData>("","",a,&relax_f,false))
+      (std::make_shared<CommandData>("","",a,&relax_f,true))
   , d_prompt(prompt), d_entry(entry), d_error(error), d_exit(exit)
 {
   if (h!=nullptr) { /* add help functionality */
@@ -600,19 +588,6 @@ void CommandTree::add(const char* name, const char* tag, void (*a)(),
   }
 }
 
-
-
-/*
-  Assuming that str is a fullname on the command tree, sets the autorepeat
-  value of the corresponding command data structure to b.
-*/
-void CommandTree::setRepeat(const char* str, bool b)
-{
-  bool dummy;
-  auto cd = find(str,dummy);
-  assert(cd!=nullptr);
-  cd->autorepeat = b;
-}
 
 /*****************************************************************************
 

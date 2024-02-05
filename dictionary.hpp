@@ -119,29 +119,19 @@ template <class T>
 */
 
 template <class T> Dictionary<T>::Dictionary(std::shared_ptr<T> v)
-  : d_root(new DictCell<T>('\0',std::move(v))) {}
+  : root_cell('\0',std::move(v)) {}
 
-
-/*
-  Destructor for the Dictionary class. The destructor has to run through
-  the cells, and destroy each of them. The recursion is taken care of by
-  |DictCell<T>::~DictCell| so we simply need to |delete| the root pointer.
-*/
-template <class T> Dictionary<T>::~Dictionary()
-{
-  delete d_root;
-}
 
 
 template <class T>
-T* Dictionary<T>::find(const std::string& str, bool& absent_action) const
+const T* Dictionary<T>::find(const std::string& str, bool& absent_action) const
 
 {
-  DictCell<T>* dc = findCell(str);
+  const DictCell<T>* dc = findCell(str);
 
-  if (dc == nullptr)
-    return absent_action=false,nullptr;
-  absent_action = dc->ptr==nullptr;
+  if (dc == nullptr) // then |str| was not found at all; in that case
+    return absent_action=false,nullptr; // don't flag |asent_ection|
+  absent_action = dc->ptr==nullptr; // it means: |str| found but no action
   return dc->ptr.get();
 }
 
@@ -164,10 +154,10 @@ T* Dictionary<T>::find(const std::string& str, bool& absent_action) const
   NOTE : in fact, recognizes if |str| is a prefix of a word in the dictionary,
   as any such prefix has a corresponding cell with data stored.
 */
-template <class T> DictCell<T>* Dictionary<T>::findCell(const std::string& str)
-  const
+template <class T>
+  const DictCell<T>* Dictionary<T>::findCell(const std::string& str) const
 {
-  DictCell<T> *cell = d_root;
+  const DictCell<T> *cell = root();
 
   for (Ulong j = 0; str[j]; ++j)
   { char c = str[j]; // we need to find this character
@@ -204,7 +194,7 @@ template <class T> DictCell<T>* Dictionary<T>::findCell(const std::string& str)
 template <class T> void Dictionary<T>::insert(const std::string& str,
 					      std::shared_ptr<T> value)
 {
-  std::unique_ptr<DictCell<T> >* p = &d_root->left;
+  std::unique_ptr<DictCell<T> >* p = &root_cell.left;
   for (const char& c: str)
   {
     bool final = &c==&str[str.length()-1];

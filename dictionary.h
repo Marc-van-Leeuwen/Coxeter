@@ -55,20 +55,20 @@ public:
 
 template <typename T> class Dictionary
 {
-  DictCell<T>* d_root;
+  DictCell<T> root_cell;
 public:
 /* creators and destructors */
   Dictionary(std::shared_ptr<T> v);
-  virtual ~Dictionary();
+  virtual ~Dictionary() {}
 /* modifiers */
   void insert(const std::string& str, std::shared_ptr<T> value);
   void remove(const std::string& str);
-  void install_command_completion() { d_root->make_complete(); };
-  void set_default_action(void (*a)()) { d_root->ptr->action = a; }
+  void install_command_completion() { root_cell.make_complete(); };
+  T* root_action() { return root_cell.ptr.get(); }
 /* accessors */
-  T* find (const std::string& str, bool& absent_action) const;
-  DictCell<T>* findCell (const std::string& str) const;
-  DictCell<T>* root() const { return d_root; }
+  const T* find (const std::string& str, bool& absent_action) const;
+  const DictCell<T>* findCell (const std::string& str) const;
+  const DictCell<T>* root() const { return &root_cell; }
 
   // embedded class
   class const_iterator
@@ -97,7 +97,7 @@ public:
     self operator++(int) { auto old = *this; operator++; return old; }
   }; // |class const_iterator|
 
-  const_iterator begin() const { return const_iterator(d_root); }
+  const_iterator begin() const { return const_iterator(&root_cell); }
   const_iterator end() const   { return const_iterator(); }
 }; // |template <typename T> class Dictionary|
 

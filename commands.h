@@ -58,7 +58,7 @@ struct CommandData {
   std::string tag;
   void (*action)();
   void (*help)();
-  bool autorepeat;
+  bool autorepeat; // whether this command can be autorepeated
 /* Constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
@@ -90,8 +90,8 @@ class CommandTree:public dictionary::Dictionary<CommandData> {
 /* modifiers */
   void add(const char* name, const char* tag, void (*action)(),
 	   void (*help)() = default_help, bool rep = true);
-//  void set_default_action(void (*a)()); // assign |a| to |d_root->ptr->action|
-  void setRepeat(const char* str, bool b);
+  void set_default_action(void (*a)()) { root_action()->action=a; }
+
 /* accessors */
   void prompt() const; // print |d_prompt|
   void call_entry() const { d_entry(); }
