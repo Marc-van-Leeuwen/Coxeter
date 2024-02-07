@@ -6,7 +6,8 @@
 */
 
 #include "memory.h"
-#include <limits.h>
+#include <limits>
+#include <cstdlib> // for |std::calloc|
 #include <cstring> // for |memcpy|, |memset|
 #include <cassert>
 
@@ -17,9 +18,9 @@ namespace memory {
   using namespace error;
 
 namespace {
-  const Ulong MEMORY_MAX = ULONG_MAX;
-  const Ulong ABYTES = sizeof(Align);
-  const Ulong ARENA_BITS = 16;
+  static constexpr Ulong MEMORY_MAX = std::numeric_limits<Ulong>::max();
+  static constexpr Ulong Arena_Unit = sizeof(memory::Align); // probably 8
+  static constexpr Ulong ARENA_BITS = 16; // minimal |calloc|, in |Arena_Unit|
 };
 
 /****************************************************************************
@@ -32,7 +33,7 @@ namespace {
   We try to take an approach which is as simple as possible, for the sake
   of efficiency, while trying to be not too wasteful. First of all, memory
   is gotten from the system, via calloc, in chunks of 2^N.a bytes, where
-  a = ABYTES will ensure proper alignment for all the types used
+  a = Arena_Unit will ensure proper alignment for all the types used
   in this program (here we make the crucial assumption that all builtin
   types have a size which is a power of two.) The only exception is when
   a memory request does not fit in such a chunk; then we allocate a block
@@ -73,23 +74,19 @@ Arena::Arena(Ulong bsBits)
   }
 }
 
-Arena::~Arena()
+
+// Nothing done here! At program termination don't bother to call |std::free|
+Arena::~Arena() {}
 
 /*
-  Nothing to do here! All memory is allocated in fixed-size arrays.
-*/
-
-{}
-
-/*
-  Provide a possibly new block of size |2^b| (this is only called when
-  none are directly available, i.e., when |d_list[b]==nullptr|). We look
-  first whether a free block of larger size is available; if so, we
-  split that one up, leaving two blocks of size |2^b| in |d_list[b]|
-  If no such free block is found, we request through |calloc| a block of
-  size |2^b| if that is large enough, or otherwise one of the minimal size
-  |2^d_bsBits|, wich is then split up as before.
-  (All sizes are in units of |ABYTES|, the effective word size for us.)
+  Provide a possibly new block of size |2^b| (this is only called when none are
+  directly available, i.e., when |d_list[b]==nullptr|). We look first whether a
+  free block of larger size is available; if so, we split that one up, leaving
+  two blocks of size |2^b| in |d_list[b]| If no such free block is found, we
+  request through |std::calloc| a block of size |2^b| if that is large enough,
+  or otherwise one of the minimal size |2^d_bsBits|, wich is then split up as
+  before. (All sizes are in units of |Arena_Unit|, the effective word size for
+  us.)
 
   Note that this is the only place where we can run out of memory.
   In that case, the error OUT_OF_MEMORY is set, and the corresponding
@@ -100,7 +97,7 @@ Arena::~Arena()
   The caller must test that |ERRNO==0| before using the provided block.
 
   NOTE : as this function will be heavily used, it should be rewritten
-  using a bitmap of available blocks.
+  using a bitmap of available block sizes.
 */
 void Arena::newBlock(unsigned b)
 {
@@ -135,7 +132,7 @@ void Arena::newBlock(unsigned b)
       Error(OUT_OF_MEMORY); // actually out of compiled-in limit
       return;
     }
-    d_list[b] = static_cast<MemBlock *> (calloc(1L<<b,ABYTES));
+    d_list[b] = static_cast<MemBlock *> (std::calloc(1L<<b,Arena_Unit));
     if (d_list[b] == nullptr) // the system failed to honor the request
     {
       Error(OUT_OF_MEMORY);
@@ -152,7 +149,7 @@ void Arena::newBlock(unsigned b)
     return;
   }
 
-  Align *ptr = static_cast<Align *> (calloc(1L<<d_bsBits,ABYTES));
+  Align *ptr = static_cast<Align *> (std::calloc(1L<<d_bsBits,Arena_Unit));
   if (ptr == 0) {
     Error(OUT_OF_MEMORY);
     return;
@@ -172,10 +169,11 @@ void Arena::newBlock(unsigned b)
 }
 
 /*
-  Return a pointer to a block of |2^m.ABYTES| bytes, where |m| is the
-  smallest integer such that |2^m.ABYTES >= n|.
+  Return a pointer to a block of |2^m.Arena_Unit| bytes, where |m| is the
+  smallest integer such that |2^m.Arena_Unit >= n|.
+  So |n| is the minimal number of BYTES that is requested
 
-  It is assumed that |ABYTES| is a power of 2.
+  It is assumed that |Arena_Unit| is a power of 2.
 
   The memory is zero-initialized.
 */
@@ -185,11 +183,11 @@ void* Arena::alloc(size_t n)
   if (n == 0)
     return nullptr; // silly request, silly reply
 
-  /* compute size of block */
+  // compute size |2^b| of block (in |Arena_Unit| words) to allocate
 
   unsigned b = 0; // default to |2^0==1| word
-  if (n > ABYTES) // but if more is asked for, request chunck of |2^b| words
-    b = lastBit(n-1)-lastBit(ABYTES)+1; // with |b| large enough
+  if (n > Arena_Unit) // but if more is asked for, request chunck of |2^b| words
+    b = lastBit(n-1)+1-lastBit(Arena_Unit); // with |b| large enough
   // the conditional above ensures we never set |b<0|, or call |lastBit(0)|
 
   if (d_list[b] == nullptr) { /* need to make a new block */
@@ -228,9 +226,9 @@ Ulong Arena::byteSize(Ulong n, Ulong m)
   using namespace constants; // for |lastBit| and friends
   if (n == 0)
     return 0;
-  if (n*m <= ABYTES)
-    return ABYTES;
-  return (1 << (lastBit(n*m-1)-lastBit(ABYTES)+1))*ABYTES;
+  if (n*m <= Arena_Unit)
+    return Arena_Unit;
+  return (1 << (lastBit(n*m-1)+1-lastBit(Arena_Unit)))*Arena_Unit;
 }
 
 /*
@@ -280,10 +278,10 @@ void Arena::free(void *ptr, size_t n)
     return;
 
   unsigned b = 0;
-  if (n > ABYTES)
-    b = lastBit(n-1)-lastBit(ABYTES)+1;
+  if (n > Arena_Unit)
+    b = lastBit(n-1)-lastBit(Arena_Unit)+1;
 
-  memset(ptr,0,(1L<<b)*ABYTES); // erase full contents of allocted block
+  memset(ptr,0,(1L<<b)*Arena_Unit); // erase full contents of allocted block
   MemBlock *block = static_cast<MemBlock*>(ptr); // prepare to link in free list
   block->next = d_list[b]; // push to list (uses one pointer insize the block)
   d_list[b] = block; // set the list to start with this freed block
@@ -304,7 +302,7 @@ void Arena::print(FILE *file) const
 
   fprintf(file,"\n");
   fprintf(file,"total : %10lu/%-10lu %lu-byte units used/allocated\n",
-	  used_count,static_cast<Ulong>(d_count),ABYTES);
+	  used_count,static_cast<Ulong>(d_count),Arena_Unit);
 }
 
 void pause()

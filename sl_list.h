@@ -25,8 +25,8 @@
 
 namespace containers {
 
-// when Alloc is not |std::allocator|, we need a deleter class for |unique_ptr|
-// that calls the Alloc destroyer and then deallocator, rather than |::delete|
+// when |Alloc| is not |std::allocator|, we need a deleter class for |unique_ptr|
+// that calls the |Alloc| destroyer and then deallocator, rather than |::delete|
 
 template <typename Alloc> class allocator_deleter
 : private Alloc

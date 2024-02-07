@@ -8,6 +8,9 @@
 #ifndef MEMORY_H  /* guard against multiple inclusions */
 #define MEMORY_H
 
+#include <new> // for |std::bad_array_new_length|
+#include <limits> // for |std::numeric_limits|
+
 #include <stdio.h> // for |FILE|
 #include "globals.h"
 #include "constants.h"
@@ -63,7 +66,7 @@ class memory::Arena
   static Ulong allocSize(Ulong n, Ulong m);
   static Ulong byteSize(Ulong n, Ulong m);
   void print(FILE* file) const;
-};
+}; // |class memory::Arena|
 
 /******** Inline implementations *****************************************/
 
@@ -71,5 +74,36 @@ inline void* operator new(size_t size, memory::Arena& a)
   {return a.alloc(size);}
 inline void* operator new[](size_t size, memory::Arena& a)
   {return a.alloc(size);}
+
+
+namespace containers { // containers need an allocator type and (empty) object
+
+template <typename T>
+  struct allocator // intended to replace |std::allocator|, whence the name
+{
+  using value_type = T; // related types are deduced in |std::allocator_traits|
+
+  // constructors, obligatory but trivial
+  allocator () = default;
+  template <typename U> constexpr allocator(const allocator<U>&) noexcept {}
+
+  // allocation and deallocation, our only distinguished methods
+  T* allocate(std::size_t n)
+  {
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(T))
+      throw std::bad_array_new_length();
+
+    T* result = static_cast<T*>(memory::arena().alloc(n*sizeof(T)));
+    return result;
+  }
+
+  void deallocate(T* p, std::size_t n) // assumes |p| resulted from |allocate(n)|
+  {
+    memory::arena().free(p,n);
+  }
+}; // |class allocator|
+
+}; // |namespace containers|
+
 
 #endif
