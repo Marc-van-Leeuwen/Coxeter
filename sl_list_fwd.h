@@ -10,39 +10,39 @@
 #ifndef SL_LIST_FWD_H /* guard against multiple inclusions */
 #define SL_LIST_FWD_H
 
-#include <memory> // for |std::allocator|
+#include "memory.h" // for |containers::allocator|
 
 namespace containers {
 
 template <typename Alloc>
   class allocator_deleter;
-template<typename T,typename Alloc = std::allocator<T> >
+template<typename T,typename Alloc = containers::allocator<T> >
   struct sl_node;
 
-template<typename T, typename Alloc = std::allocator<T> >
+template<typename T, typename Alloc = containers::allocator<T> >
   class sl_list_const_iterator;
-template<typename T,typename Alloc = std::allocator<T> >
+template<typename T,typename Alloc = containers::allocator<T> >
   class sl_list_iterator;
 
-template<typename T, typename Alloc = std::allocator<T> >
+template<typename T, typename Alloc = containers::allocator<T> >
   class weak_sl_list_const_iterator;
 template<typename T, typename Alloc> class
   weak_sl_list_iterator;
 
-template<typename T,typename Alloc = std::allocator<T> >
+template<typename T,typename Alloc = containers::allocator<T> >
   class simple_list;
-template<typename T,typename Alloc = std::allocator<T> >
+template<typename T,typename Alloc = containers::allocator<T> >
   class sl_list;
 
-template<typename T,typename Alloc = std::allocator<T> >
+template<typename T,typename Alloc = containers::allocator<T> >
   class mirrored_simple_list; // trivial adapter, to allow use with |std::stack|
 
-template<typename T,typename Alloc = std::allocator<T> >
+template<typename T,typename Alloc = containers::allocator<T> >
   class mirrored_sl_list; // trivial adapter, to allow use with |std::stack|
 
-template<typename T,typename Alloc = std::allocator<T> > class stack;
+template<typename T,typename Alloc = containers::allocator<T> > class stack;
 
-template<typename T,typename Alloc = std::allocator<T> > class queue;
+template<typename T,typename Alloc = containers::allocator<T> > class queue;
 
 } // |namespace containers|
 
