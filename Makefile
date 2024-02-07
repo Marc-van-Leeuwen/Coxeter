@@ -46,140 +46,134 @@ clean:
 	@$(CXX) -MM $*.cpp
 depend: $(dependencies)
 
-affine.o: affine.cpp affine.h globals.h coxgroup.h coxtypes.h io.h list.h \
-  memory.h constants.h list.hpp error.h files.h hecke.h interface.h \
-  automata.h bits.h minroots.h dotval.h graph.h type.h transducer.h \
-  schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h \
-  vector.hpp polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h \
-  uneqkl.h wgraph.h files.hpp cells.h
+affine.o: affine.cpp affine.h globals.h coxgroup.h coxtypes.h constants.h \
+ io.h list.h memory.h list.hpp error.h files.h hecke.h interface.h \
+ automata.h bits.h minroots.h graph.h type.h dotval.h transducer.h \
+ schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \
+ polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h \
+ wgraph.h files.hpp cells.h
 automata.o: automata.cpp automata.h globals.h bits.h list.h memory.h \
   constants.h list.hpp error.h io.h
 bits.o: bits.cpp bits.h globals.h list.h memory.h constants.h list.hpp \
-  error.h io.h
+ error.h io.h
 cells.o: cells.cpp cells.h globals.h bits.h list.h memory.h constants.h \
-  list.hpp error.h io.h kl.h coxtypes.h klsupport.h polynomials.h \
-  vector.h vector.hpp polynomials.hpp schubert.h interface.h automata.h \
-  minroots.h dotval.h graph.h type.h transducer.h stack.h stack.hpp \
-  hecke.h hecke.hpp search.h search.hpp uneqkl.h wgraph.h
-commands.o: commands.cpp commands.h globals.h coxgroup.h coxtypes.h io.h \
-  list.h memory.h constants.h list.hpp error.h files.h hecke.h \
-  interface.h automata.h bits.h minroots.h dotval.h graph.h type.h \
-  transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
-  vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
-  search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h dictionary.h \
-  dictionary.hpp directories.h fcoxgroup.h help.h interactive.h special.h \
-  typeA.h
+ list.hpp error.h io.h kl.h coxtypes.h klsupport.h polynomials.h vector.h \
+ vector.hpp polynomials.hpp schubert.h graph.h type.h stack.h stack.hpp \
+ interface.h automata.h minroots.h dotval.h transducer.h hecke.h \
+ hecke.hpp search.h search.hpp uneqkl.h wgraph.h
+commands.o: commands.cpp commands.h globals.h dictionary.h sl_list.h \
+ sl_list_fwd.h memory.h constants.h io.h list.h list.hpp error.h \
+ dictionary.hpp coxgroup.h coxtypes.h files.h hecke.h interface.h \
+ automata.h bits.h minroots.h graph.h type.h dotval.h transducer.h \
+ schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \
+ polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h \
+ wgraph.h files.hpp cells.h directories.h fcoxgroup.h help.h \
+ interactive.h special.h typeA.h
 constants.o: constants.cpp constants.h globals.h
-coxgroup.o: coxgroup.cpp coxgroup.h globals.h coxtypes.h io.h list.h \
-  memory.h constants.h list.hpp error.h files.h hecke.h interface.h \
-  automata.h bits.h minroots.h dotval.h graph.h type.h transducer.h \
-  schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h \
-  vector.hpp polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h \
-  uneqkl.h wgraph.h files.hpp cells.h
-coxtypes.o: coxtypes.cpp coxtypes.h globals.h io.h list.h memory.h \
-  constants.h list.hpp error.h
-error.o: error.cpp error.h globals.h coxtypes.h io.h list.h memory.h \
-  constants.h list.hpp directories.h graph.h bits.h type.h interactive.h \
-  interface.h automata.h minroots.h dotval.h transducer.h kl.h \
-  klsupport.h polynomials.h vector.h vector.hpp polynomials.hpp \
-  schubert.h stack.h stack.hpp hecke.h hecke.hpp search.h search.hpp \
-  version.h
+coxgroup.o: coxgroup.cpp coxgroup.h globals.h coxtypes.h constants.h io.h \
+ list.h memory.h list.hpp error.h files.h hecke.h interface.h automata.h \
+ bits.h minroots.h graph.h type.h dotval.h transducer.h schubert.h \
+ stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \
+ polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h \
+ wgraph.h files.hpp cells.h
+coxtypes.o: coxtypes.cpp coxtypes.h globals.h constants.h io.h list.h \
+ memory.h list.hpp error.h
+error.o: error.cpp error.h globals.h coxtypes.h constants.h io.h list.h \
+ memory.h list.hpp directories.h graph.h bits.h type.h interactive.h \
+ interface.h automata.h minroots.h dotval.h transducer.h kl.h klsupport.h \
+ polynomials.h vector.h vector.hpp polynomials.hpp schubert.h stack.h \
+ stack.hpp hecke.h hecke.hpp search.h search.hpp version.h
 fcoxgroup.o: fcoxgroup.cpp fcoxgroup.h globals.h coxgroup.h coxtypes.h \
-  io.h list.h memory.h constants.h list.hpp error.h files.h hecke.h \
-  interface.h automata.h bits.h minroots.h dotval.h graph.h type.h \
-  transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
-  vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
-  search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h
+ constants.h io.h list.h memory.h list.hpp error.h files.h hecke.h \
+ interface.h automata.h bits.h minroots.h graph.h type.h dotval.h \
+ transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
+ vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
+ search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h
 files.o: files.cpp files.h globals.h hecke.h list.h memory.h constants.h \
-  list.hpp error.h interface.h automata.h bits.h io.h coxtypes.h \
-  minroots.h dotval.h graph.h type.h transducer.h schubert.h stack.h \
-  stack.hpp hecke.hpp polynomials.h vector.h vector.hpp polynomials.hpp \
-  invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h wgraph.h \
-  files.hpp cells.h directories.h posets.h version.h
-general.o: general.cpp general.h globals.h coxgroup.h coxtypes.h io.h \
-  list.h memory.h constants.h list.hpp error.h files.h hecke.h \
-  interface.h automata.h bits.h minroots.h dotval.h graph.h type.h \
-  transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
-  vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
-  search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h
+ list.hpp error.h interface.h automata.h bits.h io.h coxtypes.h \
+ minroots.h graph.h type.h dotval.h transducer.h schubert.h stack.h \
+ stack.hpp hecke.hpp polynomials.h vector.h vector.hpp polynomials.hpp \
+ invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h wgraph.h files.hpp \
+ cells.h directories.h posets.h version.h
+general.o: general.cpp general.h globals.h coxgroup.h coxtypes.h \
+ constants.h io.h list.h memory.h list.hpp error.h files.h hecke.h \
+ interface.h automata.h bits.h minroots.h graph.h type.h dotval.h \
+ transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
+ vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
+ search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h
 graph.o: graph.cpp graph.h globals.h list.h memory.h constants.h list.hpp \
-  error.h bits.h io.h coxtypes.h type.h directories.h interactive.h \
-  interface.h automata.h minroots.h dotval.h transducer.h
-hecke.o: hecke.cpp
-help.o: help.cpp help.h globals.h commands.h coxgroup.h coxtypes.h io.h \
-  list.h memory.h constants.h list.hpp error.h files.h hecke.h \
-  interface.h automata.h bits.h minroots.h dotval.h graph.h type.h \
-  transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
-  vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
-  search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h dictionary.h \
-  dictionary.hpp directories.h
+ error.h bits.h io.h coxtypes.h type.h directories.h interactive.h \
+ interface.h automata.h minroots.h dotval.h transducer.h
+help.o: help.cpp help.h globals.h commands.h dictionary.h sl_list.h \
+ sl_list_fwd.h memory.h constants.h io.h list.h list.hpp error.h \
+ dictionary.hpp coxgroup.h coxtypes.h files.h hecke.h interface.h \
+ automata.h bits.h minroots.h graph.h type.h dotval.h transducer.h \
+ schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \
+ polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h \
+ wgraph.h files.hpp cells.h directories.h
 interactive.o: interactive.cpp interactive.h globals.h bits.h list.h \
-  memory.h constants.h list.hpp error.h io.h coxtypes.h graph.h type.h \
-  interface.h automata.h minroots.h dotval.h transducer.h affine.h \
-  coxgroup.h files.h hecke.h schubert.h stack.h stack.hpp hecke.hpp \
-  polynomials.h vector.h vector.hpp polynomials.hpp invkl.h klsupport.h \
-  search.h search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h \
-  directories.h fcoxgroup.h general.h typeA.h
+ memory.h constants.h list.hpp error.h io.h coxtypes.h graph.h type.h \
+ interface.h automata.h minroots.h dotval.h transducer.h affine.h \
+ coxgroup.h files.h hecke.h schubert.h stack.h stack.hpp hecke.hpp \
+ polynomials.h vector.h vector.hpp polynomials.hpp invkl.h klsupport.h \
+ search.h search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h \
+ directories.h fcoxgroup.h general.h typeA.h
 interface.o: interface.cpp interface.h globals.h automata.h bits.h list.h \
-  memory.h constants.h list.hpp error.h io.h coxtypes.h minroots.h \
-  dotval.h graph.h type.h transducer.h
-invkl.o: invkl.cpp invkl.h globals.h coxtypes.h io.h list.h memory.h \
-  constants.h list.hpp error.h klsupport.h polynomials.h vector.h \
-  vector.hpp polynomials.hpp schubert.h bits.h interface.h automata.h \
-  minroots.h dotval.h graph.h type.h transducer.h stack.h stack.hpp \
-  hecke.h hecke.hpp search.h search.hpp
+ memory.h constants.h list.hpp error.h io.h coxtypes.h minroots.h graph.h \
+ type.h dotval.h transducer.h
+invkl.o: invkl.cpp invkl.h globals.h coxtypes.h constants.h io.h list.h \
+ memory.h list.hpp error.h klsupport.h polynomials.h vector.h vector.hpp \
+ polynomials.hpp schubert.h graph.h bits.h type.h stack.h stack.hpp \
+ interface.h automata.h minroots.h dotval.h transducer.h hecke.h \
+ hecke.hpp search.h search.hpp
 io.o: io.cpp io.h globals.h list.h memory.h constants.h list.hpp error.h
-kl.o: kl.cpp kl.h globals.h coxtypes.h io.h list.h memory.h constants.h \
-  list.hpp error.h klsupport.h polynomials.h vector.h vector.hpp \
-  polynomials.hpp schubert.h bits.h interface.h automata.h minroots.h \
-  dotval.h graph.h type.h transducer.h stack.h stack.hpp hecke.h \
-  hecke.hpp search.h search.hpp iterator.h
-klsupport.o: klsupport.cpp klsupport.h globals.h coxtypes.h io.h list.h \
-  memory.h constants.h list.hpp error.h polynomials.h vector.h vector.hpp \
-  polynomials.hpp schubert.h bits.h interface.h automata.h minroots.h \
-  dotval.h graph.h type.h transducer.h stack.h stack.hpp
-main.o: main.cpp constants.h globals.h commands.h coxgroup.h coxtypes.h \
-  io.h list.h memory.h list.hpp error.h files.h hecke.h interface.h \
-  automata.h bits.h minroots.h dotval.h graph.h type.h transducer.h \
-  schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h \
-  vector.hpp polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h \
-  uneqkl.h wgraph.h files.hpp cells.h dictionary.h dictionary.hpp \
-  version.h
+kl.o: kl.cpp kl.h globals.h coxtypes.h constants.h io.h list.h memory.h \
+ list.hpp error.h klsupport.h polynomials.h vector.h vector.hpp \
+ polynomials.hpp schubert.h graph.h bits.h type.h stack.h stack.hpp \
+ interface.h automata.h minroots.h dotval.h transducer.h hecke.h \
+ hecke.hpp search.h search.hpp iterator.h
+klsupport.o: klsupport.cpp klsupport.h globals.h coxtypes.h constants.h \
+ io.h list.h memory.h list.hpp error.h polynomials.h vector.h vector.hpp \
+ polynomials.hpp schubert.h graph.h bits.h type.h stack.h stack.hpp \
+ interface.h automata.h minroots.h dotval.h transducer.h
+main.o: main.cpp constants.h globals.h commands.h dictionary.h sl_list.h \
+ sl_list_fwd.h memory.h io.h list.h list.hpp error.h dictionary.hpp \
+ coxgroup.h coxtypes.h files.h hecke.h interface.h automata.h bits.h \
+ minroots.h graph.h type.h dotval.h transducer.h schubert.h stack.h \
+ stack.hpp hecke.hpp polynomials.h vector.h vector.hpp polynomials.hpp \
+ invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h wgraph.h files.hpp \
+ cells.h version.h
 memory.o: memory.cpp memory.h globals.h constants.h error.h
-minroots.o: minroots.cpp minroots.h globals.h bits.h list.h memory.h \
-  constants.h list.hpp error.h io.h coxtypes.h dotval.h graph.h type.h
-polynomials.o: polynomials.cpp
+minroots.o: minroots.cpp minroots.h globals.h graph.h list.h memory.h \
+ constants.h list.hpp error.h bits.h io.h coxtypes.h type.h dotval.h
 posets.o: posets.cpp posets.h globals.h bits.h list.h memory.h \
-  constants.h list.hpp error.h io.h wgraph.h interface.h automata.h \
-  coxtypes.h minroots.h dotval.h graph.h type.h transducer.h
-schubert.o: schubert.cpp schubert.h globals.h coxtypes.h io.h list.h \
-  memory.h constants.h list.hpp error.h bits.h interface.h automata.h \
-  minroots.h dotval.h graph.h type.h transducer.h stack.h stack.hpp
-search.o: search.cpp
-special.o: special.cpp special.h globals.h commands.h coxgroup.h \
-  coxtypes.h io.h list.h memory.h constants.h list.hpp error.h files.h \
-  hecke.h interface.h automata.h bits.h minroots.h dotval.h graph.h \
-  type.h transducer.h schubert.h stack.h stack.hpp hecke.hpp \
-  polynomials.h vector.h vector.hpp polynomials.hpp invkl.h klsupport.h \
-  search.h search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h \
-  dictionary.h dictionary.hpp directories.h interactive.h
-stack.o: stack.cpp
-transducer.o: transducer.cpp transducer.h globals.h coxtypes.h io.h \
-  list.h memory.h constants.h list.hpp error.h graph.h bits.h type.h
-type.o: type.cpp type.h globals.h io.h list.h memory.h constants.h \
-  list.hpp error.h
+ constants.h list.hpp error.h io.h wgraph.h interface.h automata.h \
+ coxtypes.h minroots.h graph.h type.h dotval.h transducer.h
+schubert.o: schubert.cpp schubert.h globals.h coxtypes.h constants.h io.h \
+ list.h memory.h list.hpp error.h graph.h bits.h type.h stack.h stack.hpp \
+ interface.h automata.h minroots.h dotval.h transducer.h
+special.o: special.cpp special.h globals.h commands.h dictionary.h \
+ sl_list.h sl_list_fwd.h memory.h constants.h io.h list.h list.hpp \
+ error.h dictionary.hpp coxgroup.h coxtypes.h files.h hecke.h interface.h \
+ automata.h bits.h minroots.h graph.h type.h dotval.h transducer.h \
+ schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \
+ polynomials.hpp invkl.h klsupport.h search.h search.hpp kl.h uneqkl.h \
+ wgraph.h files.hpp cells.h directories.h interactive.h
+transducer.o: transducer.cpp transducer.h globals.h coxtypes.h \
+ constants.h io.h list.h memory.h list.hpp error.h graph.h bits.h type.h
 typeA.o: typeA.cpp typeA.h globals.h fcoxgroup.h coxgroup.h coxtypes.h \
-  io.h list.h memory.h constants.h list.hpp error.h files.h hecke.h \
-  interface.h automata.h bits.h minroots.h dotval.h graph.h type.h \
-  transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
-  vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
-  search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h
-uneqkl.o: uneqkl.cpp uneqkl.h globals.h coxtypes.h io.h list.h memory.h \
-  constants.h list.hpp error.h hecke.h interface.h automata.h bits.h \
-  minroots.h dotval.h graph.h type.h transducer.h schubert.h stack.h \
-  stack.hpp hecke.hpp polynomials.h vector.h vector.hpp polynomials.hpp \
-  klsupport.h search.h search.hpp interactive.h
-vector.o: vector.cpp
+ constants.h io.h list.h memory.h list.hpp error.h files.h hecke.h \
+ interface.h automata.h bits.h minroots.h graph.h type.h dotval.h \
+ transducer.h schubert.h stack.h stack.hpp hecke.hpp polynomials.h \
+ vector.h vector.hpp polynomials.hpp invkl.h klsupport.h search.h \
+ search.hpp kl.h uneqkl.h wgraph.h files.hpp cells.h
+type.o: type.cpp type.h globals.h io.h list.h memory.h constants.h \
+ list.hpp error.h
+uneqkl.o: uneqkl.cpp uneqkl.h globals.h coxtypes.h constants.h io.h \
+ list.h memory.h list.hpp error.h hecke.h interface.h automata.h bits.h \
+ minroots.h graph.h type.h dotval.h transducer.h schubert.h stack.h \
+ stack.hpp hecke.hpp polynomials.h vector.h vector.hpp polynomials.hpp \
+ klsupport.h search.h search.hpp interactive.h
 wgraph.o: wgraph.cpp wgraph.h globals.h list.h memory.h constants.h \
-  list.hpp error.h bits.h io.h interface.h automata.h coxtypes.h \
-  minroots.h dotval.h graph.h type.h transducer.h stack.h stack.hpp
+ list.hpp error.h bits.h io.h interface.h automata.h coxtypes.h \
+ minroots.h graph.h type.h dotval.h transducer.h stack.h stack.hpp
