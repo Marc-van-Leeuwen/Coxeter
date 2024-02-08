@@ -9,33 +9,32 @@
 #define POLYNOMIALS_H
 
 #include "globals.h"
-#include <limits.h>
+#include <limits>
+#include <vector>
+
+#include "io.h"
+#include "vector.h"
+
+namespace polynomials {
 
 /******** type declarations **************************************************/
 
-namespace polynomials {
   typedef Ulong Degree;
   typedef long SDegree;
-  class Monomial;
   template <class T> class Polynomial;
   template <class T> class LaurentPolynomial;
-};
 
 /******** constants **********************************************************/
 
-namespace polynomials {
-  const Degree undef_degree = ~0;
-  const Degree DEGREE_MAX = ULONG_MAX-1;
-  const SDegree SDEGREE_MAX = LONG_MAX;
-  const SDegree SDEGREE_MIN = LONG_MIN+1;
-  const SDegree undef_valuation = LONG_MIN;
-};
+  static constexpr Degree undef_degree = ~0;
+  static constexpr Degree DEGREE_MAX = std::numeric_limits<Ulong>::max()-1;
+
+  static constexpr SDegree undef_valuation = std::numeric_limits<long>::min();
+  static constexpr SDegree SDEGREE_MAX = std::numeric_limits<long>::max();
+  static constexpr SDegree SDEGREE_MIN = std::numeric_limits<long>::min()+1;
 
 /******** function definitions ***********************************************/
 
-#include "io.h"
-
-namespace polynomials {
   template <class T>
   bool operator== (const Polynomial<T>& p, const Polynomial<T>& q);
   template <class T>
@@ -78,13 +77,9 @@ namespace polynomials {
   template <class T>
   SDegree sumValuation(const LaurentPolynomial<T>& p,
 		       const LaurentPolynomial<T>& q);
-};
 
 /******** type definitions ***************************************************/
 
-#include "vector.h"
-
-namespace polynomials {
 
 template <class T> class Polynomial {
  protected:
@@ -122,58 +117,55 @@ template <class T> class Polynomial {
   Polynomial<T>& operator*= (const T& a);
   Polynomial<T>& operator*= (const Polynomial<T>& q);
   Polynomial<T>& operator/= (const Polynomial<T>& q);
-};
-
-class Monomial
-  {
-  private:
-    Degree n;
-  public:
-    Monomial(Degree d){n = d;};
-  };
+}; // template |class Polynomial<T>|
 
 template <class T> class LaurentPolynomial {
- protected:
-  Polynomial<T> d_pol;
+  // interpreting |coef| as polynomial in $X$, represents $coef*X^{d_valuation}$
+  std::vector<T> coef;
   SDegree d_valuation; /* degree of first non-zero coefficient */
  public:
 /* constructors and destructors */
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(LaurentPolynomial<T>));}
-  LaurentPolynomial<T>() {};
-  LaurentPolynomial<T>(const SDegree& d, const SDegree& o = 0);
-  ~LaurentPolynomial<T>();
+  LaurentPolynomial<T>() : coef(), d_valuation(undef_valuation) {};
+
+  LaurentPolynomial<T>(const SDegree& degree, const SDegree& offset = 0)
+    : coef(degree-offset+1,T(0)),d_valuation(offset)
+  {}
+  LaurentPolynomial<T>(std::vector<T>&& c, const SDegree& offset = 0)
+    : coef(std::move(c)),d_valuation(offset) {}
+  ~LaurentPolynomial<T>() {}
 /* accessors */
-  const T& operator[] (const SDegree& j) const;                   /* inlined */
+  SDegree deg() const { return coef.size()-1+d_valuation; }
+  bool isZero() const { return coef.empty(); }
+  SDegree val() const { return d_valuation; }
+
+  const T& operator[] (const SDegree& j) const { return coef[j-d_valuation]; }
 
   bool operator== (const LaurentPolynomial& p) const;
-  bool operator!= (const LaurentPolynomial& p) const;             /* inlined */
+  bool operator!= (const LaurentPolynomial& p) const{ return not operator==(p); }
   bool operator<= (const LaurentPolynomial& p) const;
   bool operator>= (const LaurentPolynomial& p) const;
-  bool operator< (const LaurentPolynomial& p) const;              /* inlined */
-  bool operator> (const LaurentPolynomial& p) const;              /* inlined */
-
-  SDegree deg() const;                                            /* inlined */
-  bool isZero() const;                                            /* inlined */
-  SDegree val() const;                                            /* inlined */
+  bool operator< (const LaurentPolynomial& p) const { return not operator>=(p); }
+  bool operator> (const LaurentPolynomial& p) const { return not operator<=(p); }
 
 /* manipulators */
-  T& operator[] (const SDegree& j);                               /* inlined */
+  T& operator[] (const SDegree& j) { return coef[j-d_valuation]; }
 
-  void adjustBounds();
-  void setBounds(const SDegree& n, const SDegree& m);
-  void setDeg(const SDegree& n);
-  void setDegValue(const SDegree& n);                             /* inlined */
-  void setVal(const SDegree& n);
-  void setValValue(const SDegree& n);                             /* inlined */
-  void setZero();                                                 /* inlined */
-};
+  void setBounds(const SDegree& deg, const SDegree& val)
+  {  coef.resize(deg-val+1,T(0)); d_valuation = val; }
+  void setDeg(const SDegree& n) { coef.resize(n-d_valuation+1,T(0)); }
+  void setDegValue(const SDegree& n) { coef.resize(n-d_valuation+1); }
+  void setVal(const SDegree& n) // prepare for having valuation |n|, old degree
+  { d_valuation=n; coef.resize(coef.size()-n,T(0)); } // ignores old |coef|s
+  void setValValue(const SDegree& n) { d_valuation = n;}
+  void setZero() { coef.resize(0); }
+                                                 /* inlined */
+}; // template |class LaurentPolynomial<T>|
 
-};
 
 /******** inline definitions **************************************************/
 
-namespace polynomials {
 
 template <class T>
 inline bool operator!= (const Polynomial<T>& p, const Polynomial<T>& q)
@@ -185,36 +177,6 @@ template <class T>
 inline bool operator> (const Polynomial<T>& p, const Polynomial<T>& q)
   {return !(p <= q);}
 
-template<class T>
-inline const T& LaurentPolynomial<T>::operator[] (const SDegree& j) const
-  {return d_pol[j-d_valuation];}
-template<class T> inline T& LaurentPolynomial<T>::operator[] (const SDegree& j)
-  {return d_pol[j-d_valuation];}
-
-template<class T>
-inline bool LaurentPolynomial<T>::operator!= (const LaurentPolynomial& p)
-  const {return !operator== (p);}
-template<class T>
-inline bool LaurentPolynomial<T>::operator> (const LaurentPolynomial& p)
-  const {return !operator<= (p);}
-template<class T>
-inline bool LaurentPolynomial<T>::operator< (const LaurentPolynomial& p)
-  const {return !operator>= (p);}
-
-template<class T> inline SDegree LaurentPolynomial<T>::deg() const
-  {return d_pol.deg()+d_valuation;}
-template<class T>
-inline bool LaurentPolynomial<T>::isZero() const {return d_pol.isZero();}
-template<class T>
-inline void LaurentPolynomial<T>::setDegValue(const SDegree& n)
-  {d_pol.setDegValue(n-d_valuation);}
-template<class T>
-inline void LaurentPolynomial<T>::setValValue(const SDegree& n)
-  {d_valuation = n;}
-template<class T> inline SDegree LaurentPolynomial<T>::val() const
-  {return d_valuation;}
-template<class T> inline void LaurentPolynomial<T>::setZero()
-  {d_pol.setZero();}
 
 template<class T> inline T& Polynomial<T>::operator[] (const Ulong& j)
   {return v[j];}
@@ -247,7 +209,7 @@ template<class T> inline bool Polynomial<T>::isZero() const
 template<class T> inline const vector::Vector<T>& Polynomial<T>::vect() const
   {return v;}
 
-};
+}; // |namespace polynomials|
 
 #include "polynomials.hpp"
 

@@ -74,7 +74,7 @@ template <class T> class List {
   T* ptr() {return d_ptr;}
   void setData(const T* source, Ulong first, Ulong r);
   void setData(const T* source, Ulong r);                         /* inlined */
-  void setSize(Ulong n);
+  void setSize(Ulong n); // set |d_size| while ensuring corresponding memory
   void setSizeValue(const Ulong& n);                              /* inlined */
   void setZero(Ulong first, Ulong r);                             /* inlined */
   void setZero(Ulong r);                                          /* inlined */

@@ -674,8 +674,6 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 
    - manipulators :
 
-     - adjustBounds() : makes sure degree and valuation answer to their
-       definitions;
      - setBounds(const SDegree&, const SDegree&) : sets both the degree and
        the valuation, enlarging if necessary;
      - setDeg(const SDegree&) : sets the degree, enlarging if necessary;
@@ -692,35 +690,11 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
 
  *****************************************************************************/
 
-template<class T>
-LaurentPolynomial<T>::LaurentPolynomial(const SDegree& d, const SDegree& o)
-  :d_pol(d-o),d_valuation(o)
-
-/*
-  Constructs a Laurent polynomial with capacity d-o+1.
-*/
-
-{}
-
-template<class T> LaurentPolynomial<T>::~LaurentPolynomial()
-
-/*
-  Automatic destruction is enough.
-*/
-
-{}
 
 /******** accessors *********************************************************/
 
 template<class T>
 bool LaurentPolynomial<T>::operator== (const LaurentPolynomial<T>& p) const
-
-/*
-  Comparison operator for Laurent polynomials. Two Laurent polynomials are
-  equal if both are zero, or if the valuations are equal and the polynomials
-  are equal.
-*/
-
 {
   if (isZero())
     return p.isZero();
@@ -730,17 +704,16 @@ bool LaurentPolynomial<T>::operator== (const LaurentPolynomial<T>& p) const
   if (d_valuation != p.d_valuation)
     return false;
 
-  return d_pol == p.d_pol;
+  return coef == p.coef;
 }
 
-template<class T>
-bool LaurentPolynomial<T>::operator<= (const LaurentPolynomial<T>& p) const
 
 /*
   Comparison operator for Laurent polynomials. Zero is larger than any
   polynomial; otherwise comparison is valuation-first.
 */
-
+template<class T>
+bool LaurentPolynomial<T>::operator<= (const LaurentPolynomial<T>& p) const
 {
   if (p.isZero())
     return true;
@@ -749,7 +722,7 @@ bool LaurentPolynomial<T>::operator<= (const LaurentPolynomial<T>& p) const
   if (d_valuation < p.d_valuation)
     return true;
 
-  return  d_pol <= p.d_pol;
+  return  coef <= p.coef;
 }
 
 template<class T>
@@ -768,88 +741,10 @@ bool LaurentPolynomial<T>::operator>= (const LaurentPolynomial<T>& p) const
   if (d_valuation > p.d_valuation)
     return true;
 
-  return  d_pol >= p.d_pol;
+  return  coef >= p.coef;
 }
 
 /******** manipulators ******************************************************/
 
-template<class T> void LaurentPolynomial<T>::adjustBounds()
-
-/*
-  Adjusts the degree and valuation so that they answer their definition,
-  and makes sure that the degree of d_pol is exactly deg-val.
-
-  Should be used after a lazy execution of an additive operation.
-*/
-
-{
-  if (isZero())
-    return;
-
-  Ulong a = 0;
-
-  for (; a < d_pol.deg(); ++a) {
-    if (d_pol[a])
-      break;
-  }
-
-  if (a) { /* valuation is wrong */
-    d_valuation += a;
-    d_pol.setVect(d_pol.vect().ptr()+a,0);
-  }
-
-  d_pol.reduceDeg();
-
-  return;
-}
-
-template<class T>
-void LaurentPolynomial<T>::setBounds(const SDegree& n, const SDegree& m)
-
-/*
-  Sets both the degree and the valuation; safe to use even on a garbaged
-  polynomial;
-
-  NOTE : both the n-th and m-th coefficients should be nonzero!
-*/
-
-{
-  d_pol.setDeg(n-m);
-  d_valuation = m;
-  return;
-}
-
-template<class T>
-void LaurentPolynomial<T>::setDeg(const SDegree& n)
-
-/*
-  This function sets the degree of the polynomial to n, making more room
-  if necessary.
-
-  NOTE : n-th coefficient should be non-zero!
-  NOTE : is dangerous when used on a zero-polynomial. Use setBounds instead.
-*/
-
-{
-  d_pol.setDeg(n-d_valuation);
-  return;
-}
-
-template<class T>
-void LaurentPolynomial<T>::setVal(const SDegree& n)
-
-/*
-  This function sets the valuation of the polynomial to n, making more space
-  if necessary.
-
-  NOTE : n-th coefficient should be non-zero!
-  NOTE : should not be used on a zero-polynomial. Use setBounds instead.
-*/
-
-{
-  d_valuation = n;
-  d_pol.setDeg(deg()-n);
-  return;
-}
 
 };

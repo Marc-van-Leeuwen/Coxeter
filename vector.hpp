@@ -10,7 +10,7 @@
   This module contains the implementation of the vector template.
 
   Just as for lists, we define vectors only for types where copy-constructors
-  are simply bitwise copy; i.e., vectors are really strings. Otheerwise,
+  are simply bitwise copy; i.e., vectors are really strings. Otherwise,
   a vector is a list of elements in a class for which ring operations
   are defined.
 

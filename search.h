@@ -51,13 +51,13 @@ template <class T> class BinaryTree {
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(BinaryTree));}
-  BinaryTree();
+  BinaryTree(); // create an empty tree
   virtual ~BinaryTree();
 /* accessors */
   Ulong size() const;
   TreeNode<T>* root() const;
 /* modifiers */
-  T* find(const T& a);
+  T* find(const T& a); // locate and possibly insert node; return its |&data|
 };
 
 };

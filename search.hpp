@@ -47,41 +47,34 @@ namespace search {
 namespace search {
 
 template <class T> BinaryTree<T>::BinaryTree()
-  :d_size(0), d_root(0)
-
+  :d_size(0), d_root(nullptr)
 {}
 
-template <class T> BinaryTree<T>::~BinaryTree()
 
 /*
   The tree is destructed recursively by ~TreeNode().
 */
-
+template <class T> BinaryTree<T>::~BinaryTree()
 {
   delete d_root;
 }
 
-template <class T> T* BinaryTree<T>::find(const T& a)
 
 /*
   Finds the element a in the tree; creates a new node if a is not found.
 
-  It is assumed that operator< is defined for polynomials.
+  It is assumed that |operator<| is defined for type |T|.
 
   NOTE : if CATCH_MEMORY_OVERFLOW is set, the function returns 0 on error.
 */
-
+template <class T> T* BinaryTree<T>::find(const T& a)
 {
   TreeNode<T>** c = &d_root;
 
-  while (*c) {
-    if (a == (*c)->data) /* a was found */
+  while (*c!=nullptr)
+    if (a == (*c)->data) // a was found
       return &((*c)->data);
-    if (a < (*c)->data) /* go to left tree */
-      c = &((*c)->left);
-    else /* go to right tree */
-      c = &((*c)->right);
-  }
+    else c = &(a < (*c)->data ? (*c)->left : (*c)->right);
 
   /* at this point c points to the insertion point */
 

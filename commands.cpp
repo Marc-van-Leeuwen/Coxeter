@@ -2448,7 +2448,7 @@ void mu_f()
     return;
   }
 
-  const uneqkl::MuPol& mu = W->uneqmu(s,x,y);
+  const uneqkl::MuPol mu = W->uneqmu(s,x,y);
   if (ERRNO) {
     Error(ERRNO,x,y);
     return;

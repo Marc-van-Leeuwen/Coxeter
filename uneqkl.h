@@ -48,7 +48,7 @@ namespace uneqkl {
 
 namespace uneqkl {
 
-class KLPol:public Polynomial<klsupport::SKLcoeff> {
+class KLPol : public Polynomial<klsupport::SKLcoeff> {
   static const klsupport::SKLcoeff min_coeff = klsupport::SKLCOEFF_MIN;
   static const klsupport::SKLcoeff max_coeff = klsupport::SKLCOEFF_MAX;
 public:
@@ -62,16 +62,19 @@ public:
   KLPol& subtract(const KLPol& p, const MuPol& mp, const Ulong& n);
 };
 
-class MuPol:public LaurentPolynomial<klsupport::SKLcoeff> {
+class MuPol : public LaurentPolynomial<klsupport::SKLcoeff> {
 public:
   struct const_tag {};
-  MuPol() {};
+  MuPol():LaurentPolynomial<klsupport::SKLcoeff>() {}; // zero
   MuPol(const SDegree& d, const SDegree& o = 0)
     :LaurentPolynomial<klsupport::SKLcoeff>(d,o) {};
   MuPol(const klsupport::SKLcoeff& c, const_tag)
-    : LaurentPolynomial<klsupport::SKLcoeff>(0,0)
-    {d_pol.setDegValue(0); d_pol[0] = c;}
+    : LaurentPolynomial<klsupport::SKLcoeff>
+    (std::vector<klsupport::SKLcoeff>{c},0)
+    {}
   ~MuPol() {};
+
+  static MuPol zero() { return MuPol(); }
 };
 
 struct MuData {
@@ -144,7 +147,8 @@ class KLContext {
   void fillMu();
   void fillMu(const coxtypes::Generator& s);
   const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
-  const MuPol& mu(const coxtypes::Generator& s, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
+  const MuPol mu(const coxtypes::Generator& s,
+		 const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);

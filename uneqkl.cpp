@@ -64,7 +64,7 @@ namespace uneqkl {
     search::BinaryTree<KLPol>& klTree() {return d_kl->d_klTree;}
     coxtypes::Generator last(const coxtypes::CoxNbr& x) {return klsupport().last(x);}
     Ulong length(const coxtypes::CoxNbr& x) {return d_kl->length(x);}
-    const MuPol& mu(const coxtypes::Generator& s, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+    const MuPol mu(const coxtypes::Generator& s, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
       {return d_kl->mu(s,x,y);}
     void muCorrection(list::List<KLPol>& pol, const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     void muCorrection(const coxtypes::CoxNbr& x, const coxtypes::Generator& s, const coxtypes::CoxNbr& y,
@@ -391,17 +391,16 @@ const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNb
   return *pol;
 }
 
-const MuPol& KLContext::mu(const coxtypes::Generator& s, const coxtypes::CoxNbr& x,
-			   const coxtypes::CoxNbr& y)
 
 /*
   This function returns mu^s_{x,y}, filling it in if necessary. It is
   assumed that the conditions x < y, ys > y, xs < x have already been
   checked.
 */
-
+const MuPol KLContext::mu(const coxtypes::Generator& s,
+			  const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 {
-  if (!isMuAllocated(s,y))
+  if (not isMuAllocated(s,y))
     d_help->allocMuRow(s,y);
 
   const MuRow& mu_row = muList(s,y);
@@ -412,11 +411,11 @@ const MuPol& KLContext::mu(const coxtypes::Generator& s, const coxtypes::CoxNbr&
   Ulong m = find(mu_row,mx);
 
   if (m == list::not_found)
-    return zero();
+    return MuPol::zero();
 
   const MuPol* mp = mu_row[m].pol;
 
-  if (mp == 0) { /* mu-polynomial must be computed */
+  if (mp == nullptr) { /* then a mu-polynomial must be computed */
     mp = d_help->fillMu(s,x,y);
     if (error::ERRNO)
       return errorMuPol();
@@ -995,8 +994,8 @@ const MuPol* KLContext::KLHelper::fillMu(const coxtypes::Generator& s, const cox
       error::ERRNO = error::ERROR_WARNING;
       return 0;
     }
-    const MuPol& mq = d_kl->mu(s,z,y);
-    if (!mq.isZero())
+    const MuPol mq = d_kl->mu(s,z,y);
+    if (not mq.isZero())
       muSubtraction(pos_mu[a],mq,pol,2,length(x)-length(z));
     if (error::ERRNO) {
       error::Error(error::MU_FAIL,x,y);
@@ -1266,7 +1265,7 @@ void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& x, const coxtypes
       if (!p.inOrder(x,z))
 	continue;
 
-      const MuPol& mp = mu(s,z,ys);
+      const MuPol mp = mu(s,z,ys);
       if (mp.isZero())
 	continue;
 
@@ -1466,7 +1465,7 @@ void KLContext::KLHelper::writeMuRow(const MuRow& row, const coxtypes::Generator
 
         Chapter III -- The KLPol class.
 
-  The KLPol class is derived form LaurentPolynomial<SKLcoeff>, because we
+  The KLPol class is derived form Polynomial<SKLcoeff>, because we
   want to re-define the arithmetic operations so that overflow is carefully
   checked. This makes them expensive, but arithmetic is only used when the
   polynomials are defined, and there we have to check anyway.
@@ -1649,43 +1648,40 @@ const KLPol& one()
 
 namespace {
 
-void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
-		   const Ulong& d, const long& m)
 
 /*
-  This function is an auxiliary to fillMu. It subtracts from p, which is
-  destined to hold the positive part of a mu-polynomial, the positive part
-  of mp*r, where r is q with u^d substituted and shifted by m.
+  This function is an auxiliary to fillMu. It subtracts from |p|, which is
+  destined to hold the positive degree part of a mu-polynomial, the positive
+  degree part of $mp*r$, where $r=q[X:=u^d]*u^m$ (a Laurent polynomial in $u$)
 
   Forwards an error if there is overflow or underflow of the coefficients.
 
   NOTE : it is assumed that mp is non-zero!
 */
-
+void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
+		   const Ulong& d, const long& m)
 {
+  assert(not mp.isZero());
   MuPol r(d*q.deg()+m,m);
-  r.setDegValue(d*q.deg()+m);
 
-  for (long j = 0; j <= static_cast<long>(q.deg()); ++j) {
-    r[d*j+m] = q[j];
-  }
+  for (Ulong j = 0; j <= q.deg(); ++j)
+    r[static_cast<long>(d*j)+m] = q[j];
 
-  for (long j = mp.val(); j <= mp.deg(); ++j) {
-    if (!mp[j])
-      continue;
-    for (long i = r.val(); i <= r.deg(); ++i)
-      if (i+j >= 0) {
-	klsupport::SKLcoeff a = mp[j];
-	klsupport::safeMultiply(a,r[i]);
-	if (error::ERRNO)
-	  return;
-	if (p.isZero() || (i+j) > static_cast<long>(p.deg()))
-	  p.setDeg(i+j);
-	klsupport::safeAdd(p[i+j],-a);
-	if (error::ERRNO)
-	  return;
-      }
-  }
+  for (long j = mp.val(); j <= mp.deg(); ++j)
+    if (mp[j]!=0)
+      for (long i = r.val(); i <= r.deg(); ++i)
+	if (i+j >= 0) // ignore negative degree comtributions
+        {
+	  klsupport::SKLcoeff a = mp[j];
+	  klsupport::safeMultiply(a,r[i]);
+	  if (error::ERRNO)
+	    return;
+	  if (p.isZero() or i+j > static_cast<long>(p.deg())) // if required
+	    p.setDeg(i+j); // zero-extend the coefficient vector
+	  klsupport::safeAdd(p[i+j],-a);
+	  if (error::ERRNO)
+	    return;
+	}
 
   p.reduceDeg();
   return;
@@ -1723,39 +1719,23 @@ void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
   return;
 }
 
+
+// This function symmetrizes |p| and returns its address within the tree |t|
+
 const MuPol* writeMu(search::BinaryTree<MuPol>& t, const KLPol& p)
-
-/*
-  This function symmetrizes p and returns it address on the mutree.
-*/
-
 {
-  MuPol mp;
-
   if (p.isZero())
-    mp.setZero();
-  else {
-    mp.setBounds(p.deg(),-p.deg());
-    mp[0] = p[0];
+    return t.find(MuPol::zero());
+  MuPol mp(p.deg(),-p.deg());
+  mp[0] = p[0];
 
-    for (long j = 1; j <= static_cast<long>(p.deg()); ++j) {
-      mp[-j] = p[j];
-      mp[j] = p[j];
-    }
+  for (Ulong j = 1; j <= p.deg(); ++j)
+  {
+    mp[-static_cast<long>(j)] = p[j];
+    mp[j] = p[j];
   }
 
   return t.find(mp);
 }
 
-};
-
-namespace uneqkl {
-
-const MuPol& zero()
-
-{
-  static MuPol p(0,MuPol::const_tag());
-  return p;
-}
-
-};
+}; // |namespace|

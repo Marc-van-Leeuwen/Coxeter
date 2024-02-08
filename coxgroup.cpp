@@ -908,15 +908,14 @@ const uneqkl::KLPol& CoxGroup::uneqklPol(const coxtypes::CoxNbr& x, const coxtyp
   return d_uneqkl->klPol(x,y);
 }
 
-const uneqkl::MuPol& CoxGroup::uneqmu(const coxtypes::Generator& s,
-				      const coxtypes::CoxNbr& x,
-				      const coxtypes::CoxNbr& y)
 
 /*
   Returns the unequal-parameter mu-polynomial mu_{s,x,y}, after activating
   the context if necessary.
 */
-
+const uneqkl::MuPol CoxGroup::uneqmu
+  (const coxtypes::Generator& s,
+   const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 {
   activateUEKL();
 

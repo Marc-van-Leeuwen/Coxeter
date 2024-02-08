@@ -197,9 +197,11 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
   virtual void fillUEKL();
   virtual void fillUEMu();
-  virtual const uneqkl::KLPol& uneqklPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
-  virtual const uneqkl::MuPol& uneqmu(const coxtypes::Generator& s, const coxtypes::CoxNbr& x,
-				      const coxtypes::CoxNbr& y);
+  virtual const uneqkl::KLPol& uneqklPol
+   (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
+  const uneqkl::MuPol uneqmu
+   (const coxtypes::Generator& s,
+    const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   virtual void uneqcBasis(uneqkl::HeckeElt& h, const coxtypes::CoxNbr& y);
   virtual void uneqklRow(uneqkl::HeckeElt& h, const coxtypes::CoxNbr& y);
 
