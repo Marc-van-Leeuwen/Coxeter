@@ -288,8 +288,9 @@ template <class T> void List<T>::setSize(Ulong n)
     // the next line could use |std::uninitialized_move| from C++17
     std::uninitialized_copy(d_ptr,d_ptr+d_size,pp);
     memory::arena().free(d_ptr,d_allocated*sizeof(T)); // clean up emptied memory
-    d_ptr = pp; // henceforth use the new, partially initialized, memory0
-    d_allocated = memory::arena().allocSize(n,sizeof(T)); // use actual space bought
+    d_ptr = pp; // henceforth use the new, partially initialized, memory
+    d_allocated =
+      memory::arena().allocSize(n,sizeof(T)); // use actual space bought
   }
 
   d_size = n;

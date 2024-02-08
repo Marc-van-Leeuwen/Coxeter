@@ -80,7 +80,7 @@ public:
 struct MuData {
   coxtypes::CoxNbr x;
   const MuPol* pol;
-/* constructors anc destructors*/
+/* constructors and destructors*/
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(MuData));}
   MuData() {};
@@ -187,7 +187,7 @@ inline Ulong KLContext::length(const coxtypes::CoxNbr& x) const
   {return d_length[x];}
 inline const MuRow& KLContext::muList
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
-  const {return d_muTable[s][0][y][0];}
+  const {return *(*d_muTable[s])[y];}
 inline coxtypes::Rank KLContext::rank() const {return d_klsupport->rank();}
 inline const schubert::SchubertContext& KLContext::schubert() const
   {return klsupport().schubert();}
