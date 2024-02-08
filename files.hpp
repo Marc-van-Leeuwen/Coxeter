@@ -63,7 +63,7 @@ void appendExponent(std::string& str, const E& e, PolynomialTraits& traits)
 
   str.append(traits.exponent);
   str.append(traits.expPrefix);
-  str += static_cast<long>(e);
+  io::append(str,static_cast<long>(e));
   str.append(traits.expPostfix);
 
   return;
@@ -114,15 +114,12 @@ void appendHeckeMonomial(std::string& str, const M& m, const schubert::SchubertC
   return;
 }
 
+
+// Append a monomial of the form c.q^{e*d+m}.
 template <class C>
 void appendMonomial(std::string& str, const C& c, const Ulong& e,
 		    PolynomialTraits& traits, const Ulong& d,
 		    const long& m)
-
-/*
-  We append a monomial of the form c.q^{e*d+m}.
-*/
-
 {
   long e_s = e*d+m;
 
@@ -224,15 +221,14 @@ template <class KL>
   return;
 }
 
-template <class H>
-void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
-		     interface::Interface& I, OutputTraits& traits)
 
 /*
   This function prints one element of the k-l basis, according to the
   given output traits.
 */
-
+template <class H>
+void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
+		     interface::Interface& I, OutputTraits& traits)
 {
   // sorting of the element
 

@@ -1488,7 +1488,7 @@ void klbasis_f()
   files::OutputTraits& traits = W->outputTraits();
 
   printHeader(file.f(),files::basisH,traits);
-  printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
+  files::printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
 }
 
 void lcorder_f()
@@ -2247,7 +2247,7 @@ void klbasis_f()
   files::OutputTraits& traits = W->outputTraits();
 
   printHeader(file.f(),files::basisH,traits);
-  printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
+  files::printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
 }
 
 void lcells_f()
