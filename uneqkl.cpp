@@ -35,8 +35,8 @@ namespace uneqkl {
 /* member functions */
     void allocExtrRow(const coxtypes::CoxNbr& y) {klsupport().allocExtrRow(y);}
     void allocKLRow(const coxtypes::CoxNbr& y);
-    void allocMuRow(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
-    void allocMuRow(MuRow& row, const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
+    void create_mu_row(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
+    MuRow allocMuRow(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     bool checkKLRow(const coxtypes::CoxNbr& y);
     bool checkMuRow(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     void ensureKLRow(const coxtypes::CoxNbr& y);
@@ -56,7 +56,8 @@ namespace uneqkl {
     void inverseMin(coxtypes::CoxNbr& y, coxtypes::Generator& s);
     bool isExtrAllocated(const coxtypes::CoxNbr& y)
       {return klsupport().isExtrAllocated(y);}
-    bool isKLAllocated(const coxtypes::CoxNbr& y) {return d_kl->isKLAllocated(y);}
+    bool isKLAllocated(const coxtypes::CoxNbr& y)
+      {return d_kl->isKLAllocated(y);}
     KLRow& klList(const coxtypes::CoxNbr& y) {return d_kl->d_klList[y][0];}
     const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
       {return d_kl->klPol(x,y);}
@@ -68,7 +69,8 @@ namespace uneqkl {
     const MuPol mu(const coxtypes::Generator& s,
 		   const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
       {return d_kl->mu(s,x,y);}
-    void muCorrection(list::List<KLPol>& pol, const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
+    void muCorrection(list::List<KLPol>& pol,
+		      const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     void muCorrection(const coxtypes::CoxNbr& x, const coxtypes::Generator& s,
 		      const coxtypes::CoxNbr& y,
 		      list::List<KLPol>& pol, const Ulong& a);
@@ -85,7 +87,8 @@ namespace uneqkl {
 		    const coxtypes::Generator& s);
     Ulong size() {return d_kl->size();}
     KLStatus& status() {return *d_kl->d_status;}
-    void writeMuRow(const MuRow& row, const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
+    void writeMuRow(const MuRow& row,
+		    const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     void writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
   };
 
@@ -227,7 +230,7 @@ namespace uneqkl {
 KLContext::KLContext
     (klsupport::KLSupport* kls, const graph::CoxGraph& G,
      const interface::Interface& I)
-  :d_klsupport(kls),d_klList(0),d_muTable(0),d_L(0),d_length(0)
+  :d_klsupport(kls),d_klList(0),d_muTable(),d_L(0),d_length(0)
 {
   d_L.setSize(2*rank());
   getLength(d_L,G,I);
@@ -248,13 +251,12 @@ KLContext::KLContext
   d_status->klnodes++;
   d_status->klcomputed++;
 
-  d_muTable.setSize(rank());
+  d_muTable.reserve(rank());
 
-  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    new (&d_muTable[s]) MuTable(kls->size());
-    MuTable& t = d_muTable[s];
-    t.setSizeValue(kls->size());
-    t[0] = new MuRow(0);
+  for (coxtypes::Generator s = 0; s < rank(); ++s) {
+    d_muTable.emplace_back(kls->size()); // create a |MuTable| of |kls->size()|
+    MuTable& t = d_muTable.back();
+    t[0].reset(new MuRow(0)); // create one entry (empty list) in initial slot
   }
 
   d_length.setSize(kls->size());
@@ -276,12 +278,6 @@ KLContext::~KLContext()
     delete d_klList[j];
   }
 
-  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = d_muTable[s];
-    for (Ulong j = 0; j < t.size(); ++j) {
-      delete t[j];
-    }
-  }
 }
 
 /******** accessors **********************************************************/
@@ -342,7 +338,7 @@ void KLContext::fillMu(const coxtypes::Generator& s)
   for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
     if (schubert().isDescent(y,s))
       continue;
-    if (!d_help->checkMuRow(s,y))
+    if (not d_help->checkMuRow(s,y))
       d_help->fillMuRow(s,y);
   }
 
@@ -411,13 +407,13 @@ const MuPol KLContext::mu(const coxtypes::Generator& s,
 
   /* find x in row */
 
-  MuData mx(x,0);
-  Ulong m = find(mu_row,mx);
+  const MuData mx(x,nullptr);
+  auto it = std::lower_bound(mu_row.begin(),mu_row.end(),mx);
 
-  if (m == list::not_found)
+  if (it == mu_row.end() or it->x!=x)
     return MuPol::zero();
 
-  const MuPol* mp = mu_row[m].pol;
+  const MuPol* mp = it->pol;
 
   if (mp == nullptr) { /* then a mu-polynomial must be computed */
     mp = d_help->fillMu(s,x,y);
@@ -430,7 +426,7 @@ const MuPol KLContext::mu(const coxtypes::Generator& s,
 
 
 /*
-  Applies the permutation a to the context. See the permute function of
+  Applies the permutation |a| to the context. See the |permute| function of
   klsupport::KLSupport for a detailed explanation.
 */
 void KLContext::permute(const bits::Permutation& a)
@@ -440,63 +436,64 @@ void KLContext::permute(const bits::Permutation& a)
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
     MuTable& t = d_muTable[s];
     for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
-      if (!isMuAllocated(s,y))
+      if (not isMuAllocated(s,y))
 	continue;
       MuRow& row = *t[y];
       for (Ulong j = 0; j < row.size(); ++j)
 	row[j].x = a[row[j].x];
-      row.sort();
+      std::sort(row.begin(),row.end());
     }
   }
 
   /* permute ranges */
 
-  bits::BitMap b(a.size());
+  bits::BitMap seen(a.size());
 
   for (coxtypes::CoxNbr x = 0; x < size(); ++x) {
-    if (b.getBit(x))
+    if (seen.getBit(x))
       continue;
     if (a[x] == x) {
-      b.setBit(x);
+      seen.setBit(x);
       continue;
     }
 
-    list::List<MuRow*> mu_buf(0);
-    mu_buf.setSize(d_muTable.size());
+    // now |x| starts an as yet unseen nontrivial cycle in |a|
+    containers::vector<MuRowPtr> mu_buf(d_muTable.size()); // Coxeter rank
 
-    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y]) {
-      /* back up values for y */
+    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
+    { // back up values for y
       KLRow* kl_buf = d_klList[y];
       for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
 	MuTable& t = d_muTable[s];
-	mu_buf[s] = t[y];
+	mu_buf[s] = std::move(t[y]);
       }
       coxtypes::Length length_buf = d_length[y];
-      /* put values for x in y */
+
+      // move values from |x| in |y|
       d_klList[y] = d_klList[x];
       for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
 	MuTable& t = d_muTable[s];
-	t[y] = t[x];
+	t[y] = std::move(t[x]);
       }
       d_length[y] = d_length[x];
-      /* store backup values in x */
+
+      /* store backed up values in x */
       d_klList[x] = kl_buf;
       for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
 	MuTable& t = d_muTable[s];
-	t[x] = mu_buf[s];
+	t[x] = std::move(mu_buf[s]);
       }
       d_length[x] = length_buf;
       /* set bit*/
-      b.setBit(y);
+      seen.setBit(y);
     }
 
-    b.setBit(x);
+    seen.setBit(x);
   }
 
   return;
 }
 
-void KLContext::revertSize(const Ulong& n)
 
 /*
   Reverts the sizes of the lists to size n. This is meant to be used
@@ -504,18 +501,16 @@ void KLContext::revertSize(const Ulong& n)
   consistency of the various list sizes. In particular, it will fail
   miserably if a premutation has taken place in-between.
 */
-
+void KLContext::revertSize(const Ulong& n)
 {
   d_klList.setSize(n);
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
     MuTable& t = d_muTable[s];
-    t.setSize(n);
+    t.resize(n); // drop any extension of |d_muTable[s]|
   }
 
   d_length.setSize(n);
-
-  return;
 }
 
 void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
@@ -580,12 +575,8 @@ void KLContext::setSize(const Ulong& n)
   if (error::ERRNO)
     goto revert;
 
-  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = d_muTable[s];
-    t.setSize(n);
-    if (error::ERRNO)
-      goto revert;
-  }
+  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s)
+    d_muTable[s].resize(n);
 
   d_length.setSize(n);
   if (error::ERRNO)
@@ -622,8 +613,8 @@ void KLContext::setSize(const Ulong& n)
   The following functions are defined :
 
     - allocKLRow(y) : allocates one row in the K-L table;
-    - allocMuRow(row,s,y) : allocates row to a full mu-row for y and s;
-    - allocMuRow(s,y) : allocates the row for y in muTable(s);
+    - row=allocMuRow(s,y) : allocates row to a full mu-row for y and s;
+    - create_mu_row(s,y) : allocates the row for y in muTable(s);
     - checkKLRow(y) : checks if the row for y (or inverse(y)) if appropriate)
       in the K-L table has been filled;
     - fillKLRow(y) : fills the row for y or inverse(y);
@@ -673,22 +664,20 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
   for y contains one entry for each x < y s.t. xs < x (it is already
   implicit that ys > y, or the row would not even be allocated.)
 */
-void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::Generator& s,
-				     const coxtypes::CoxNbr& y)
+MuRow KLContext::KLHelper::allocMuRow(const coxtypes::Generator& s,
+				      const coxtypes::CoxNbr& y)
 {
   bits::BitMap b(0);
   schubert().extractClosure(b,y);
   b &= schubert().downset(s);
 
-  row.setSize(0);
-  bits::BitMap::Iterator b_end = b.end();
+  MuRow row;
+  const bits::BitMap::Iterator b_end = b.end();
 
-  for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
-    MuData md(*k,nullptr);
-    row.append(md);
-  }
+  for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k)
+    row.emplace_back(*k,nullptr);
 
-  return;
+  return row;
 }
 
 /*
@@ -699,12 +688,12 @@ void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::Generator& s,
   for y contains one entry for each x < y s.t. xs < x (it is already
   implicit that ys > y, or the row would not even be allocated.)
 */
-void KLContext::KLHelper::allocMuRow
+void KLContext::KLHelper::create_mu_row
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
   MuTable& t = muTable(s);
-  t[y] = new MuRow(0); // this will become |muList(s,y)|
-  allocMuRow(*t[y],s,y); // populate the |MuRow|
+  t[y].reset(new MuRow(0)); // this will become |muList(s,y)|
+  *t[y]=allocMuRow(s,y); // populate the |MuRow|
 
   d_kl->d_status->munodes += muList(s,y).size();
   d_kl->d_status->murows++;
@@ -979,14 +968,16 @@ const MuPol* KLContext::KLHelper::fillMu
   pos_mu = positivePart(pol,2,length(x)-length(y)+genL(s));
 
   MuData mx(x,nullptr);
-  Ulong m = list::find(mu_row,mx); // search cannot fail
+  auto loc_x =
+    std::lower_bound(mu_row.begin(),mu_row.end(),mx); // search cannot fail
 
   /* subtract correcting terms */
 
   const schubert::SchubertContext& p = schubert();
 
-  for (Ulong j = m+1; j < mu_row.size(); ++j) {
-    coxtypes::CoxNbr z = mu_row[j].x;
+  for (auto it = std::next(loc_x); it!=mu_row.end(); ++it)
+  {
+    coxtypes::CoxNbr z = it->x;
     if (not p.inOrder(x,z))
       continue;
     const KLPol& pol = klPol(x,z);
@@ -1007,7 +998,7 @@ const MuPol* KLContext::KLHelper::fillMu
 
   /* write mu-polynomial and return value */
 
-  return mu_row[m].pol = writeMu(muTree(),pos_mu);
+  return loc_x->pol = writeMu(muTree(),pos_mu);
 }
 
 
@@ -1038,8 +1029,7 @@ const MuPol* KLContext::KLHelper::fillMu
 void KLContext::KLHelper::fillMuRow
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
-  MuRow mu_row;
-  allocMuRow(mu_row,s,y); // construct a |MuRow| into |mu_row|
+  MuRow mu_row = allocMuRow(s,y); // construct a |MuRow| into |mu_row|
   containers::vector<KLPol> pos_mu(mu_row.size());
 
   coxtypes::CoxNbr x;
@@ -1237,7 +1227,7 @@ void KLContext::KLHelper::muCorrection
   const schubert::SchubertContext& p = schubert();
   coxtypes::CoxNbr ys = p.rshift(y,s);
   if (!d_kl->isMuAllocated(s,ys)) {
-    allocMuRow(s,ys);
+    create_mu_row(s,ys);
     if (error::ERRNO)
       goto abort;
   }
@@ -1426,20 +1416,12 @@ void KLContext::KLHelper::writeMuRow(const MuRow& row,
   /* copy non-zero terms to row in mu-table */
 
   MuTable& t = muTable(s);
-  delete t[y];
-  t[y] = new MuRow(0);
+  t[y].reset(new MuRow(0));
   MuRow& mu_row = *t[y];
-  mu_row.setSize(count);
-  count = 0;
-
-  for (Ulong j = 0; j < row.size(); ++j) {
-    const MuPol* pol = row[j].pol;
-    if (not pol->isZero()) { /* append new element */
-      mu_row[count] = row[j]; // copy the |MuData| to new element of |mu_row|
-      count++;
-    }
-  }
-}
+  for (Ulong j = 0; j < row.size(); ++j)
+    if (not row[j].pol->isZero())
+      mu_row.push_back(row[j]); // copy the |MuData| to new element of |mu_row|
+} // |writeMuRow|
 
 };
 

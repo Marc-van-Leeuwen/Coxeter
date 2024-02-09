@@ -29,8 +29,9 @@ namespace uneqkl {
 
   typedef list::List<const KLPol*> KLRow;
 
-  typedef list::List<MuData> MuRow;
-  typedef list::List<MuRow*> MuTable;
+  using MuRow = std::vector<MuData>;
+  using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
+  using MuTable = containers::vector<MuRowPtr>;
   typedef list::List<HeckeMonomial<KLPol> > HeckeElt;
 };
 
@@ -111,7 +112,7 @@ struct KLStatus {
 class KLContext {
   klsupport::KLSupport* d_klsupport;
   list::List<KLRow*> d_klList;
-  list::List<MuTable> d_muTable; // indexed by |s|
+  containers::vector<MuTable> d_muTable; // indexed by |s|
   list::List<coxtypes::Length> d_L; /* lengths of generators */
   list::List<coxtypes::Length> d_length; /* lengths of context elements */
   search::BinaryTree<KLPol> d_klTree;
@@ -177,7 +178,7 @@ inline bool KLContext::isKLAllocated(const coxtypes::CoxNbr& y) const
   {return d_klList[y] != 0;}
 inline bool KLContext::isMuAllocated
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
-  {return d_muTable[s][y] != 0;}
+  {return d_muTable[s][y] != nullptr;}
 inline const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
   {return *d_klList[y];}
 inline const klsupport::KLSupport& KLContext::klsupport() const
