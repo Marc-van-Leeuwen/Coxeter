@@ -10,10 +10,10 @@
 
 #include "globals.h"
 #include <limits>
-#include <vector>
 
 #include "io.h"
 #include "vector.h"
+#include "containers.h"
 
 namespace polynomials {
 
@@ -121,7 +121,7 @@ template <class T> class Polynomial {
 
 template <class T> class LaurentPolynomial {
   // interpreting |coef| as polynomial in $X$, represents $coef*X^{d_valuation}$
-  std::vector<T> coef;
+  containers::vector<T> coef;
   SDegree d_valuation; /* degree of first non-zero coefficient */
  public:
 /* constructors and destructors */
@@ -132,7 +132,7 @@ template <class T> class LaurentPolynomial {
   LaurentPolynomial<T>(const SDegree& degree, const SDegree& offset = 0)
     : coef(degree-offset+1,T(0)),d_valuation(offset)
   {}
-  LaurentPolynomial<T>(std::vector<T>&& c, const SDegree& offset = 0)
+  LaurentPolynomial<T>(containers::vector<T>&& c, const SDegree& offset = 0)
     : coef(std::move(c)),d_valuation(offset) {}
   ~LaurentPolynomial<T>() {}
 /* accessors */

@@ -70,7 +70,7 @@ public:
     :LaurentPolynomial<klsupport::SKLcoeff>(d,o) {};
   MuPol(const klsupport::SKLcoeff& c, const_tag)
     : LaurentPolynomial<klsupport::SKLcoeff>
-    (std::vector<klsupport::SKLcoeff>{c},0)
+    (containers::vector<klsupport::SKLcoeff>{c},0)
     {}
   ~MuPol() {};
 

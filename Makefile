@@ -62,7 +62,7 @@ cells.o: cells.cpp cells.h globals.h bits.h list.h memory.h constants.h \
  interface.h automata.h minroots.h dotval.h transducer.h hecke.h \
  hecke.hpp search.h search.hpp uneqkl.h wgraph.h
 commands.o: commands.cpp commands.h globals.h dictionary.h sl_list.h \
- sl_list_fwd.h memory.h constants.h io.h list.h list.hpp error.h \
+ containers.h memory.h constants.h io.h list.h list.hpp error.h \
  dictionary.hpp coxgroup.h coxtypes.h files.h hecke.h interface.h \
  automata.h bits.h minroots.h graph.h type.h dotval.h transducer.h \
  schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \
@@ -105,7 +105,7 @@ graph.o: graph.cpp graph.h globals.h list.h memory.h constants.h list.hpp \
  error.h bits.h io.h coxtypes.h type.h directories.h interactive.h \
  interface.h automata.h minroots.h dotval.h transducer.h
 help.o: help.cpp help.h globals.h commands.h dictionary.h sl_list.h \
- sl_list_fwd.h memory.h constants.h io.h list.h list.hpp error.h \
+ containers.h memory.h constants.h io.h list.h list.hpp error.h \
  dictionary.hpp coxgroup.h coxtypes.h files.h hecke.h interface.h \
  automata.h bits.h minroots.h graph.h type.h dotval.h transducer.h \
  schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \
@@ -137,7 +137,7 @@ klsupport.o: klsupport.cpp klsupport.h globals.h coxtypes.h constants.h \
  polynomials.hpp schubert.h graph.h bits.h type.h stack.h stack.hpp \
  interface.h automata.h minroots.h dotval.h transducer.h
 main.o: main.cpp constants.h globals.h commands.h dictionary.h sl_list.h \
- sl_list_fwd.h memory.h io.h list.h list.hpp error.h dictionary.hpp \
+ containers.h memory.h io.h list.h list.hpp error.h dictionary.hpp \
  coxgroup.h coxtypes.h files.h hecke.h interface.h automata.h bits.h \
  minroots.h graph.h type.h dotval.h transducer.h schubert.h stack.h \
  stack.hpp hecke.hpp polynomials.h vector.h vector.hpp polynomials.hpp \
@@ -153,7 +153,7 @@ schubert.o: schubert.cpp schubert.h globals.h coxtypes.h constants.h io.h \
  list.h memory.h list.hpp error.h graph.h bits.h type.h stack.h stack.hpp \
  interface.h automata.h minroots.h dotval.h transducer.h
 special.o: special.cpp special.h globals.h commands.h dictionary.h \
- sl_list.h sl_list_fwd.h memory.h constants.h io.h list.h list.hpp \
+ sl_list.h containers.h memory.h constants.h io.h list.h list.hpp \
  error.h dictionary.hpp coxgroup.h coxtypes.h files.h hecke.h interface.h \
  automata.h bits.h minroots.h graph.h type.h dotval.h transducer.h \
  schubert.h stack.h stack.hpp hecke.hpp polynomials.h vector.h vector.hpp \

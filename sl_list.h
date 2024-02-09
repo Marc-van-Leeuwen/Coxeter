@@ -2,7 +2,7 @@
 
 /*
   Copyright (C) 2014,2018 Marc van Leeuwen
-  part of the Atlas of Lie Groups and Representations
+  developed as part of the Atlas of Lie Groups and Representations
 
   For license information see the LICENSE file
 */
@@ -10,7 +10,7 @@
 #ifndef SL_LIST_H /* guard against multiple inclusions */
 #define SL_LIST_H
 
-#include "sl_list_fwd.h"
+#include "containers.h" // predeclare our types and default arguments
 
 #include <cstddef>
 #include <cstdlib>
@@ -1938,15 +1938,17 @@ template<typename T, typename Alloc>
     return simple_list<T,Alloc>(head.release(),std::move(node_allocator()));
   }
 
-  std::vector<T> to_vector() const &
-  { std::vector<T>result; result.reserve(node_count); // avoid recounting length
+  std::vector<T,Alloc> to_vector() const &
+  { std::vector<T,Alloc>result;
+    result.reserve(node_count); // avoid recounting length
     for (auto it=wcbegin(); not at_end(it); ++it) // non-counting fill
       result.push_back(*it);
     return result;
   }
 
-  std::vector<T> to_vector() &&
-  { std::vector<T>result; result.reserve(node_count); // avoid recounting length
+  std::vector<T,Alloc> to_vector() &&
+  { std::vector<T,Alloc>result;
+    result.reserve(node_count); // avoid recounting length
     for (auto it=wbegin(); not at_end(it); ++it) // non-counting fill
       result.push_back(std::move(*it));
     return result;

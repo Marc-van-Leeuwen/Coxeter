@@ -1,18 +1,24 @@
 /*
-  This is sl_list_fwd.h, for a revolutionary singly linked list container type
+  This is containers.h, container type customization
 
   Copyright (C) 2016,2018 Marc van Leeuwen
-  part of the Atlas of Lie Groups and Representations
+  developed as part of coxter
 
   For license information see the LICENSE file
 */
 
-#ifndef SL_LIST_FWD_H /* guard against multiple inclusions */
-#define SL_LIST_FWD_H
+#ifndef CONTAINERS_H /* guard against multiple inclusions */
+#define CONTAINERS_H
 
+#include <vector> // for |std::vector|
 #include "memory.h" // for |containers::allocator|
 
 namespace containers {
+
+template <typename T>
+  using vector = std::vector<T,containers::allocator<T> >;
+
+
 
 template <typename Alloc>
   class allocator_deleter;
