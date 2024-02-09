@@ -62,22 +62,27 @@ namespace uneqkl {
       {return d_kl->klPol(x,y);}
     klsupport::KLSupport& klsupport() {return d_kl->d_klsupport[0];}
     search::BinaryTree<KLPol>& klTree() {return d_kl->d_klTree;}
-    coxtypes::Generator last(const coxtypes::CoxNbr& x) {return klsupport().last(x);}
+    coxtypes::Generator last(const coxtypes::CoxNbr& x)
+      {return klsupport().last(x);}
     Ulong length(const coxtypes::CoxNbr& x) {return d_kl->length(x);}
-    const MuPol mu(const coxtypes::Generator& s, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+    const MuPol mu(const coxtypes::Generator& s,
+		   const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
       {return d_kl->mu(s,x,y);}
     void muCorrection(list::List<KLPol>& pol, const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
-    void muCorrection(const coxtypes::CoxNbr& x, const coxtypes::Generator& s, const coxtypes::CoxNbr& y,
+    void muCorrection(const coxtypes::CoxNbr& x, const coxtypes::Generator& s,
+		      const coxtypes::CoxNbr& y,
 		      list::List<KLPol>& pol, const Ulong& a);
     MuRow& muList(const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
-      { return *(*d_kl->d_muTable[s])[y]; }
+      { return *d_kl->d_muTable[s][y]; }
     MuTable& muTable(const coxtypes::Generator& s)
-      { return *d_kl->d_muTable[s]; }
+      { return d_kl->d_muTable[s]; }
     search::BinaryTree<MuPol>& muTree() {return d_kl->d_muTree;}
-    void prepareRowComputation(const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
+    void prepareRowComputation
+      (const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
     coxtypes::Rank rank() {return d_kl->rank();}
     const schubert::SchubertContext& schubert() {return klsupport().schubert();}
-    void secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol, const coxtypes::Generator& s);
+    void secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol,
+		    const coxtypes::Generator& s);
     Ulong size() {return d_kl->size();}
     KLStatus& status() {return *d_kl->d_status;}
     void writeMuRow(const MuRow& row, const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
@@ -212,17 +217,17 @@ namespace uneqkl {
 
 namespace uneqkl {
 
-  KLContext::KLContext
-    (klsupport::KLSupport* kls, const graph::CoxGraph& G, const interface::Interface& I)
-  :d_klsupport(kls),d_klList(0),d_muTable(0),d_L(0),d_length(0)
 
 /*
-  This constructor gets the lengths interactively from the user. This makes
-  it possible that an error is set during the construction. Fortunately we can
-  check this before any memory is gotten from the heap, so that automatic
+  This (unique) constructor gets the lengths interactively from the user. This
+  makes it possible that an error is set during the construction. Fortunately we
+  can check this before any memory is gotten from the heap, so that automatic
   destruction of the components on exit will be satisfactory in that case.
 */
-
+KLContext::KLContext
+    (klsupport::KLSupport* kls, const graph::CoxGraph& G,
+     const interface::Interface& I)
+  :d_klsupport(kls),d_klList(0),d_muTable(0),d_L(0),d_length(0)
 {
   d_L.setSize(2*rank());
   getLength(d_L,G,I);
@@ -246,8 +251,8 @@ namespace uneqkl {
   d_muTable.setSize(rank());
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    d_muTable[s] = new MuTable(kls->size());
-    MuTable& t = *d_muTable[s];
+    new (&d_muTable[s]) MuTable(kls->size());
+    MuTable& t = d_muTable[s];
     t.setSizeValue(kls->size());
     t[0] = new MuRow(0);
   }
@@ -272,11 +277,10 @@ KLContext::~KLContext()
   }
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = *d_muTable[s];
+    MuTable& t = d_muTable[s];
     for (Ulong j = 0; j < t.size(); ++j) {
       delete t[j];
     }
-    delete d_muTable[s];
   }
 }
 
@@ -424,18 +428,17 @@ const MuPol KLContext::mu(const coxtypes::Generator& s,
   return *mp;
 }
 
-void KLContext::permute(const bits::Permutation& a)
 
 /*
   Applies the permutation a to the context. See the permute function of
   klsupport::KLSupport for a detailed explanation.
 */
-
+void KLContext::permute(const bits::Permutation& a)
 {
   /* permute values */
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = *d_muTable[s];
+    MuTable& t = d_muTable[s];
     for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
       if (!isMuAllocated(s,y))
 	continue;
@@ -465,21 +468,21 @@ void KLContext::permute(const bits::Permutation& a)
       /* back up values for y */
       KLRow* kl_buf = d_klList[y];
       for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = *d_muTable[s];
+	MuTable& t = d_muTable[s];
 	mu_buf[s] = t[y];
       }
       coxtypes::Length length_buf = d_length[y];
       /* put values for x in y */
       d_klList[y] = d_klList[x];
       for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = *d_muTable[s];
+	MuTable& t = d_muTable[s];
 	t[y] = t[x];
       }
       d_length[y] = d_length[x];
       /* store backup values in x */
       d_klList[x] = kl_buf;
       for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = *d_muTable[s];
+	MuTable& t = d_muTable[s];
 	t[x] = mu_buf[s];
       }
       d_length[x] = length_buf;
@@ -506,7 +509,7 @@ void KLContext::revertSize(const Ulong& n)
   d_klList.setSize(n);
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = *d_muTable[s];
+    MuTable& t = d_muTable[s];
     t.setSize(n);
   }
 
@@ -578,7 +581,7 @@ void KLContext::setSize(const Ulong& n)
     goto revert;
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = *d_muTable[s];
+    MuTable& t = d_muTable[s];
     t.setSize(n);
     if (error::ERRNO)
       goto revert;
@@ -1106,8 +1109,6 @@ void KLContext::KLHelper::fillMuRow
   return;
 }
 
-void KLContext::KLHelper::initWorkspace(const coxtypes::CoxNbr& y, list::List<KLPol>& pol,
-					   const coxtypes::Generator& s)
 
 /*
   This function sets pol to a row of one polynomial for each x in klList(y),
@@ -1116,7 +1117,9 @@ void KLContext::KLHelper::initWorkspace(const coxtypes::CoxNbr& y, list::List<KL
   It is assumed that prepareRowComputation has been called for y and s,
   so that the row for ys is available.
 */
-
+void KLContext::KLHelper::initWorkspace(const coxtypes::CoxNbr& y,
+					list::List<KLPol>& pol,
+					const coxtypes::Generator& s)
 {
   const schubert::SchubertContext& p = schubert();
   const klsupport::ExtrRow& e = extrList(y);

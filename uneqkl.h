@@ -111,7 +111,7 @@ struct KLStatus {
 class KLContext {
   klsupport::KLSupport* d_klsupport;
   list::List<KLRow*> d_klList;
-  list::List<MuTable*> d_muTable; // indexed by |s|
+  list::List<MuTable> d_muTable; // indexed by |s|
   list::List<coxtypes::Length> d_L; /* lengths of generators */
   list::List<coxtypes::Length> d_length; /* lengths of context elements */
   search::BinaryTree<KLPol> d_klTree;
@@ -177,7 +177,7 @@ inline bool KLContext::isKLAllocated(const coxtypes::CoxNbr& y) const
   {return d_klList[y] != 0;}
 inline bool KLContext::isMuAllocated
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
-  {return (*d_muTable[s])[y] != 0;}
+  {return d_muTable[s][y] != 0;}
 inline const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
   {return *d_klList[y];}
 inline const klsupport::KLSupport& KLContext::klsupport() const
@@ -188,7 +188,7 @@ inline Ulong KLContext::length(const coxtypes::CoxNbr& x) const
   {return d_length[x];}
 inline const MuRow& KLContext::muList
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
-  const {return *(*d_muTable[s])[y];}
+  const {return *d_muTable[s][y];}
 inline coxtypes::Rank KLContext::rank() const {return d_klsupport->rank();}
 inline const schubert::SchubertContext& KLContext::schubert() const
   {return klsupport().schubert();}
