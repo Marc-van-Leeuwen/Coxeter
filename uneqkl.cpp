@@ -961,8 +961,7 @@ const MuPol* KLContext::KLHelper::fillMu
   (const coxtypes::Generator& s,
    const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 {
-  static list::List<KLPol> pos_mu(0); // workspace stack
-
+  KLPol pos_mu;
   MuRow& mu_row = muList(s,y);
 
  /* initialize a with the value u^(L(x)-L(y)+L(s))P_{x,y}(u^2) */
@@ -971,12 +970,10 @@ const MuPol* KLContext::KLHelper::fillMu
   if (error::ERRNO) {
     error::Error(error::MU_FAIL,x,y);
     error::ERRNO = error::ERROR_WARNING;
-    return 0;
+    return nullptr;
   }
 
-  Ulong a = pos_mu.size();
-  pos_mu.setSize(a+1);
-  positivePart(pos_mu[a],pol,2,length(x)-length(y)+genL(s));
+  positivePart(pos_mu,pol,2,length(x)-length(y)+genL(s));
 
   MuData mx(x,nullptr);
   Ulong m = list::find(mu_row,mx); // search cannot fail
@@ -997,7 +994,7 @@ const MuPol* KLContext::KLHelper::fillMu
     }
     const MuPol mq = d_kl->mu(s,z,y);
     if (not mq.isZero())
-      muSubtraction(pos_mu[a],mq,pol,2,length(x)-length(z));
+      muSubtraction(pos_mu,mq,pol,2,length(x)-length(z));
     if (error::ERRNO) {
       error::Error(error::MU_FAIL,x,y);
       error::ERRNO = error::ERROR_WARNING;
@@ -1007,9 +1004,7 @@ const MuPol* KLContext::KLHelper::fillMu
 
   /* write mu-polynomial and return value */
 
-  mu_row[m].pol = writeMu(muTree(),pos_mu[a]);
-  pos_mu.setSize(a);
-  return mu_row[m].pol;
+  return mu_row[m].pol = writeMu(muTree(),pos_mu);
 }
 
 
@@ -1028,67 +1023,55 @@ const MuPol* KLContext::KLHelper::fillMu
   A number of K-L polynomials are needed in the process; it turns out that
   when one is needed, usually many will be for the same value of z; so
   again we fill the whole K-L row for z when a polynomial is needed. The
-  problem with this is that it may trigger recursive calls to fillMuRow;
-  hence we have to manage a workspace stack. An approach like prepareMuRow
-  is not feasible here because we don't want to compute P_{x,z} if mu_{z,y}
-  turns out to be zero, and we can know that only when we are already in the
-  process of filling the row.
+  problem with this is that it may trigger recursive calls to fillMuRow;...
 
-  [It seems like Fokko's habit of always using |static| variables comes to bite
-  because this function is implicitly recursive. So he builds stacks |posMu| and
-  |muRow| as static lists that are pushed to upon entry and popped from on exit.
-  It would be simpler to just use a non-|static| local variable each case, which
-  would be properly renewed in each recursive instance without any effort. MvL]
+  [While it is not evident to me where the implicit recursion may take place,
+  the problem that Fokko refers to can be solved simply by using non-|static|
+  local variables |mu_row| end |pos_mu| that will be automatically use a fresh
+  instance in any recursive instance. Fokko laboriously implemented a stack in a
+  |static| variable instead, which really seems a misguided solution. Mvl]
+
 */
 void KLContext::KLHelper::fillMuRow
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
-  static list::List<list::List<KLPol> > posMu(0);
-  static list::List<MuRow> muRow(0);
+  MuRow mu_row;
+  list::List<KLPol> pos_mu;
 
-   /* the polynomial pos_mu(x) (really pos_mu[j], x = mu_list[j].x) holds the
-     positive part of the mu-polynomial */
-
-  /* get workspace */
-
-  Ulong a = posMu.size(); // keep whatever was there
-  posMu.setSize(a+1); // but append a new entry at the end
-  muRow.setSize(a+1); // here one as well
-
-  allocMuRow(muRow[a],s,y); // construct a |MuRow| into |muRow[a]|
-  posMu[a].setSize(muRow[a].size());
+  allocMuRow(mu_row,s,y); // construct a |MuRow| into |mu_row|
+  pos_mu.setSize(mu_row.size());
 
   coxtypes::CoxNbr x;
 
-  /* initialize posMu[a](x) with the value u^(L(x)-L(y)+L(s))P_{x,y}(u^2) */
+  /* initialize pos_mu(x) with the value u^(L(x)-L(y)+L(s))P_{x,y}(u^2) */
 
-  for (Ulong j = 0; j < muRow[a].size(); ++j) {
+  for (Ulong j = 0; j < mu_row.size(); ++j) {
     ensureKLRow(y);
-    x = muRow[a][j].x;
+    x = mu_row[j].x;
     const KLPol& pol = klPol(x,y);
     if (error::ERRNO) /* this cannot happen in typical usage */
       goto abort;
-    positivePart(posMu[a][j],pol,2,length(x)-length(y)+genL(s));
+    positivePart(pos_mu[j],pol,2,length(x)-length(y)+genL(s));
   }
 
-  /* we run through muRow[a] in decreasing order; for each z in the list,
+  /* we run through mu_row in decreasing order; for each z in the list,
      we subtract from the correction term corresponding to z from mu(x,y)
      for each x < z.
   */
 
-  for (Ulong j = muRow[a].size(); j-->0;)
+  for (Ulong j = mu_row.size(); j-->0;)
   { /* write the mu-polynomial for z */
 
-    muRow[a][j].pol = writeMu(muTree(),posMu[a][j]);
+    mu_row[j].pol = writeMu(muTree(),pos_mu[j]);
     d_kl->d_status->mucomputed++;
-    if (muRow[a][j].pol->isZero()) {
+    if (mu_row[j].pol->isZero()) {
       d_kl->d_status->muzero++;
       continue;
     }
 
     /* subtract correcting terms */
 
-    coxtypes::CoxNbr z = muRow[a][j].x;
+    coxtypes::CoxNbr z = mu_row[j].x;
     ensureKLRow(z);
     if (error::ERRNO)
       goto abort;
@@ -1102,12 +1085,12 @@ void KLContext::KLHelper::fillMuRow
 
     for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
       x = *k;
-      while (muRow[a][i].x != x)
+      while (mu_row[i].x != x)
 	++i;
       const KLPol& pol = klPol(x,z);
       if (error::ERRNO)
 	goto abort;
-      muSubtraction(posMu[a][i],muRow[a][j].pol[0],pol,2,
+      muSubtraction(pos_mu[i],mu_row[j].pol[0],pol,2,
 		    length(x)-length(z));
       if (error::ERRNO)
 	goto abort;
@@ -1115,16 +1098,13 @@ void KLContext::KLHelper::fillMuRow
     }
   }
 
-  writeMuRow(muRow[a],s,y);
+  writeMuRow(mu_row,s,y);
 
-  muRow.setSize(a);
-  posMu.setSize(a); // revert to original size
   return;
 
  abort:
   error::Error(error::MU_FAIL,x,y);
   error::ERRNO = error::ERROR_WARNING;
-  posMu.setSize(a);
   return;
 }
 
@@ -1184,8 +1164,6 @@ void KLContext::KLHelper::inverseMin(coxtypes::CoxNbr& y, coxtypes::Generator& s
   return;
 }
 
-void KLContext::KLHelper::muCorrection(list::List<KLPol>& pol, const coxtypes::Generator& s,
-				       const coxtypes::CoxNbr& y)
 
 /*
   This function carries out the "mu-correction" step in the computation of
@@ -1201,15 +1179,17 @@ void KLContext::KLHelper::muCorrection(list::List<KLPol>& pol, const coxtypes::G
   as follows : for each z in muList(s,ys), we extract the interval [e,z],
   extremalize w.r.t. y, and subtract the appropriate term from P_{x,y}.
 */
-
+void KLContext::KLHelper::muCorrection
+  (list::List<KLPol>& pol,
+   const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
   const klsupport::ExtrRow& e = extrList(y);
   coxtypes::CoxNbr ys = p.rshift(y,s);
   const MuRow& mu_row = muList(s,ys);
 
-  for (Ulong j = 0; j < mu_row.size(); ++j) {
-
+  for (Ulong j = 0; j < mu_row.size(); ++j)
+  {
     const MuPol& mu_pol = *mu_row[j].pol;
     if (mu_pol.isZero())
       continue;
@@ -1222,36 +1202,36 @@ void KLContext::KLHelper::muCorrection(list::List<KLPol>& pol, const coxtypes::G
     Ulong i = 0;
     bits::BitMap::Iterator b_end = b.end();
 
-    for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
+    for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k)
+    {
       coxtypes::CoxNbr x = *k;
       while (e[i] < x)
 	++i;
       Ulong h = length(y)-length(z);
       pol[i].subtract(klPol(x,z),mu_pol,h);
-      if (error::ERRNO) {
+      if (error::ERRNO)
+      {
 	error::Error(error::ERRNO,this,x,y);
 	error::ERRNO = error::ERROR_WARNING;
 	return;
       }
-    }
-  }
+    } // |for(k)|
+  } // |for(j)|
+} // |muCorrection|
 
-  return;
-}
-
-void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& x, const coxtypes::Generator& s,
-	               const coxtypes::CoxNbr& y, list::List<KLPol>& pol, const Ulong& a)
 
 /*
   This function carries out the "mu-correction" step in the computation of
-  a single K-L polynomial. Here pol is a stack, and a tells us at which
+  a single K-L polynomial. Here pol is a stack, and |a| tells us at which
   level of the stack the owrk is done. It is assumed that pol[a] has been
   initialized to P_{xs,ys}+q^genL(s)P_{x,ys}.
 
   We have to subtract terms q^{(L(y)-L(z))/2}P_{x,z}mu(z,ys); from results
   of Lusztig it is known that these are actually polynomials in q as well.
 */
-
+void KLContext::KLHelper::muCorrection
+ (const coxtypes::CoxNbr& x, const coxtypes::Generator& s,
+  const coxtypes::CoxNbr& y, list::List<KLPol>& pol, const Ulong& a)
 {
   const schubert::SchubertContext& p = schubert();
   coxtypes::CoxNbr ys = p.rshift(y,s);
@@ -1290,8 +1270,8 @@ void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& x, const coxtypes
  abort:
   error::Error(error::UEMU_FAIL,x,y);
   error::ERRNO = error::ERROR_WARNING;
-  return;
-}
+
+} // |muCorrection|
 
 void KLContext::KLHelper::prepareRowComputation(const coxtypes::CoxNbr& y,
 						const coxtypes::Generator& s)
@@ -1427,8 +1407,8 @@ void KLContext::KLHelper::writeKLRow
 
 
 /*
-  This function writes down row to the corresponding row in the mu-table
-  for s, omitting the zero terms.
+  This function copies |row| elements to the corresponding row in the mu-table
+  for |s| at |y|, omitting the zero terms.
 */
 void KLContext::KLHelper::writeMuRow(const MuRow& row,
 				     const coxtypes::Generator& s,
@@ -1453,8 +1433,8 @@ void KLContext::KLHelper::writeMuRow(const MuRow& row,
 
   for (Ulong j = 0; j < row.size(); ++j) {
     const MuPol* pol = row[j].pol;
-    if (!pol->isZero()) { /* append new element */
-      mu_row[count] = row[j];
+    if (not pol->isZero()) { /* append new element */
+      mu_row[count] = row[j]; // copy the |MuData| to new element of |mu_row|
       count++;
     }
   }

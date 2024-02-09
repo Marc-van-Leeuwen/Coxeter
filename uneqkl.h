@@ -62,13 +62,14 @@ public:
   KLPol& subtract(const KLPol& p, const MuPol& mp, const Ulong& n);
 };
 
-class MuPol : public LaurentPolynomial<klsupport::SKLcoeff> {
+struct MuPol : public LaurentPolynomial<klsupport::SKLcoeff>
+{ // a very thin wrapper around its base, mainly to provide an extra constructor
 public:
-  struct const_tag {};
+  struct const_tag {}; // to enable the constructor of constant polynomials
   MuPol():LaurentPolynomial<klsupport::SKLcoeff>() {}; // zero
-  MuPol(const SDegree& d, const SDegree& o = 0)
+  MuPol(const SDegree& d, const SDegree& o = 0) // allocate zero-terms in range
     :LaurentPolynomial<klsupport::SKLcoeff>(d,o) {};
-  MuPol(const klsupport::SKLcoeff& c, const_tag)
+  MuPol(const klsupport::SKLcoeff& c, const_tag) // the new constructor
     : LaurentPolynomial<klsupport::SKLcoeff>
     (containers::vector<klsupport::SKLcoeff>{c},0)
     {}
@@ -110,7 +111,7 @@ struct KLStatus {
 class KLContext {
   klsupport::KLSupport* d_klsupport;
   list::List<KLRow*> d_klList;
-  list::List<MuTable*> d_muTable;
+  list::List<MuTable*> d_muTable; // indexed by |s|
   list::List<coxtypes::Length> d_L; /* lengths of generators */
   list::List<coxtypes::Length> d_length; /* lengths of context elements */
   search::BinaryTree<KLPol> d_klTree;
