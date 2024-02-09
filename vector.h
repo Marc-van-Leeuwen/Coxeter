@@ -30,7 +30,7 @@ template <class T> class Vector
     list::List<T> d_list;
   public:
 /* constructors and destructors */
-    Vector(){};
+    Vector() : d_list() {};
     Vector(Ulong n):d_list(n) {};
     Vector(const Vector<T>& w):d_list(w.list()) {};
     Vector(T* const& ptr, const Ulong& n):d_list(ptr,n) {};

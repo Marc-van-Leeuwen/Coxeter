@@ -89,7 +89,7 @@ template <class T> class Polynomial {
 /* constructors and destructors */
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(Polynomial<T>));}
-  Polynomial<T>(){};
+  Polynomial<T>():v() {}; // polynomial with empty coefficient vector (is zero)
   Polynomial<T>(Degree d):v(d+1) {};
   Polynomial<T>(const Polynomial<T>& q):v(q.v) {};
   Polynomial<T>(T* const& ptr, const Degree& d):v(ptr,d+1) {};
@@ -101,10 +101,10 @@ template <class T> class Polynomial {
   void setDeg(const Degree& d);                                  /* inlined */
   void setDegValue(const Degree& d);                             /* inlined */
   void setVect(const T *source, const Ulong& n);                 /* inlined */
-  void setZero();                                                /* inlined */
-  void setZero(const Ulong& r);                                  /* inlined */
+  void setZero() { v.dim() = 0; } // empty coefficient vector
+  void setZero(const Ulong& r) { v.setZero(r); } // zero out coefficients
   void setZero(const Ulong& first, const Ulong& r);              /* inlined */
-  vector::Vector<T>& vect();                                             /* inlined */
+  vector::Vector<T>& vect();                                     /* inlined */
 /* accessors */
   const T& operator[] (const Ulong& j) const;                    /* inlined */
   Ulong deg() const;                                             /* inlined */
@@ -188,10 +188,6 @@ template<class T> inline void Polynomial<T>::setDegValue(const Degree& d)
 template<class T> inline void Polynomial<T>::setVect(const T *source,
 						     const Ulong& n)
   {v.setVect(source,n);}
-template<class T> inline void Polynomial<T>::setZero()
-  {v.dim() = 0;}
-template<class T> inline void Polynomial<T>::setZero(const Ulong& r)
-  {v.setZero(r);}
 template<class T> inline void Polynomial<T>::setZero(const Ulong& first,
 						     const Ulong& r)
   {v.setZero(first,r);}

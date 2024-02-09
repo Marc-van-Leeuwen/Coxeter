@@ -17,7 +17,7 @@ namespace {
 
   void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
 		     const Ulong& d, const long& m);
-  void positivePart(KLPol& p, const KLPol& q, const Ulong& d, const long& m);
+  KLPol positivePart(const KLPol& q, const Ulong& d, const long& m);
   const MuPol* writeMu(search::BinaryTree<MuPol>& t, const KLPol& p);
 };
 
@@ -973,7 +973,7 @@ const MuPol* KLContext::KLHelper::fillMu
     return nullptr;
   }
 
-  positivePart(pos_mu,pol,2,length(x)-length(y)+genL(s));
+  pos_mu = positivePart(pol,2,length(x)-length(y)+genL(s));
 
   MuData mx(x,nullptr);
   Ulong m = list::find(mu_row,mx); // search cannot fail
@@ -1025,33 +1025,32 @@ const MuPol* KLContext::KLHelper::fillMu
   again we fill the whole K-L row for z when a polynomial is needed. The
   problem with this is that it may trigger recursive calls to fillMuRow;...
 
-  [While it is not evident to me where the implicit recursion may take place,
-  the problem that Fokko refers to can be solved simply by using non-|static|
-  local variables |mu_row| end |pos_mu| that will be automatically use a fresh
-  instance in any recursive instance. Fokko laboriously implemented a stack in a
-  |static| variable instead, which really seems a misguided solution. Mvl]
+  [It appears the implicit recursion happens at the call |ensureKLRow(y)|.
+  The problem that Fokko refers to can be solved simply by using non-|static|
+  local variables |mu_row| end |pos_mu| that will automatically create a fresh
+  instance in any recursive call. Fokko laboriously implemented stacks in
+  |static| variables instead, which really seems a misguided solution. Mvl]
 
 */
 void KLContext::KLHelper::fillMuRow
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
   MuRow mu_row;
-  list::List<KLPol> pos_mu;
-
   allocMuRow(mu_row,s,y); // construct a |MuRow| into |mu_row|
-  pos_mu.setSize(mu_row.size());
+  containers::vector<KLPol> pos_mu(mu_row.size());
 
   coxtypes::CoxNbr x;
 
-  /* initialize pos_mu(x) with the value u^(L(x)-L(y)+L(s))P_{x,y}(u^2) */
+  // initialize $pos_mu(x)$ with value from $u^(L(x)-L(y)+L(s))P_{x,y}[u^2]$
 
-  for (Ulong j = 0; j < mu_row.size(); ++j) {
-    ensureKLRow(y);
+  for (Ulong j = 0; j < mu_row.size(); ++j)
+  {
+    ensureKLRow(y); // ensure that calls |klPol(x,y)| will return a result
     x = mu_row[j].x;
     const KLPol& pol = klPol(x,y);
-    if (error::ERRNO) /* this cannot happen in typical usage */
+    if (error::ERRNO) // this should not happen in typical usage
       goto abort;
-    positivePart(pos_mu[j],pol,2,length(x)-length(y)+genL(s));
+    pos_mu[j] = positivePart(pol,2,length(x)-length(y)+genL(s));
   }
 
   /* we run through mu_row in decreasing order; for each z in the list,
@@ -1060,9 +1059,8 @@ void KLContext::KLHelper::fillMuRow
   */
 
   for (Ulong j = mu_row.size(); j-->0;)
-  { /* write the mu-polynomial for z */
-
-    mu_row[j].pol = writeMu(muTree(),pos_mu[j]);
+  { // this loop modifies |pos_mu[i]| for certain |i<j|
+    mu_row[j].pol = writeMu(muTree(),pos_mu[j]); // now consolidate |pos_mu[j]|
     d_kl->d_status->mucomputed++;
     if (mu_row[j].pol->isZero()) {
       d_kl->d_status->muzero++;
@@ -1072,11 +1070,11 @@ void KLContext::KLHelper::fillMuRow
     /* subtract correcting terms */
 
     coxtypes::CoxNbr z = mu_row[j].x;
-    ensureKLRow(z);
+    ensureKLRow(z); // ensure that |klPol(x,z)| will work
     if (error::ERRNO)
       goto abort;
     bits::BitMap b(0);
-    schubert().extractClosure(b,z);
+    schubert().extractClosure(b,z); // set |b| to interval $[e,z]$
     b &= schubert().downset(s);
     b.clearBit(z);
     bits::BitMap::Iterator b_end = b.end();
@@ -1085,7 +1083,7 @@ void KLContext::KLHelper::fillMuRow
 
     for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
       x = *k;
-      while (mu_row[i].x != x)
+      while (mu_row[i].x != x) // advance |i| to entry for |x|
 	++i;
       const KLPol& pol = klPol(x,z);
       if (error::ERRNO)
@@ -1095,8 +1093,8 @@ void KLContext::KLHelper::fillMuRow
       if (error::ERRNO)
 	goto abort;
       ++i;
-    }
-  }
+    } // |for(k)| and |x|
+  } // |for(j)| and |z|
 
   writeMuRow(mu_row,s,y);
 
@@ -1594,7 +1592,7 @@ void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
 
     - errorPol() : returns an error value;
     - one() : returns the K-L polynomial 1;
-    - positivePart(p,q,d,m) : returns in p the positive part of q with u^d
+    - positivePart(q,d,m) : returns the positive part of q with u^d
       substituted and shifted by m;
     - zero() : returns the Laurent polynomial 0;
 
@@ -1662,39 +1660,30 @@ void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
 	}
 
   p.reduceDeg();
-  return;
 }
 
- void positivePart(KLPol& p, const KLPol& q, const Ulong& d, const long& m)
 
 /*
-  Puts in p the positive part (i.e. the part with positive degree) of the
-  Laurent polynomial obtained by substituting u^d in q, then shifting by
-  u^m.
+  Return the positive part (i.e. the part with positive degree) of the
+  Laurent polynomial $q[X:=u^d]*u^m$ (in all calls |d==2|)
 */
-
+KLPol positivePart(const KLPol& q, const Ulong& d, const long& m)
 {
-  p.setZero();
+  KLPol p; // start out with zero
 
   /* compute degree of result */
 
   long h = q.deg()*d + m;
 
   if (h < 0)
-    return;
+    return p;
 
-  p.setDeg(h);
-  p.setZero(h+1);
+  p.setDeg(h); // resize
+  p.setZero(h+1); // zero-fill
 
-  for (Degree j = q.deg()+1; j;) {
-    --j;
+  for (Degree j = q.deg()+1; h>=0 and j-->0; h-=d) // lower |h| with steps |d|
     p[h] = q[j];
-    h -= d;
-    if (h < 0)
-      break;
-  }
-
-  return;
+  return p;
 }
 
 

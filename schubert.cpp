@@ -20,12 +20,12 @@ namespace schubert {
   class. Other implementations of Schubert contexts will be found in
   other files.
 
-  A Schubert context contains a description of a finite decreasing subset Q
-  of the group (initially the singleton {e}), and should be capable of
+  A Schubert context contains a description of a finite downwards closed subset
+  Q of the Coxeter group (initially the singleton {e}), and should be capable of
   providing data and services related to the Bruhat ordering and to the
-  (partially defined) action of the generators on the Q. The elements of Q
-  are assumed to be enumerated by the integers in the range [0,size()[,
-  in an ordering compatible with the Bruhat ordering.
+  (partially defined) action of the generators on the Q. The elements of Q are
+  assumed to be enumerated by the integers in the range [0,size()[, in an
+  ordering compatible with the Bruhat ordering.
 
   Specifically, the following functions are required :
 
