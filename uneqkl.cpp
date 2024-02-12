@@ -228,9 +228,13 @@ namespace uneqkl {
   destruction of the components on exit will be satisfactory in that case.
 */
 KLContext::KLContext
-    (klsupport::KLSupport* kls, const graph::CoxGraph& G,
-     const interface::Interface& I)
-  :d_klsupport(kls),d_klList(0),d_muTable(),d_L(0),d_length(0)
+  (klsupport::KLSupport* kls, const graph::CoxGraph& G,
+   const interface::Interface& I)
+  : d_klsupport(kls)
+  , d_klList(kls->size(),nullptr)
+  , d_muTable()
+  , d_L(0)
+  , d_length(0)
 {
   d_L.setSize(2*rank());
   getLength(d_L,G,I);
@@ -242,10 +246,7 @@ KLContext::KLContext
   d_status = new KLStatus;
   d_help = new KLHelper(this);
 
-  d_klList.setSize(kls->size());
-  d_klList[0] = new KLRow(1);
-  d_klList[0]->setSize(1);
-  (*d_klList[0])[0] = d_klTree.find(one());
+  d_klList[0] = new KLRow(1,d_klTree.find(one()));
 
   d_status->klrows++;
   d_status->klnodes++;
@@ -499,11 +500,11 @@ void KLContext::permute(const bits::Permutation& a)
   Reverts the sizes of the lists to size n. This is meant to be used
   only immediately after a failing context extension, to preserve the
   consistency of the various list sizes. In particular, it will fail
-  miserably if a premutation has taken place in-between.
+  miserably if a premutation has taken place in between.
 */
 void KLContext::revertSize(const Ulong& n)
 {
-  d_klList.setSize(n);
+  d_klList.resize(n);
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
     MuTable& t = d_muTable[s];
@@ -560,23 +561,25 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
   return;
 }
 
-void KLContext::setSize(const Ulong& n)
 
 /*
   This function adjusts the size of the context to a context of size n.
 */
-
+void KLContext::setSize(const Ulong& n)
 {
   coxtypes::CoxNbr prev_size = size();
 
   error::CATCH_MEMORY_OVERFLOW = true;
 
-  d_klList.setSize(n);
-  if (error::ERRNO)
-    goto revert;
+  try {
+    d_klList.resize(n,nullptr);
 
   for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s)
     d_muTable[s].resize(n);
+  }
+  catch (...) {
+    goto revert;
+  }
 
   d_length.setSize(n);
   if (error::ERRNO)
@@ -597,7 +600,6 @@ void KLContext::setSize(const Ulong& n)
  revert:
   error::CATCH_MEMORY_OVERFLOW = false;
   revertSize(prev_size);
-  return;
 }
 
 };
@@ -630,30 +632,24 @@ void KLContext::setSize(const Ulong& n)
 
 namespace uneqkl {
 
-void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
 /*
-  Allocates one previously unallocated row in the K-L table. It is assumed
-  that y <= inverse(y). Allocates the corresponding extremal row if necessary.
+  Allocate one previously unallocated row in the K-L table. It is assumed
+  that y <= inverse(y). Allocate the corresponding extremal row if necessary.
 
-  Forwards a memory error in case of failure if CATCH_MEMORY_ERROR is set.
+  Forward a memory error in case of failure.
 */
-
+void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 {
   if (!isExtrAllocated(y))
     allocExtrRow(y);
 
   Ulong n = extrList(y).size();
 
-  d_kl->d_klList[y] = new KLRow(n);
-  if (error::ERRNO)
-    return;
-  klList(y).setSizeValue(n);
+  d_kl->d_klList[y] = new KLRow(n,nullptr);
 
   status().klnodes += n;
   status().klrows++;
-
-  return;
 }
 
 
@@ -1321,7 +1317,8 @@ void KLContext::KLHelper::prepareRowComputation(const coxtypes::CoxNbr& y,
   return;
 }
 
-void KLContext::KLHelper::secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol,
+void KLContext::KLHelper::secondTerm(const coxtypes::CoxNbr& y,
+				     list::List<KLPol>& pol,
 				     const coxtypes::Generator& s)
 
 /*

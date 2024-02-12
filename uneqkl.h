@@ -27,9 +27,9 @@ namespace uneqkl {
   struct KLStatus;
   struct MuData;
 
-  typedef list::List<const KLPol*> KLRow;
+  using KLRow = containers::vector<const KLPol*>;
 
-  using MuRow = std::vector<MuData>;
+  using MuRow = containers::vector<MuData>;
   using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
   using MuTable = containers::vector<MuRowPtr>;
   typedef list::List<HeckeMonomial<KLPol> > HeckeElt;
@@ -111,7 +111,7 @@ struct KLStatus {
 
 class KLContext {
   klsupport::KLSupport* d_klsupport;
-  list::List<KLRow*> d_klList;
+  containers::vector<KLRow*> d_klList;
   containers::vector<MuTable> d_muTable; // indexed by |s|
   list::List<coxtypes::Length> d_L; /* lengths of generators */
   list::List<coxtypes::Length> d_length; /* lengths of context elements */
@@ -126,11 +126,12 @@ class KLContext {
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(KLContext));}
-  KLContext(klsupport::KLSupport* kls, const graph::CoxGraph& G, const interface::Interface& I);
+  KLContext(klsupport::KLSupport* kls, const graph::CoxGraph& G,
+	    const interface::Interface& I);
   ~KLContext();
 /* accessors */
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const;                /* inlined */
-  Ulong genL(const coxtypes::Generator& s) const;                        /* inlined */
+  Ulong genL(const coxtypes::Generator& s) const;                 /* inlined */
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                         /* inlined */
   bool isKLAllocated(const coxtypes::CoxNbr& y) const;                     /* inlined */
   bool isMuAllocated(const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const; /* inlined */
@@ -197,7 +198,7 @@ inline Ulong KLContext::size() const {return d_klList.size();}
 
 inline void KLContext::applyIPermutation(const coxtypes::CoxNbr& y,
 					 const bits::Permutation& a)
-  {return rightRangePermute(*d_klList[y],a);}
+  { *d_klList[y] = right_permuted(*d_klList[y],a);}
 
 };
 

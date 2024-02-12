@@ -14,6 +14,7 @@
 #include <new>
 #include <string>
 
+#include "containers.h"
 #include "list.h"
 
 /******** type declarations *************************************************/
@@ -360,18 +361,17 @@ template <class I, class F> Partition::Partition(const I& first, const I& last,
 
 }
 
-template <class T>
-void rightRangePermute(list::List<T>& r, const Permutation& a)
 
 /*
-  Applies the permutation a to the range of the list, on the right (this
+  Applies the permutation |a| to the range of the list, on the right (this
   amounts to applying the inverse permutation in the usual sense). In
   other words, we have new[j] = old[a[j]].
 
   We cannot write this directly however, or we would overwrite. So we
   do something similar as with ordinary range permutations.
 */
-
+template <class T>
+void rightRangePermute(list::List<T>& r, const Permutation& a)
 {
   BitMap b(r.size());
 
@@ -398,6 +398,21 @@ void rightRangePermute(list::List<T>& r, const Permutation& a)
   }
 
   return;
+}
+
+// a more straightforward value producing version of the above
+template <class T>
+  containers::vector<T> right_permuted
+    (const containers::vector<T>& r, const Permutation& a)
+{
+  assert(r.size()==a.size());
+  containers::vector<T> result; result.reserve(a.size());
+  for (Ulong i=0; i<a.size(); ++i)
+  {
+    assert(a[i]<r.size());
+    result.push_back(r[a[i]]);
+  }
+  return result;
 }
 
 template <class T> void sortI(const list::List<T>& r, Permutation& a)
