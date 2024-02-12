@@ -400,19 +400,18 @@ void rightRangePermute(list::List<T>& r, const Permutation& a)
   return;
 }
 
-// a more straightforward value producing version of the above
+// a more straightforward version of the above, using move semantics
 template <class T>
-  containers::vector<T> right_permuted
-    (const containers::vector<T>& r, const Permutation& a)
+  void right_permute (containers::vector<T>& r, const Permutation& a)
 {
   assert(r.size()==a.size());
-  containers::vector<T> result; result.reserve(a.size());
+  containers::vector<T> result; result.reserve(r.size());
   for (Ulong i=0; i<a.size(); ++i)
   {
     assert(a[i]<r.size());
-    result.push_back(r[a[i]]);
+    result.push_back(std::move(r[a[i]]));
   }
-  return result;
+  r = std::move(result);
 }
 
 template <class T> void sortI(const list::List<T>& r, Permutation& a)

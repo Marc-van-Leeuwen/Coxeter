@@ -83,8 +83,6 @@ struct MuData {
   coxtypes::CoxNbr x;
   const MuPol* pol;
 /* constructors and destructors*/
-  void operator delete(void* ptr)
-    {return memory::arena().free(ptr,sizeof(MuData));}
   MuData() {};
   MuData(const coxtypes::CoxNbr& x, const MuPol* pol):x(x),pol(pol) {};
 /* comparison */
@@ -93,7 +91,7 @@ struct MuData {
   bool operator== (const MuData& m) const;                        /* inlined */
 };
 
-struct KLStatus {
+  struct KLStatus { // holds statistics
   Ulong klrows;
   Ulong klnodes;
   Ulong klcomputed;
@@ -105,19 +103,20 @@ struct KLStatus {
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(KLStatus));}
-  KLStatus() {};
-  ~KLStatus() {};
+  KLStatus() :klrows(0),klnodes(0),klcomputed(0)
+	     ,murows(0),munodes(0),mucomputed(0),muzero(0){}
+  ~KLStatus() {}
 };
 
 class KLContext {
   klsupport::KLSupport* d_klsupport;
-  containers::vector<KLRow*> d_klList;
+  containers::vector<std::unique_ptr<KLRow> > d_klList;
   containers::vector<MuTable> d_muTable; // indexed by |s|
   list::List<coxtypes::Length> d_L; /* lengths of generators */
   list::List<coxtypes::Length> d_length; /* lengths of context elements */
   search::BinaryTree<KLPol> d_klTree;
   search::BinaryTree<MuPol> d_muTree;
-  KLStatus* d_status;
+  KLStatus d_status;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
   friend struct KLHelper;
@@ -133,9 +132,8 @@ class KLContext {
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const;                /* inlined */
   Ulong genL(const coxtypes::Generator& s) const;                 /* inlined */
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                         /* inlined */
-  bool isKLAllocated(const coxtypes::CoxNbr& y) const;                     /* inlined */
   bool isMuAllocated(const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const; /* inlined */
-  const KLRow& klList(const coxtypes::CoxNbr& y) const;                    /* inlined */
+  const KLRow& klList(const coxtypes::CoxNbr& y) const { return *d_klList[y]; }
   const klsupport::KLSupport& klsupport() const;                            /* inlined */
   coxtypes::Generator last(const coxtypes::CoxNbr& x) const;                         /* inlined */
   Ulong length(const coxtypes::CoxNbr& x) const;                         /* inlined */
@@ -175,13 +173,9 @@ inline Ulong KLContext::genL(const coxtypes::Generator& s) const
   {return d_L[s];}
 inline coxtypes::CoxNbr KLContext::inverse(const coxtypes::CoxNbr& x) const
   {return klsupport().inverse(x);}
-inline bool KLContext::isKLAllocated(const coxtypes::CoxNbr& y) const
-  {return d_klList[y] != 0;}
 inline bool KLContext::isMuAllocated
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
   {return d_muTable[s][y] != nullptr;}
-inline const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
-  {return *d_klList[y];}
 inline const klsupport::KLSupport& KLContext::klsupport() const
   {return *d_klsupport;}
 inline coxtypes::Generator KLContext::last(const coxtypes::CoxNbr& x) const
@@ -198,7 +192,7 @@ inline Ulong KLContext::size() const {return d_klList.size();}
 
 inline void KLContext::applyIPermutation(const coxtypes::CoxNbr& y,
 					 const bits::Permutation& a)
-  { *d_klList[y] = right_permuted(*d_klList[y],a);}
+  { right_permute(*d_klList[y],a);}
 
 };
 
