@@ -639,7 +639,6 @@ void lengthOverflow()
 }
 
 
-void memoryWarning()
 
 /*
   Handles the error MEMORY_WARNING. This means that there was an out-of-memory
@@ -649,11 +648,10 @@ void memoryWarning()
   message is printed.
 */
 
+void memoryWarning()
 {
   fprintf(stderr,"sorry, insufficient memory\n");
-  return;
 }
-
 
 void minRootOverflow()
 
