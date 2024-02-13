@@ -26,7 +26,6 @@ namespace search {
 
 /******** type definitions **************************************************/
 
-#include "list.h"
 
 namespace search {
 

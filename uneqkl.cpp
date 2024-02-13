@@ -18,7 +18,7 @@ namespace {
   void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
 		     const Ulong& d, const long& m);
   KLPol positivePart(const KLPol& q, const Ulong& d, const long& m);
-  const MuPol* writeMu(search::BinaryTree<MuPol>& t, const KLPol& p);
+  const MuPol* writeMu(containers::bag<MuPol>& t, const KLPol& p);
 };
 
 namespace uneqkl {
@@ -37,7 +37,7 @@ namespace uneqkl {
     void allocKLRow(const coxtypes::CoxNbr& y);
     void create_mu_row(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     MuRow allocMuRow(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
-    bool checkKLRow(const coxtypes::CoxNbr& y);
+    bool row_needs_completion(const coxtypes::CoxNbr& y);
     bool checkMuRow(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     void ensureKLRow(const coxtypes::CoxNbr& y);
     const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) {return klsupport().extrList(y);}
@@ -63,7 +63,7 @@ namespace uneqkl {
     const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
       {return d_kl->klPol(x,y);}
     klsupport::KLSupport& klsupport() {return d_kl->d_klsupport[0];}
-    search::BinaryTree<KLPol>& klTree() {return d_kl->d_klTree;}
+    containers::bag<KLPol>& klTree() {return d_kl->d_klTree;}
     coxtypes::Generator last(const coxtypes::CoxNbr& x)
       {return klsupport().last(x);}
     Ulong length(const coxtypes::CoxNbr& x) {return d_kl->length(x);}
@@ -79,7 +79,7 @@ namespace uneqkl {
       { return *d_kl->d_muTable[s][y]; }
     MuTable& muTable(const coxtypes::Generator& s)
       { return d_kl->d_muTable[s]; }
-    search::BinaryTree<MuPol>& muTree() {return d_kl->d_muTree;}
+    containers::bag<MuPol>& muTree() {return d_kl->d_muTree;}
     void prepareRowComputation
       (const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
     coxtypes::Rank rank() {return d_kl->rank();}
@@ -307,7 +307,7 @@ void KLContext::fillKL()
   for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
     if (inverse(y) < y)
       continue;
-    if (!d_help->checkKLRow(y))
+    if (d_help->row_needs_completion(y))
       d_help->fillKLRow(y);
   }
 
@@ -520,7 +520,7 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 */
 
 {
-  if (!d_help->checkKLRow(y)) {
+  if (d_help->row_needs_completion(y)) {
     d_klsupport->allocRowComputation(y);
     if (error::ERRNO)
       goto error_exit;
@@ -614,8 +614,8 @@ void KLContext::setSize(const Ulong& n)
     - allocKLRow(y) : allocates one row in the K-L table;
     - row=allocMuRow(s,y) : allocates row to a full mu-row for y and s;
     - create_mu_row(s,y) : allocates the row for y in muTable(s);
-    - checkKLRow(y) : checks if the row for y (or inverse(y)) if appropriate)
-      in the K-L table has been filled;
+    - row_needs_completion(y) : whether row for y (or inverse(y)) if appropriate)
+      in the K-L table is incompletely filled;
     - fillKLRow(y) : fills the row for y or inverse(y);
     - fillKLPol(x,y) : fills in P_{x,y};
     - pol = initial_polys(y,s) : auxiliary to fillKLRow;
@@ -700,22 +700,20 @@ void KLContext::KLHelper::create_mu_row
   filled. Actual check is for |inverse(y)| if |inverse(y) < y|.
 */
 
-bool KLContext::KLHelper::checkKLRow(const coxtypes::CoxNbr& d_y)
+bool KLContext::KLHelper::row_needs_completion(const coxtypes::CoxNbr& d_y)
 {
   coxtypes::CoxNbr y = d_y;
   if (inverse(y) < y)
     y = inverse(y);
 
   if (row_needs_allocation(y))
-    return false;
+    return true;
 
-  const KLRow& kl_row = klList(y);
-  for (Ulong j = 0; j < kl_row.size(); ++j) {
-    if (kl_row[j] == 0)
-      return false;
-  }
+  for (auto entry : klList(y))
+    if (entry==nullptr)
+      return true;
 
-  return true;
+  return false;
 }
 
 bool KLContext::KLHelper::checkMuRow(const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
@@ -741,14 +739,11 @@ bool KLContext::KLHelper::checkMuRow(const coxtypes::Generator& s, const coxtype
   return true;
 }
 
+
+// Make sure that the K-L row for |y| is available.
 void KLContext::KLHelper::ensureKLRow(const coxtypes::CoxNbr& y)
-
-/*
-  Makes sure that the K-L row for y is available.
-*/
-
 {
-  if (!checkKLRow(y)) {
+  if (row_needs_completion(y)) {
     klsupport().allocRowComputation(y);
     if (error::ERRNO)
       goto abort;
@@ -761,7 +756,6 @@ void KLContext::KLHelper::ensureKLRow(const coxtypes::CoxNbr& y)
  abort:
   error::Error(error::ERRNO);
   error::ERRNO = error::ERROR_WARNING;
-  return;
 }
 
 
@@ -1251,18 +1245,18 @@ void KLContext::KLHelper::muCorrection
 
 } // |muCorrection|
 
-void KLContext::KLHelper::prepareRowComputation(const coxtypes::CoxNbr& y,
-						const coxtypes::Generator& s)
 
 /*
-  This function is an auxiliary to fillKLRow. It makes sure that the necessary
-  terms for the filling of the row of y in the K-L table are available. This
-  ensures that there will be no recursive calls to fillKLRow when the actual
-  computation starts.
+  This auxiliary function to |fillKLRow| makes sure that the necessary terms for
+  the filling of the row of |y| in the K-L table are available. This ensures that
+  there will be no recursive calls to |fillKLRow| when the actual computation
+  starts.
 
   At this point it is assumed that y <= inverse(y).
 */
 
+void KLContext::KLHelper::prepareRowComputation(const coxtypes::CoxNbr& y,
+						const coxtypes::Generator& s)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -1270,7 +1264,7 @@ void KLContext::KLHelper::prepareRowComputation(const coxtypes::CoxNbr& y,
 
   /* get the row for ys */
 
-  if (!checkKLRow(ys)) {
+  if (row_needs_completion(ys)) {
     fillKLRow(ys);
     if (error::ERRNO)
       goto abort;
@@ -1289,7 +1283,7 @@ void KLContext::KLHelper::prepareRowComputation(const coxtypes::CoxNbr& y,
       if (mu_row[j].pol->isZero())
 	continue;
       coxtypes::CoxNbr z = mu_row[j].x;
-      if (!checkKLRow(z)) {
+      if (row_needs_completion(z)) {
 	klsupport().allocRowComputation(z);
 	if (error::ERRNO)
 	  goto abort;
@@ -1308,9 +1302,6 @@ void KLContext::KLHelper::prepareRowComputation(const coxtypes::CoxNbr& y,
   return;
 }
 
-void KLContext::KLHelper::secondTerm(containers::vector<KLPol>& pol,
-				     const coxtypes::CoxNbr& y,
-				     const coxtypes::Generator& s)
 
 /*
   This function adds the "second term", which is q^genL(s).P_{x,ys}, to the
@@ -1321,7 +1312,9 @@ void KLContext::KLHelper::secondTerm(containers::vector<KLPol>& pol,
   it to make the correction; this makes us run exactly through those
   x in the extremal list of y which are <= ys.
 */
-
+void KLContext::KLHelper::secondTerm(containers::vector<KLPol>& pol,
+				     const coxtypes::CoxNbr& y,
+				     const coxtypes::Generator& s)
 {
   const schubert::SchubertContext& p = schubert();
   bits::BitMap b(size());
@@ -1661,10 +1654,12 @@ KLPol positivePart(const KLPol& q, const Ulong& d, const long& m)
 
 // This function symmetrizes |p| and returns its address within the tree |t|
 
-const MuPol* writeMu(search::BinaryTree<MuPol>& t, const KLPol& p)
+const MuPol* writeMu(containers::bag<MuPol>& t, const KLPol& p)
 {
   if (p.isZero())
     return t.find(MuPol::zero());
+
+  // now we must symmetrize |p| before looking up in |t|
   MuPol mp(p.deg(),-p.deg());
   mp[0] = p[0];
 

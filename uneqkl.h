@@ -9,6 +9,7 @@
 #define UNEQKL_H
 
 #include "globals.h"
+#include "containers.h"
 #include "coxtypes.h"
 #include "hecke.h"
 #include "klsupport.h"
@@ -16,7 +17,6 @@
 #include "polynomials.h"
 #include "bits.h"
 #include "memory.h"
-#include "search.h"
 
 /******** type declarations **************************************************/
 
@@ -27,7 +27,7 @@ namespace uneqkl {
   struct KLStatus;
   struct MuData;
 
-  using KLRow = containers::vector<const KLPol*>;
+  using KLRow = containers::vector<const KLPol*>; // non-owning pointers
 
   using MuRow = containers::vector<MuData>;
   using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
@@ -114,8 +114,8 @@ class KLContext {
   containers::vector<MuTable> d_muTable; // indexed by |s|
   list::List<coxtypes::Length> d_L; /* lengths of generators */
   list::List<coxtypes::Length> d_length; /* lengths of context elements */
-  search::BinaryTree<KLPol> d_klTree;
-  search::BinaryTree<MuPol> d_muTree;
+  containers::bag<KLPol> d_klTree; // this owns the |KLPol| values
+  containers::bag<MuPol> d_muTree; // this owns the |MuPol| values
   KLStatus d_status;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
