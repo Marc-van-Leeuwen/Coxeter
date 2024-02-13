@@ -73,7 +73,7 @@ template <class T> class List {
   void reverse();
   T* ptr() {return d_ptr;}
   void setData(const T* source, Ulong first, Ulong r);
-  void setData(const T* source, Ulong r);                         /* inlined */
+  void setData(const T* source, Ulong r) { setData(source,0,r); }
   void setSize(Ulong n); // set |d_size| while ensuring corresponding memory
   void setSizeValue(const Ulong& n);                              /* inlined */
   void setZero(Ulong first, Ulong r);                             /* inlined */
@@ -112,9 +112,6 @@ namespace list {
 
 template<class T> inline T& List<T>::operator[] (Ulong j)
   {return d_ptr[j];}
-template<class T>
-inline void List<T>::setData(const T* source, Ulong r)
-  {setData(source,0,r);}
 template<class T> void List<T>::setSizeValue(const Ulong& n)
   {d_size = n;}
 template<class T> inline void List<T>::setZero(Ulong first, Ulong r)

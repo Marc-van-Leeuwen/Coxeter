@@ -415,7 +415,6 @@ void KLContext::revertSize(const Ulong& n)
   return;
 }
 
-void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 
 
 /*
@@ -426,7 +425,7 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
   inverse k-l polynomials, but it's the only one that's reasonably
   implementable, so we'll keep it anyway.
 */
-
+void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 {
   if (!d_help->checkKLRow(y)) {
     d_help->makeKLRow(y);
@@ -437,23 +436,24 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
     return;
   }
 
+  h.clear();
   if (y <= inverse(y)) {
     const klsupport::ExtrRow& e = extrList(y);
-    h.setSize(e.size());
+    h.reserve(e.size());
     const KLRow& klr = klList(y);
     for (Ulong j = 0; j < e.size(); ++j) {
-      h[j].setData(e[j],klr[j]);
+      h.emplace_back(e[j],klr[j]);
     }
   }
   else { /* go over to inverses */
     coxtypes::CoxNbr yi = inverse(y);
     const klsupport::ExtrRow& e = extrList(yi);
-    h.setSize(e.size());
+    h.reserve(e.size());
     const KLRow& klr = klList(yi);
     for (Ulong j = 0; j < e.size(); ++j) {
-      h[j].setData(inverse(e[j]),klr[j]);
+      h.emplace_back(inverse(e[j]),klr[j]);
     }
-    h.sort(); /* make sure list is ordered */
+    std::sort(h.begin(),h.end()); // make sure list is ordered
   }
 
   return;

@@ -32,7 +32,7 @@ namespace uneqkl {
   using MuRow = containers::vector<MuData>;
   using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
   using MuTable = containers::vector<MuRowPtr>;
-  typedef list::List<HeckeMonomial<KLPol> > HeckeElt;
+  using HeckeElt = containers::vector<HeckeMonomial<KLPol> >;
 };
 
 /******** function declarations **********************************************/
@@ -49,7 +49,8 @@ namespace uneqkl {
 
 namespace uneqkl {
 
-class KLPol : public Polynomial<klsupport::SKLcoeff> {
+class KLPol : public Polynomial<klsupport::SKLcoeff>
+{
   static const klsupport::SKLcoeff min_coeff = klsupport::SKLCOEFF_MIN;
   static const klsupport::SKLcoeff max_coeff = klsupport::SKLCOEFF_MAX;
 public:

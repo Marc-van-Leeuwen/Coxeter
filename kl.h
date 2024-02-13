@@ -32,7 +32,7 @@ namespace kl {
   class KLPol;
   typedef list::List<const KLPol*> KLRow;
   typedef list::List<MuData> MuRow;
-  typedef list::List<HeckeMonomial<KLPol> > HeckeElt;
+  using HeckeElt = containers::vector<HeckeMonomial<KLPol> >;
 };
 
 /******** function declarations *********************************************/

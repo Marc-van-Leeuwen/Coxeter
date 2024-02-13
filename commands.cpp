@@ -1453,13 +1453,12 @@ void invpol_f()
   printf("\n");
 }
 
-void klbasis_f()
 
 /*
-  Prints out one element in the Kazhdan-Lusztig basis of the group, in the
+  Print out one element in the Kazhdan-Lusztig basis of the group, in the
   format defined by the current output mode.
 */
-
+void klbasis_f()
 {
   coxtypes::CoxWord g(0);
 
@@ -1476,7 +1475,7 @@ void klbasis_f()
     return;
   }
 
-  kl::HeckeElt h(0);
+  kl::HeckeElt h;
 
   W->cBasis(h,y);
   if (ERRNO) {

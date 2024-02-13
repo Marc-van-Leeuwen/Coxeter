@@ -511,14 +511,13 @@ void KLContext::revertSize(const Ulong& n)
   d_length.setSize(n);
 }
 
-void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
   This function makes sure that the row corresponding to y in the K-L table
   is entirely filled, and returns in h the corresponding data, sorted in
   the order of increasing context numbers.
 */
-
+void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 {
   if (d_help->row_needs_completion(y)) {
     d_klsupport->allocRowComputation(y);
@@ -529,24 +528,24 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
       goto error_exit;
   }
 
-  {
+  { h.clear();
     if (y <= inverse(y)) {
       const klsupport::ExtrRow& e = extrList(y);
-      h.setSize(e.size());
+      h.reserve(e.size());
       const KLRow& klr = klList(y);
       for (Ulong j = 0; j < e.size(); ++j) {
-	h[j].setData(e[j],klr[j]);
+	h.emplace_back(e[j],klr[j]);
       }
     }
     else { /* go over to inverses */
       coxtypes::CoxNbr yi = inverse(y);
       const klsupport::ExtrRow& e = extrList(yi);
-      h.setSize(e.size());
+      h.reserve(e.size());
       const KLRow& klr = klList(yi);
       for (Ulong j = 0; j < e.size(); ++j) {
-	h[j].setData(inverse(e[j]),klr[j]);
+	h.emplace_back(inverse(e[j]),klr[j]);
       }
-      h.sort(); /* make sure list is ordered */
+      std::sort(h.begin(),h.end()); // make sure list is ordered
     }
   }
 
@@ -1522,13 +1521,6 @@ KLPol& KLPol::subtract(const KLPol& p, const MuPol& mp, const Ulong& n)
 namespace uneqkl {
 
 void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
-
-/*
-  This is what in the original Kazhdan-Lusztig paper is called the C'-basis,
-  but is now usually denoted c. The C-basis from the K-L paper doesn't seem
-  worth implementing.
-*/
-
 {
   const schubert::SchubertContext& p = kl.schubert();
 
@@ -1536,15 +1528,12 @@ void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
   p.extractClosure(b,y);
 
   bits::BitMap::Iterator b_end = b.end();
-  h.setSize(0);
+  h.clear();
 
   for (bits::BitMap::Iterator x = b.begin(); x != b_end; ++x) {
     const KLPol& pol = kl.klPol(*x,y);
-    HeckeMonomial<KLPol> m(*x,&pol);
-    h.append(m);
+    h.emplace_back(*x,&pol); // add a |HeckeMonomial<KLPol>|
   }
-
-  return;
 }
 
 };

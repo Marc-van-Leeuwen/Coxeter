@@ -32,15 +32,16 @@ namespace hecke {
 	      const interface::Interface& I);
   template<class P>
   void prettyPrint(FILE* file, const list::List<HeckeMonomial<P> >& h,
-		   const bits::Permutation& a, const schubert::SchubertContext& p,
+		   const bits::Permutation& a,
+		   const schubert::SchubertContext& p,
 		   const interface::Interface& I, const coxtypes::Length& l,
 		   const Ulong &ls = io::LINESIZE);
   template<class P>
   void printBasis(FILE* f, const list::List<HeckeMonomial<P> >& h,
 		  const interface::Interface& I);
   template<class P>
-  void singularStratification(list::List<HeckeMonomial<P> >& hs,
-			      const list::List<HeckeMonomial<P> >& h,
+  void singularStratification(containers::vector<HeckeMonomial<P> >& hs,
+			      const containers::vector<HeckeMonomial<P> >& h,
 			      const schubert::SchubertContext& p);
 };
 
@@ -61,18 +62,19 @@ template<class P> class HeckeMonomial {
   HeckeMonomial(const coxtypes::CoxNbr& x, const P* pol);
   ~HeckeMonomial();
 /* accessors */
-  bool operator> (const HeckeMonomial& m);
-  const P& pol() const;                                          /* inlined */
-  coxtypes::CoxNbr x() const;                                              /* inlined */
-/* manipulators */
-  void setData(const coxtypes::CoxNbr& x, const P* pol);
+  bool operator> (const HeckeMonomial& m) const { return d_x > m.d_x; }
+  bool operator< (const HeckeMonomial& m) const { return d_x < m.d_x; }
+  const P& pol() const       { return *d_pol; }
+  coxtypes::CoxNbr x() const { return d_x; }
+/* manipulator */
+  void setData(const coxtypes::CoxNbr& x, const P* pol) { d_x = x; d_pol = pol; }
 };
 
 template<class P> class ToCoxNbr {
  private:
-  const list::List<HeckeMonomial<P> >* d_h;
+  const containers::vector<HeckeMonomial<P> >* d_h;
  public:
-  ToCoxNbr(const list::List<HeckeMonomial<P> >* h):d_h(h) {};
+  ToCoxNbr(const containers::vector<HeckeMonomial<P> >* h):d_h(h) {};
   ~ToCoxNbr() {};
   coxtypes::CoxNbr operator() (const Ulong& j) {return (*d_h)[j].x();}
 };
@@ -81,31 +83,15 @@ template<class P> struct NFCompare {
   const schubert::SchubertContext& p;
   const bits::Permutation& order;
   NFCompare
-    (const schubert::SchubertContext& q, const bits::Permutation& generator_ordering)
+    (const schubert::SchubertContext& q,
+     const bits::Permutation& generator_ordering)
     :p(q),order(generator_ordering) {};
   ~NFCompare() {};
   bool operator()(const HeckeMonomial<P>& a, const HeckeMonomial<P>& b) const
     {return shortLexOrder(p,a.x(),b.x(),order);}
-};
+}; // |template<class P> struct NFCompare|
 
-};
-
-/******** inline definitions ************************************************/
-
-namespace hecke {
-
-template<class P>
-inline bool HeckeMonomial<P>::operator> (const HeckeMonomial<P>& m)
-  {return d_x > m.d_x;}
-template<class P> inline const P& HeckeMonomial<P>::pol() const
-  {return *d_pol;}
-template<class P> inline coxtypes::CoxNbr HeckeMonomial<P>::x() const
-  {return d_x;}
-template<class P>
-inline void HeckeMonomial<P>::setData(const coxtypes::CoxNbr& x, const P* pol)
-  {d_x = x; d_pol = pol;}
-
-};
+}; // |namespace hecke|
 
 #include "hecke.hpp"
 

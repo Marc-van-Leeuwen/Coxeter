@@ -233,10 +233,6 @@ void prettyPrint(FILE* file,
   return;
 }
 
-template<class P>
-void singularStratification(list::List<HeckeMonomial<P> >& hs,
-			    const list::List<HeckeMonomial<P> >& h,
-			    const schubert::SchubertContext& p)
 
 /*
   This function extracts the "rational singular stratification". By this we
@@ -264,7 +260,10 @@ void singularStratification(list::List<HeckeMonomial<P> >& hs,
   It is assumed that row is sorted in ShortLex order. The row is also
   returned sorted in ShortLex order.
 */
-
+template<class P>
+void singularStratification(containers::vector<HeckeMonomial<P> >& hs,
+			    const containers::vector<HeckeMonomial<P> >& h,
+			    const schubert::SchubertContext& p)
 {
   /* sort row by kl-polynomial */
 
@@ -273,7 +272,7 @@ void singularStratification(list::List<HeckeMonomial<P> >& hs,
 
   /* find maximal elements in each class */
 
-  Ulong count = 0;
+  hs.clear();
 
   for (bits::PartitionIterator i(pi); i; ++i) {
     Ulong m = i()[0];
@@ -283,10 +282,9 @@ void singularStratification(list::List<HeckeMonomial<P> >& hs,
     list::List<coxtypes::CoxNbr> c(i().begin(),i().end(),f);
     list::List<Ulong> a(0);
     extractMaximals(p,c,a);
-    hs.setSize(count+a.size());
+    hs.reserve(hs.size()+a.size()); // this may save a few reallocations
     for (Ulong j = 0; j < a.size(); ++j)
-      hs[count+j] = h[i()[a[j]]];
-    count += a.size();
+      hs.push_back(h[i()[a[j]]]);
   }
 
   return;

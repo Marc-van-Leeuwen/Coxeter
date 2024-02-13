@@ -223,7 +223,7 @@ template <class KL>
 
 
 /*
-  This function prints one element of the k-l basis, according to the
+  This function prints one element of the K-L basis, according to the
   given output traits.
 */
 template <class H>
@@ -232,7 +232,7 @@ void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
 {
   // sorting of the element
 
-  typedef typename H::eltType::PolType P;
+  typedef typename H::value_type::PolType P;
   hecke::NFCompare<P> nfc(p,I.order());
 
   // printing of the basis element proper
@@ -246,7 +246,7 @@ void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
   coxtypes::CoxNbr y = h[h.size()-1].x();
 
   bits::Permutation a(0);
-  sortI(h,nfc,a);
+  bits::sortI(h,nfc,a);
 
   io::print(file,traits.prefix[basisH]);
   printHeckeElt(file,h,a,p,I,hTraits,pTraits,p.length(y));
@@ -356,7 +356,7 @@ template <class KL>
   schubert::NFCompare nfc(p,I.order());
   minReps(min,pi,nfc);
   bits::Permutation a(0);
-  sortI(min,nfc,a);
+  bits::sortI(min,nfc,a);
 
   int d = io::digits(dl.size()-1,10);
 
@@ -438,11 +438,11 @@ template <class H>
 */
 
 {
-  typedef typename H::eltType::PolType P;
+  typedef typename H::value_type::PolType P;
   hecke::NFCompare<P> nfc(p,I.order());
 
   bits::Permutation a(0);
-  sortI(h,nfc,a);
+  bits::sortI(h,nfc,a);
 
   printHeckeElt(file,h,a,p,I,traits.heckeTraits,traits.polTraits,l);
 

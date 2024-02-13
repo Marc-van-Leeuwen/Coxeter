@@ -9,6 +9,7 @@
 #define INVKL_H
 
 #include "globals.h"
+#include "containers.h"
 #include "coxtypes.h"
 #include "klsupport.h"
 #include "hecke.h"
@@ -29,7 +30,7 @@ namespace invkl {
 
   typedef list::List<const KLPol*> KLRow;
   typedef list::List<MuData> MuRow;
-  typedef list::List<hecke::HeckeMonomial<KLPol> > HeckeElt;
+  using HeckeElt = containers::vector<HeckeMonomial<KLPol> >;
 };
 
 /******** function declarations *********************************************/

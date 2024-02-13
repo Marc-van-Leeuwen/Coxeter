@@ -509,13 +509,12 @@ void KLContext::revertSize(const Ulong& n)
   return;
 }
 
-void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
   This function returns in h the data for the full row of y in the k-l table,
   sorted in the context number order.
 */
-
+void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 {
   if (!d_help->checkKLRow(y)) {
     d_help->allocRowComputation(y);
@@ -527,26 +526,24 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
     return;
   }
 
+  h.clear();
   if (y <= inverse(y)) {
     const klsupport::ExtrRow& e = extrList(y);
-    h.setSize(e.size());
+    h.reserve(e.size());
     const KLRow& klr = klList(y);
-    for (Ulong j = 0; j < e.size(); ++j) {
-      h[j].setData(e[j],klr[j]);
-    }
+    for (Ulong j = 0; j < e.size(); ++j)
+      h.emplace_back(e[j],klr[j]);
   }
   else { /* go over to inverses */
     coxtypes::CoxNbr yi = inverse(y);
     const klsupport::ExtrRow& e = extrList(yi);
-    h.setSize(e.size());
+    h.reserve(e.size());
     const KLRow& klr = klList(yi);
-    for (Ulong j = 0; j < e.size(); ++j) {
-      h[j].setData(inverse(e[j]),klr[j]);
-    }
-    h.sort(); /* make sure list is ordered */
-  }
+    for (Ulong j = 0; j < e.size(); ++j)
+      h.emplace_back(inverse(e[j]),klr[j]);
 
-  return;
+    std::sort(h.begin(),h.end()); // make sure list is ordered
+  }
 }
 
 void KLContext::setSize(const Ulong& n)
@@ -2919,13 +2916,12 @@ void showSimpleMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x,
 
 namespace kl {
 
-void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
 
 /*
   This function returns in h the singular locus of cl(X_y). The point is to
   do this while computing as few k-l polynomials as possible.
 */
-
+void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
@@ -2935,15 +2931,14 @@ void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
   p.extractClosure(b,y);
   maximize(p,b,p.descent(y));
 
-  h.setSize(0);
+  h.clear();
 
   for (bits::BitMap::ReverseIterator x = b.rbegin(); x != b.rend(); ++x) {
     const KLPol& pol = kl.klPol(*x,y);
     if (ERRNO)
       return;
     if (pol.deg() > 0) { /* remove [e,x[ */
-      HeckeMonomial<KLPol> m(*x,&pol);
-      h.append(m);
+      h.emplace_back(*x,&pol);
       p.extractClosure(bs,*x);
       coxtypes::CoxNbr x1 = *x; /* *x will not be correct anymore after modification */
       b.andnot(bs);
@@ -2951,7 +2946,7 @@ void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
     }
   }
 
-  h.reverse();
+  std::reverse(h.begin(),h.end());
 
   return;
 }
@@ -3070,14 +3065,13 @@ void ihBetti(schubert::Homology& h, const coxtypes::CoxNbr& y, KLContext& kl)
 
 namespace kl {
 
-void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
 
 /*
   This is what in the original Kazhdan-Lusztig paper is called the C'-basis,
   but is now usually denoted c. The C-basis from the K-L paper doesn't seem
   worth implementing.
 */
-
+void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
@@ -3085,12 +3079,11 @@ void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
   p.extractClosure(b,y);
 
   bits::BitMap::Iterator b_end = b.end();
-  h.setSize(0);
+  h.clear();
 
   for (bits::BitMap::Iterator x = b.begin(); x != b_end; ++x) {
     const KLPol& pol = kl.klPol(*x,y);
-    HeckeMonomial<KLPol> m(*x,&pol);
-    h.append(m);
+    h.emplace_back(*x,&pol);
   }
 
   return;
