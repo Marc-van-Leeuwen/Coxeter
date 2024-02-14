@@ -392,8 +392,6 @@ coxtypes::Generator getGenerator(coxgroup::CoxGroup* W, const bits::Lflags& f)
 }
 
 
-void getLength(list::List<coxtypes::Length>& L,
-	       const graph::CoxGraph& G, const interface::Interface& I)
 
 /*
   This function gets lengths of generators from the user, for computing
@@ -405,12 +403,12 @@ void getLength(list::List<coxtypes::Length>& L,
 
   It is assumed that L has already been allocated to the right size.
 */
-
+void getLength(containers::vector<coxtypes::Length>& L,
+	       const graph::CoxGraph& G, const interface::Interface& I)
 {
-  list::List<bits::Lflags> cl(0);
   static std::string buf;
 
-  getConjugacyClasses(cl,G);
+  auto cl = graph::conjugacy_classes(G);
 
   printf("There are %lu conjugacy classes of generators.",cl.size());
   printf(" Enter weights (? to abort):\n\n");
@@ -444,12 +442,12 @@ void getLength(list::List<coxtypes::Length>& L,
 
     /* set corresponding lengths */
 
-    for (bits::Lflags f = cl[j]; f; f &= f-1) {
-      coxtypes::Generator s = constants::firstBit(f);
+    for (bits::Lflags f = cl[j]; f; f &= f-1)
+    { coxtypes::Generator s = constants::firstBit(f);
       L[s] = l;
       L[s+G.rank()] = l; // left multiplication
     }
-  }
+  } // |for(j)|
   return;
 }
 

@@ -1703,7 +1703,6 @@ Ulong gcd(Ulong a, Ulong b)
 
 namespace graph {
 
-void getConjugacyClasses(list::List<bits::Lflags>& cl, const CoxGraph& G)
 
 /*
   This function returns in cl the conjugacy classes of generators in W (i.e.
@@ -1711,21 +1710,21 @@ void getConjugacyClasses(list::List<bits::Lflags>& cl, const CoxGraph& G)
   is known that these are the connected components of the graph obtained by
   removing from the Coxeter graph all edges with even or infinite labels.
 */
-
+containers::vector<bits::Lflags> conjugacy_classes(const CoxGraph& G)
 {
-  list::List<bits::Lflags> odd_star(0);
-  odd_star.setSize(G.rank());
+  containers::vector<bits::Lflags> odd_star; // odd-edge neighbours of each node
+  odd_star.reserve(G.rank());
 
   for(coxtypes::Generator s = 0; s < G.rank(); ++s) {
-    odd_star[s] = 0;
+    odd_star.push_back(0);
     for (coxtypes::Generator t = 0; t < G.rank(); ++t)
       if ((G.M(s,t)%2) && (G.M(s,t) > 1))
-	odd_star[s] |= constants::lmask[t];
+	odd_star.back() |= constants::lmask[t];
   }
 
-  Ulong c = 0;
+  containers::vector<bits::Lflags> classes;
 
-  for (bits::Lflags fS = G.supp(); fS; ++c) {
+  for (bits::Lflags fS = G.supp(); fS; /* |fS &= ~f| */) {
     bits::Lflags nf = constants::lmask[constants::firstBit(fS)];
     bits::Lflags f = 0;
     while (nf)  /* there are new elements to be considered */
@@ -1735,12 +1734,11 @@ void getConjugacyClasses(list::List<bits::Lflags>& cl, const CoxGraph& G)
 	  nf |= (odd_star[constants::firstBit(f1)]);
 	nf &= ~f;
       }
-    cl.setSize(c+1);
-    cl[c] = f;
+    classes.push_back(f);
     fS &= ~f;
-  }
+  } // |for(fS)|
 
-  return;
+  return classes;
 }
 
 };

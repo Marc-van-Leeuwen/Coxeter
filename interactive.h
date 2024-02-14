@@ -39,7 +39,7 @@ namespace interactive {
   coxtypes::Generator getGenerator(coxgroup::CoxGroup *W);
   coxtypes::Generator getGenerator(coxgroup::CoxGroup *W, const bits::Lflags& f);
   void getLength
-    (list::List<coxtypes::Length>& L, const graph::CoxGraph& G,
+    (containers::vector<coxtypes::Length>& L, const graph::CoxGraph& G,
      const interface::Interface& I);
   coxtypes::Rank getRank(const type::Type& type);
   void printInterface(FILE* file, const interface::GroupEltInterface& GI,

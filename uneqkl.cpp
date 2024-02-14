@@ -235,15 +235,14 @@ KLContext::KLContext
   : d_klsupport(kls)
   , d_klList(kls->size())
   , d_muTable()
-  , d_L(0)
-  , d_length(0)
-  , d_klTree()
-  , d_muTree()
+  , d_L(2*rank()) // the size expected by |interactive::getLength|
+  , d_length{0} // start with a single length entry 0
+  , d_klTree() // empty set of |KLPol|
+  , d_muTree() // empty set of |MuPol|
   , d_status()
   , d_help(nullptr)
 {
-  d_L.setSize(2*rank());
-  getLength(d_L,G,I);
+  interactive::getLength(d_L,G,I);
 
   if (error::ERRNO) { /* error code is ABORT */
     goto end;
@@ -265,12 +264,12 @@ KLContext::KLContext
     t[0].reset(new MuRow(0)); // create one entry (empty list) in initial slot
   }
 
-  d_length.setSize(kls->size());
+  d_length.reserve(kls->size());
 
-  for (coxtypes::CoxNbr x = 1; x < d_length.size(); ++x) {
+  for (coxtypes::CoxNbr x = 1; x < kls->size(); ++x) {
     coxtypes::Generator s = last(x);
     coxtypes::CoxNbr xs = schubert().shift(x,s);
-    d_length[x] = d_length[xs] + d_L[s];
+    d_length.push_back(d_length[xs] + d_L[s]);
   }
 
  end:
@@ -508,7 +507,7 @@ void KLContext::revertSize(const Ulong& n)
     t.resize(n); // drop any extension of |d_muTable[s]|
   }
 
-  d_length.setSize(n);
+  d_length.resize(n);
 }
 
 
@@ -577,7 +576,7 @@ void KLContext::setSize(const Ulong& n)
     goto revert;
   }
 
-  d_length.setSize(n);
+  d_length.reserve(n);
   if (error::ERRNO)
     goto revert;
 
@@ -588,7 +587,7 @@ void KLContext::setSize(const Ulong& n)
   for (coxtypes::CoxNbr x = prev_size; x < n; ++x) {
     coxtypes::Generator s = last(x);
     coxtypes::CoxNbr xs = schubert().shift(x,s);
-    d_length[x] = d_length[xs] + genL(s);
+    d_length.push_back(d_length[xs] + genL(s));
   }
 
   return;

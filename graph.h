@@ -40,7 +40,7 @@ namespace graph {
 
 
 
-  void getConjugacyClasses(list::List<bits::Lflags>& cl, const CoxGraph& G);
+  containers::vector<bits::Lflags> conjugacy_classes(const CoxGraph& G);
   bool isAffine(CoxGraph& G, bits::Lflags I);
   bool isConnected(CoxGraph& G, bits::Lflags I);
   bool isCrystallographic(CoxGraph& G, bits::Lflags I);

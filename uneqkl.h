@@ -13,7 +13,6 @@
 #include "coxtypes.h"
 #include "hecke.h"
 #include "klsupport.h"
-#include "list.h"
 #include "polynomials.h"
 #include "bits.h"
 #include "memory.h"
@@ -113,8 +112,8 @@ class KLContext {
   klsupport::KLSupport* d_klsupport;
   containers::vector<std::unique_ptr<KLRow> > d_klList;
   containers::vector<MuTable> d_muTable; // indexed by |s|
-  list::List<coxtypes::Length> d_L; /* lengths of generators */
-  list::List<coxtypes::Length> d_length; /* lengths of context elements */
+  containers::vector<coxtypes::Length> d_L; // lengths of generators
+  containers::vector<coxtypes::Length> d_length; // lengths of context elements
   containers::bag<KLPol> d_klTree; // this owns the |KLPol| values
   containers::bag<MuPol> d_muTree; // this owns the |MuPol| values
   KLStatus d_status;
