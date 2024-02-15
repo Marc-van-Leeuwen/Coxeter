@@ -71,15 +71,17 @@
 namespace klsupport {
 
 KLSupport::KLSupport(schubert::SchubertContext* p)
-  :d_schubert(p), d_extrList(1), d_inverse(1), d_last(1), d_involution(1)
+  : d_schubert(p)
+  , d_extrList(1)
+  , d_inverse(1)
+  , d_last(1)
+  , d_involution(1)
 
 {
   /* make first row of d_extrList, for the identity element */
 
-  d_extrList[0] = new ExtrRow(1);
+  d_extrList[0] = new ExtrRow{0};
   d_extrList.setSizeValue(1);
-  ExtrRow& e = *d_extrList[0];
-  e.setSizeValue(1);
 
   d_inverse.setSizeValue(1);
 
@@ -237,7 +239,7 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 
 	if (s >= rank()) {
 	  applyInverse(y2);
-	  d_extrList[y2]->sort();
+	  std::sort(d_extrList[y2]->begin(),d_extrList[y2]->end());
 	}
       }
     }

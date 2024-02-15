@@ -72,7 +72,7 @@ public:
 
   // embedded class
   class const_iterator
-    : public std::iterator<std::forward_iterator_tag, T, unsigned long>
+    : public std::iterator<std::forward_iterator_tag, T>
   {
     // data
     DictCell<T>* p;

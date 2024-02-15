@@ -376,7 +376,8 @@ const KLPol& KLContext::klPol
 
   /* find x in extrList[y] */
 
-  Ulong m = find(extrList(y),x);
+  const auto& eL = extrList(y);
+  Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
   const KLPol* pol = (*d_klList[y])[m];
 
   if (pol == nullptr) { /* we have to compute the polynomial */
@@ -787,7 +788,8 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x,
 
   if (!p.inOrder(x,ys)) { /* return the answer immediately */
     status().klcomputed++;
-    Ulong m = list::find(extrList(y),x);
+    const auto& eL = extrList(y);
+    Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
     klList(y)[m] = &klPol(xs,ys);
     return klList(y)[m];
   }
@@ -828,7 +830,8 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x,
     const KLPol& p_xy = find(pol);
     if (error::ERRNO)
       goto abort;
-    Ulong m = list::find(extrList(y),x);
+    const auto& eL = extrList(y);
+    Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
     klList(y)[m] = &p_xy;
 
     /* return workspace and exit */

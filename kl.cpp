@@ -348,10 +348,11 @@ const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNb
 
   /* find x in extrList[y] */
 
-  Ulong m = find(extrList(y),x);
+  const auto& eL = extrList(y);
+  Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
   const KLPol*& pol = d_help->klList(y)[m];
 
-  if (pol == 0) { /* we have to compute the polynomial */
+  if (pol == nullptr) { /* we have to compute the polynomial */
     pol = d_help->fillKLPol(x,y,s);
     if (ERRNO)
       return zeroPol();
@@ -734,7 +735,6 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
 }
 
-void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
 /*
   This function allocates one row in the muList. There is one entry for
@@ -743,10 +743,11 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   efficiency; row allocations for big computations should be handled
   differently.
 */
-
+void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 {
-  typedef FilteredIterator<coxtypes::CoxNbr,klsupport::ExtrRow::ConstIterator,MuFilter> EI;
-  typedef FilteredIterator<Ulong,bits::BitMap::Iterator,MuFilter> BI;
+  using EI = FilteredIterator
+    <coxtypes::CoxNbr,klsupport::ExtrRow::const_iterator,MuFilter>;
+  using BI = FilteredIterator<Ulong,bits::BitMap::Iterator,MuFilter>;
 
   const schubert::SchubertContext& p = schubert();
   klsupport::ExtrRow e(0);
@@ -792,7 +793,6 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   return;
 }
 
-void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::CoxNbr& y)
 
 /*
   Like allocMuRow(const coxtypes::CoxNbr& y), but does the allocation in row.
@@ -801,10 +801,10 @@ void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::CoxNbr& y)
   probably be revised.
 
 */
-
+void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
-  klsupport::ExtrRow e(0);
+  klsupport::ExtrRow e;
 
   if (isExtrAllocated(y)) { /* extremal row is already available */
     e = extrList(y);
@@ -813,7 +813,7 @@ void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::CoxNbr& y)
     bits::BitMap b(size());
     p.extractClosure(b,y);
     maximize(p,b,p.descent(y));
-    schubert::readBitMap(e,b);
+    schubert::read_bitmap(e,b);
   }
 
   /* extract elements with odd length difference > 1 */

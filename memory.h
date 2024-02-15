@@ -101,6 +101,9 @@ template <typename T>
   {
     memory::arena().free(p,n);
   }
+
+  bool operator==(const allocator&) const { return true; }
+  bool operator!=(const allocator&) const { return false; }
 }; // |class allocator|
 
 }; // |namespace containers|

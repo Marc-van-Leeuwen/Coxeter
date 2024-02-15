@@ -977,7 +977,7 @@ void CoxGroup::CoxHelper::sortContext()
       continue;
 
     bits::Permutation a(0);
-    sortI(d_W->extrList(y),a);
+    bits::sortI(d_W->extrList(y),a);
 
     kls->applyIPermutation(y,a);
 

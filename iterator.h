@@ -9,6 +9,7 @@
 #define ITERATOR_H
 
 #include "globals.h"
+#include <iterator>
 
 /******** type declarations **************************************************/
 
@@ -20,8 +21,8 @@ namespace iterator {
 /******** type definitions ***************************************************/
 
 /*
-  FilteredIterator is an iterator adapter. The idea is that I is an iterator
-  class, F a functor class. Objects of type f take one argument of the
+  FilteredIterator is an iterator adapter. The idea is that I is a forward
+  iterator class, F a functor class. Objects of type f take one argument of the
   value-type of I, and return a boolean. The new iterator traverses the
   values of the old one for which the function object returns true.
   T is the value-type of I.
@@ -29,7 +30,9 @@ namespace iterator {
 
 namespace iterator {
 
-template <class T, class I, class F> class FilteredIterator {
+template <class T, class I, class F>
+  class FilteredIterator : public std::iterator<std::forward_iterator_tag,T>
+{
  private:
   I d_i;
   I d_max;
@@ -42,7 +45,9 @@ template <class T, class I, class F> class FilteredIterator {
     }
   }
   ~FilteredIterator() {};
-  T operator* () {return *d_i;}
+
+  T operator* () { return *d_i; }
+
   FilteredIterator& operator++ () {
     for (++d_i; d_i != d_max; ++d_i) {
       if (d_f(*d_i))

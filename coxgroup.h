@@ -168,7 +168,8 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   virtual int prod(coxtypes::CoxWord& g, const coxtypes::CoxNbr& x) const;
   virtual int prod(coxtypes::CoxNbr& x, const coxtypes::CoxWord& g) const;
 
-  virtual const list::List<coxtypes::CoxNbr>& extrList(const coxtypes::CoxNbr& x) const;    /* inlined */
+  virtual const containers::vector<coxtypes::CoxNbr>& extrList
+    (const coxtypes::CoxNbr& x) const  { return d_klsupport->extrList(x); }
 
 /******** Chapter III : Bruhat ordering **************************************/
 
@@ -327,8 +328,6 @@ inline coxtypes::CoxNbr CoxGroup::inverse(const coxtypes::CoxNbr& x) const
 inline int CoxGroup::lprod(coxtypes::CoxNbr& x, const coxtypes::Generator& s) const
  {return prod(x,s+rank());}
 
-inline const list::List<coxtypes::CoxNbr>& CoxGroup::extrList(const coxtypes::CoxNbr& x) const
- {return d_klsupport->extrList(x);}
 
 /* Chapter III */
 

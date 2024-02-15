@@ -1837,12 +1837,11 @@ Ulong minDescent(const bits::Lflags& d_f, const bits::Permutation& order)
   return m;
 }
 
-void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b)
 
 /*
   This function reads in c from b (analogous to readBitMap in bits::SubSet).
 */
-
+void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b)
 {
   c.setSize(b.bitCount());
 
@@ -1850,6 +1849,20 @@ void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b)
 
   for (Ulong j = 0; j < c.size(); ++j) {
     c[j] = *i;
+    ++i;
+  }
+}
+
+void read_bitmap(containers::vector<coxtypes::CoxNbr>& c, const bits::BitMap& b)
+{
+  c.reserve(b.bitCount());
+  c.clear();
+
+  bits::BitMap::Iterator i =  b.begin();
+
+  for (Ulong j = 0; j < c.size(); ++j)
+  {
+    c.push_back(*i);
     ++i;
   }
 }

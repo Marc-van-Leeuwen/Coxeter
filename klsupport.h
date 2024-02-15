@@ -22,7 +22,7 @@ namespace klsupport {
 
   typedef unsigned short KLCoeff;
   typedef short SKLcoeff;
-  typedef list::List<coxtypes::CoxNbr> ExtrRow;
+  using ExtrRow = containers::vector<coxtypes::CoxNbr>;
 };
 
 /******** constants **********************************************************/
@@ -115,7 +115,7 @@ inline coxtypes::CoxNbr KLSupport::size() const {return schubert().size();}
 inline schubert::SchubertContext& KLSupport::schubert() {return *d_schubert;}
 
 inline void KLSupport::applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a)
-  {rightRangePermute(*d_extrList[y],a);}
+{ bits::right_permute (*d_extrList[y],a);}
 inline const schubert::SchubertContext& KLSupport::schubert() const
   {return *d_schubert;}
 

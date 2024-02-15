@@ -11,6 +11,7 @@
 #include "globals.h"
 
 #include <limits.h>
+#include <iterator>
 #include <new>
 #include <string>
 
@@ -43,6 +44,7 @@ namespace bits {
   template <class T> void rightRangePermute
     (list::List<T>& r, const Permutation& a);
   template <class T> void sortI(const list::List<T>& r, Permutation& a);
+  template <class T> void sortI(const containers::vector<T>& r, Permutation& a);
   template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
 					 Permutation& a);
   template <class T, class F> void sortI_f(const list::List<T>& r, F& f,
@@ -114,7 +116,9 @@ class bits::BitMap {
   ReverseIterator rend() const;                                  /* inlined */
 };
 
-class bits::BitMap::Iterator { /* is really a constant iterator */
+class bits::BitMap::Iterator :
+  public std::iterator<std::forward_iterator_tag, Ulong>
+{ /* is really a constant iterator */
  private:
   static const Lflags posBits = BITS(Lflags) - 1;  /* BITS(Lflags) should be a
 						      power of two */
@@ -419,16 +423,15 @@ template <class T>
   r = std::move(result);
 }
 
-template <class T> void sortI(const list::List<T>& r, Permutation& a)
 
 /*
-  General sort function for lists. It is assumed that operator <= is defined
-  for T; we will use operator> instead of !operator<=.
+  General sort function for lists. It is assumed that operator < is defined
+  for T.
 
   Doesn't actually modify r; it only writes down in a the permutation
   s.t. new[j] = old[a[j]].
 */
-
+template <class T> void sortI(const list::List<T>& r, Permutation& a)
 {
   a.identity(r.size());
 
@@ -453,6 +456,35 @@ template <class T> void sortI(const list::List<T>& r, Permutation& a)
 
   return;
 }
+
+template <class T> void sortI(const containers::vector<T>& r, Permutation& a)
+{
+  a.identity(r.size());
+
+  /* set the starting value of h */
+  Ulong h = 1;
+  while (h < r.size()/3)
+    h = 3*h+1;
+
+  for (; h > 0; h /= 3)
+  { // sort classes modulo |h| of indices in |a|
+    for (Ulong j = h; j < a.size(); ++j)
+    {
+      const Ulong key = a[j]; // an index into |r|
+      const T& val = r[key];
+      // insertion sort |key| into subarray of |a| at |h|-class of |j| upto |j|
+      Ulong i = j; // the index into |a| where a value was last moved from
+      for ( ; i>=h; i-=h)
+      {
+	if (not val < r[a[i-h]])
+	  break; // don't use |i-h|, the place is |i|
+	a[i] = a[i-h]; // move index |h| places up, leaving |a[i-h]| moved from
+      }
+      // now |i| is the index into |a| to move |key| to
+      a[i] = key;
+    }
+  }
+} // |sortI(r,a)|
 
 template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
 				      Permutation& a)
@@ -508,9 +540,7 @@ template <class T, class C> void sortI
   a.identity(r.size());
 
   /* set the starting value of h */
-
   Ulong h = 1;
-
   while (h < r.size()/3)
     h = 3*h+1;
 
@@ -532,9 +562,7 @@ template <class T, class C> void sortI
       a[i] = key;
     }
   }
-
-  return;
-}
+} // |sortI(r,inOrder,a)|
 
 template <class T, class F> void sortI_f(const list::List<T>& r, F& f,
 					 Permutation& a)

@@ -282,10 +282,11 @@ const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNb
 
   /* find x in extrList[y] */
 
-  Ulong m = find(extrList(y),x);
+  const auto& eL = extrList(y);
+  Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
   const KLPol*& pol = d_help->klList(y)[m];
 
-  if (pol == 0) { /* we have to compute the polynomial */
+  if (pol == nullptr) { /* we have to compute the polynomial */
     pol = d_help->fillKLPol(x,y,s);
     if (error::ERRNO)
       return zeroPol();
@@ -294,7 +295,6 @@ const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNb
   return *pol;
 }
 
-klsupport::KLCoeff KLContext::mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s)
 
 /*
   This function returns the mu-coefficient mu(x,y). It is assumed that
@@ -306,7 +306,9 @@ klsupport::KLCoeff KLContext::mu(const coxtypes::CoxNbr& x, const coxtypes::CoxN
   If an error occurs, it forwards the error value and returns the
   value undef_klcoeff for mu.
 */
-
+klsupport::KLCoeff KLContext::mu
+  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+   const coxtypes::Generator& s)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -772,7 +774,7 @@ void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List
       if ((fx & fy) != fy) // x is not extremal w.r.t. y
 	continue;
       /* find x in the extremal list */
-      Ulong k = find(e,x);
+      Ulong k = std::lower_bound(e.begin(),e.end(),x)-e.begin();
       /* add q*P_{z,ys} to pol[k] */
       pol[k].add(klPol(z,ys),1,1);
       if (error::ERRNO) {
@@ -1237,7 +1239,7 @@ void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& y, list::List<KLP
       bits::Lflags fx = p.descent(x);
       if ((fx & fy) != fy) // x is not extremal w.r.t. y
 	continue;
-      Ulong k = find(e,x);
+      Ulong k = std::lower_bound(e.begin(),e.end(),x)-e.begin();
       klsupport::KLCoeff mu = muR[j].mu;
       coxtypes::Length h = (p.length(z)-p.length(x)+1)/2;
       pol[k].add(klPol(z,ys),mu,h);

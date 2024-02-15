@@ -53,6 +53,7 @@ namespace schubert {
   void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b,
 		      const SchubertContext& p, const interface::Interface& I);
   void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b);
+  void read_bitmap(containers::vector<coxtypes::CoxNbr>& c, const bits::BitMap& b);
   bool shortLexOrder(const SchubertContext& p, const coxtypes::CoxNbr& x,
 		     const coxtypes::CoxNbr& y, const bits::Permutation& order);
   void setBitMap(bits::BitMap& b, const list::List<coxtypes::CoxNbr>& c);
