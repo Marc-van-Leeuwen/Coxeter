@@ -86,22 +86,18 @@ namespace coxgroup {
 */
 CoxGroup::CoxGroup(const type::Type& x, const coxtypes::Rank& l)
   : d_graph(x,l)
-{
-  if (error::ERRNO) /* problem with the Coxeter matrix */
-    return;
-
-  d_mintable = new minroots::MinTable(graph());
-
-  d_klsupport = new klsupport::KLSupport
-    (std::unique_ptr<schubert::SchubertContext>
-     (new schubert::StandardSchubertContext(graph()))
-    );
-
-  d_interface = new interface::Interface(x,l);
-  d_outputTraits = new files::OutputTraits(graph(),interface(),io::Pretty());
-
-  d_help = new CoxHelper(this);
-}
+  , d_mintable(new minroots::MinTable(d_graph))
+  , d_klsupport(new klsupport::KLSupport
+		(std::unique_ptr<schubert::SchubertContext>
+		 (new schubert::StandardSchubertContext(d_graph))
+	       ))
+  , d_kl(nullptr)
+  , d_invkl(nullptr)
+  , d_uneqkl(nullptr)
+  , d_interface(new interface::Interface(x,l))
+  , d_outputTraits(new files::OutputTraits(graph(),interface(),io::Pretty()))
+  , d_help(new CoxHelper(this))
+{}
 
 
 /*
@@ -150,26 +146,16 @@ void CoxGroup::coatoms
   return;
 }
 
-bool CoxGroup::isDescent(const coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 
-/*
-  Tells if s is a descent of g.
-*/
-
+// Whether |s| is a descent of |g|.
+bool CoxGroup::isDescent
+  (const coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 {
-  bits::Lflags f = descent(g);
-  if (f & constants::lmask[s])
-    return true;
-  else
-    return false;
+  return (descent(g) & constants::lmask[s])!=0;
 }
 
+// Whether |g| is a dihedral element.
 bool CoxGroup::isDihedral(const coxtypes::CoxWord& g) const
-
-/*
-  Tells if g is a dihedral element.
-*/
-
 {
   if (g.length() < 3)
     return true;
@@ -191,17 +177,17 @@ bool CoxGroup::isDihedral(const coxtypes::CoxWord& g) const
   return true;
 }
 
-void CoxGroup::modify(interface::ParseInterface& P, const interface::Token& tok) const
 
 /*
-  Executes the modification indicated by tok, which is assumed to be of
-  type modifier_type. It is possible that further characters may have to
+  Execute the modification indicated by |tok|, which is assumed to be of
+  type-modifier_type. It is possible that further characters may have to
   be read from str.
 
   In the case of a general coxeter group, only two modifies are allowed :
   ! and ^
 */
-
+void CoxGroup::modify
+  (interface::ParseInterface& P, const interface::Token& tok) const
 {
   if (interface::isInverse(tok)) {
     inverse(P.c);
