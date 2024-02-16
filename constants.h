@@ -17,7 +17,7 @@ namespace constants {
 
   const Ulong CHARFLAGS = ((Ulong)1 << CHAR_BIT)-1; // |0xFF| as |Ulong|
 
-  extern Ulong *lmask; // bit posistion |==i| masks, for |i| up to |BITS(Ulong)|
+  extern Ulong *lmask; // bit position |==i| masks, for |i| up to |BITS(Ulong)|
   extern Ulong *leqmask; // same for bit position |<=i| masks
   extern unsigned *firstbit; // |2^CHAR_BIT| "lowest set bit" positions
   extern unsigned *lastbit;

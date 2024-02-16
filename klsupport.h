@@ -56,7 +56,7 @@ namespace klsupport {
 
 class KLSupport {
  private:
-  schubert::SchubertContext* d_schubert;
+  std::unique_ptr<schubert::SchubertContext> d_schubert; // owned
   containers::vector<std::unique_ptr<ExtrRow> > d_extrList;
   list::List<coxtypes::CoxNbr> d_inverse;
   list::List<coxtypes::Generator> d_last;
@@ -68,11 +68,11 @@ class KLSupport {
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(KLSupport));}
-  KLSupport(schubert::SchubertContext* p);
+  KLSupport(std::unique_ptr<schubert::SchubertContext> p); // takes ownership
   ~KLSupport();
 /* accessors */
   const ExtrRow& extrList(const coxtypes::CoxNbr& y) const;       /* inlined */
-  coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                         /* inlined */
+  coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;      /* inlined */
   coxtypes::CoxNbr inverseMin(const coxtypes::CoxNbr& x) const;
   const bits::BitMap& involution() const;                         /* inlined */
   bool isExtrAllocated(const coxtypes::CoxNbr& x) const

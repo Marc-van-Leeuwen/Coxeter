@@ -7,6 +7,8 @@
 
 #include "graph.h"
 
+#include "sl_list.h"
+#include "constants.h"
 #include "directories.h"
 #include "interactive.h"
 
@@ -37,9 +39,11 @@ namespace {
   const type::Type& irrType(CoxGraph& G, bits::Lflags I);
   coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I);
   coxtypes::ParSize lastQuotOrder(const type::Type& type, coxtypes::Rank rank);
-  void makeCoxMatrix(CoxMatrix& m, const type::Type& x, const coxtypes::Rank& l);
-  void makeStar(list::List<bits::Lflags>&star, const CoxMatrix& m, const coxtypes::Rank& l);
-  void makeStarOps(list::List<bits::Lflags>&, const CoxMatrix& m, const coxtypes::Rank& l);
+  CoxMatrix Coxeter_matrix(const type::Type& x, const coxtypes::Rank& l);
+  containers::vector<bits::Lflags> vertex_stars
+    (const CoxMatrix& m, const coxtypes::Rank& l);
+  containers::vector<bits::Lflags> finite_edge_list
+    (const CoxMatrix& m, const coxtypes::Rank& l);
   CoxEntry maxCoefficient(CoxGraph& G, bits::Lflags I);
   CoxEntry minCoefficient(CoxGraph& G, bits::Lflags I);
   coxtypes::CoxSize A_order(coxtypes::Rank rank);
@@ -67,47 +71,36 @@ namespace {
 
 namespace graph {
 
+
+// Construct a Coxeter graph of type x and rank l.
 CoxGraph::CoxGraph(const type::Type& x, const coxtypes::Rank& l)
-  :d_type(x),d_rank(l),d_matrix(0),d_star(0)
-
-/*
-  Initializes a Coxeter graph of type x and rank l.
-*/
-
+  : d_type(x)
+  , d_rank(l)
+  , d_matrix(Coxeter_matrix(x,d_rank))
+  , d_S()
+  , d_star()
 {
-  makeCoxMatrix(d_matrix,x,d_rank);
-
   if (error::ERRNO)
     return;
 
   /* the restriction on the rank should be removed eventually */
 
-  if (l <= coxtypes::MEDRANK_MAX)
-    {
-      d_S = (bits::Lflags)1 << (d_rank-1);
-      d_S += d_S - 1;
-      makeStar(d_star,d_matrix,d_rank);
-    }
+  if (l <= coxtypes::MEDRANK_MAX) // required to have |bits::Lflags| large enough
+  {
+    d_S = constants::leqmask[d_rank-1]; // all |d_rank| initial bits set
+    d_star = vertex_stars(d_matrix,d_rank);
+  }
 
-  makeStarOps(d_starOps,d_matrix,l);
-
-  return;
+  d_finite_edges = finite_edge_list(d_matrix,l);
 }
 
-CoxGraph::~CoxGraph()
 
-/*
-  Automatic destruction is enough.
-*/
+// Automatic destruction does everything required
+CoxGraph::~CoxGraph() {}
 
-{}
 
+// Return the connected component of |s| in |I| as a |bits::Lflags|
 bits::Lflags CoxGraph::component(bits::Lflags I, coxtypes::Generator s) const
-
-/*
-  Returns the bitmap of the connected component of s in I.
-*/
-
 {
   bits::Lflags nf = constants::lmask[s];
   bits::Lflags f = 0;
@@ -216,9 +209,9 @@ bits::Lflags CoxGraph::nodes(bits::Lflags I) const
 
   The functions filling in the actual data in the CoxGraph structure are :
 
-   - makeCoxMatrix(m,x,l) : allocates and fills the Coxeter matrix;
-   - makeStar(star,m,l) : allocates and fills the star array;
-   - makeStarOps(ops,m,l) : allocates and fills the starOps array;
+   - m = Coxeter_matrix(x,l) : computes the Coxeter matrix;
+   - star = vertex_stars(m,l) : computes the star array;
+   - ops = finite_edge_list(m,l) : enumerate the finite edges
 
  ****************************************************************************/
 
@@ -593,140 +586,124 @@ void fillCoxYMatrix(CoxMatrix& m, coxtypes::Rank l)
 }
 
 
-void makeCoxMatrix(CoxMatrix& m, const type::Type& x, const coxtypes::Rank& l)
 
 /*
-  Allocates and fills in the Coxeter matrix. In the case of type X,
+  Return the Coxeter matrix for |x| and |l|. In the case of type X,
   this includes checking the input file for correct values; in the
   case of type I, we need to get to get the only non-trivial entry
   of the matrix from the user.
 
   In the case of failure, it sets an error, and returns.
 */
-
+CoxMatrix Coxeter_matrix(const type::Type& x, const coxtypes::Rank& l)
 {
-  m.setSize(l*l);
+  CoxMatrix result(l*l,2); // generators commute "by default"
 
-  for (Ulong j = 0; j < static_cast<Ulong>(l*l); ++j)
-    m[j] = 2;
+  // set diagonal to entries 1
   for (Ulong j = 0; j < l; ++j)
-    m[j*l+j] = 1;
+    result[j*(l+1)] = 1;
 
   switch (x[0])
     {
     case 'A':
-      fillCoxAMatrix(m,l);
+      fillCoxAMatrix(result,l);
       break;
     case 'B':
-      fillCoxBMatrix(m,l);
+      fillCoxBMatrix(result,l);
       break;
     case 'D':
-      fillCoxDMatrix(m,l);
+      fillCoxDMatrix(result,l);
       break;
     case 'E':
-      fillCoxEMatrix(m,l);
+      fillCoxEMatrix(result,l);
       break;
     case 'F':
-      fillCoxFMatrix(m,l);
+      fillCoxFMatrix(result,l);
       break;
     case 'G':
-      fillCoxGMatrix(m);
+      fillCoxGMatrix(result);
       break;
     case 'H':
-      fillCoxHMatrix(m,l);
+      fillCoxHMatrix(result,l);
       break;
     case 'I':
-      fillCoxIMatrix(m);
+      fillCoxIMatrix(result);
       if (error::ERRNO)
-	return;
+	return result; // must return something even on error
       break;
     case 'a':
-      fillCoxaMatrix(m,l);
+      fillCoxaMatrix(result,l);
       break;
     case 'b':
-      fillCoxbMatrix(m,l);
+      fillCoxbMatrix(result,l);
       break;
     case 'c':
-      fillCoxcMatrix(m,l);
+      fillCoxcMatrix(result,l);
       break;
     case 'd':
-      fillCoxdMatrix(m,l);
+      fillCoxdMatrix(result,l);
       break;
     case 'e':
-      fillCoxeMatrix(m,l);
+      fillCoxeMatrix(result,l);
       break;
     case 'f':
-      fillCoxfMatrix(m,l);
+      fillCoxfMatrix(result,l);
       break;
     case 'g':
-      fillCoxgMatrix(m);
+      fillCoxgMatrix(result);
       break;
     case 'X':
-      fillCoxXMatrix(m,l,x);
+      fillCoxXMatrix(result,l,x);
       break;
     case 'Y':
-      fillCoxYMatrix(m,l);
+      fillCoxYMatrix(result,l);
       break;
     }
 
-  return;
+  return result;
 }
 
 
-void makeStar(list::List<bits::Lflags>& star, const CoxMatrix& m, const coxtypes::Rank& l)
 
 /*
   Makes the star-array of the Coxeter graph. This is an array of l
   bits::Lflags, flagging the "stars" of each generator in the Coxeter diagram.
 */
-
+containers::vector<bits::Lflags> vertex_stars
+  (const CoxMatrix& m, const coxtypes::Rank& l)
 {
-  star.setSize(l);
+  containers::vector<bits::Lflags> result;
 
   for(coxtypes::Generator s = 0; s < l; s++) {
-    star[s] = 0;
+    bits::Lflags star = 0;
     for (coxtypes::Generator t = 0; t < l; t++)
       if ((m[s*l + t] > 2) || (m[s*l + t] == 0))
-	star[s] |= constants::lmask[t];
+	star |= constants::lmask[t];
+    result.push_back(star);
   }
 
-  return;
+  return result;
 }
 
-void makeStarOps(list::List<bits::Lflags>& ops, const CoxMatrix& m, const coxtypes::Rank& l)
 
 /*
-  Makes the starOps array of the Coxeter graph. This array has an entry for
-  each finite edge in the graph, which holds the 2-element subset corresponding
-  to the edge.
+  Returns a list of the finite edges of the graph, computed from the matrix. For
+  each finite edge in the graph (in some order) this list holds 2-element subset
+  that definies the edge, represented as |bits::Lflags|
 */
-
+containers::vector<bits::Lflags> finite_edge_list
+  (const CoxMatrix& m, const coxtypes::Rank& l)
 {
   /* count number of finite edges */
 
-  Ulong count = 0;
+  containers::sl_list<bits::Lflags> result;
 
-  for (coxtypes::Generator s = 0; s < l; ++s) {
-    for (coxtypes::Generator t = s+1; t < l; ++t) {
-      if ((m[s*l + t] > 2) && (m[s*l + t] != infty))
-	count++;
-    }
-  }
+  for (coxtypes::Generator s = 0; s < l; ++s)
+    for (coxtypes::Generator t = s+1; t < l; ++t)
+      if ((m[s*l + t] > 2) && (m[s*l + t] != infty)) // finite edge condition
+	result.push_back(constants::lmask[s] | constants::lmask[t]);
 
-  ops.setSize(count);
-
-  count = 0;
-
-  for (coxtypes::Generator s = 0; s < l; ++s) {
-    for (coxtypes::Generator t = s+1; t < l; ++t) {
-      if ((m[s*l + t] > 2) && (m[s*l + t] != infty)) {
-        ops[count] = constants::lmask[s] | constants::lmask[t];
-	count++;
-      }
-    }
-  }
-
-  return;
+  return result.to_vector();
 }
 
 };

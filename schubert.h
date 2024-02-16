@@ -145,7 +145,7 @@ class StandardSchubertContext:public SchubertContext {
     StandardSchubertContext& d_schubert;
     Ulong d_size;
     coxtypes::CoxNbr* d_shift;
-    coxtypes::CoxNbr* d_star;
+    coxtypes::CoxNbr* d_star; 
   public:
     void* operator new(size_t size) {return memory::arena().alloc(size);}
     void operator delete(void* ptr)
@@ -162,7 +162,7 @@ class StandardSchubertContext:public SchubertContext {
   list::List<CoatomList> d_hasse;
   list::List<bits::Lflags> d_descent;
   list::List<coxtypes::CoxNbr*> d_shift;
-  list::List<coxtypes::CoxNbr*> d_star;
+  list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
   bits::BitMap* d_downset;
   bits::BitMap* d_parity;
   bits::SubSet d_subset;
@@ -215,7 +215,7 @@ class StandardSchubertContext:public SchubertContext {
   coxtypes::CoxNbr minimize(const coxtypes::CoxNbr& x, const bits::Lflags& f) const;
   coxtypes::CoxWord& normalForm(coxtypes::CoxWord& g, const coxtypes::CoxNbr& x, const bits::Permutation& order)
     const;
-  Ulong nStarOps() const;                                      /* inlined */
+  Ulong nStarOps() const { return d_graph.finite_edges().size(); }
   const bits::BitMap& parity(const coxtypes::CoxNbr& x) const;                   /* inlined */
   coxtypes::Rank rank() const;                                             /* inlined */
   bits::Lflags rascent(const coxtypes::CoxNbr& x) const;                         /* inlined */
@@ -224,7 +224,8 @@ class StandardSchubertContext:public SchubertContext {
   bits::Lflags S() const;                                              /* inlined */
   coxtypes::CoxNbr shift(const coxtypes::CoxNbr& x, const coxtypes::Generator& s) const;       /* inlined */
   coxtypes::CoxNbr size() const;                                           /* inlined */
-  coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r) const;                 /* inlined */
+  coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r) const
+    { return d_star[x][r]; }
   bits::Lflags twoDescent(const coxtypes::CoxNbr& x) const;
   const type::Type& type() const;                                      /* inlined */
 /* manipulators */
@@ -302,8 +303,6 @@ namespace schubert {
     const {return d_shift[x][d_rank+s];}
   inline coxtypes::Length StandardSchubertContext::maxlength() const
     {return d_maxlength;}
-  inline Ulong StandardSchubertContext::nStarOps() const
-    {return d_graph.starOps().size();}
   inline const bits::BitMap& StandardSchubertContext::parity(const coxtypes::CoxNbr& x) const
     {return d_parity[d_length[x]%2];}
   inline coxtypes::Rank StandardSchubertContext::rank() const {return d_rank;}
@@ -320,9 +319,6 @@ namespace schubert {
     (const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
     const {return d_shift[x][s];}
   inline coxtypes::CoxNbr StandardSchubertContext::size() const {return d_size;}
-  inline coxtypes::CoxNbr StandardSchubertContext::star(coxtypes::CoxNbr x,
-					      const Ulong& r) const
-    {return d_star[x][r];}
   inline const type::Type& StandardSchubertContext::type() const
     {return d_graph.type();}
 

@@ -40,7 +40,7 @@ void initConstants()
   for (Ulong j = 1; j < BITS(Ulong); j++)
     {
       lmask[j] = lmask[j-1] << 1;
-      leqmask[j] = leqmask[j-1] + lmask[j];
+      leqmask[j] = leqmask[j-1] | lmask[j];
     }
 
   static unsigned d_firstbit[1<<CHAR_BIT];

@@ -74,42 +74,41 @@ namespace coxgroup {
 
 namespace coxgroup {
 
-CoxGroup::CoxGroup(const type::Type& x, const coxtypes::Rank& l)
-  : d_graph(new graph::CoxGraph(x,l))
 /*
-  Constructor for the abstract CoxGroup class. Does the basic initializations
-  in the following order (the order is important) :
+  Constructor for the abstract CoxGroup class. Does the basic initializations in
+  the following order (the order is important said Fokko, but the code does not
+  reflect what he wrote):
 
   - the Coxeter graph, which is where the Coxeter matrix gets constructed;
   - the interface;
   - the minroot table;
   - the Kazhdan-Lusztig context;
 */
-
+CoxGroup::CoxGroup(const type::Type& x, const coxtypes::Rank& l)
+  : d_graph(new graph::CoxGraph(x,l))
 {
   if (error::ERRNO) /* problem with the Coxeter matrix */
     return;
 
   d_mintable = new minroots::MinTable(graph());
 
-  schubert::SchubertContext* p =
-    new schubert::StandardSchubertContext(graph());
-  d_klsupport = new klsupport::KLSupport(p);
+  d_klsupport = new klsupport::KLSupport
+    (std::unique_ptr<schubert::SchubertContext>
+     (new schubert::StandardSchubertContext(graph()))
+    );
 
   d_interface = new interface::Interface(x,l);
   d_outputTraits = new files::OutputTraits(graph(),interface(),io::Pretty());
 
   d_help = new CoxHelper(this);
-
-  return;
 }
 
-CoxGroup::~CoxGroup()
 
 /*
   Has to deconstruct what the CoxGroup constructed, in the inverse order.
 */
 
+CoxGroup::~CoxGroup()
 {
   delete d_help;
   delete d_kl;

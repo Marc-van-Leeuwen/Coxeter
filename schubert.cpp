@@ -915,13 +915,12 @@ void StandardSchubertContext::fillShifts(const coxtypes::CoxNbr& first,
   return;
 }
 
-void StandardSchubertContext::fillStar(const coxtypes::CoxNbr& first)
 
 /*
-  This function fills in the star operations for the new elements. Each
-  star operation is a partially defined involution. The tables have
-  already been initially set to coxtypes::undef_coxnbr; we fill in the operation in
-  pairs, using the element that goes down.
+  This function fills in the star operations for the new elements. Each star
+  operation is a partially defined involution. The tables have already been
+  initially set to |coxtypes::undef_coxnbr|; we fill in the operation in pairs,
+  using the element that goes down.
 
   Recall that a star operation is associated to each edge {s,t} in the
   Coxeter graph such that m(s,t) < infty. The domain of the left star operation
@@ -935,18 +934,18 @@ void StandardSchubertContext::fillStar(const coxtypes::CoxNbr& first)
   but this will always happen for elements paired up with a new element,
   so we only have to go through the new ones.
 */
-
+void StandardSchubertContext::fillStar(const coxtypes::CoxNbr& first)
 {
-  const list::List<bits::Lflags>& ops = d_graph.starOps();
+  const containers::vector<bits::Lflags>& ops = d_graph.finite_edges();
 
   for (coxtypes::CoxNbr x = first; x < d_size; ++x) {
 
     bits::Lflags fx = rdescent(x);
     for (coxtypes::StarOp j = 0; j < nStarOps(); ++j) {
 
-      /* determine if x is in right domain */
+      // determine if x is in domain for right-star right descent set |fx|
       bits::Lflags f = fx & ops[j];
-      if ((f == 0) || (f == ops[j]))
+      if ((f == 0) || (f == ops[j])) // must have singleton-intersect |ops[j]|
 	continue;
 
       coxtypes::CoxNbr x_min = minimize(x,ops[j]);

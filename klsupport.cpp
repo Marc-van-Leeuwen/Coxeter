@@ -9,9 +9,9 @@
 
 /*
   This module contains code for the operations that can be "factored out"
-  amongst the various k-l tables : the ordinary one, the inverse one, and
+  amongst the various K-L tables : the ordinary one, the inverse one, and
   the one with unequal parameters. Foremost, this is the extremal list.
-  In all these cases, k-l polynomials can be readily reduced to the case
+  In all these cases, K-L polynomials can be readily reduced to the case
   of "extremal pairs".
 */
 
@@ -20,7 +20,7 @@
         Chapter I -- The KLSupport class.
 
   This class can be seen as an extension of the schubert context, oriented
-  towards k-l computations. Its main function is to construct and maintain
+  towards K-L computations. Its main function is to construct and maintain
   extrList. Recall that this is a list of rows of CoxNbr. The row for y is
   never allocated if inverse[y] < y (this becomes a bit cumbersome, and
   I'm really tempted to drop it! the main reason for keeping it is that
@@ -70,8 +70,8 @@
 
 namespace klsupport {
 
-KLSupport::KLSupport(schubert::SchubertContext* p)
-  : d_schubert(p)
+KLSupport::KLSupport(std::unique_ptr<schubert::SchubertContext> p)
+  : d_schubert(std::move(p))
   , d_extrList(1)
   , d_inverse(1)
   , d_last(1)
@@ -91,13 +91,8 @@ KLSupport::KLSupport(schubert::SchubertContext* p)
 }
 
 
-/*
-  Delete the pointers that were allocated by klsupport.
-*/
-KLSupport::~KLSupport()
-{
-  delete d_schubert;
-}
+  // |KLSupport| has no owning raw pointers
+  KLSupport::~KLSupport() {}
 
 /******** accessors *********************************************************/
 
