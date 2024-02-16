@@ -39,7 +39,8 @@ namespace schubert {
   void extractMaximals(const SchubertContext& p, list::List<coxtypes::CoxNbr>& c);
   void extractMaximals(const SchubertContext& p, list::List<coxtypes::CoxNbr>& c,
 		       list::List<Ulong>& a);
-  void maximize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f);
+  void select_maxima_for
+    (const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f);
   Ulong min(const bits::Set& c, NFCompare& nfc);
   Ulong minDescent(const bits::Lflags& f, const bits::Permutation& order);
   void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f);

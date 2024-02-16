@@ -93,10 +93,14 @@ namespace kl {
     bool checkKLRow(const coxtypes::CoxNbr& y);
     bool checkMuRow(const coxtypes::CoxNbr& y);
     void coatomCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
-    void coatomCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
-			  list::List<KLPol>& pol, const Ulong& a);
-    klsupport::KLCoeff computeMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
-    const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) {return klsupport().extrList(y);}
+    void coatomCorrection
+      (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+       const coxtypes::Generator& s,
+       list::List<KLPol>& pol, const Ulong& a);
+    klsupport::KLCoeff computeMu
+      (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
+    const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y)
+      { return klsupport().extrList(y); }
     void fillMuRow(MuRow& row, const coxtypes::CoxNbr& y);
     const KLPol* fillKLPol
       (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
@@ -106,8 +110,9 @@ namespace kl {
     coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) {return klsupport().inverse(y);}
     void inverseMuRow(const coxtypes::CoxNbr& y);
     bool isExtrAllocated(const coxtypes::CoxNbr& y)
-      {return klsupport().isExtrAllocated(y);}
-    bool isKLAllocated(const coxtypes::CoxNbr& y) {return d_kl->isKLAllocated(y);}
+      { return klsupport().isExtrAllocated(y); }
+    bool isKLAllocated(const coxtypes::CoxNbr& y)
+      { return d_kl->isKLAllocated(y); }
     bool isMuAllocated(const coxtypes::CoxNbr& y) {return d_kl->isMuAllocated(y);}
     KLRow& klList(const coxtypes::CoxNbr& y) {return *d_kl->d_klList[y];}
     const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
@@ -213,14 +218,13 @@ KLContext::KLContext(klsupport::KLSupport* kls)
   d_muList[0] = new MuRow(0);
 }
 
-KLContext::~KLContext()
 
 /*
-  Recall that a KLContext is assumed to own its schubert::SchubertContext. The only
-  destructions that are not done automatically are those of the Schubert
-  context, the status pointer, and the extrList pointers.
+  Recall that a KLContext is assumed to own its schubert::SchubertContext. The
+  only destructions that are not done automatically are those of the Schubert
+  context, the status pointer, and the |klList| and |muList| pointers.
 */
-
+KLContext::~KLContext()
 {
   for (Ulong j = 0; j < size(); ++j) {
     delete d_klList[j];
@@ -228,8 +232,6 @@ KLContext::~KLContext()
   }
 
   delete d_status;
-
-  return;
 }
 
 /******** manipulators *******************************************************/
@@ -260,7 +262,7 @@ void KLContext::fillKL()
   for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
     if (inverse(y) < y)
       continue;
-    if (!isKLAllocated(y))
+    if (not isKLAllocated(y))
       d_help->allocKLRow(y);
     d_help->fillKLRow(y);
     d_help->readMuRow(y);
@@ -340,7 +342,7 @@ const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNb
 
   /* check if extrList[y] is allocated */
 
-  if (!isKLAllocated(y)) {
+  if (not isKLAllocated(y)) {
     d_help->allocKLRow(y);
     if (ERRNO)
       return zeroPol();
@@ -750,23 +752,23 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   using BI = FilteredIterator<Ulong,bits::BitMap::Iterator,MuFilter>;
 
   const schubert::SchubertContext& p = schubert();
-  klsupport::ExtrRow e(0);
+  klsupport::ExtrRow e;
   MuFilter f(p,y);
 
   if (isExtrAllocated(y)) {
     EI first(extrList(y).begin(),extrList(y).end(),f);
     EI last(extrList(y).end(),extrList(y).end(),f);
-    new(&e) klsupport::ExtrRow(first,last);
+    e.assign(first,last);
   }
   else {
     bits::BitMap b(size());
     p.extractClosure(b,y);
     if (ERRNO)
       return;
-    maximize(p,b,p.descent(y));
+    schubert::select_maxima_for(p,b,p.descent(y));
     BI first(b.begin(),b.end(),f);
     BI last(b.end(),b.end(),f);
-    new(&e) klsupport::ExtrRow(first,last);
+    e.assign(first,last);
   }
 
   coxtypes::Length ly = p.length(y);
@@ -812,7 +814,7 @@ void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::CoxNbr& y)
   else { /* make it from scratch */
     bits::BitMap b(size());
     p.extractClosure(b,y);
-    maximize(p,b,p.descent(y));
+    schubert::select_maxima_for(p,b,p.descent(y));
     schubert::read_bitmap(e,b);
   }
 
@@ -878,7 +880,7 @@ void KLContext::KLHelper::allocMuTable()
       goto abort;
     }
 
-    maximize(p,b,p.descent(y));
+    schubert::select_maxima_for(p,b,p.descent(y));
 
     MuFilter f(p,y);
     I first(b.begin(),b.end(),f);
@@ -1040,7 +1042,7 @@ void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List
       continue;
 
     p.extractClosure(b,z);
-    maximize(p,b,p.descent(y));
+    schubert::select_maxima_for(p,b,p.descent(y));
 
     Ulong i = 0;
     bits::BitMap::Iterator b_end = b.end();
@@ -1623,7 +1625,7 @@ void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& y, list::List<KLP
 
     bits::BitMap b(size());
     p.extractClosure(b,z);
-    maximize(p,b,p.descent(y));
+    schubert::select_maxima_for(p,b,p.descent(y));
 
     Ulong i = 0;
     bits::BitMap::Iterator b_end = b.end();
@@ -2060,7 +2062,7 @@ void KLContext::KLHelper::secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol
 
   /* extremalize w.r.t. y */
 
-  maximize(p,b,p.descent(y));
+  schubert::select_maxima_for(p,b,p.descent(y));
 
   /* add to appropriate terms */
 
@@ -2929,7 +2931,7 @@ void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
   bits::BitMap bs(p.size());
 
   p.extractClosure(b,y);
-  maximize(p,b,p.descent(y));
+  schubert::select_maxima_for(p,b,p.descent(y));
 
   h.clear();
 

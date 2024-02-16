@@ -632,7 +632,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
   bits::BitMap b(0);
   p.extractClosure(b,y);
-  maximize(p,b,p.descent(y));
+  schubert::select_maxima_for(p,b,p.descent(y));
   b.andnot(p.parity(y)); // extract elements with opposite parity from y
 
   const schubert::CoatomList& c = p.hasse(y);
@@ -1139,7 +1139,7 @@ void KLContext::KLHelper::lastTerm(const coxtypes::CoxNbr& y, list::List<KLPol>&
 
   bits::BitMap b(0);
   p.extractClosure(b,ys);
-  maximize(p,b,p.descent(y));
+  schubert::select_maxima_for(p,b,p.descent(y));
 
   const klsupport::ExtrRow& e = extrList(y);
   bits::BitMap::Iterator b_end = b.end();

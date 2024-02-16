@@ -80,8 +80,7 @@ KLSupport::KLSupport(schubert::SchubertContext* p)
 {
   /* make first row of d_extrList, for the identity element */
 
-  d_extrList[0] = new ExtrRow{0};
-  d_extrList.setSizeValue(1);
+  d_extrList[0].reset(new ExtrRow{0});
 
   d_inverse.setSizeValue(1);
 
@@ -91,20 +90,13 @@ KLSupport::KLSupport(schubert::SchubertContext* p)
   d_involution.setBit(0);
 }
 
-KLSupport::~KLSupport()
 
 /*
   Delete the pointers that were allocated by klsupport.
 */
-
+KLSupport::~KLSupport()
 {
-  for (Ulong j = 0; j < d_extrList.size(); ++j) {
-    delete d_extrList[j];
-  }
-
   delete d_schubert;
-
-  return;
 }
 
 /******** accessors *********************************************************/
@@ -152,7 +144,6 @@ void KLSupport::standardPath(list::List<coxtypes::Generator>& g, const coxtypes:
 
 /******** manipulators ******************************************************/
 
-void KLSupport::allocExtrRow(const coxtypes::CoxNbr& y)
 
 /*
   Allocates one row in d_extrList. The row contains the list of elements
@@ -161,22 +152,19 @@ void KLSupport::allocExtrRow(const coxtypes::CoxNbr& y)
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set.
 */
-
+void KLSupport::allocExtrRow(const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(size());
+  bits::BitMap b(size()); // take full scurrent size of the |KLSupport| class
 
-  p.extractClosure(b,y);
+  p.extractClosure(b,y); // select the Bruhat interval up to |y|
   if (error::ERRNO)
     return;
 
-  maximize(p,b,p.descent(y));
+  schubert::select_maxima_for(p,b,p.descent(y));
 
-  d_extrList[y] = new ExtrRow(b.begin(),b.end());
-
-  /* an error may be set here */
-
-  return;
+  d_extrList[y].reset // fill with the "contents" of the |BitMap b|, increasingly
+    (new ExtrRow(b.begin(),b.end()));
 }
 
 void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
@@ -222,7 +210,7 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
       y1 = p.shift(y1,s);
       coxtypes::CoxNbr y2 = inverseMin(y1);
 
-      if (!isExtrAllocated(y2)) { /* allocate row */
+      if (not isExtrAllocated(y2)) { /* allocate row */
 
 	/* copy bitmap of subset to buffer */
 
@@ -232,8 +220,8 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 
 	/* extremalize */
 
-	maximize(p,b,p.descent(y1));
-	d_extrList[y1] = new ExtrRow(b.begin(),b.end());
+	schubert::select_maxima_for(p,b,p.descent(y1));
+	d_extrList[y1].reset(new ExtrRow(b.begin(),b.end()));
 
 	/* go over to inverses if necessary */
 
@@ -263,8 +251,7 @@ void KLSupport::applyInverse(const coxtypes::CoxNbr& y)
 
 {
   coxtypes::CoxNbr yi = inverse(y);
-  d_extrList[y] = d_extrList[yi];
-  d_extrList[yi] = 0;
+  d_extrList[y] = std::move(d_extrList[yi]);
 
   ExtrRow& e = *d_extrList[y];
   for (Ulong j = 0; j < e.size(); ++j) {
@@ -274,7 +261,6 @@ void KLSupport::applyInverse(const coxtypes::CoxNbr& y)
   return;
 }
 
-coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
 
 /*
   Extends the context to accomodate g.
@@ -284,19 +270,19 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
 
   Forwards the error EXTENSION_FAIL in case of error.
 */
-
+coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
 {
   coxtypes::CoxNbr prev_size = size();
   schubert::SchubertContext& p = *d_schubert;
 
-  coxtypes::CoxNbr x = p.extendContext(g);
+  coxtypes::CoxNbr x = p.extendContext(g); // this increases |size()|
 
   if (error::ERRNO) /* error::ERRNO is EXTENSION_FAIL */
     return coxtypes::undef_coxnbr;
 
   error::CATCH_MEMORY_OVERFLOW = true;
 
-  d_extrList.setSize(size());
+  d_extrList.resize(size()); // extend with values |std::unique_ptr<>(nullptr)|
   if (error::ERRNO)
     goto revert;
   d_inverse.setSize(size());
@@ -375,7 +361,7 @@ void KLSupport::permute(const bits::Permutation& a)
   /* permute values */
 
     for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
-    if (d_extrList[y] == 0)
+    if (d_extrList[y] == nullptr)
       continue;
     ExtrRow& e = *d_extrList[y];
     for (Ulong j = 0; j < e.size(); ++j) {
@@ -400,13 +386,13 @@ void KLSupport::permute(const bits::Permutation& a)
       continue;
     }
     for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y]) {
+      d_extrList[x].swap(d_extrList[y]);
+
       /* back up values for y */
-      ExtrRow* extr_buf = d_extrList[y];
       coxtypes::CoxNbr inverse_buf = inverse(y);
       coxtypes::Generator last_buf = last(y);
       bool involution_buf = isInvolution(y);
       /* put values for x in y */
-      d_extrList[y] = d_extrList[x];
       d_inverse[y] = inverse(x);
       d_last[y] = last(x);
       if (isInvolution(x))
@@ -414,7 +400,6 @@ void KLSupport::permute(const bits::Permutation& a)
       else
 	d_involution.clearBit(y);
       /* store backup values in x */
-      d_extrList[x] = extr_buf;
       d_inverse[x] = inverse_buf;
       d_last[x] = last_buf;
       if (involution_buf)
@@ -431,17 +416,17 @@ void KLSupport::permute(const bits::Permutation& a)
   return;
 }
 
-void KLSupport::revertSize(const Ulong& n)
 
 /*
-  This function reverts the size of the context to a previous value n. Note
-  that the allocated sizes of the lists are not changed; we simply preserve
+  This function reverts the size of the context to a previous (smaller) value n.
+  Note that the allocated sizes of the lists are not changed; we simply preserve
   the consistency of the various size values.
 */
 
+void KLSupport::revertSize(const Ulong& n)
 {
   d_schubert->revertSize(n);
-  d_extrList.setSize(n);
+  d_extrList.resize(n);
   d_inverse.setSize(n);
   d_last.setSize(n);
 

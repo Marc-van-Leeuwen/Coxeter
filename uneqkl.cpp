@@ -1171,7 +1171,7 @@ void KLContext::KLHelper::muCorrection
     coxtypes::CoxNbr z = mu_row[j].x;
     bits::BitMap b(size());
     p.extractClosure(b,z);
-    maximize(p,b,p.descent(y));
+    schubert::select_maxima_for(p,b,p.descent(y));
 
     Ulong i = 0;
     bits::BitMap::Iterator b_end = b.end();
@@ -1322,7 +1322,7 @@ void KLContext::KLHelper::secondTerm(containers::vector<KLPol>& pol,
   coxtypes::CoxNbr ys = p.rshift(y,s);
 
   p.extractClosure(b,ys);
-  maximize(p,b,p.descent(y));
+  schubert::select_maxima_for(p,b,p.descent(y));
 
   Ulong i = 0;
   bits::BitMap::Iterator b_end = b.end();

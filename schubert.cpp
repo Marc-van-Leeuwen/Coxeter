@@ -52,7 +52,7 @@ namespace schubert {
 
     - extendSubSet(q,s) : given q holding a decreasing subset of Q, and
       s s.t. q.s is contained in Q, puts q.s in q;
-    - extractClosure(q,x) : puts in q the interval [e,x];
+    - extractClosure(q,x) : puts into q the interval [e,x];
     - hasse(x) : returns the coatom list of x;
     - inOrder(x,y) : tells if x <= y;
 
@@ -259,7 +259,6 @@ coxtypes::CoxNbr StandardSchubertContext::contextNumber(const coxtypes::CoxWord&
   return x;
 }
 
-void StandardSchubertContext::extractClosure(bits::BitMap& b, const coxtypes::CoxNbr& x) const
 
 /*
   This function puts in b the subset [e,x] of p. It is assumed that b
@@ -268,7 +267,8 @@ void StandardSchubertContext::extractClosure(bits::BitMap& b, const coxtypes::Co
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
 
 */
-
+void StandardSchubertContext::extractClosure
+  (bits::BitMap& b, const coxtypes::CoxNbr& x) const
 {
   bits::SubSet q(d_size);
   resetOne(q);
@@ -408,7 +408,6 @@ bits::Lflags StandardSchubertContext::twoDescent(const coxtypes::CoxNbr& x) cons
 
 /******** modifiers ********************************************************/
 
-coxtypes::CoxNbr StandardSchubertContext::extendContext(const coxtypes::CoxWord& g)
 
 /*
   This function extends the context to the smallest one containing the
@@ -422,10 +421,11 @@ coxtypes::CoxNbr StandardSchubertContext::extendContext(const coxtypes::CoxWord&
   The outline of the function is as follows. First, we determine the
   largest subword h of g which is alreaady in the context, and construct
   the interval [e,h] as a subset of the context. Then, for each remaining
-  generator in g, we add the elements in [e,hs] not already in the
+  generator s in g, we add the elements in [e,hs] not already in the
   context, and we update everything.
 */
-
+coxtypes::CoxNbr StandardSchubertContext::extendContext
+  (const coxtypes::CoxWord& g)
 {
   coxtypes::CoxNbr y = 0;
   bits::SubSet& q = d_subset;
@@ -1383,7 +1383,6 @@ void ClosureIterator::update(const coxtypes::CoxNbr& x, const coxtypes::Generato
   This section contains the definitions for the functions defined in
   schubert.c, dealing with the Bruhat order and descent sets :
 
-    - extractClosure(p,q,x) : puts [e,x] in q;
     - extractInvolutions(p,b) : extracts involutions;
     - maximize(p,map,f) : extracts maximal elements w.r.t. f;
     - minimize(p,map,f) : extracts minimal elements w.r.t. f;
@@ -1427,13 +1426,13 @@ void extractInvolutions(const SchubertContext& p, bits::BitMap& b)
   }
 }
 
-void maximize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
 
 /*
   This function extracts from b the maximal elements w.r.t. f, by
   intersecting with the appropriate downsets.
 */
-
+void select_maxima_for
+  (const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
 {
   bits::Lflags f1 = f;
 
@@ -1442,8 +1441,6 @@ void maximize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
     b &= p.downset(s);
     f1 &= f1-1;
   }
-
-  return;
 }
 
 void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)

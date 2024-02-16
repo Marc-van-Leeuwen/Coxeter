@@ -134,10 +134,13 @@ class KLContext {
   KLContext(klsupport::KLSupport* kls);
   ~KLContext();
 /* accessors */
-  const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const;               /* inlined */
+  const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
+  { return klsupport().extrList(y); }
+
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                        /* inlined */
   const bits::BitMap& involution() const;                             /* inlined */
-  bool isExtrAllocated(const coxtypes::CoxNbr& x) const;                  /* inlined */
+  bool isExtrAllocated(const coxtypes::CoxNbr& x) const
+  { return d_klsupport->isExtrAllocated(x); }
   bool isFullKL() const;                                        /* inlined */
   bool isFullMu() const;                                        /* inlined */
   bool isKLAllocated(const coxtypes::CoxNbr& x) const;                    /* inlined */
@@ -186,14 +189,10 @@ inline bool MuData::operator> (const MuData& m) const {return x > m.x;}
 inline bool MuFilter::operator() (const coxtypes::CoxNbr& x) const
   {coxtypes::Length l = d_p.length(x); return ((d_l-l)%2) && ((d_l-l) > 1);}
 
-inline const klsupport::ExtrRow& KLContext::extrList(const coxtypes::CoxNbr& y) const
-  {return klsupport().extrList(y);}
 inline coxtypes::CoxNbr KLContext::inverse(const coxtypes::CoxNbr& x) const
   {return d_klsupport->inverse(x);}
 inline const bits::BitMap& KLContext::involution() const
   {return d_klsupport->involution();}
-inline bool KLContext::isExtrAllocated(const coxtypes::CoxNbr& x) const
-  {return d_klsupport->isExtrAllocated(x);}
 inline bool KLContext::isFullKL() const
   {return d_status->flags&KLStatus::kl_done;}
 inline bool KLContext::isFullMu() const
