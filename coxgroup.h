@@ -76,17 +76,17 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
  protected:
 
   graph::CoxGraph d_graph;
-  minroots::MinTable* d_mintable;
-  klsupport::KLSupport* d_klsupport;
-  kl::KLContext* d_kl;
-  invkl::KLContext* d_invkl;
-  uneqkl::KLContext* d_uneqkl;
-  interface::Interface* d_interface;
-  files::OutputTraits* d_outputTraits;
+  minroots::MinTable d_mintable;
+  klsupport::KLSupport d_klsupport;
+  std::unique_ptr<kl::KLContext> d_kl;
+  std::unique_ptr<invkl::KLContext> d_invkl;
+  std::unique_ptr<uneqkl::KLContext> d_uneqkl;
+  std::unique_ptr<interface::Interface> d_interface; // ptr to maybe derived
+  files::OutputTraits d_outputTraits;
 
   struct CoxHelper; // predeclare, defined in implementation part
   friend CoxHelper;  /* provides helper functions */
-  CoxHelper* d_help;
+  std::unique_ptr<CoxHelper> d_help; // pointer level to hide implementation
 
  public:
 
@@ -99,22 +99,23 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   CoxGroup(const type::Type& x, const coxtypes::Rank& l);
   virtual ~CoxGroup();
 
-  virtual interface::Interface& interface();                     /* inlined */
-  minroots::MinTable& mintable();                                /* inlined */
-  klsupport::KLSupport& klsupport();                             /* inlined */
+  minroots::MinTable& mintable() { return d_mintable; }
+  klsupport::KLSupport& klsupport() { return d_klsupport; }
   kl::KLContext& kl();                                           /* inlined */
   invkl::KLContext& invkl();                                     /* inlined */
   uneqkl::KLContext& uneqkl();                                   /* inlined */
-  virtual files::OutputTraits& outputTraits();                   /* inlined */
+  virtual interface::Interface& interface() { return *d_interface; }
+  virtual files::OutputTraits& outputTraits() { return d_outputTraits; }
 
   const graph::CoxGraph& graph() const { return d_graph; }
-  virtual const interface::Interface& interface() const;         /* inlined */
-  const minroots::MinTable& mintable() const;                    /* inlined */
-  const klsupport::KLSupport& klsupport() const;                 /* inlined */
+  virtual const interface::Interface& interface() const { return *d_interface; }
+  const minroots::MinTable& mintable() const { return d_mintable; }
+  const klsupport::KLSupport& klsupport() const { return d_klsupport; }
   const kl::KLContext& kl() const;                               /* inlined */
   const uneqkl::KLContext& uneqkl() const;                       /* inlined */
   const schubert::SchubertContext& schubert() const;             /* inlined */
-  virtual const files::OutputTraits& outputTraits() const;       /* inlined */
+  virtual const files::OutputTraits& outputTraits() const
+    { return d_outputTraits; }
 
   void activateKL();
   void activateIKL();
@@ -168,7 +169,7 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   virtual int prod(coxtypes::CoxNbr& x, const coxtypes::CoxWord& g) const;
 
   virtual const containers::vector<coxtypes::CoxNbr>& extrList
-    (const coxtypes::CoxNbr& x) const  { return d_klsupport->extrList(x); }
+    (const coxtypes::CoxNbr& x) const  { return d_klsupport.extrList(x); }
 
 /******** Chapter III : Bruhat ordering **************************************/
 
@@ -252,25 +253,15 @@ namespace coxgroup {
 
 /* Chapter 0 */
 
-inline minroots::MinTable& CoxGroup::mintable() {return *d_mintable;}
-inline klsupport::KLSupport& CoxGroup::klsupport() {return *d_klsupport;}
 inline kl::KLContext& CoxGroup::kl() {activateKL(); return *d_kl;}
 inline invkl::KLContext& CoxGroup::invkl() {activateIKL(); return *d_invkl;}
 inline uneqkl::KLContext& CoxGroup::uneqkl()
   {activateUEKL(); return *d_uneqkl;}
-inline interface::Interface& CoxGroup::interface() {return *d_interface;}
-inline files::OutputTraits& CoxGroup::outputTraits() {return *d_outputTraits;}
 
-inline const minroots::MinTable& CoxGroup::mintable() const {return *d_mintable;}
-inline const klsupport::KLSupport& CoxGroup::klsupport() const
-  {return *d_klsupport;}
 inline const kl::KLContext& CoxGroup::kl() const {return *d_kl;}
 inline const uneqkl::KLContext& CoxGroup::uneqkl() const {return *d_uneqkl;}
 inline const schubert::SchubertContext& CoxGroup::schubert() const
-  {return d_klsupport->schubert();}
-inline const interface::Interface& CoxGroup::interface() const {return *d_interface;}
-inline const files::OutputTraits& CoxGroup::outputTraits() const
-  {return *d_outputTraits;}
+  {return d_klsupport.schubert();}
 
 inline graph::CoxEntry CoxGroup::M
   (coxtypes::Generator s, coxtypes::Generator t) const
@@ -309,9 +300,10 @@ inline bits::Lflags CoxGroup::rdescent(const coxtypes::CoxWord& g) const
 
 inline coxtypes::CoxNbr CoxGroup::contextNumber(const coxtypes::CoxWord& g) const
  {return schubert().contextNumber(g);}
-inline coxtypes::CoxNbr CoxGroup::contextSize() const {return d_klsupport->size();}
+inline coxtypes::CoxNbr CoxGroup::contextSize() const
+ {return d_klsupport.size();}
 inline coxtypes::Length CoxGroup::length(const coxtypes::CoxNbr& x) const
- {return d_klsupport->length(x);}
+ {return d_klsupport.length(x);}
 
 inline bits::Lflags CoxGroup::descent(const coxtypes::CoxNbr& x) const
   {return schubert().descent(x);}
@@ -321,7 +313,7 @@ inline bits::Lflags CoxGroup::rdescent(const coxtypes::CoxNbr& x) const
  {return schubert().rdescent(x);}
 
 inline coxtypes::CoxNbr CoxGroup::inverse(const coxtypes::CoxNbr& x) const
- {return d_klsupport->inverse(x);}
+ {return d_klsupport.inverse(x);}
 inline int CoxGroup::lprod(coxtypes::CoxNbr& x, const coxtypes::Generator& s) const
  {return prod(x,s+rank());}
 
@@ -386,15 +378,13 @@ template <class H>
 inline void CoxGroup::printHeckeElt(FILE* file, const H& h)
   {files::printHeckeElt(file,h,schubert(),outputTraits());}
 
-};
+
 
 /******** template definitions ***********************************************/
 
-namespace coxgroup {
-
 template<class C> void CoxGroup::setOutputTraits(C)
- {new(d_outputTraits) files::OutputTraits(graph(),interface(),C());}
+ { d_outputTraits = files::OutputTraits(graph(),interface(),C()); }
 
-};
+ }; // |namespace coxgroup|
 
 #endif

@@ -25,13 +25,10 @@ namespace typeA {
 TypeACoxGroup::TypeACoxGroup(const coxtypes::Rank& l)
 : FiniteCoxGroup(type::Type("A"),l)
 {
-  delete d_interface;
-  d_typeAInterface = new TypeAInterface(l);
-  d_interface = d_typeAInterface;
+  d_interface.reset(new TypeAInterface(l)); // install derived class
 }
 
 TypeACoxGroup::~TypeACoxGroup()
-
 {}
 
 bool TypeACoxGroup::parseGroupElement(interface::ParseInterface& P) const

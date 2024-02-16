@@ -37,14 +37,14 @@
 
   manipulators :
 
-    - activateKL() : activates the k-l context;
-    - activateIKL() : activates the inverse k-l context;
-    - activateUEKL() : activates the unequal-parameter k-l context;
+    - activateKL() : activates the K-L context;
+    - activateIKL() : activates the inverse K-L context;
+    - activateUEKL() : activates the unequal-parameter K-L context;
     - cBasis(h,y) : returns in h the data for the basis element c_y;
     - extendContext(g) : extends the active contexts to accomodate g;
-    - fillKL() : fills the full k-l table;
+    - fillKL() : fills the full K-L table;
     - fillMu() : fills the full mu-table;
-    - klPol(x,y) : returns the ordinary k-l polynomial P_{x,y};
+    - klPol(x,y) : returns the ordinary K-L polynomial P_{x,y};
     - klRow(h,y) : returns the data for row y in kl-table;
     - mu(x,y) : returns the ordinary mu-coefficient mu(x,y);
     - permute(a) : permutes the context according to a;
@@ -86,31 +86,20 @@ namespace coxgroup {
 */
 CoxGroup::CoxGroup(const type::Type& x, const coxtypes::Rank& l)
   : d_graph(x,l)
-  , d_mintable(new minroots::MinTable(d_graph))
-  , d_klsupport(new klsupport::KLSupport
-		(std::unique_ptr<schubert::SchubertContext>
+  , d_mintable(d_graph)
+  , d_klsupport(std::unique_ptr<schubert::SchubertContext>
 		 (new schubert::StandardSchubertContext(d_graph))
-	       ))
+	       )
   , d_kl(nullptr)
   , d_invkl(nullptr)
   , d_uneqkl(nullptr)
   , d_interface(new interface::Interface(x,l))
-  , d_outputTraits(new files::OutputTraits(graph(),interface(),io::Pretty()))
+  , d_outputTraits(d_graph,interface(),io::Pretty())
   , d_help(new CoxHelper(this))
 {}
 
 
-/*
-  Has to deconstruct what the CoxGroup constructed, in the inverse order.
-*/
-
-CoxGroup::~CoxGroup()
-{
-  delete d_help;
-  delete d_kl;
-  delete d_klsupport;
-  delete d_mintable;
-}
+CoxGroup::~CoxGroup() {} // out-of-line, implicitly destructs |CoxHelper|
 
 /******** accessors **********************************************************/
 
@@ -532,57 +521,48 @@ int CoxGroup::prod(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x) const
 
 /******** manipulators ******************************************************/
 
-void CoxGroup::activateKL()
 
 /*
-  This function activates the ordinary k-l context if it isn't already
+  This function activates the ordinary K-L context if it isn't already
   active.
 
   A memory error could happen in the process, but is not caught (i.e.
   CATCH_MEMORY_ERROR is not set); the program will simply exit printing
   the memory status.
 */
-
+void CoxGroup::activateKL()
 {
-  if (d_kl == 0) {
-    d_kl = new kl::KLContext(d_klsupport);
-  }
-
-  return;
+  if (d_kl == nullptr)
+    d_kl.reset(new kl::KLContext(&d_klsupport));
 }
 
-void CoxGroup::activateIKL()
 
 /*
-  This function activates the inverse k-l context if it isn't already
+  This function activates the inverse K-L context if it isn't already
   active.
 */
 
+void CoxGroup::activateIKL()
 {
-  if (d_invkl == 0) {
-    d_invkl = new invkl::KLContext(d_klsupport);
-  }
-
-  return;
+  if (d_invkl == nullptr)
+    d_invkl.reset(new invkl::KLContext(&d_klsupport));
 }
 
-void CoxGroup::activateUEKL()
 
 /*
-  This function activates the unequal-parameter k-l context if it isn't already
+  This function activates the unequal-parameter K-L context if it isn't already
   active.
 
   Forwards the error ABORT in case of failure (this means that there was a
   problem while getting the lengths from the user.)
 */
-
+void CoxGroup::activateUEKL()
 {
-  if (d_uneqkl == 0) {
-    d_uneqkl = new uneqkl::KLContext(d_klsupport,graph(),interface());
+  if (d_uneqkl == nullptr) {
+    d_uneqkl.reset(new uneqkl::KLContext(&d_klsupport,graph(),interface()));
     if (error::ERRNO) {
       error::Error(error::ERRNO);
-      delete d_uneqkl;
-      d_uneqkl = 0;
+      d_uneqkl.reset();
     }
   }
 
@@ -592,7 +572,7 @@ void CoxGroup::activateUEKL()
 void CoxGroup::cBasis(kl::HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
-  Puts in h the data of the full row for y in the k-l context corresponding
+  Puts in h the data of the full row for y in the K-L context corresponding
   to y, sorted in the order of the current normal forms. Activates the
   context if necessary.
 */
@@ -609,7 +589,7 @@ coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
   This function extends the active contexts to acccomodate g. An active
   context is one that has a non-zero pointer.
 
-  Currently there are three k-l contexts : ordinary, unequal parameter,
+  Currently there are three K-L contexts : ordinary, unequal parameter,
   and inverse. Parabolic stuff should be numbered independently.
 
   This is the place where we try to cope gently with a memory extension
@@ -620,7 +600,7 @@ coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
 
 {
   Ulong prev_size = contextSize();
-  coxtypes::CoxNbr x = d_klsupport->extendContext(g);
+  coxtypes::CoxNbr x = d_klsupport.extendContext(g);
 
   if (error::ERRNO) {
     goto revert;
@@ -645,7 +625,7 @@ coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
   return x;
 
  revert:
-  d_klsupport->revertSize(prev_size);
+  d_klsupport.revertSize(prev_size);
   if (d_kl)
     d_kl->revertSize(prev_size);
   if (d_uneqkl)
@@ -659,7 +639,7 @@ coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
 void CoxGroup::fillIKL()
 
 /*
-  This function fills the whole k-l table up to the size of the current
+  This function fills the whole K-L table up to the size of the current
   schubert context, for inverse kazhdan-lusztig polynomials, avtrer having
   activated the context if necessary.
 */
@@ -689,7 +669,7 @@ void CoxGroup::fillIMu()
 void CoxGroup::fillKL()
 
 /*
-  This function fills the whole k-l table up to the size of the current
+  This function fills the whole K-L table up to the size of the current
   schubert context, after having activated the context if necessary.
 */
 
@@ -717,7 +697,7 @@ void CoxGroup::fillMu()
 void CoxGroup::fillUEKL()
 
 /*
-  This function fills the whole unequal-parameter k-l table up to the size
+  This function fills the whole unequal-parameter K-L table up to the size
   of the current schubert context, after having activated the context if
   necessary.
 */
@@ -747,7 +727,7 @@ void CoxGroup::fillUEMu()
 const invkl::KLPol& CoxGroup::invklPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 
 /*
-  Returns the inverse k-l polynomial Q_{x,y}, after activating the context
+  Returns the inverse K-L polynomial Q_{x,y}, after activating the context
   if necessary.
 */
 
@@ -760,7 +740,7 @@ const invkl::KLPol& CoxGroup::invklPol(const coxtypes::CoxNbr& x, const coxtypes
 void CoxGroup::invklRow(invkl::HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
-  Puts in h the data of the full row for y in the inverse k-l context
+  Puts in h the data of the full row for y in the inverse K-L context
   corresponding to y, sorted in the order of the current normal forms.
   Activates the context if necessary.
 */
@@ -774,7 +754,7 @@ void CoxGroup::invklRow(invkl::HeckeElt& h, const coxtypes::CoxNbr& y)
 const kl::KLPol& CoxGroup::klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 
 /*
-  Returns the ordinary k-l polynomial P_{x,y}, after activating the context
+  Returns the ordinary K-L polynomial P_{x,y}, after activating the context
   if necessary.
 */
 
@@ -787,7 +767,7 @@ const kl::KLPol& CoxGroup::klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxN
 void CoxGroup::klRow(kl::HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
-  Puts in h the data of the full row for y in the k-l context corresponding
+  Puts in h the data of the full row for y in the K-L context corresponding
   to y, sorted in the order of the current normal forms. Activates the
   context if necessary.
 */
@@ -811,7 +791,6 @@ klsupport::KLCoeff CoxGroup::mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNb
   return d_kl->mu(x,y);
 }
 
-void CoxGroup::permute(const bits::Permutation& a)
 
 /*
   This function permutes all the active contexts w.r.t. the permutation a.
@@ -846,9 +825,9 @@ void CoxGroup::permute(const bits::Permutation& a)
   of the pairs (y,y_inverse), viz. the one with the smaller index. So we
   need to maintain that requirement as well.
 */
-
+void CoxGroup::permute(const bits::Permutation& a)
 {
-  d_klsupport->permute(a);
+  d_klsupport.permute(a);
 
   if (d_kl)
     d_kl->permute(a);
@@ -866,7 +845,7 @@ void CoxGroup::permute(const bits::Permutation& a)
 void CoxGroup::uneqcBasis(uneqkl::HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
-  Puts in h the data of the full row for y in the k-l context corresponding
+  Puts in h the data of the full row for y in the K-L context corresponding
   to y, sorted in the order of the current normal forms. Activates the
   context if necessary.
 */
@@ -880,7 +859,7 @@ void CoxGroup::uneqcBasis(uneqkl::HeckeElt& h, const coxtypes::CoxNbr& y)
 const uneqkl::KLPol& CoxGroup::uneqklPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 
 /*
-  Returns the unequal-parameter k-l polynomial P_{x,y}, after activating the
+  Returns the unequal-parameter K-L polynomial P_{x,y}, after activating the
   context if necessary.
 */
 
@@ -908,7 +887,7 @@ void CoxGroup::uneqklRow(uneqkl::HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
   Puts in e_row and kl_row the data of the full row of the unequal-parameter
-  k-l context corresponding to y, sorted in the short-lex order of the
+  K-L context corresponding to y, sorted in the short-lex order of the
   current normal forms. Activates the context if necessary.
 */
 
@@ -952,7 +931,7 @@ void CoxGroup::CoxHelper::sortContext()
 */
 
 {
-  klsupport::KLSupport* kls = d_W->d_klsupport;
+  klsupport::KLSupport* kls = &d_W->d_klsupport;
 
   for (coxtypes::CoxNbr y = 0; y < d_W->contextSize(); ++y) {
     if (!kls->isExtrAllocated(y))
@@ -979,16 +958,15 @@ void CoxGroup::CoxHelper::sortContext()
   return;
 }
 
-void CoxGroup::CoxHelper::checkInverses()
 
 /*
   This function is an auxiliary to permute; it takes care of checking
   that the smaller one of the pairs (y,y_inverse) is allocated in the
   extrList and in all lists which depend on that.
 */
-
+void CoxGroup::CoxHelper::checkInverses()
 {
-  klsupport::KLSupport& kls = *(d_W->d_klsupport);
+  klsupport::KLSupport& kls = d_W->d_klsupport;
 
   for (coxtypes::CoxNbr y = 0; y < d_W->contextSize(); ++y) {
     coxtypes::CoxNbr yi = d_W->inverse(y);

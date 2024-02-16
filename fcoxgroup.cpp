@@ -481,7 +481,6 @@ bool FiniteCoxGroup::parseModifier(interface::ParseInterface& P) const
 
 /******** kazhdan-lusztig cells *********************************************/
 
-const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
 
 /*
   This function returns the list of Duflo involutions in the group, in the
@@ -496,11 +495,11 @@ const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
   NOTE : as for the l(r,lr)cell partitions, the list is filled upon the
   first call.
 */
-
+const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
 {
   if (d_duflo.size() == 0) { /* find duflo involutions */
 
-    kl::KLContext& kl = d_kl[0];
+    kl::KLContext& kl = *d_kl;
     const schubert::SchubertContext& p = kl.schubert();
 
     bits::SubSet q(0);
