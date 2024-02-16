@@ -75,7 +75,7 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
  protected:
 
-  graph::CoxGraph* d_graph;
+  graph::CoxGraph d_graph;
   minroots::MinTable* d_mintable;
   klsupport::KLSupport* d_klsupport;
   kl::KLContext* d_kl;
@@ -99,8 +99,7 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   CoxGroup(const type::Type& x, const coxtypes::Rank& l);
   virtual ~CoxGroup();
 
-  graph::CoxGraph& graph();                                             /* inlined */
-  virtual interface::Interface& interface();                                /* inlined */
+  virtual interface::Interface& interface();                     /* inlined */
   minroots::MinTable& mintable();                                /* inlined */
   klsupport::KLSupport& klsupport();                             /* inlined */
   kl::KLContext& kl();                                           /* inlined */
@@ -108,13 +107,13 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   uneqkl::KLContext& uneqkl();                                   /* inlined */
   virtual files::OutputTraits& outputTraits();                   /* inlined */
 
-  const graph::CoxGraph& graph() const;                                 /* inlined */
-  virtual const interface::Interface& interface() const;                    /* inlined */
+  const graph::CoxGraph& graph() const { return d_graph; }
+  virtual const interface::Interface& interface() const;         /* inlined */
   const minroots::MinTable& mintable() const;                    /* inlined */
   const klsupport::KLSupport& klsupport() const;                 /* inlined */
   const kl::KLContext& kl() const;                               /* inlined */
   const uneqkl::KLContext& uneqkl() const;                       /* inlined */
-  const schubert::SchubertContext& schubert() const;                       /* inlined */
+  const schubert::SchubertContext& schubert() const;             /* inlined */
   virtual const files::OutputTraits& outputTraits() const;       /* inlined */
 
   void activateKL();
@@ -253,7 +252,6 @@ namespace coxgroup {
 
 /* Chapter 0 */
 
-inline graph::CoxGraph& CoxGroup::graph() {return *d_graph;}
 inline minroots::MinTable& CoxGroup::mintable() {return *d_mintable;}
 inline klsupport::KLSupport& CoxGroup::klsupport() {return *d_klsupport;}
 inline kl::KLContext& CoxGroup::kl() {activateKL(); return *d_kl;}
@@ -263,7 +261,6 @@ inline uneqkl::KLContext& CoxGroup::uneqkl()
 inline interface::Interface& CoxGroup::interface() {return *d_interface;}
 inline files::OutputTraits& CoxGroup::outputTraits() {return *d_outputTraits;}
 
-inline const graph::CoxGraph& CoxGroup::graph() const {return *d_graph;}
 inline const minroots::MinTable& CoxGroup::mintable() const {return *d_mintable;}
 inline const klsupport::KLSupport& CoxGroup::klsupport() const
   {return *d_klsupport;}

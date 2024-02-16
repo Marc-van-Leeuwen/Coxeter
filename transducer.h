@@ -39,7 +39,7 @@ class transducer::SubQuotient {
 /* data  */
   coxtypes::Rank d_rank;
   Ulong d_size;
-  graph::CoxGraph& d_graph;
+  const graph::CoxGraph& d_graph;
   list::List<coxtypes::ParNbr> d_shift;
   list::List<coxtypes::Length> d_length;
   coxtypes::ParNbr& shiftref(coxtypes::ParNbr x, coxtypes::Generator s)
@@ -50,7 +50,7 @@ class transducer::SubQuotient {
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(SubQuotient));}
-  SubQuotient(graph::CoxGraph& G, coxtypes::Rank l);
+  SubQuotient(const graph::CoxGraph& G, coxtypes::Rank l);
   ~SubQuotient();
 /* manipulators */
   coxtypes::ParNbr extend(coxtypes::ParNbr x, coxtypes::Generator s);
@@ -65,7 +65,7 @@ class transducer::SubQuotient {
                                                               /* inlined */
   Ulong size() const;                                         /* inlined */
   void schubertClosure(Sub_set& Q, coxtypes::ParNbr x);
-};
+}; // |class transducer::SubQuotient|
 
 class transducer::FiltrationTerm {
   SubQuotient *d_X;
@@ -77,7 +77,8 @@ class transducer::FiltrationTerm {
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(FiltrationTerm));}
   FiltrationTerm() {};
-  FiltrationTerm(graph::CoxGraph& G, coxtypes::Rank l, FiltrationTerm* p = 0);
+  FiltrationTerm(const graph::CoxGraph& G, coxtypes::Rank l,
+		 FiltrationTerm* p = nullptr);
   ~FiltrationTerm();
 /* manipulators */
   coxtypes::ParNbr extend
@@ -89,13 +90,14 @@ class transducer::FiltrationTerm {
   coxtypes::Length length(const coxtypes::ParNbr& x) const;       /* inlined */
   FiltrationTerm *next() const;                                   /* inlined */
   const coxtypes::CoxWord& np(const coxtypes::ParNbr& x) const;   /* inlined */
-  coxtypes::Rank rank() const;                                    /* inlined */
+  coxtypes::Rank rank() const { return d_X->rank(); }
   coxtypes::CoxWord& reduced
-    (coxtypes::CoxWord& g, coxtypes::ParNbr x) const;             /* inlined */
+    (coxtypes::CoxWord& g, coxtypes::ParNbr x) const {return d_X->reduced(g,x); }
   coxtypes::ParNbr shift
-    (const coxtypes::ParNbr& x, const coxtypes::Generator& s) const;/* inlined */
-  Ulong size() const;                                             /* inlined */
-};
+    (const coxtypes::ParNbr& x, const coxtypes::Generator& s) const
+      { return d_X->shift(x,s); }
+  Ulong size() const { return d_X->size(); }
+}; //|class transducer::FiltrationTerm|
 
 class transducer::Transducer {
  private:
@@ -105,13 +107,14 @@ class transducer::Transducer {
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(Transducer));}
-  Transducer(graph::CoxGraph& G);
+  Transducer(const graph::CoxGraph& G);
   ~Transducer();
 /* manipulators */
-  FiltrationTerm* transducer(const coxtypes::Rank& l) {return d_filtration.ptr()+l;}
+  FiltrationTerm* transducer (const coxtypes::Rank& l)
+    { return d_filtration.ptr()+l; }
 /* accessors */
-  const FiltrationTerm* transducer(const coxtypes::Rank& l) const;
-};
+  const FiltrationTerm* transducer (const coxtypes::Rank& l) const;
+}; // |class transducer::Transducer|
 
 /******** inline implementations ********************************************/
 
@@ -141,13 +144,6 @@ inline FiltrationTerm* FiltrationTerm::next() const {return d_next;}
 inline const coxtypes::CoxWord& FiltrationTerm::np
   (const coxtypes::ParNbr& x) const
   {return d_np[x];}
-inline coxtypes::Rank FiltrationTerm::rank() const {return d_X->rank();}
-inline coxtypes::CoxWord& FiltrationTerm::reduced(coxtypes::CoxWord& g, coxtypes::ParNbr x) const
-  {return d_X->reduced(g,x);}
-inline coxtypes::ParNbr FiltrationTerm::shift
-  (const coxtypes::ParNbr& x, const coxtypes::Generator& s) const
-  {return d_X->shift(x,s);}
-inline Ulong FiltrationTerm::size() const {return d_X->size();}
 
 /* Transducer */
 

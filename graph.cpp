@@ -677,7 +677,7 @@ containers::vector<bits::Lflags> vertex_stars
   for(coxtypes::Generator s = 0; s < l; s++) {
     bits::Lflags star = 0;
     for (coxtypes::Generator t = 0; t < l; t++)
-      if ((m[s*l + t] > 2) || (m[s*l + t] == 0))
+      if ((m[s*l + t] > 2) or (m[s*l + t] == 0)) // neither 1 nor 2
 	star |= constants::lmask[t];
     result.push_back(star);
   }

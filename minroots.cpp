@@ -25,19 +25,19 @@ namespace {
   {
   public:
     InitMinTable() {};
-    InitMinTable(graph::CoxGraph& G);
+    InitMinTable(const graph::CoxGraph& G);
     MinNbr dihedralShift(MinNbr r, coxtypes::Generator s, coxtypes::Generator t,
 			   Ulong c);
-    void initMinTable(graph::CoxGraph& G);
-    void fillDepthOneRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
-    void fillDihedralRoots(graph::CoxGraph& G);
-    void fillDihedralRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s, coxtypes::Length d);
-    void fillMinTable(graph::CoxGraph& G);
-    void fillReflectionRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
-    void newDepthOneRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
-    void newDepthTwoRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
-    void newDihedralRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s, coxtypes::Length d);
-    void newMinRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void initMinTable(const graph::CoxGraph& G);
+    void fillDepthOneRow(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void fillDihedralRoots(const graph::CoxGraph& G);
+    void fillDihedralRow(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s, coxtypes::Length d);
+    void fillMinTable(const graph::CoxGraph& G);
+    void fillReflectionRow(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void newDepthOneRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void newDepthTwoRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
+    void newDihedralRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s, coxtypes::Length d);
+    void newMinRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s);
     void setMinMemory(unsigned long n) {d_min.setSize(n); d_dot.setSize(n);}
     inline MinNbr size() {return d_size;}
   };
@@ -58,7 +58,7 @@ namespace {
   property and an automatic structure for Coxeter groups", Math. Annalen 296
   (1993), pp. 179-190, for a description of the concept of a minimal root
   (called elementary roots by them), and a proof of their finiteness.
-  See alos Casselman, ... , for a description of how this finite state
+  See also Casselman, ... , for a description of how this finite state
   machine may be used for reduction and normal form checking, and for
   constructing an automaton recognizing ShortLex.
 
@@ -74,8 +74,8 @@ namespace {
   First of all, the support supp(r) of a minimal root is always a tree
   without infinite bonds. Conversely, a connected subset I of S which is
   a tree without infinite bonds can be the support of a minimal root if
-  and only if there are no multiple bonds contained in-between to other
-  mutliple bonds (notice that two edges in a tree always define a well-
+  and only if there are no multiple bonds contained in-between two other
+  multiple bonds (notice that two edges in a tree always define a well-
   defined interval between them, viz. the geodesic between x and y for
   x in the first bond, y in the second, eliminating any bond-points that
   it may contain.)
@@ -95,7 +95,7 @@ namespace {
 
   If there is only one bond in I, with cyclotomy m, then there are two
   possible "orientations", i.e., the choice of interior and exterior is
-  arbitrary; accordingly we have to basic roots r_I,x and r_I,y, where
+  arbitrary; accordingly we have two basic roots r_I,x and r_I,y, where
   x and y are the two points in the bond, and r_I,x is the root where
   x is interior, say. If the cyclotomy is not five, these are again the
   only roots with all coefficients < 2, and the minimal roots with
@@ -230,7 +230,7 @@ InitStaticConstants::InitStaticConstants()
   CSm += dotval_size;
 
   using namespace dotval; // all right hand sides are constants defined there
-  
+
   CS3[-13] = locked;          /* locked - cos(*) */
   CS3[-12] = undef_dotval;    /* undef_negdot - cos(*) : can't occur */
   CS3[-11] = locked;          /* - cos - cos(*) */
@@ -575,7 +575,7 @@ InitStaticConstants::InitStaticConstants()
 
 namespace {
 
-InitMinTable::InitMinTable(graph::CoxGraph& G)
+InitMinTable::InitMinTable(const graph::CoxGraph& G)
 
 {
   static InitStaticConstants a;
@@ -586,7 +586,7 @@ InitMinTable::InitMinTable(graph::CoxGraph& G)
   return;
 }
 
-void InitMinTable::initMinTable(graph::CoxGraph& G)
+void InitMinTable::initMinTable(const graph::CoxGraph& G)
 
 {
   d_min.setSize(rank());
@@ -660,7 +660,7 @@ MinNbr InitMinTable::dihedralShift(MinNbr r, coxtypes::Generator s, coxtypes::Ge
 }
 
 
-void InitMinTable::fillDihedralRoots(graph::CoxGraph& G)
+void InitMinTable::fillDihedralRoots(const graph::CoxGraph& G)
 
 /*
   Assuming M has been initialized by InitMinTable, fills in the
@@ -709,7 +709,7 @@ void InitMinTable::fillDihedralRoots(graph::CoxGraph& G)
 }
 
 
-void InitMinTable::fillDepthOneRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
+void InitMinTable::fillDepthOneRow(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
   coxtypes::Generator u = min(r,s);
@@ -752,7 +752,7 @@ void InitMinTable::fillDepthOneRow(graph::CoxGraph& G, MinNbr r, coxtypes::Gener
 }
 
 
-void InitMinTable::fillDihedralRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s,
+void InitMinTable::fillDihedralRow(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s,
 				  coxtypes::Length d)
 
 {
@@ -810,7 +810,7 @@ void InitMinTable::fillDihedralRow(graph::CoxGraph& G, MinNbr r, coxtypes::Gener
 }
 
 
-void InitMinTable::fillReflectionRow(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
+void InitMinTable::fillReflectionRow(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 /*
   This function fills in d_min[r], where r has just been created through s,
@@ -864,7 +864,7 @@ void InitMinTable::fillReflectionRow(graph::CoxGraph& G, MinNbr r, coxtypes::Gen
 }
 
 
-void InitMinTable::fillMinTable(graph::CoxGraph& G)
+void InitMinTable::fillMinTable(const graph::CoxGraph& G)
 
 {
   fillDihedralRoots(G);
@@ -884,7 +884,7 @@ void InitMinTable::fillMinTable(graph::CoxGraph& G)
 }
 
 
-void InitMinTable::newDepthOneRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
+void InitMinTable::newDepthOneRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
   setMinMemory(d_size+1);
@@ -912,7 +912,7 @@ void InitMinTable::newDepthOneRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Gener
 }
 
 
-void InitMinTable::newDepthTwoRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
+void InitMinTable::newDepthTwoRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
   setMinMemory(d_size+1);
@@ -940,7 +940,7 @@ void InitMinTable::newDepthTwoRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Gener
 }
 
 
-void InitMinTable::newDihedralRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s,
+void InitMinTable::newDihedralRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s,
 				  coxtypes::Length d)
 
 {
@@ -976,7 +976,7 @@ void InitMinTable::newDihedralRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Gener
 }
 
 
-void InitMinTable::newMinRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
+void InitMinTable::newMinRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Generator s)
 
 {
   setMinMemory(d_size+1);
@@ -1014,8 +1014,8 @@ void InitMinTable::newMinRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator 
 
  The following functions are defined :
 
-  - MinTable(graph::CoxGraph&);
-  - fill(graph::CoxGraph&) : fills the MinTable;
+  - MinTable(const graph::CoxGraph&);
+  - fill(const graph::CoxGraph&) : fills the MinTable;
 
   access to the descent sets :
 
@@ -1042,7 +1042,7 @@ void InitMinTable::newMinRoot(graph::CoxGraph& G, MinNbr r, coxtypes::Generator 
 
 namespace minroots {
 
-MinTable::MinTable(graph::CoxGraph& G)
+MinTable::MinTable(const graph::CoxGraph& G)
 
 {
   new(this) InitMinTable(G);
@@ -1147,7 +1147,7 @@ bits::Lflags MinTable::rdescent(const coxtypes::CoxWord& g) const
   return f;
 }
 
-void MinTable::fill(graph::CoxGraph& G)
+void MinTable::fill(const graph::CoxGraph& G)
 
 {
   InitMinTable* T = (InitMinTable *)this;
@@ -1232,16 +1232,16 @@ bool MinTable::inOrder(const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_
    return inOrder(g,h);
 }
 
-bool MinTable::inOrder(list::List<coxtypes::Length>& a, const coxtypes::CoxWord& d_g,
-		       const coxtypes::CoxWord& d_h) const
 
 /*
-  Like the previous inOrder, but puts in a the places where the erasures take
+  Like the previous inOrder, but puts in |a| the places where the erasures take
   place.
 
-  The list a is not disturbed if the comparison yields false.
+  The list |a| is not disturbed if the comparison yields false.
 */
-
+bool MinTable::inOrder
+  (list::List<coxtypes::Length>& a,
+   const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_h) const
 {
   if (!inOrder(d_g,d_h))
     return false;
@@ -1293,12 +1293,12 @@ const coxtypes::CoxWord& MinTable::inverse(coxtypes::CoxWord& g) const
 }
 
 
-bool MinTable::isDescent(const coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 
 /*
   Returns true if s is a descent generator of g, false otherwise.
 */
-
+bool MinTable::isDescent
+  (const coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 {
   MinNbr r = s;
 
@@ -1467,7 +1467,6 @@ int MinTable::prod(coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const
 }
 
 
-const coxtypes::CoxWord& MinTable::reduced(coxtypes::CoxWord& g, coxtypes::CoxWord& h) const
 
 /*
   Writes in g a reduced word corresponding to the arbitrary generator
@@ -1475,7 +1474,8 @@ const coxtypes::CoxWord& MinTable::reduced(coxtypes::CoxWord& g, coxtypes::CoxWo
   coxword might be non-reduced; it is not used in the program, but
   provided for convenience.
 */
-
+const coxtypes::CoxWord& MinTable::reduced
+  (coxtypes::CoxWord& g, coxtypes::CoxWord& h) const
 {
   g.setLength(0);
   g[0] = 0;

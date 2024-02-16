@@ -67,9 +67,6 @@ class graph::CoxGraph
   containers::vector<bits::Lflags> d_finite_edges; // list of non-infinite edges
  public:
 /* constructors and destructors */
-  void* operator new(size_t size) {return memory::arena().alloc(size);}
-  void operator delete(void* ptr)
-    {return memory::arena().free(ptr,sizeof(CoxGraph));}
   CoxGraph(const type::Type& x, const coxtypes::Rank& l);
   ~CoxGraph();
 /* accessors */

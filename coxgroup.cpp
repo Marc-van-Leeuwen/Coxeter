@@ -85,7 +85,7 @@ namespace coxgroup {
   - the Kazhdan-Lusztig context;
 */
 CoxGroup::CoxGroup(const type::Type& x, const coxtypes::Rank& l)
-  : d_graph(new graph::CoxGraph(x,l))
+  : d_graph(x,l)
 {
   if (error::ERRNO) /* problem with the Coxeter matrix */
     return;
@@ -114,9 +114,6 @@ CoxGroup::~CoxGroup()
   delete d_kl;
   delete d_klsupport;
   delete d_mintable;
-  delete d_graph;
-
-  return;
 }
 
 /******** accessors **********************************************************/

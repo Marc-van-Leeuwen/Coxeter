@@ -61,7 +61,7 @@ namespace {
 
 namespace transducer {
 
-FiltrationTerm::FiltrationTerm(graph::CoxGraph& G, coxtypes::Rank l, FiltrationTerm* p)
+FiltrationTerm::FiltrationTerm(const graph::CoxGraph& G, coxtypes::Rank l, FiltrationTerm* p)
   :d_next(p)
 
 /*
@@ -165,7 +165,7 @@ void FiltrationTerm::fillNormalPieces()
 
 namespace transducer {
 
-SubQuotient::SubQuotient(graph::CoxGraph& G, coxtypes::Rank l)
+SubQuotient::SubQuotient(const graph::CoxGraph& G, coxtypes::Rank l)
   :d_rank(l),d_size(1),d_graph(G),d_shift(l),d_length(1)
 
 /*
@@ -496,7 +496,7 @@ coxtypes::CoxWord& SubQuotient::reduced
 
 namespace transducer {
 
-Transducer::Transducer(graph::CoxGraph& G):d_filtration(G.rank())
+Transducer::Transducer(const graph::CoxGraph& G):d_filtration(G.rank())
 
 {
   coxtypes::Rank l = G.rank();

@@ -65,14 +65,17 @@ class minroots::MinTable {
   void* operator new(size_t, void* ptr) {return ptr;}
   void operator delete(void* ptr, void* placement) {};
   MinTable() {};
-  MinTable(graph::CoxGraph& G);
+  MinTable(const graph::CoxGraph& G);
   ~MinTable();
 /* manipulators */
-  void fill(graph::CoxGraph& G);
+  void fill(const graph::CoxGraph& G);
 /* accessors */
   bits::Lflags descent(const coxtypes::CoxWord& g) const;
-  dotval::DotVal dot(MinNbr r, coxtypes::Generator s) const;                /* inlined */
-  int insert(coxtypes::CoxWord& g, const coxtypes::Generator& s, const bits::Permutation& order) const;
+  dotval::DotVal dot(MinNbr r, coxtypes::Generator s) const
+    { return dotval::DotVal(d_dot[r][s]); }
+  int insert
+    (coxtypes::CoxWord& g, const coxtypes::Generator& s,
+     const bits::Permutation& order) const;
   const coxtypes::CoxWord& inverse(coxtypes::CoxWord& g) const;
   bool inOrder(const coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
   bool inOrder
@@ -83,30 +86,17 @@ class minroots::MinTable {
   bits::Lflags ldescent(const coxtypes::CoxWord& g) const;
   const coxtypes::CoxWord& normalForm
     (coxtypes::CoxWord& g, const bits::Permutation& order) const;
-  MinNbr min(MinNbr r, coxtypes::Generator s) const;              /* inlined */
+  MinNbr min(MinNbr r, coxtypes::Generator s) const { return d_min[r][s]; }
   int prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const;
   int prod
     (coxtypes::CoxWord& g, coxtypes::CoxLetter *const h, const Ulong& n) const;
   int prod(coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
-  coxtypes::Rank rank() const;                                    /* inlined */
+  coxtypes::Rank rank() const { return d_rank; }
   bits::Lflags rdescent(const coxtypes::CoxWord& g) const;
   const coxtypes::CoxWord& reduced
     (coxtypes::CoxWord& g, coxtypes::CoxWord& h) const;
-  MinNbr size() const;                                            /* inlined */
+  MinNbr size() const { return d_size; }
   const coxtypes::CoxWord& power(coxtypes::CoxWord& a, const Ulong& m) const;
-};
-
-/******** Inline definitions **********************************************/
-
-namespace minroots {
-
-inline dotval::DotVal MinTable::dot(MinNbr r, coxtypes::Generator s) const
-  {return dotval::DotVal(d_dot[r][s]);}
-inline MinNbr MinTable::min(MinNbr r, coxtypes::Generator s) const
-  {return d_min[r][s];}
-inline coxtypes::Rank MinTable::rank() const {return d_rank;}
-inline MinNbr MinTable::size() const {return d_size;}
-
-};
+}; // |class minroots::MinTable|
 
 #endif
