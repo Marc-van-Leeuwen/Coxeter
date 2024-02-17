@@ -559,7 +559,7 @@ void CoxGroup::activateIKL()
 void CoxGroup::activateUEKL()
 {
   if (d_uneqkl == nullptr) {
-    d_uneqkl.reset(new uneqkl::KLContext(&d_klsupport,graph(),interface()));
+    d_uneqkl.reset(new uneqkl::KLContext(d_klsupport,graph(),interface()));
     if (error::ERRNO) {
       error::Error(error::ERRNO);
       d_uneqkl.reset();

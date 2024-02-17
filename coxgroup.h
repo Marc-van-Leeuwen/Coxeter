@@ -101,9 +101,9 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
   minroots::MinTable& mintable() { return d_mintable; }
   klsupport::KLSupport& klsupport() { return d_klsupport; }
-  kl::KLContext& kl();                                           /* inlined */
-  invkl::KLContext& invkl();                                     /* inlined */
-  uneqkl::KLContext& uneqkl();                                   /* inlined */
+  kl::KLContext& kl() { activateKL(); return *d_kl; }
+  invkl::KLContext& invkl() { activateIKL(); return *d_invkl; }
+  uneqkl::KLContext& uneqkl() { activateUEKL(); return *d_uneqkl; }
   virtual interface::Interface& interface() { return *d_interface; }
   virtual files::OutputTraits& outputTraits() { return d_outputTraits; }
 
@@ -111,9 +111,11 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   virtual const interface::Interface& interface() const { return *d_interface; }
   const minroots::MinTable& mintable() const { return d_mintable; }
   const klsupport::KLSupport& klsupport() const { return d_klsupport; }
-  const kl::KLContext& kl() const;                               /* inlined */
-  const uneqkl::KLContext& uneqkl() const;                       /* inlined */
-  const schubert::SchubertContext& schubert() const;             /* inlined */
+  const kl::KLContext& kl() const { return *d_kl; } // assumes |d_kl!=nullptr|
+  const uneqkl::KLContext& uneqkl() const { return *d_uneqkl; }
+  const schubert::SchubertContext& schubert() const
+    { return d_klsupport.schubert(); }
+
   virtual const files::OutputTraits& outputTraits() const
     { return d_outputTraits; }
 
@@ -253,15 +255,6 @@ namespace coxgroup {
 
 /* Chapter 0 */
 
-inline kl::KLContext& CoxGroup::kl() {activateKL(); return *d_kl;}
-inline invkl::KLContext& CoxGroup::invkl() {activateIKL(); return *d_invkl;}
-inline uneqkl::KLContext& CoxGroup::uneqkl()
-  {activateUEKL(); return *d_uneqkl;}
-
-inline const kl::KLContext& CoxGroup::kl() const {return *d_kl;}
-inline const uneqkl::KLContext& CoxGroup::uneqkl() const {return *d_uneqkl;}
-inline const schubert::SchubertContext& CoxGroup::schubert() const
-  {return d_klsupport.schubert();}
 
 inline graph::CoxEntry CoxGroup::M
   (coxtypes::Generator s, coxtypes::Generator t) const

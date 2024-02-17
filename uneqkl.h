@@ -109,7 +109,7 @@ struct MuData {
 };
 
 class KLContext {
-  klsupport::KLSupport* d_klsupport;
+  klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
   containers::vector<std::unique_ptr<KLRow> > d_klList;
   containers::vector<MuTable> d_muTable; // indexed by |s|
   containers::vector<coxtypes::Length> d_L; // lengths of generators
@@ -125,7 +125,7 @@ class KLContext {
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(KLContext));}
-  KLContext(klsupport::KLSupport* kls, const graph::CoxGraph& G,
+  KLContext(klsupport::KLSupport& kls, const graph::CoxGraph& G,
 	    const interface::Interface& I);
   ~KLContext();
 /* accessors */
@@ -134,7 +134,7 @@ class KLContext {
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                         /* inlined */
   bool isMuAllocated(const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const; /* inlined */
   const KLRow& klList(const coxtypes::CoxNbr& y) const { return *d_klList[y]; }
-  const klsupport::KLSupport& klsupport() const;                            /* inlined */
+  const klsupport::KLSupport& klsupport() const { return d_klsupport; }
   coxtypes::Generator last(const coxtypes::CoxNbr& x) const;                         /* inlined */
   Ulong length(const coxtypes::CoxNbr& x) const;                         /* inlined */
   const MuRow& muList(const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const;/* inlined */
@@ -176,8 +176,6 @@ inline coxtypes::CoxNbr KLContext::inverse(const coxtypes::CoxNbr& x) const
 inline bool KLContext::isMuAllocated
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
   {return d_muTable[s][y] != nullptr;}
-inline const klsupport::KLSupport& KLContext::klsupport() const
-  {return *d_klsupport;}
 inline coxtypes::Generator KLContext::last(const coxtypes::CoxNbr& x) const
   {return klsupport().last(x);}
 inline Ulong KLContext::length(const coxtypes::CoxNbr& x) const
@@ -185,7 +183,7 @@ inline Ulong KLContext::length(const coxtypes::CoxNbr& x) const
 inline const MuRow& KLContext::muList
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
   const {return *d_muTable[s][y];}
-inline coxtypes::Rank KLContext::rank() const {return d_klsupport->rank();}
+inline coxtypes::Rank KLContext::rank() const {return d_klsupport.rank();}
 inline const schubert::SchubertContext& KLContext::schubert() const
   {return klsupport().schubert();}
 inline Ulong KLContext::size() const {return d_klList.size();}

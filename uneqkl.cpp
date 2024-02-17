@@ -62,8 +62,8 @@ namespace uneqkl {
     KLRow& klList(const coxtypes::CoxNbr& y) {return *d_kl->d_klList[y]; }
     const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
       {return d_kl->klPol(x,y);}
-    klsupport::KLSupport& klsupport() {return d_kl->d_klsupport[0];}
-    containers::bag<KLPol>& klTree() {return d_kl->d_klTree;}
+    klsupport::KLSupport& klsupport() { return d_kl->d_klsupport;}
+    containers::bag<KLPol>& klTree() { return d_kl->d_klTree; }
     coxtypes::Generator last(const coxtypes::CoxNbr& x)
       {return klsupport().last(x);}
     Ulong length(const coxtypes::CoxNbr& x) {return d_kl->length(x);}
@@ -230,10 +230,10 @@ namespace uneqkl {
   destruction of the components on exit will be satisfactory in that case.
 */
 KLContext::KLContext
-  (klsupport::KLSupport* kls, const graph::CoxGraph& G,
+  (klsupport::KLSupport& kls, const graph::CoxGraph& G,
    const interface::Interface& I)
   : d_klsupport(kls)
-  , d_klList(kls->size())
+  , d_klList(kls.size())
   , d_muTable()
   , d_L(2*rank()) // the size expected by |interactive::getLength|
   , d_length{0} // start with a single length entry 0
@@ -259,14 +259,14 @@ KLContext::KLContext
   d_muTable.reserve(rank());
 
   for (coxtypes::Generator s = 0; s < rank(); ++s) {
-    d_muTable.emplace_back(kls->size()); // create a |MuTable| of |kls->size()|
+    d_muTable.emplace_back(kls.size()); // create a |MuTable| of |kls->size()|
     MuTable& t = d_muTable.back();
     t[0].reset(new MuRow(0)); // create one entry (empty list) in initial slot
   }
 
-  d_length.reserve(kls->size());
+  d_length.reserve(kls.size());
 
-  for (coxtypes::CoxNbr x = 1; x < kls->size(); ++x) {
+  for (coxtypes::CoxNbr x = 1; x < kls.size(); ++x) {
     coxtypes::Generator s = last(x);
     coxtypes::CoxNbr xs = schubert().shift(x,s);
     d_length.push_back(d_length[xs] + d_L[s]);
@@ -277,7 +277,6 @@ KLContext::KLContext
 }
 
 KLContext::~KLContext()
-
 {
 }
 
@@ -520,7 +519,7 @@ void KLContext::revertSize(const Ulong& n)
 void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 {
   if (d_help->row_needs_completion(y)) {
-    d_klsupport->allocRowComputation(y);
+    d_klsupport.allocRowComputation(y);
     if (error::ERRNO)
       goto error_exit;
     d_help->fillKLRow(y);
