@@ -397,8 +397,8 @@ const KLPol& KLContext::klPol
 const MuPol KLContext::mu(const coxtypes::Generator& s,
 			  const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 {
-  if (not isMuAllocated(s,y))
-    d_help->allocMuRow(s,y);
+  if (no_mu_yet(s,y))
+    d_help->create_mu_row(s,y);
 
   const MuRow& mu_row = muList(s,y);
 
