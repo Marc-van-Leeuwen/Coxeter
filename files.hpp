@@ -796,8 +796,8 @@ void printPolynomial(FILE* file, const P& p, PolynomialTraits& traits,
 }
 
 template <class KL>
-void printRCOrder(FILE* file, KL& kl, const interface::Interface& I, OutputTraits& traits)
-
+void printRCOrder
+  (FILE* file, KL& kl, const interface::Interface& I, OutputTraits& traits)
 {
   // make graph
 

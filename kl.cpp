@@ -20,17 +20,17 @@ namespace kl {
   This file contains the code for the computation of the (ordinary) Kazhdan-
   Lusztig polynomials for W.
 
-  The kl context maintains two main lists : klList and muList. Each of these
+  The K-L context maintains two main lists : klList and muList. Each of these
   has one pointer (to a KLRow and a MuRow, respectively) for each element in
   the current schubert context; the enlargement and permutation functions
-  for the schubert context make sure that the various active k-l contexts
+  for the schubert context make sure that the various active K-L contexts
   are enlarged/permuted accordingly.
 
   The row y in klList, when allocated, contains one entry for each extremal
   x <= y; the list of those x can be gotten from the klsupport structure,
   which maintains these extremal lists. The lists of extremal pairs are shared
-  among all k-l contexts. Each entry in klList(y) is simply a pointer to
-  a (constant) polynomial, the k-l polynomial for (x,y). The main complication
+  among all K-L contexts. Each entry in klList(y) is simply a pointer to
+  a (constant) polynomial, the K-L polynomial for (x,y). The main complication
   is that I've (rightly or wrongly) decided to not allocate klList(y) if
   inverse(y) < y; in that case, the polynomial is read from the list for
   inverse(y). This saves space, but makes lookup more complicated. More
@@ -59,9 +59,9 @@ namespace kl {
 
   The requests that we mainly focus on are the following :
 
-    - compute a single k-l polynomial (mu-coefficient);
-    - compute all P_{x,y}'s (mu(x,y)'s) for a given y;
-    - compute the full file of k-l polynomials (mu coefficients);
+    - compute a single K-L polynomial (or mu-coefficient);
+    - compute all P_{x,y}'s (or mu(x,y)'s) for a given y;
+    - compute the full file of K-L polynomials (mu coefficients);
 
   It turns out that the dominant factor in the computation is the Bruhat order
   comparison. That is why computing a whole row can be done much more
@@ -177,7 +177,7 @@ namespace {
     manipulators :
 
       - applyInverse(y) : exchanges rows in klList for y and y_inverse;
-      - fillKL() : fills the full k-l table;
+      - fillKL() : fills the full K-L table;
       - fillMu() : fills the full mu-table;
       - klPol(x,y) : for x <= y, returns the Kazhdan-Lusztig polynomial;
       - klPol(x,y,s) : same as above, using s as descent;
@@ -514,7 +514,7 @@ void KLContext::revertSize(const Ulong& n)
 
 
 /*
-  This function returns in h the data for the full row of y in the k-l table,
+  This function returns in h the data for the full row of y in the K-L table,
   sorted in the context number order.
 */
 void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
@@ -608,7 +608,7 @@ void KLContext::printStatus(FILE* file) const
 void KLContext::compareMu()
 
 /*
-  This function compares the mu-values gotten directly from the k-l polynomials
+  This function compares the mu-values gotten directly from the K-L polynomials
   to those from fillMu.
 */
 
@@ -656,18 +656,18 @@ void KLContext::compareMu()
 
   The purpose of the KLHelper class is to hide from the public eye a number
   of helper functions, used in the construction and maintenance of the
-  k-l context. This unclutters kl.h quite a bit.
+  K-L context. This unclutters kl.h quite a bit.
 
   The following functions are defined :
 
    - allocExtrRow(const coxtypes::CoxNbr& y) : allocates a row in the extremal list;
-   - allocKLRow(const coxtypes::CoxNbr& y) : allocates a row in the k-l list;
+   - allocKLRow(const coxtypes::CoxNbr& y) : allocates a row in the K-L list;
    - allocMuRow(const coxtypes::CoxNbr& y) : allocates a row in the mu list;
    - allocMuRow(MuRow& row, const coxtypes::CoxNbr& y) : same, for an external mu-row;
    - allocMuTable() : allocates the full mu-table;
    - allocRowComputation(const coxtypes::CoxNbr& y) : initial allocation for a
      row-computation
-   - checkKLRow(const coxtypes::CoxNbr& y) : checks if a k-l row is fully computed;
+   - checkKLRow(const coxtypes::CoxNbr& y) : checks if a K-L row is fully computed;
    - coatomCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : subtracts the
      terms ofr coatoms in the mu-correction, for a full row;
    - coatomCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
@@ -676,7 +676,7 @@ void KLContext::compareMu()
    - fillMuRow(MuRow& row, const coxtypes::CoxNbr& y) : fills a row in the mu-table;
    - fillKLPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s =
      coxtypes::undef_generator) : fills in one polynomial, using s as descent;
-   - fillKLRow(const coxtypes::CoxNbr& y) : fills in one row in the k-l table;
+   - fillKLRow(const coxtypes::CoxNbr& y) : fills in one row in the K-L table;
      coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) : returns the inverse of y;
    - initWorkspace(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : another preliminary
      to the computation of a row;
@@ -691,7 +691,7 @@ void KLContext::compareMu()
    - muList(const coxtypes::CoxNbr& y) : returns the row for y in muList;
    - prepareRow(const coxtypes::CoxNbr& y, const coxtypes::Generator& s) : a preliminary to the
      computation of a row;
-   - readMuRow(const coxtypes::CoxNbr& y) : fills in the mu-row from the k-l row;
+   - readMuRow(const coxtypes::CoxNbr& y) : fills in the mu-row from the K-L row;
    - recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s) :
      computes mu(x,y) using the general recursive formula;
    - secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : takes care of the
@@ -1119,7 +1119,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu(const coxtypes::CoxNbr& x, con
   commute; in particular they act on the same side; assume this is on the
   right. So we have yst < ys < y < yt, xs < x < xt. Assume that x <= ys
   (otherwise mu(x,y) = mu(xs,ys)). Then from the fact that xt > x, yst < ys,
-  exactly as in the proof of thm. 4.2. in the original k-l paper, one sees
+  exactly as in the proof of thm. 4.2. in the original K-L paper, one sees
   that at most four terms survive in the recursion formula : we have
 
   mu(x,y) = mu(xs,ys) + mu(xt,ys) - mu(x,yst)(if ysts < yst)
@@ -1358,7 +1358,7 @@ void KLContext::KLHelper::fillKLRow(const coxtypes::CoxNbr& d_y)
   if checkKLRow(y) has returned the value false.
 
   This is one of the big functions in the program, of course. It is typically
-  called when an element of the k-l basis of the Hecke algebra is required,
+  called when an element of the K-L basis of the Hecke algebra is required,
   or when we want to study the singularities of a Schubert variety. We have
   tried to optimize it for speed rather than memory efficiency.
 
@@ -2921,7 +2921,7 @@ namespace kl {
 
 /*
   This function returns in h the singular locus of cl(X_y). The point is to
-  do this while computing as few k-l polynomials as possible.
+  do this while computing as few K-L polynomials as possible.
 */
 void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
 {

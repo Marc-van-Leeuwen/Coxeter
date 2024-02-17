@@ -564,12 +564,18 @@ InitStaticConstants::InitStaticConstants()
       Chapter I -- The InitMinTable class.
 
   This section defines the class InitMinTable class, which is used in the
-  construction of MinTable.
+  construction of MinTable. It is a class derived from |MinTable| with the sole
+  purpose of being able to access its |protected| members.
 
-  NOTE : this looks a rather clumsy, and could probably be improved.
-  The problem is that the constructing functions need access to the
-  representation, but we don't want them to be member functions. An
-  alternative would be to make them private members.
+  NOTE : this looks a rather clumsy, and could probably be improved. The problem
+  is that the constructing functions need access to the representation, but we
+  don't want them to be member functions. An alternative would be to make them
+  private members. Other classes (those called |KLContext|) use a |KLHelper|
+  subclass for similar purposes, though that class remains in existence
+  throughout the lifetime of the main class, and (and holding a non-|const|
+  pointer/reference to their parent class) can do maintenance work on the class
+  members that would normally be reserved to members (public or private) of the
+  main class itself.
 
  ****************************************************************************/
 
