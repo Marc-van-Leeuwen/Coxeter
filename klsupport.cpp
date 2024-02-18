@@ -149,6 +149,8 @@ void KLSupport::standardPath(list::List<coxtypes::Generator>& g, const coxtypes:
 */
 void KLSupport::allocExtrRow(const coxtypes::CoxNbr& y)
 {
+  if (d_extrList[y]!=nullptr)
+    return;
   const schubert::SchubertContext& p = schubert();
   bits::BitMap b(size()); // take full scurrent size of the |KLSupport| class
 
@@ -162,7 +164,6 @@ void KLSupport::allocExtrRow(const coxtypes::CoxNbr& y)
     (new ExtrRow(b.begin(),b.end()));
 }
 
-void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 
 /*
   This function makes sure that all the extremal rows in the standard
@@ -171,11 +172,11 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
   well fill them anyway; doing them all at the same time will save
   many Bruhat closure computations, which are relatively expensive.
   Still, this function looks like overkill to me. I'm leaving it in
-  because it is working and it was a pain to write!
+  because it is working and it was a pain to write! [dixit Fokko]
 
   Things wouldn't be so bad if there wasn't also the passage to inverses!
 */
-
+void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 {
   static list::List<coxtypes::Generator> e(0);
   const schubert::SchubertContext& p = schubert();
@@ -236,14 +237,13 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
   return;
 }
 
-void KLSupport::applyInverse(const coxtypes::CoxNbr& y)
 
 /*
-  This function puts in d_extrList[y] the row of inverses of d_extrList[yi],
-  where yi is the inverse of y, and sets the row of yi to zero. The row is
-  not sorted (this can be done with sortIRow).
+  This function moves the contents of |d_extrList[yi]| to |d_extrList[y]|
+  (where |yi| is the inverse of |y|) while taking the inverses of all entries.
+  The resulting row is not sorted (this can be done with sortIRow).
 */
-
+void KLSupport::applyInverse(const coxtypes::CoxNbr& y)
 {
   coxtypes::CoxNbr yi = inverse(y);
   d_extrList[y] = std::move(d_extrList[yi]);
@@ -252,8 +252,6 @@ void KLSupport::applyInverse(const coxtypes::CoxNbr& y)
   for (Ulong j = 0; j < e.size(); ++j) {
     e[j] = inverse(e[j]);
   }
-
-  return;
 }
 
 
