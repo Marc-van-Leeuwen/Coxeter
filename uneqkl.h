@@ -110,8 +110,6 @@ struct KLStats // holds statistics
 // the main class for this module
 class KLContext
 {
-  containers::vector<std::unique_ptr<KLRow> > d_klList;
-  containers::vector<MuTable> d_muTable; // indexed by |s|
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help; // pointer level hides implementation
  public:
@@ -124,26 +122,20 @@ class KLContext
 	    const interface::Interface& I);
   ~KLContext();
 /* accessors */
+  Ulong size() const;
+  const klsupport::KLSupport& klsupport() const;
   coxtypes::Rank rank() const {return klsupport().rank();}
-  Ulong size() const { return d_klList.size(); }
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
     { return klsupport().inverse(x); }
   const schubert::SchubertContext& schubert() const
     { return klsupport().schubert(); }
-  const KLRow& klList(const coxtypes::CoxNbr& y) const { return *d_klList[y]; }
-  const klsupport::KLSupport& klsupport() const;
+  const KLRow& klList(const coxtypes::CoxNbr& y) const;
   const MuRow& muList
-    (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
-    { return *d_muTable[s][y]; }
+  (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const;
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
     { return klsupport().extrList(y); }
 
-// modifiers
-  void applyInverse(const coxtypes::CoxNbr& y);
-  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a)
-    { right_permute(*d_klList[y],a); }
-  void permute(const bits::Permutation& a);
-
+// manipulators
   void setSize(const Ulong& n);
   void revertSize(const Ulong& n);
   // the following are 5 methods entry points, called from |CoxGroup| methods
@@ -154,13 +146,14 @@ class KLContext
   const MuPol mu(const coxtypes::Generator& s,
 		 const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
+
+  void applyInverse(const coxtypes::CoxNbr& y);
+  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
+  void permute(const bits::Permutation& a);
+
 private:
   coxtypes::Generator last(const coxtypes::CoxNbr& x) const
     { return klsupport().last(x); }
-  bool no_mu_yet (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
-    { return d_muTable[s][y] == nullptr; }
-// modifiers
-  void fillMu(const coxtypes::Generator& s);
 }; // |class KLContext|
 
 }; // |namespace uneqkl|
