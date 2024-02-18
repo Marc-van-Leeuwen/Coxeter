@@ -45,40 +45,39 @@ struct KLContext::KLHelper
   void allocExtrRow(const coxtypes::CoxNbr& y) { klsupport().allocExtrRow(y); }
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y)
       { return klsupport().extrList(y); }
+  const KLPol& find(const KLPol& p) {return *d_kl.KL_pool.find(p);}
+
 // modifiers
   const MuPol* to_MuPol(const KLPol& p); // transform |p| to |MuPol| and record
+  MuRow mu_row_frame(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
   // ensure a row exists to store polynomials |mu(s,x,y)| in
   void create_mu_row(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
+  // Whether the row corresponding to y in muTable[s] has been completely filled.
   bool mu_complete(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
   void compute_mu_row
     (const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
   // transfer a complete row of computed |MuPol| values for $(y,s)$ to mu-table
-  const MuPol mu // ensure $mu(s,x,y)$ is computed and stored; return it
-    (const coxtypes::Generator& s,
-     const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
-       { return d_kl.mu(s,x,y); }
-
   void store_row(const MuRow& row, // already tranformed and recorded |MuPol|s
 		 const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
+
   const MuPol* fillMu
     (const coxtypes::Generator& s,
        const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
 
   void allocKLRow(const coxtypes::CoxNbr& y);
-    MuRow allocMuRow(const coxtypes::Generator& s, const coxtypes::CoxNbr& y);
     bool row_needs_completion(const coxtypes::CoxNbr& y);
     void ensureKLRow(const coxtypes::CoxNbr& y);
     void fillKLRow
       (const coxtypes::CoxNbr& y,
        const coxtypes::Generator& s = coxtypes::undef_generator);
-    const KLPol* fillKLPol
-      (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-       const coxtypes::Generator& s = coxtypes::undef_generator);
-    const KLPol& find(const KLPol& p) {return d_kl.KL_pool.find(p)[0];}
+    const KLPol* compute_KL_pol
+      (coxtypes::CoxNbr x, coxtypes::CoxNbr y,
+       coxtypes::Generator s = coxtypes::undef_generator);
     Ulong gen_length(const coxtypes::Generator& s) {return d_kl.gen_length(s);}
     containers::vector<KLPol> initial_polys
       (const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
-    coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) {return klsupport().inverse(y);}
+    coxtypes::CoxNbr inverse
+      (const coxtypes::CoxNbr& y) {return klsupport().inverse(y);}
     void inverseMin(coxtypes::CoxNbr& y, coxtypes::Generator& s);
     bool isExtrAllocated(const coxtypes::CoxNbr& y)
       { return klsupport().isExtrAllocated(y);}
@@ -260,9 +259,8 @@ KLContext::KLContext
 {
   interactive::getLength(d_L,G,I);
 
-  if (error::ERRNO) { /* error code is ABORT */
-    goto end;
-  }
+  if (error::ERRNO) /* error code is ABORT */
+    return;
 
   d_help = new KLHelper(*this);
 
@@ -288,8 +286,6 @@ KLContext::KLContext
     d_length.push_back(d_length[xs] + d_L[s]);
   }
 
- end:
-  ;
 }
 
 KLContext::~KLContext()
@@ -358,40 +354,37 @@ void KLContext::fillMu(const coxtypes::Generator& s)
   assumed that the condition x <= y has already been checked, and that
   x and y are valid context numbers.
 */
-const KLPol& KLContext::klPol
-  (const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& d_y)
-{
+const KLPol& KLContext::klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y)
+{ // we modify |x| and |y| as local variables, but $P(x,y)$ remains the same
+
   const schubert::SchubertContext& p = schubert();
-  coxtypes::CoxNbr x = d_x;
-  coxtypes::CoxNbr y = d_y;
 
-  /* put x in extremal position w.r.t. y */
-
-  x = p.maximize(x,p.descent(y));
-
-  /* go to inverses if necessary */
-
+  // go to inverses if this helps
   if (inverse(y) < y) {
     y = inverse(y);
     x = inverse(x);
   }
 
-  /* check if extrList[y] is allocated */
-
+  // ensure that |extrList[y]| is allocated
   if (d_help->row_needs_allocation(y)) {
     d_help->allocKLRow(y);
     if (error::ERRNO)
       return errorPol();
   }
 
-  /* find x in extrList[y] */
+  // move up |x| to make it extremal for |y|
+  x = p.maximize(x,p.descent(y));
 
+  // find |x| in extrList[y]
   const auto& eL = extrList(y);
   Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
+
+  // look up to see if $P(x,y)$ is already stored
   const KLPol* pol = (*d_klList[y])[m];
 
+  // if not, compute it explicitly
   if (pol == nullptr) { /* we have to compute the polynomial */
-    pol = d_help->fillKLPol(x,y);
+    pol = d_help->compute_KL_pol(x,y);
     if (error::ERRNO)
       return errorPol();
   }
@@ -621,12 +614,12 @@ void KLContext::setSize(const Ulong& n)
   The following functions are defined :
 
     - allocKLRow(y) : allocates one row in the K-L table;
-    - row=allocMuRow(s,y) : allocates row to a full mu-row for y and s;
+    - mu_row_frame(s,y) : a basic skeleton for a mu-row for y and s;
     - create_mu_row(s,y) : creates row |muTable(s)[y]| with x's but no mu-polys
     - row_needs_completion(y) : whether row for y (or inverse(y)) if appropriate)
       in the K-L table is incompletely filled;
     - fillKLRow(y) : fills the row for y or inverse(y);
-    - fillKLPol(x,y) : fills in P_{x,y};
+    - compute_KL_pol(x,y) : fills in P_{x,y};
     - pol = initial_polys(y,s) : auxiliary to fillKLRow;
     - inverseMin(y,s) : reflects y and s if inverse(y) < y;
     - muCorrection(pol,s,y) : auxiliary to fillKLRow;
@@ -656,14 +649,15 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
 
 /*
-  Allocate row to the full mu-row for y and s.
+  Return an empty |MuRow| with sufficient |x| values for $(y,s)$, and no |MuPol|
+  values yet. Not all |x| values will necessarily have a nonzero |mu|.
 
   For unequal parameters, we don't try to be particularly smart. The row
   for y contains one entry for each x < y s.t. xs < x (it is already
   implicit that ys > y, or the row would not even be allocated.)
 */
-MuRow KLContext::KLHelper::allocMuRow(const coxtypes::Generator& s,
-				      const coxtypes::CoxNbr& y)
+MuRow KLContext::KLHelper::mu_row_frame
+  (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
   bits::BitMap b(0);
   schubert().extractClosure(b,y);
@@ -677,41 +671,21 @@ MuRow KLContext::KLHelper::allocMuRow(const coxtypes::Generator& s,
   return row;
 }
 
-/*
-  Allocate one previously unallocated row in muTable(s).
-
-  For unequal parameters, we don't try to be particularly smart. The row
-  for y contains one entry for each x < y s.t. xs < x (it is already
-  implicit that ys > y, or the row would not even be allocated.)
-*/
+// Create an empty |MuRow| ready to store values |mu(x,y,s)| for various |x|.
 void KLContext::KLHelper::create_mu_row
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
-  bits::BitMap b(0);
-  schubert().extractClosure(b,y);
-  b &= schubert().downset(s);
-
-  MuTable& t = muTable(s);
-  t[y].reset(new MuRow); // this will become |muList(s,y)|
-  MuRow& row = *t[y];
-
-  for (coxtypes::CoxNbr x : b)
-    row.emplace_back(x,nullptr);
-
+  muTable(s)[y].reset(new MuRow(mu_row_frame(s,y)));
   d_kl.d_stats.munodes += muList(s,y).size();
   d_kl.d_stats.murows++;
-
-  return;
 }
 
 
 
-
 /*
-  Check if the row corresponding to |y| in the K-L table has been completely
+  Whether the row corresponding to |y| in the K-L table has been incompletely
   filled. Actual check is for |inverse(y)| if |inverse(y) < y|.
 */
-
 bool KLContext::KLHelper::row_needs_completion(const coxtypes::CoxNbr& d_y)
 {
   coxtypes::CoxNbr y = d_y;
@@ -769,17 +743,16 @@ void KLContext::KLHelper::ensureKLRow(const coxtypes::CoxNbr& y)
 
 
 /*
-  This function fills in a single polynomial in the K-L table (as opposed to
+  This function computes a single polynomial in the K-L table (as opposed to
   fillKLRow, which fills a whole row.) It isn't particularly optimized for
   speed; it is not a good idea to fill large parts of the table by repeated
-  calls to fillKLPol.
+  calls to compute_KL_pol.
 
   It is assumed that x <= y in the Bruhat order, y <= inverse(y), x
   extremal w.r.t. y, and that the row for y in the K-L table is allocated.
 */
-const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x,
-					    const coxtypes::CoxNbr& y,
-					    const coxtypes::Generator& d_s)
+const KLPol* KLContext::KLHelper::compute_KL_pol
+  (coxtypes::CoxNbr x, coxtypes::CoxNbr y, coxtypes::Generator d_s)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -1021,7 +994,7 @@ const MuPol* KLContext::KLHelper::fillMu
 void KLContext::KLHelper::compute_mu_row
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y)
 {
-  MuRow mu_row = allocMuRow(s,y); // construct a |MuRow| into |mu_row|
+  MuRow mu_row = mu_row_frame(s,y); // construct a |MuRow| into |mu_row|
   containers::vector<KLPol> pos_mu(mu_row.size());
 
   coxtypes::CoxNbr x;
@@ -1088,7 +1061,7 @@ void KLContext::KLHelper::compute_mu_row
  abort:
   error::Error(error::MU_FAIL,x,y);
   error::ERRNO = error::ERROR_WARNING;
-  return;
+
 }
 
 
@@ -1234,7 +1207,7 @@ void KLContext::KLHelper::muCorrection
       if (!p.inOrder(x,z))
 	continue;
 
-      const MuPol mp = mu(s,z,ys);
+      const MuPol mp = d_kl.mu(s,z,ys);
       if (mp.isZero())
 	continue;
 

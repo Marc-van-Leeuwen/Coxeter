@@ -583,7 +583,6 @@ void CoxGroup::cBasis(kl::HeckeElt& h, const coxtypes::CoxNbr& y)
   return;
 }
 
-coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
 
 /*
   This function extends the active contexts to acccomodate g. An active
@@ -597,7 +596,7 @@ coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
 
   Forwards the error ERROR_WARNING in case of failure.
 */
-
+coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
 {
   Ulong prev_size = contextSize();
   coxtypes::CoxNbr x = d_klsupport.extendContext(g);
@@ -636,14 +635,13 @@ coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
   return coxtypes::undef_coxnbr;
 }
 
-void CoxGroup::fillIKL()
 
 /*
-  This function fills the whole K-L table up to the size of the current
+  This function fills the whole inverse K-L table up to the size of the current
   schubert context, for inverse kazhdan-lusztig polynomials, avtrer having
   activated the context if necessary.
 */
-
+void CoxGroup::fillIKL()
 {
   activateIKL();
 
@@ -651,14 +649,13 @@ void CoxGroup::fillIKL()
   return;
 }
 
-void CoxGroup::fillIMu()
 
 /*
-  This function fills the whole mu-table up to the size of the current
+  This function fills the whole inverse mu-table up to the size of the current
   schubert context, for the inverse kazhdan-lusztig polynomials, after having
   activated the context if necessary.
 */
-
+void CoxGroup::fillIMu()
 {
   activateIKL();
 
@@ -666,13 +663,12 @@ void CoxGroup::fillIMu()
   return;
 }
 
-void CoxGroup::fillKL()
 
 /*
   This function fills the whole K-L table up to the size of the current
   schubert context, after having activated the context if necessary.
 */
-
+void CoxGroup::fillKL()
 {
   activateKL();
 

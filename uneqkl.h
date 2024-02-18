@@ -145,16 +145,18 @@ class KLContext
     { return klsupport().extrList(y); }
 
 // modifiers
-  void fillKL();
-  void fillMu();
   void applyInverse(const coxtypes::CoxNbr& y);
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a)
     { right_permute(*d_klList[y],a); }
   void permute(const bits::Permutation& a);
-  void revertSize(const Ulong& n);
+
   void setSize(const Ulong& n);
-  // the following are modifiers because they extend the storage pools
-  const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
+  void revertSize(const Ulong& n);
+  // the following are 5 methods entry points, called from |CoxGroup| methods
+  // all are deemed modifiers because they extend the storage pools
+  void fillKL();
+  const KLPol& klPol(coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+  void fillMu();
   const MuPol mu(const coxtypes::Generator& s,
 		 const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
