@@ -34,6 +34,8 @@ struct KLContext::KLHelper
 {
 // data
   KLContext& d_kl;
+  containers::vector<coxtypes::Length> d_L; // lengths of generators
+  containers::vector<coxtypes::Length> d_length; // lengths of context elements
   containers::bag<KLPol> KL_pool; // this owns the |KLPol| values
   containers::bag<MuPol> mu_pool; // this owns the |MuPol| values
 
@@ -41,14 +43,31 @@ struct KLContext::KLHelper
   void* operator new(size_t size) { return memory::arena().alloc(size); }
   void operator delete(void* ptr)
     { return memory::arena().free(ptr,sizeof(KLHelper)); }
-  KLHelper(KLContext& kl)
+  KLHelper
+    (KLContext& kl, const graph::CoxGraph& G, const interface::Interface& I)
   : d_kl(kl)
+  , d_L(2*kl.rank()) // the size expected by |interactive::getLength|
+  , d_length{0} // start with a single length entry 0
   , KL_pool() // empty set of |KLPol|
   , mu_pool() // empty set of |MuPol|
-  {}
+  {
+    interactive::getLength(d_L,G,I);
+
+    if (error::ERRNO) /* error code is ABORT */
+      return;
+
+    d_length.reserve(kl.d_klsupport.size()); // |size()| does not work yet
+
+    for (coxtypes::CoxNbr x = 1; x < size(); ++x) {
+      coxtypes::Generator s = last(x);
+      coxtypes::CoxNbr xs = schubert().shift(x,s);
+      d_length.push_back(d_length[xs] + d_L[s]);
+    }
+  }
 
 // methods
 // relay methods
+  coxtypes::Rank rank() { return d_kl.d_klsupport.rank(); }
   const schubert::SchubertContext& schubert() const
     { return d_kl.d_klsupport.schubert();}
   coxtypes::Generator last(coxtypes::CoxNbr x) const
@@ -63,11 +82,9 @@ struct KLContext::KLHelper
     { return d_kl.d_klsupport.inverse(y);}
 
   klsupport::KLSupport& klsupport() { return d_kl.d_klsupport;}
-  Ulong gen_length(coxtypes::Generator s) const
-    { return d_kl.gen_length(s); }
-  Ulong length(coxtypes::CoxNbr x) const {return d_kl.length(x);}
-  coxtypes::Rank rank() {return d_kl.rank();}
-  Ulong size() {return d_kl.size();}
+  Ulong gen_length(const coxtypes::Generator& s) const { return d_L[s]; }
+  Ulong length(const coxtypes::CoxNbr& x) const { return d_length[x]; }
+  Ulong size() {return d_kl.size(); }
   KLStats& stats() {return d_kl.d_stats;}
 
   const KLPol& klPol(coxtypes::CoxNbr x, coxtypes::CoxNbr y)
@@ -119,6 +136,11 @@ struct KLContext::KLHelper
      coxtypes::Generator s = coxtypes::undef_generator);
   void mu_correct_KL_pol
     (KLPol& pol, coxtypes::Generator s, coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+
+  // direct service to |KLContext| methods
+  void permute(const bits::Permutation& a);
+  void shrink(const Ulong& n);
+  void grow(Ulong prev, Ulong n);
 }; // |struct KLContext::KLHelper|
 
 /*
@@ -253,22 +275,15 @@ struct KLContext::KLHelper
   destruction of the components on exit will be satisfactory in that case.
 */
 KLContext::KLContext
-  (klsupport::KLSupport& kls, const graph::CoxGraph& G,
-   const interface::Interface& I)
+  (klsupport::KLSupport& kls,
+   const graph::CoxGraph& G, const interface::Interface& I)
   : d_klsupport(kls)
   , d_klList(kls.size())
   , d_muTable()
-  , d_L(2*rank()) // the size expected by |interactive::getLength|
-  , d_length{0} // start with a single length entry 0
   , d_stats()
   , d_help(nullptr)
 {
-  interactive::getLength(d_L,G,I);
-
-  if (error::ERRNO) /* error code is ABORT */
-    return;
-
-  d_help = new KLHelper(*this);
+  d_help = new KLHelper(*this,G,I);
 
   d_klList[0].reset(new KLRow(1,d_help->KL_pool.find(one())));
 
@@ -282,14 +297,6 @@ KLContext::KLContext
     d_muTable.emplace_back(kls.size()); // create a |MuTable| of |kls->size()|
     MuTable& t = d_muTable.back();
     t[0].reset(new MuRow); // create one entry (empty list) in initial slot
-  }
-
-  d_length.reserve(kls.size());
-
-  for (coxtypes::CoxNbr x = 1; x < kls.size(); ++x) {
-    coxtypes::Generator s = last(x);
-    coxtypes::CoxNbr xs = schubert().shift(x,s);
-    d_length.push_back(d_length[xs] + d_L[s]);
   }
 
 }
@@ -435,8 +442,8 @@ const MuPol KLContext::mu(const coxtypes::Generator& s,
 
 
 /*
-  Applies the permutation |a| to the context. See the |permute| function of
-  klsupport::KLSupport for a detailed explanation.
+  Apply the permutation |a| to the context. See the |permute| function of
+  |klsupport::KLSupport| for a detailed explanation.
 */
 void KLContext::permute(const bits::Permutation& a)
 {
@@ -476,7 +483,9 @@ void KLContext::permute(const bits::Permutation& a)
 	MuTable& t = d_muTable[s];
 	mu_buf[s] = std::move(t[y]);
       }
+#if 0
       coxtypes::Length length_buf = d_length[y];
+#endif
 
       // move values from |x| in |y|
       d_klList[y] = std::move(d_klList[x]);
@@ -484,7 +493,9 @@ void KLContext::permute(const bits::Permutation& a)
 	MuTable& t = d_muTable[s];
 	t[y] = std::move(t[x]);
       }
-      d_length[y] = d_length[x];
+#if 0
+     d_length[y] = d_length[x];
+#endif
 
       /* store backed up values in x */
       d_klList[x] = std::move(kl_buf);
@@ -492,17 +503,76 @@ void KLContext::permute(const bits::Permutation& a)
 	MuTable& t = d_muTable[s];
 	t[x] = std::move(mu_buf[s]);
       }
+#if 0
       d_length[x] = length_buf;
+#endif
       /* set bit*/
       seen.setBit(y);
     }
 
     seen.setBit(x);
   }
-
-  return;
+  d_help->permute(a);
 }
 
+void KLContext::KLHelper::permute(const bits::Permutation& a)
+{
+#if 0
+  // permute values inside each row of |muTable|
+  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+    MuTable& t = d_muTable[s];
+    for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
+      if (no_mu_yet(s,y))
+	continue;
+      MuRow& row = *t[y];
+      for (Ulong j = 0; j < row.size(); ++j)
+	row[j].x = a[row[j].x];
+      std::sort(row.begin(),row.end());
+    }
+  }
+#endif
+  // permute ranges
+  bits::BitMap seen(a.size());
+
+  for (coxtypes::CoxNbr x = 0; x < size(); ++x)
+  {
+    if (seen.getBit(x))
+      continue;
+#if 0
+    // now |x| starts an as yet unseen nontrivial cycle in |a|
+    containers::vector<MuRowPtr> mu_buf(d_muTable.size()); // Coxeter rank
+#endif
+
+    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
+    {
+      std::swap(d_length[y],d_length[x]);
+#if 0
+      // back up values for y
+      auto kl_buf = std::move(d_klList[y]);
+      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+	MuTable& t = d_muTable[s];
+	mu_buf[s] = std::move(t[y]);
+      }
+      // move values from |x| in |y|
+      d_klList[y] = std::move(d_klList[x]);
+      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+	MuTable& t = d_muTable[s];
+	t[y] = std::move(t[x]);
+      }
+
+      /* store backed up values in x */
+      d_klList[x] = std::move(kl_buf);
+      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+	MuTable& t = d_muTable[s];
+	t[x] = std::move(mu_buf[s]);
+      }
+#endif
+      seen.setBit(y);
+    }  // |for(y)|
+
+    seen.setBit(x);
+  } // |for(x)|
+} // ||
 
 /*
   Reverts the sizes of the lists to size n. This is meant to be used
@@ -518,7 +588,22 @@ void KLContext::revertSize(const Ulong& n)
     MuTable& t = d_muTable[s];
     t.resize(n); // drop any extension of |d_muTable[s]|
   }
+#if 0
+  d_length.resize(n);
+#endif
+  d_help->shrink(n);
+}
 
+void KLContext::KLHelper::shrink(const Ulong& n)
+{
+#if 0
+  d_klList.resize(n);
+
+  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+    MuTable& t = d_muTable[s];
+    t.resize(n); // drop any extension of |d_muTable[s]|
+  }
+#endif
   d_length.resize(n);
 }
 
@@ -588,6 +673,7 @@ void KLContext::setSize(const Ulong& n)
     goto revert;
   }
 
+#if 0
   d_length.reserve(n);
   if (error::ERRNO)
     goto revert;
@@ -601,12 +687,51 @@ void KLContext::setSize(const Ulong& n)
     assert(xs<x);
     d_length.push_back(d_length[xs] + gen_length(s));
   }
+#endif
 
+  d_help->grow(prev_size,n);
   return;
 
  revert:
   error::CATCH_MEMORY_OVERFLOW = false;
   revertSize(prev_size);
+}
+
+void KLContext::KLHelper::grow(Ulong prev, Ulong n)
+{
+  error::CATCH_MEMORY_OVERFLOW = true;
+
+#if 0
+  try {
+    d_klList.resize(n);
+
+    for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s)
+      d_muTable[s].resize(n);
+  }
+  catch (...) {
+    goto revert;
+  }
+
+#endif
+  d_length.reserve(n);
+  if (error::ERRNO)
+    goto revert;
+
+  error::CATCH_MEMORY_OVERFLOW = false;
+
+  // fill in new Lengths
+  for (coxtypes::CoxNbr x = prev; x < n; ++x) {
+    coxtypes::Generator s = last(x);
+    coxtypes::CoxNbr xs = schubert().shift(x,s);
+    assert(xs<x);
+    d_length.push_back(d_length[xs] + gen_length(s));
+  }
+
+  return;
+
+ revert:
+  error::CATCH_MEMORY_OVERFLOW = false;
+  shrink(prev);
 }
 
 

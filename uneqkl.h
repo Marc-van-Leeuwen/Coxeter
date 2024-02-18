@@ -113,8 +113,6 @@ class KLContext
   klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
   containers::vector<std::unique_ptr<KLRow> > d_klList;
   containers::vector<MuTable> d_muTable; // indexed by |s|
-  containers::vector<coxtypes::Length> d_L; // lengths of generators
-  containers::vector<coxtypes::Length> d_length; // lengths of context elements
   KLStats d_stats;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help; // pointer level hides implementation
@@ -159,8 +157,6 @@ class KLContext
 		 const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
 private:
-  Ulong gen_length(const coxtypes::Generator& s) const { return d_L[s]; }
-  Ulong length(const coxtypes::CoxNbr& x) const { return d_length[x]; }
   coxtypes::Generator last(const coxtypes::CoxNbr& x) const
     { return klsupport().last(x); }
   bool no_mu_yet (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
