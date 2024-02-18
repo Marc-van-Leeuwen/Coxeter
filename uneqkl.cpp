@@ -33,7 +33,6 @@ namespace {
 struct KLContext::KLHelper
 {
 // data
-  KLContext& d_kl;
   klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
 
   containers::vector<std::unique_ptr<KLRow> > d_klList;
@@ -49,47 +48,8 @@ struct KLContext::KLHelper
   void operator delete(void* ptr)
     { return memory::arena().free(ptr,sizeof(KLHelper)); }
   KLHelper
-    (klsupport::KLSupport& kls, KLContext& kl,
-     const graph::CoxGraph& G, const interface::Interface& I)
-  : d_kl(kl)
-  , d_klsupport(kls)
-  , d_klList(kls.size())
-  , d_muTable()
-  , d_L(2*kl.rank()) // the size expected by |interactive::getLength|
-  , d_length{0} // start with a single length entry 0
-  , KL_pool() // empty set of |KLPol|
-  , mu_pool() // empty set of |MuPol|
-  , d_stats()
-  {
-    interactive::getLength(d_L,G,I);
-
-    if (error::ERRNO) /* error code is ABORT */
-      return;
-
-    d_length.reserve(kls.size()); // |size()| also works, but is no different
-
-    for (coxtypes::CoxNbr x = 1; x < size(); ++x) {
-      coxtypes::Generator s = last(x);
-      coxtypes::CoxNbr xs = schubert().shift(x,s);
-      d_length.push_back(d_length[xs] + d_L[s]);
-    }
-
-    d_klList[0].reset(new KLRow(1,KL_pool.find(one())));
-
-    d_muTable.reserve(rank());
-
-    for (coxtypes::Generator s = 0; s < rank(); ++s) {
-      d_muTable.emplace_back(kls.size()); // create a |MuTable| of |kls->size()|
-      MuTable& t = d_muTable.back();
-      t[0].reset(new MuRow); // create one entry (empty list) in initial slot
-    }
-
-
-    // moved from |KLContext| constructor
-    d_stats.klrows++;
-    d_stats.klnodes++;
-    d_stats.klcomputed++;
-  }
+    (klsupport::KLSupport& kls,
+     const graph::CoxGraph& G, const interface::Interface& I);
 
 // methods
 // relay methods
@@ -305,18 +265,12 @@ private:
  *****************************************************************************/
 
 
-/*
-  This (unique) constructor gets the lengths interactively from the user. This
-  makes it possible that an error is set during the construction. Fortunately we
-  can check this before any memory is gotten from the heap, so that automatic
-  destruction of the components on exit will be satisfactory in that case.
-*/
 KLContext::KLContext
   (klsupport::KLSupport& kls,
    const graph::CoxGraph& G, const interface::Interface& I)
   : d_help(nullptr)
 {
-  d_help = new KLHelper(kls,*this,G,I);
+  d_help = new KLHelper(kls,G,I);
 }
 
 KLContext::~KLContext()
@@ -670,6 +624,53 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
     - store_KL_row(pols,y) : auxiliary to |compute_KL_row|;
 
  *****************************************************************************/
+/*
+  This (unique) constructor gets the lengths interactively from the user. This
+  makes it possible that an error is set during the construction. Fortunately we
+  can check this before any memory is gotten from the heap, so that automatic
+  destruction of the components on exit will be satisfactory in that case.
+*/
+KLContext::KLHelper::KLHelper
+  (klsupport::KLSupport& kls,
+   const graph::CoxGraph& G, const interface::Interface& I)
+: d_klsupport(kls)
+, d_klList(kls.size())
+, d_muTable()
+, d_L(2*kls.rank()) // the size expected by |interactive::getLength|
+, d_length{0} // start with a single length entry 0
+, KL_pool() // empty set of |KLPol|
+, mu_pool() // empty set of |MuPol|
+, d_stats()
+{
+  interactive::getLength(d_L,G,I);
+
+  if (error::ERRNO) /* error code is ABORT */
+    return;
+
+  d_length.reserve(kls.size()); // |size()| also works, but is no different
+
+  for (coxtypes::CoxNbr x = 1; x < size(); ++x) {
+    coxtypes::Generator s = last(x);
+    coxtypes::CoxNbr xs = schubert().shift(x,s);
+    d_length.push_back(d_length[xs] + d_L[s]);
+  }
+
+  d_klList[0].reset(new KLRow(1,KL_pool.find(one())));
+
+  d_muTable.reserve(rank());
+
+  for (coxtypes::Generator s = 0; s < rank(); ++s) {
+    d_muTable.emplace_back(kls.size()); // create a |MuTable| of |kls->size()|
+    MuTable& t = d_muTable.back();
+    t[0].reset(new MuRow); // create one entry (empty list) in initial slot
+  }
+
+
+  // moved from |KLContext| constructor
+  d_stats.klrows++;
+  d_stats.klnodes++;
+  d_stats.klcomputed++;
+} // |KLContext::KLHelper::KLHelper|
 
 
 /*
@@ -983,7 +984,7 @@ const MuPol* KLContext::KLHelper::compute_mu
       error::ERRNO = error::ERROR_WARNING;
       return 0;
     }
-    const MuPol mq = d_kl.mu(s,z,y);
+    const MuPol mq = mu(s,z,y);
     if (not mq.isZero())
       muSubtraction(pos_mu,mq,pol,2,length(x)-length(z));
     if (error::ERRNO) {
@@ -1223,7 +1224,7 @@ void KLContext::KLHelper::mu_correct_KL_pol
       if (!p.inOrder(x,z))
 	continue;
 
-      const MuPol mp = d_kl.mu(s,z,ys);
+      const MuPol mp = mu(s,z,ys);
       if (mp.isZero())
 	continue;
 

@@ -151,9 +151,6 @@ class KLContext
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
   void permute(const bits::Permutation& a);
 
-private:
-  coxtypes::Generator last(const coxtypes::CoxNbr& x) const
-    { return klsupport().last(x); }
 }; // |class KLContext|
 
 }; // |namespace uneqkl|
