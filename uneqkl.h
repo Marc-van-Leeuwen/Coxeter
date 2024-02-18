@@ -110,10 +110,8 @@ struct KLStats // holds statistics
 // the main class for this module
 class KLContext
 {
-  klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
   containers::vector<std::unique_ptr<KLRow> > d_klList;
   containers::vector<MuTable> d_muTable; // indexed by |s|
-  KLStats d_stats;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help; // pointer level hides implementation
  public:
@@ -126,14 +124,14 @@ class KLContext
 	    const interface::Interface& I);
   ~KLContext();
 /* accessors */
-  coxtypes::Rank rank() const {return d_klsupport.rank();}
+  coxtypes::Rank rank() const {return klsupport().rank();}
   Ulong size() const { return d_klList.size(); }
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
     { return klsupport().inverse(x); }
   const schubert::SchubertContext& schubert() const
     { return klsupport().schubert(); }
   const KLRow& klList(const coxtypes::CoxNbr& y) const { return *d_klList[y]; }
-  const klsupport::KLSupport& klsupport() const { return d_klsupport; }
+  const klsupport::KLSupport& klsupport() const;
   const MuRow& muList
     (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
     { return *d_muTable[s][y]; }

@@ -34,58 +34,68 @@ struct KLContext::KLHelper
 {
 // data
   KLContext& d_kl;
+  klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
+
   containers::vector<coxtypes::Length> d_L; // lengths of generators
   containers::vector<coxtypes::Length> d_length; // lengths of context elements
   containers::bag<KLPol> KL_pool; // this owns the |KLPol| values
   containers::bag<MuPol> mu_pool; // this owns the |MuPol| values
+  KLStats d_stats;
 
 // constructors and destructors
   void* operator new(size_t size) { return memory::arena().alloc(size); }
   void operator delete(void* ptr)
     { return memory::arena().free(ptr,sizeof(KLHelper)); }
   KLHelper
-    (KLContext& kl, const graph::CoxGraph& G, const interface::Interface& I)
+    (klsupport::KLSupport& kls, KLContext& kl,
+     const graph::CoxGraph& G, const interface::Interface& I)
   : d_kl(kl)
+  , d_klsupport(kls)
   , d_L(2*kl.rank()) // the size expected by |interactive::getLength|
   , d_length{0} // start with a single length entry 0
   , KL_pool() // empty set of |KLPol|
   , mu_pool() // empty set of |MuPol|
+  , d_stats()
   {
     interactive::getLength(d_L,G,I);
 
     if (error::ERRNO) /* error code is ABORT */
       return;
 
-    d_length.reserve(kl.d_klsupport.size()); // |size()| does not work yet
+    d_length.reserve(kls.size()); // |size()| also works, but is no different
 
     for (coxtypes::CoxNbr x = 1; x < size(); ++x) {
       coxtypes::Generator s = last(x);
       coxtypes::CoxNbr xs = schubert().shift(x,s);
       d_length.push_back(d_length[xs] + d_L[s]);
     }
+
+    // moved from |KLContext| constructor
+    d_stats.klrows++;
+    d_stats.klnodes++;
+    d_stats.klcomputed++;
   }
 
 // methods
 // relay methods
-  coxtypes::Rank rank() { return d_kl.d_klsupport.rank(); }
+  coxtypes::Rank rank() { return d_klsupport.rank(); }
   const schubert::SchubertContext& schubert() const
-    { return d_kl.d_klsupport.schubert();}
+    { return d_klsupport.schubert();}
   coxtypes::Generator last(coxtypes::CoxNbr x) const
-    { return d_kl.d_klsupport.last(x); }
+    { return d_klsupport.last(x); }
   const klsupport::ExtrRow& extrList(coxtypes::CoxNbr y) const
-    { return d_kl.d_klsupport.extrList(y); }
+    { return d_klsupport.extrList(y); }
   bool isExtrAllocated(coxtypes::CoxNbr y) const
-    { return d_kl.d_klsupport.isExtrAllocated(y);}
+    { return d_klsupport.isExtrAllocated(y);}
   void ensure_extr_row_exists(coxtypes::CoxNbr y)
-    { d_kl.d_klsupport.allocExtrRow(y); }
+    { d_klsupport.allocExtrRow(y); }
   coxtypes::CoxNbr inverse (coxtypes::CoxNbr y) const
-    { return d_kl.d_klsupport.inverse(y);}
+    { return d_klsupport.inverse(y);}
 
-  klsupport::KLSupport& klsupport() { return d_kl.d_klsupport;}
   Ulong gen_length(const coxtypes::Generator& s) const { return d_L[s]; }
   Ulong length(const coxtypes::CoxNbr& x) const { return d_length[x]; }
-  Ulong size() {return d_kl.size(); }
-  KLStats& stats() {return d_kl.d_stats;}
+  Ulong size() { return d_kl.size(); }
+  KLStats& stats() { return d_stats; }
 
   const KLPol& klPol(coxtypes::CoxNbr x, coxtypes::CoxNbr y)
     { return d_kl.klPol(x,y); }
@@ -117,7 +127,7 @@ struct KLContext::KLHelper
 
   // KL computations
   bool row_is_complete(coxtypes::CoxNbr y); // whether already done for |y|
-  // ensure that |klsupport()| contains all extremal lists that can arise
+  // ensure that |d_klsupport| contains all extremal lists that can arise
   void prepareRowComputation (coxtypes::CoxNbr y, coxtypes::Generator s);
   containers::vector<KLPol> initial_polys
    (coxtypes::CoxNbr y, coxtypes::Generator s); // row of values $P(xs,ys)$
@@ -277,19 +287,13 @@ struct KLContext::KLHelper
 KLContext::KLContext
   (klsupport::KLSupport& kls,
    const graph::CoxGraph& G, const interface::Interface& I)
-  : d_klsupport(kls)
-  , d_klList(kls.size())
+  : d_klList(kls.size())
   , d_muTable()
-  , d_stats()
   , d_help(nullptr)
 {
-  d_help = new KLHelper(*this,G,I);
+  d_help = new KLHelper(kls,*this,G,I);
 
   d_klList[0].reset(new KLRow(1,d_help->KL_pool.find(one())));
-
-  d_stats.klrows++;
-  d_stats.klnodes++;
-  d_stats.klcomputed++;
 
   d_muTable.reserve(rank());
 
@@ -306,6 +310,9 @@ KLContext::~KLContext()
 }
 
 /******** accessors **********************************************************/
+
+const klsupport::KLSupport& KLContext::klsupport() const
+  { return d_help->d_klsupport; }
 
 /******** manipulators *******************************************************/
 
@@ -616,7 +623,7 @@ void KLContext::KLHelper::shrink(const Ulong& n)
 void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 {
   if (not d_help->row_is_complete(y)) {
-    d_klsupport.allocRowComputation(y);
+    d_help->d_klsupport.allocRowComputation(y);
     if (error::ERRNO)
       goto error_exit;
     d_help->compute_KL_row(y);
@@ -807,8 +814,8 @@ void KLContext::KLHelper::create_mu_row
   (coxtypes::Generator s, coxtypes::CoxNbr y)
 {
   muTable(s)[y].reset(new MuRow(mu_row_frame(s,y)));
-  d_kl.d_stats.munodes += muList(s,y).size();
-  d_kl.d_stats.murows++;
+  d_stats.munodes += muList(s,y).size();
+  d_stats.murows++;
 }
 
 
@@ -856,7 +863,7 @@ bool KLContext::KLHelper::mu_is_complete
 void KLContext::KLHelper::ensure_KL_row(coxtypes::CoxNbr y)
 {
   if (not row_is_complete(y)) {
-    klsupport().allocRowComputation(y);
+    d_klsupport.allocRowComputation(y);
     if (error::ERRNO)
       goto abort;
     compute_KL_row(y);
@@ -1143,9 +1150,9 @@ void KLContext::KLHelper::compute_mu_row
   for (Ulong j = mu_row.size(); j-->0;)
   { // this loop modifies |pos_mu[i]| for certain |i<j|
     mu_row[j].pol = to_MuPol(pos_mu[j]); // now consolidate |pos_mu[j]|
-    d_kl.d_stats.mucomputed++;
+    d_stats.mucomputed++;
     if (mu_row[j].pol->isZero()) {
-      d_kl.d_stats.muzero++;
+      d_stats.muzero++;
       continue;
     }
 
@@ -1374,7 +1381,7 @@ void KLContext::KLHelper::prepareRowComputation(coxtypes::CoxNbr y,
 	continue;
       coxtypes::CoxNbr z = mu_row[j].x;
       if (not row_is_complete(z)) { // ensure extremal lists in descent path |z|
-	klsupport().allocRowComputation(z); // are all created in |klsupport()|
+	d_klsupport.allocRowComputation(z); // are all created in |klsupport()|
 	if (error::ERRNO)
 	  goto abort;
 	compute_KL_row(z);
