@@ -34,11 +34,18 @@ struct KLContext::KLHelper
 {
 // data
   KLContext& d_kl;
+  containers::bag<KLPol> KL_pool; // this owns the |KLPol| values
+  containers::bag<MuPol> mu_pool; // this owns the |MuPol| values
+
 // constructors and destructors
   void* operator new(size_t size) { return memory::arena().alloc(size); }
   void operator delete(void* ptr)
     { return memory::arena().free(ptr,sizeof(KLHelper)); }
-  KLHelper(KLContext& kl) : d_kl(kl) {}
+  KLHelper(KLContext& kl)
+  : d_kl(kl)
+  , KL_pool() // empty set of |KLPol|
+  , mu_pool() // empty set of |MuPol|
+  {}
 
 // methods
 // relay methods
@@ -65,8 +72,6 @@ struct KLContext::KLHelper
 
   const KLPol& klPol(coxtypes::CoxNbr x, coxtypes::CoxNbr y)
     { return d_kl.klPol(x,y); }
-  containers::bag<KLPol>& KL_pool() { return d_kl.KL_pool; }
-  containers::bag<MuPol>& mu_pool() { return d_kl.mu_pool; }
   KLRow& klList(coxtypes::CoxNbr y) {return *d_kl.d_klList[y]; }
   MuTable& muTable(coxtypes::Generator s)
     { return d_kl.d_muTable[s]; }
@@ -255,8 +260,6 @@ KLContext::KLContext
   , d_muTable()
   , d_L(2*rank()) // the size expected by |interactive::getLength|
   , d_length{0} // start with a single length entry 0
-  , KL_pool() // empty set of |KLPol|
-  , mu_pool() // empty set of |MuPol|
   , d_stats()
   , d_help(nullptr)
 {
@@ -267,7 +270,7 @@ KLContext::KLContext
 
   d_help = new KLHelper(*this);
 
-  d_klList[0].reset(new KLRow(1,KL_pool.find(one())));
+  d_klList[0].reset(new KLRow(1,d_help->KL_pool.find(one())));
 
   d_stats.klrows++;
   d_stats.klnodes++;
@@ -812,7 +815,7 @@ const KLPol* KLContext::KLHelper::compute_KL_pol
   /* find address of polynomial */
 
   {
-    const KLPol* p_xy = KL_pool().find(pol);
+    const KLPol* p_xy = KL_pool.find(pol);
     if (error::ERRNO)
       goto abort;
     const auto& eL = extrList(y);
@@ -893,8 +896,8 @@ void KLContext::KLHelper::compute_KL_row (coxtypes::CoxNbr y)
 
 
 /*
-  Compute the mu-polynomial for $\mu(s,x,y)$, recording it in |kl.mu_pool()|. It
-  is assumed that x < y, sy > y, sx < x. This mu-polynomial is the unique
+  Compute the mu-polynomial for $\mu(s,x,y)$, recording it in |kl.mu_pool|. It
+  is assumed that $x < y$, $sy > y$, $sx < x$. This mu-polynomial is the unique
   symmetric Laurent polynomial whose positive part is the same as that of:
 
     q^{length(s)/2}P(x,y) - \sum_{x<z<y,zs<s}\mu(s,z,y)P(x,z)
@@ -1306,13 +1309,13 @@ void KLContext::KLHelper::add_second_terms
 
 /*
   This function writes the polynomials from the list pol to klList(y);
-  more precisely, it finds their adresses in KL_pool(), and writes those
+  more precisely, it finds their adresses in |KL_pool|, and writes those
   to klList(y).
 
   It is assumed that y <= inverse(y).
 
   The only error that can occur here is memory overflow because of the
-  allocation for new polynomials in KL_pool(). In that case, the error
+  allocation for new polynomials in |KL_pool|. In that case, the error
   is treated, and error::ERROR_WARNING is set.
 */
 void KLContext::KLHelper::store_KL_row
@@ -1325,7 +1328,7 @@ void KLContext::KLHelper::store_KL_row
       assert(pols[j] == *kl_row[j]); // check match with previously known value
     else
     {
-      const KLPol* q = KL_pool().find(pols[j]);
+      const KLPol* q = KL_pool.find(pols[j]);
       if (q == nullptr) { /* an error occurred */
 	error::Error(error::ERRNO);
 	error::ERRNO = error::ERROR_WARNING;
@@ -1339,7 +1342,7 @@ void KLContext::KLHelper::store_KL_row
 const MuPol* KLContext::KLHelper::to_MuPol(const KLPol& p)
 {
   if (p.isZero())
-    return mu_pool().find(MuPol::zero());
+    return mu_pool.find(MuPol::zero());
 
   // now we must symmetrize |p| before looking up in |t|
   MuPol mp(p.deg(),-p.deg());
@@ -1351,7 +1354,7 @@ const MuPol* KLContext::KLHelper::to_MuPol(const KLPol& p)
     mp[j] = p[j];
   }
 
-  return mu_pool().find(mp);
+  return mu_pool.find(mp);
 } // |KLContext::KLHelper::to_MuPol|
 
 /*

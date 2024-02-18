@@ -115,8 +115,6 @@ class KLContext
   containers::vector<MuTable> d_muTable; // indexed by |s|
   containers::vector<coxtypes::Length> d_L; // lengths of generators
   containers::vector<coxtypes::Length> d_length; // lengths of context elements
-  containers::bag<KLPol> KL_pool; // this owns the |KLPol| values
-  containers::bag<MuPol> mu_pool; // this owns the |MuPol| values
   KLStats d_stats;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help; // pointer level hides implementation
