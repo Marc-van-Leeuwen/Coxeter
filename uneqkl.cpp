@@ -2,6 +2,7 @@
   This is uneqkl.cpp
 
   Coxeter version 3.0 Copyright (C) 2002 Fokko du Cloux
+  Coxeter version 3.1 Copyright (C) 2024 Marc van Leeuwen
   See file LICENSE for full copyright notice
 */
 

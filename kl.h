@@ -126,7 +126,6 @@ class KLContext {
   KLStatus* d_status;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
-  friend struct KLHelper;
  public:
 /* constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
@@ -146,14 +145,14 @@ class KLContext {
   bool isFullMu() const;                                        /* inlined */
   bool isKLAllocated(const coxtypes::CoxNbr& x) const;                    /* inlined */
   bool isMuAllocated(const coxtypes::CoxNbr& x) const;                    /* inlined */
-  const KLRow& klList(const coxtypes::CoxNbr& y) const;                   /* inlined */
-  const klsupport::KLSupport& klsupport() const;                           /* inlined */
+  const KLRow& klList(const coxtypes::CoxNbr& y) const;
+  const klsupport::KLSupport& klsupport() const;
   coxtypes::Generator last(const coxtypes::CoxNbr& y) const;                        /* inlined */
-  const MuRow& muList(const coxtypes::CoxNbr& y) const;                   /* inlined */
+  const MuRow& muList(const coxtypes::CoxNbr& y) const;
   coxtypes::Rank rank() const;                                            /* inlined */
   const schubert::SchubertContext& schubert() const
   { return d_klsupport->schubert(); }
-  Ulong size() const;                                         /* inlined */
+  Ulong size() const;
   const search::BinaryTree<KLPol>& tree() const;                        /* inlined */
 /* manipulators */
   void applyInverse(const coxtypes::CoxNbr& y);
@@ -203,15 +202,9 @@ inline bool KLContext::isKLAllocated(const coxtypes::CoxNbr& x) const
   {return d_klList[x] != 0;}
 inline bool KLContext::isMuAllocated(const coxtypes::CoxNbr& x) const
   {return d_muList[x] != 0;}
-inline const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
-  {return *d_klList[y];}
-inline const klsupport::KLSupport& KLContext::klsupport() const {return *d_klsupport;}
 inline coxtypes::Generator KLContext::last(const coxtypes::CoxNbr& y) const
   {return d_klsupport->last(y);}
-inline const MuRow& KLContext::muList(const coxtypes::CoxNbr& y) const
-  {return *d_muList[y];}
 inline coxtypes::Rank KLContext::rank() const {return d_klsupport->rank();}
-inline Ulong KLContext::size() const {return d_klList.size();}
 inline const search::BinaryTree<KLPol>& KLContext::tree() const
   {return d_klTree;}
 inline void KLContext::print

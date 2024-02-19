@@ -74,16 +74,23 @@ namespace kl {
 
 namespace kl {
 
-  struct KLContext::KLHelper {
-/* data */
-    KLContext* d_kl;
-/* constructors and destructors */
+struct KLContext::KLHelper
+{
+// data
+  KLContext& d_kl;
+  klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
+
+// constructors and destructors
     void* operator new(size_t size) {return memory::arena().alloc(size);}
     void operator delete(void* ptr)
       {return memory::arena().free(ptr,sizeof(KLHelper));}
-    KLHelper(KLContext* kl):d_kl(kl) {};
-    ~KLHelper() {};
-/* member functions */
+    KLHelper(klsupport::KLSupport& kls,KLContext* kl)
+      : d_kl(*kl), d_klsupport(kls) {}
+    ~KLHelper() {}
+
+// methods
+// relay methods
+
     void allocExtrRow(const coxtypes::CoxNbr& y) {klsupport().allocExtrRow(y);}
     void allocKLRow(const coxtypes::CoxNbr& y);
     void allocMuRow(const coxtypes::CoxNbr& y);
@@ -112,31 +119,35 @@ namespace kl {
     bool isExtrAllocated(const coxtypes::CoxNbr& y)
       { return klsupport().isExtrAllocated(y); }
     bool isKLAllocated(const coxtypes::CoxNbr& y)
-      { return d_kl->isKLAllocated(y); }
-    bool isMuAllocated(const coxtypes::CoxNbr& y) {return d_kl->isMuAllocated(y);}
-    KLRow& klList(const coxtypes::CoxNbr& y) {return *d_kl->d_klList[y];}
+      { return d_kl.isKLAllocated(y); }
+    bool isMuAllocated(const coxtypes::CoxNbr& y) {return d_kl.isMuAllocated(y);}
+    KLRow& klList(const coxtypes::CoxNbr& y) {return *d_kl.d_klList[y];}
     const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
-      {return d_kl->klPol(x,y);}
-    klsupport::KLSupport& klsupport() {return d_kl->d_klsupport[0];}
-    search::BinaryTree<KLPol>& klTree() {return d_kl->d_klTree;}
+      {return d_kl.klPol(x,y);}
+    klsupport::KLSupport& klsupport() {return d_kl.d_klsupport[0];}
+    search::BinaryTree<KLPol>& klTree() {return d_kl.d_klTree;}
     coxtypes::Generator last(const coxtypes::CoxNbr& x) {return klsupport().last(x);}
     void makeMuRow(const coxtypes::CoxNbr& y);
-    klsupport::KLCoeff mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) {return d_kl->mu(x,y);}
+    klsupport::KLCoeff mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) {return d_kl.mu(x,y);}
     void muCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
     void muCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
 		      list::List<KLPol>& pol, const Ulong& a);
-    MuRow& muList(const coxtypes::CoxNbr& y) {return *d_kl->d_muList[y];}
+    MuRow& muList(const coxtypes::CoxNbr& y) {return *d_kl.d_muList[y];}
     void prepareRow(const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
-    coxtypes::Rank rank() {return d_kl->rank();}
+    coxtypes::Rank rank() {return d_kl.rank();}
     void readMuRow(const coxtypes::CoxNbr& y);
     klsupport::KLCoeff recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
     const schubert::SchubertContext& schubert() {return klsupport().schubert();}
     void secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
-    Ulong size() {return d_kl->size();}
-    KLStatus& status() {return *d_kl->d_status;}
+    Ulong size() {return d_kl.d_klList.size(); }
+    KLStatus& status() {return *d_kl.d_status;}
     void writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
     void writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y);
-  };
+
+  void grow(Ulong prev, Ulong n);
+  void shrink(const Ulong& n);
+
+}; // |struct KLContext::KLHelper|
 
 };
 
@@ -203,7 +214,7 @@ KLContext::KLContext(klsupport::KLSupport* kls)
 
 {
   d_status = new KLStatus;
-  d_help = new KLHelper(this);
+  d_help = new KLHelper(*kls,this);
 
   d_klList.setSizeValue(kls->size());
   d_klList[0] = new KLRow(1);
@@ -234,7 +245,52 @@ KLContext::~KLContext()
   delete d_status;
 }
 
+/******** accessors **********************************************************/
+
+const klsupport::KLSupport& KLContext::klsupport() const
+  { return d_help->d_klsupport; }
+Ulong KLContext::size() const { return d_help->size(); }
+const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
+  { return *d_klList[y]; }
+const MuRow& KLContext::muList(const coxtypes::CoxNbr& y) const
+  { return *d_muList[y]; }
+
 /******** manipulators *******************************************************/
+
+
+/*
+  This function extends the context so that it can accomodate |n| elements.
+  The idea is to have the same size as the basic schubert context.
+*/
+void KLContext::setSize(const Ulong& n)
+{
+  d_help->grow(size(),n);
+}
+
+void KLContext::KLHelper::grow(Ulong prev, Ulong n)
+{
+  coxtypes::CoxNbr prev_size = size();
+
+  CATCH_MEMORY_OVERFLOW = true;
+
+  d_kl.d_klList.setSize(n);
+  if (ERRNO)
+    goto revert;
+  d_kl.d_muList.setSize(n);
+  if (ERRNO)
+    goto revert;
+
+  CATCH_MEMORY_OVERFLOW = false;
+
+  d_kl.clearFullKL();
+  d_kl.clearFullMu();
+
+  return;
+
+ revert:
+  CATCH_MEMORY_OVERFLOW = false;
+  d_kl.revertSize(prev_size);
+}
 
 void KLContext::applyInverse(const coxtypes::CoxNbr& x)
 
@@ -549,37 +605,6 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
   }
 }
 
-void KLContext::setSize(const Ulong& n)
-
-/*
-  This function extends the context so that it can accomodate n elements.
-  The idea is to have the same size as the basic schubert context.
-*/
-
-{
-  coxtypes::CoxNbr prev_size = size();
-
-  CATCH_MEMORY_OVERFLOW = true;
-
-  d_klList.setSize(n);
-  if (ERRNO)
-    goto revert;
-  d_muList.setSize(n);
-  if (ERRNO)
-    goto revert;
-
-  CATCH_MEMORY_OVERFLOW = false;
-
-  clearFullKL();
-  clearFullMu();
-
-  return;
-
- revert:
-  CATCH_MEMORY_OVERFLOW = false;
-  revertSize(prev_size);
-  return;
-}
 
 /******** input/output ******************************************************/
 
@@ -725,7 +750,7 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
   Ulong n = extrList(y).size();
 
-  d_kl->d_klList[y] = new KLRow(n);
+  d_kl.d_klList[y] = new KLRow(n);
   if (ERRNO)
     return;
   klList(y).setSizeValue(n);
@@ -773,7 +798,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
   coxtypes::Length ly = p.length(y);
 
-  d_kl->d_muList[y] = new MuRow(e.size());
+  d_kl.d_muList[y] = new MuRow(e.size());
   if (ERRNO)
     goto abort;
   muList(y).setSizeValue(e.size());
@@ -894,7 +919,7 @@ void KLContext::KLHelper::allocMuTable()
     /* transfer to muList */
 
     coxtypes::Length ly = p.length(y);
-    d_kl->d_muList[y] = new MuRow(e.size());
+    d_kl.d_muList[y] = new MuRow(e.size());
     muList(y).setSizeValue(e.size());
 
     for (Ulong j = 0; j < e.size(); ++j) {
@@ -919,7 +944,6 @@ void KLContext::KLHelper::allocMuTable()
   return;
 }
 
-void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 
 /*
   This function does the primary memory allocation for the computation
@@ -940,7 +964,7 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
   Deals with the possible memory error, and returns ERROR_WARNING in case
   of error.
 */
-
+void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 {
   klsupport().allocRowComputation(y);
 
@@ -957,7 +981,7 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
     const klsupport::ExtrRow& e = extrList(y2);
 
     if (!isKLAllocated(y2)) {
-      d_kl->d_klList[y2] = new KLRow(e.size());
+      d_kl.d_klList[y2] = new KLRow(e.size());
       if (ERRNO)
 	goto abort;
       klList(y2).setSizeValue(extrList(y2).size());
@@ -1550,7 +1574,7 @@ void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
     delete &m;
   }
 
-  d_kl->d_muList[yi] = new MuRow(muList(y));
+  d_kl.d_muList[yi] = new MuRow(muList(y));
   MuRow& m = muList(yi);
 
   for (Ulong j = 0; j < m.size(); ++j) {
@@ -1837,7 +1861,7 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
 	goto abort;
     }
 
-    d_kl->d_muList[y] = new MuRow(mu_buf);
+    d_kl.d_muList[y] = new MuRow(mu_buf);
     if (ERRNO)
       goto abort;
 
