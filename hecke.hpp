@@ -8,8 +8,6 @@
 #include "polynomials.h"
 
 namespace hecke {
-  using namespace polynomials;
-};
 
 /*****************************************************************************
 
@@ -28,7 +26,6 @@ namespace hecke {
 ******************************************************************************/
 
 namespace {
-  using namespace hecke;
 
   template<class P> struct PPtrF {
     typedef const P* valueType;
@@ -49,7 +46,7 @@ namespace {
   void twoColumnPrint(FILE* file, const list::List<HeckeMonomial<P> >& h,
 		      const bits::Permutation&a, const schubert::SchubertContext& p,
 		      const interface::Interface& I, const coxtypes::Length& l, const Ulong& ls);
-};
+}; // |namespace|
 
 /*****************************************************************************
 
@@ -73,23 +70,14 @@ namespace {
 
  *****************************************************************************/
 
-namespace hecke {
-
 template <class P>
 HeckeMonomial<P>::HeckeMonomial(const coxtypes::CoxNbr& x, const P* pol)
   :d_x(x), d_pol(pol)
-
 {}
 
 template<class P> HeckeMonomial<P>::~HeckeMonomial()
-
-/*
-  Automatic destruction is enough.
-*/
-
 {}
 
-};
 
 /*****************************************************************************
 
@@ -110,7 +98,6 @@ template<class P> HeckeMonomial<P>::~HeckeMonomial()
 
  *****************************************************************************/
 
-namespace hecke {
 
 template<class P>
 void append(std::string& str, const HeckeMonomial<P>& m, const schubert::SchubertContext& p,
@@ -127,8 +114,6 @@ void append(std::string& str, const HeckeMonomial<P>& m, const schubert::Schuber
 
   return;
 }
-
-};
 
 namespace {
 
@@ -198,8 +183,6 @@ void oneColumnPrint(FILE* file,
 }
 
 };
-
-namespace hecke {
 
 template<class P>
 void prettyPrint(FILE* file,
@@ -290,8 +273,6 @@ void singularStratification(containers::vector<HeckeMonomial<P> >& hs,
   return;
 }
 
-};
-
 namespace {
 
 template<class P>
@@ -342,4 +323,6 @@ void twoColumnPrint(FILE* file,
   return;
 }
 
-};
+}; // |namespace|
+
+}; // |namspace hecke|

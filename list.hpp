@@ -12,10 +12,6 @@
 
 #include "error.h"
 
-namespace list {
-  using namespace error;
-};
-
 /**************************************************************************
 
   This file provides the definitions of the functions for the List and
@@ -209,7 +205,7 @@ template <class T> void List<T>::append(const T& x)
   {
     T* new_ptr = static_cast<T*> (memory::arena().alloc((c+1)*sizeof(T)));
     if (new_ptr==nullptr) /* overflow */
-      { assert(ERRNO!=0); return; }
+      { assert(error::ERRNO!=0); return; }
     std::copy(d_ptr,d_ptr+c,new_ptr); // copy the whole old range of values
     new_ptr[c] = x;
     memory::arena().free(d_ptr,d_allocated*sizeof(T));
@@ -242,7 +238,7 @@ template <class T> void List<T>::append(const T& x)
 template <class T> const List<T>& List<T>::assign(const List<T>& r)
 {
   setSize(r.size());
-  if (ERRNO) /* overflow */
+  if (error::ERRNO) /* overflow */
     return *this;
   setData(r.ptr(),r.size());
   return *this;
@@ -282,7 +278,7 @@ template <class T> void List<T>::setSize(Ulong n)
 {
   if (d_allocated < n) { /* resize */
     void *p = memory::arena().alloc(n*sizeof(T));
-    if (ERRNO) /* overflow */
+    if (error::ERRNO) /* overflow */
       return;
     auto* pp = static_cast<T*> (p);
     // the next line could use |std::uninitialized_move| from C++17
@@ -319,7 +315,7 @@ void List<T>::setData(const T *source, Ulong first, Ulong r)
   {
     T* new_ptr = static_cast<T*> (memory::arena().alloc((first+r)*sizeof(T)));
     if (new_ptr==nullptr) /* overflow */
-      { assert(ERRNO!=0); return; }
+      { assert(error::ERRNO!=0); return; }
     std::copy(d_ptr,d_ptr+first,new_ptr); // copy initial part from |*this|
     std::copy(source,source+r,new_ptr+first); // add final part from |source|
     memory::arena().free(d_ptr,d_allocated*sizeof(T));
@@ -452,7 +448,7 @@ template <class T> Ulong insert(List<T>& l, const T& d_m)
   // now |j1 == j0+1| and |j1==l.size() or l[j1]>m|; insertion point is |j1|
 
   l.setSize(l.size()+1);
-  if (ERRNO) /* overflow */
+  if (error::ERRNO) /* overflow */
     return not_found;
   l.setData(l.ptr()+j1,j1+1,l.size()-j1-1); /* shift tail up by one */
   new(l.ptr()+j1) T(m);

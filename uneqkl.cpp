@@ -1449,7 +1449,7 @@ KLPol& KLPol::add(const KLPol& p, const long& n)
     setDeg(p.deg()+n);
   }
 
-  for (Degree j = 0; j <= p.deg(); ++j) {
+  for (polynomials::Degree j = 0; j <= p.deg(); ++j) {
     klsupport::safeAdd((*this)[j+n],p[j]);
     if (error::ERRNO)
       return *this;
@@ -1635,7 +1635,8 @@ KLPol positivePart(const KLPol& q, const Ulong& d, const long& m)
   p.setDeg(h); // resize
   p.setZero(h+1); // zero-fill
 
-  for (Degree j = q.deg()+1; h>=0 and j-->0; h-=d) // lower |h| with steps |d|
+  for (polynomials::Degree j = q.deg()+1; h>=0 and j-->0; h-=d)
+    // run index |h| through |p| decreasingly with steps |d|
     p[h] = q[j];
   return p;
 }

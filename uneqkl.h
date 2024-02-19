@@ -31,7 +31,7 @@ namespace uneqkl {
   using MuRow = containers::vector<MuData>;
   using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
   using MuTable = containers::vector<MuRowPtr>;
-  using HeckeElt = containers::vector<HeckeMonomial<KLPol> >;
+  using HeckeElt = containers::vector<hecke::HeckeMonomial<KLPol> >;
 };
 
 /******** function declarations **********************************************/
@@ -48,7 +48,7 @@ namespace uneqkl {
 
 namespace uneqkl {
 
-class KLPol : public Polynomial<klsupport::SKLcoeff>
+class KLPol : public polynomials::Polynomial<klsupport::SKLcoeff>
 {
   static const klsupport::SKLcoeff min_coeff = klsupport::SKLCOEFF_MIN;
   static const klsupport::SKLcoeff max_coeff = klsupport::SKLCOEFF_MAX;
@@ -63,13 +63,13 @@ public:
   KLPol& subtract(const KLPol& p, const MuPol& mp, const Ulong& n);
 }; // |class KLPol|
 
-struct MuPol : public LaurentPolynomial<klsupport::SKLcoeff>
+struct MuPol : public polynomials::LaurentPolynomial<klsupport::SKLcoeff>
 { // a very thin wrapper around its base, mainly to provide an extra constructor
 public:
   struct const_tag {}; // to enable the constructor of constant polynomials
-  MuPol():LaurentPolynomial<klsupport::SKLcoeff>() {}; // zero
-  MuPol(const SDegree& d, const SDegree& o = 0) // allocate zero-terms in range
-    :LaurentPolynomial<klsupport::SKLcoeff>(d,o) {};
+  MuPol() : LaurentPolynomial<klsupport::SKLcoeff>() {} // zero
+  MuPol(const polynomials::SDegree& d, const polynomials::SDegree& o = 0)
+    : LaurentPolynomial<klsupport::SKLcoeff>(d,o) {} // zero-terms in range:
   MuPol(const klsupport::SKLcoeff& c, const_tag) // the new constructor
     : LaurentPolynomial<klsupport::SKLcoeff>
     (containers::vector<klsupport::SKLcoeff>{c},0)

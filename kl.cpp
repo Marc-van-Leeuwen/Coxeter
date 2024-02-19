@@ -149,7 +149,7 @@ namespace {
   };
 
   MuData* find(MuRow& row, const coxtypes::CoxNbr& x);
-  KLPol& safeAdd(KLPol& p, const KLPol& q, const Degree& n);
+  KLPol& safeAdd(KLPol& p, const KLPol& q, const polynomials::Degree& n);
   KLPol& safeSubtract(KLPol& p, const KLPol& q, const klsupport::KLCoeff& mu,
 		      const coxtypes::Length& h);
   void showSimpleMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x,
@@ -1827,7 +1827,7 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
 
       const KLPol& pol = *kl_row[j];
 
-      Degree d = (ly-lx-1)/2;
+      polynomials::Degree d = (ly-lx-1)/2;
       if (pol.deg() < d)
 	continue;
 
@@ -1936,7 +1936,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& d_x,
       const KLPol& pol = klPol(x,ys);
       if (ERRNO)
 	goto abort;
-      Degree d = (l-1)/2 - 1;
+      polynomials::Degree d = (l-1)/2 - 1;
       if (pol.deg() == d) {
 	klsupport::safeAdd(r,pol[d]);
 	if (ERRNO) { /* overflow; highly unlikely! */
@@ -2106,7 +2106,7 @@ void KLContext::KLHelper::writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol
     if (kl_row[j])
       continue;
     /* find degree of polynomial */
-    Degree d = pol[j].deg();
+    polynomials::Degree d = pol[j].deg();
     for (; d; --d) {
       if (pol[j][d])
 	break;
@@ -2687,7 +2687,7 @@ void showRecursiveMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x,
 
     const KLPol& pol = kl.klPol(x,ys);
     klsupport::KLCoeff r1 = 0;
-    Degree d = (l-1)/2 - 1;
+    polynomials::Degree d = (l-1)/2 - 1;
     if (pol.deg() == d) {
       r1 = pol[d];
     }
@@ -3154,7 +3154,7 @@ const KLPol& one()
 namespace {
 
 
-KLPol& safeAdd(KLPol& p, const KLPol& q, const Degree& n)
+  KLPol& safeAdd(KLPol& p, const KLPol& q, const polynomials::Degree& n)
 
 /*
   This function increments p by q, shifted by x^n, checking for overflow.
@@ -3167,7 +3167,7 @@ KLPol& safeAdd(KLPol& p, const KLPol& q, const Degree& n)
   if (p.deg() < (q.deg()+n))
     p.setDeg(q.deg() + n);
 
-  for (Degree j = 0; j <= q.deg(); ++j) {
+  for (polynomials::Degree j = 0; j <= q.deg(); ++j) {
     klsupport::safeAdd(p[j+n],q[j]);
     if (ERRNO)
       return p;
@@ -3186,7 +3186,7 @@ KLPol& safeSubtract(KLPol& p, const KLPol& q, const klsupport::KLCoeff& mu,
 */
 
 {
-  for (Degree j = 0; j <= q.deg(); ++j) {
+  for (polynomials::Degree j = 0; j <= q.deg(); ++j) {
     klsupport::KLCoeff a = mu;
     klsupport::safeMultiply(a,q[j]);
     if (ERRNO) { /* overflow; this will cause an underflow */
@@ -3203,14 +3203,13 @@ KLPol& safeSubtract(KLPol& p, const KLPol& q, const klsupport::KLCoeff& mu,
   return p;
 }
 
-KLPol& zeroPol()
 
 /*
   Returns the zero polynomial (usually this indicates an error condition.)
 */
-
+KLPol& zeroPol()
 {
-  static KLPol z(undef_degree);
+  static KLPol z(polynomials::undef_degree);
   return z;
 }
 

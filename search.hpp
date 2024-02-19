@@ -7,10 +7,6 @@
 
 #include "memory.h"
 
-namespace search {
-  using namespace memory;
-};
-
 /****************************************************************************
 
   This file contains code to implement binary search trees.

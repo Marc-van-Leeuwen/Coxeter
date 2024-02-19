@@ -1287,7 +1287,7 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
 
       const KLPol& pol = *kl_row[j];
 
-      Degree d = (ly-lx-1)/2;
+      polynomials::Degree d = (ly-lx-1)/2;
       if (pol.deg() < d)
 	continue;
 
@@ -1453,7 +1453,7 @@ void KLContext::KLHelper::writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol
     if (kl_row[j])
       continue;
     /* find degree of polynomial */
-    Degree d = pol[j].deg();
+    polynomials::Degree d = pol[j].deg();
     for (; d; --d) {
       if (pol[j][d])
 	break;
@@ -1558,7 +1558,7 @@ KLPol& KLPol::subtract(const KLPol& p, const Ulong& n)
 
   /* subtract */
 
-  for (Degree j = 0; j <= p.deg(); ++j) {
+  for (polynomials::Degree j = 0; j <= p.deg(); ++j) {
     klsupport::safeSubtract((*this)[j+n],p[j]);
     if (error::ERRNO)
       return *this;
@@ -1628,7 +1628,7 @@ const KLPol& zeroPol()
 */
 
 {
-  static KLPol z(undef_degree);
+  static KLPol z(polynomials::undef_degree);
   return z;
 }
 

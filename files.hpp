@@ -70,14 +70,13 @@ void appendExponent(std::string& str, const E& e, PolynomialTraits& traits)
 }
 
 template <class M>
-void appendHeckeMonomial(std::string& str, const M& m, const schubert::SchubertContext& p,
-			 const interface::Interface& I, HeckeTraits& hTraits,
-			 PolynomialTraits& pTraits, const coxtypes::Length& l)
+void appendHeckeMonomial
+  (std::string& str, const M& m, const schubert::SchubertContext& p,
+   const interface::Interface& I, HeckeTraits& hTraits,
+   PolynomialTraits& pTraits, const coxtypes::Length& l)
 {
-  using namespace klsupport;
-
   typedef typename M::PolType P;
-  PolynomialType ptype = P::polType();
+  klsupport::PolynomialType ptype = P::polType();
   coxtypes::Length lx = p.length(m.x());
 
   Ulong d = 1;
@@ -106,7 +105,7 @@ void appendHeckeMonomial(std::string& str, const M& m, const schubert::SchubertC
 
   str.append(hTraits.monomialPostfix);
 
-  if ((ptype == KLPOL) && (l != coxtypes::undef_length))
+  if ((ptype == klsupport::KLPOL) && (l != coxtypes::undef_length))
     appendMuMark(str,m,p,l,hTraits);
 
   pTraits.indeterminate = indeterminate;

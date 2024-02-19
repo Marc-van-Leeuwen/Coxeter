@@ -30,7 +30,7 @@ namespace invkl {
 
   typedef list::List<const KLPol*> KLRow;
   typedef list::List<MuData> MuRow;
-  using HeckeElt = containers::vector<HeckeMonomial<KLPol> >;
+  using HeckeElt = containers::vector<hecke::HeckeMonomial<KLPol> >;
 };
 
 /******** function declarations *********************************************/
@@ -46,7 +46,8 @@ namespace invkl {
 
 namespace invkl {
 
-class KLPol:public Polynomial<klsupport::KLCoeff> {
+class KLPol : public polynomials::Polynomial<klsupport::KLCoeff>
+{
 public:
   static klsupport::PolynomialType polType() {return klsupport::INV_KLPOL;}
   KLPol() {};
