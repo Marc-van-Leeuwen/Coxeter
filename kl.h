@@ -161,8 +161,9 @@ class KLContext {
   void clearFullMu();                                           /* inlined */
   void fillKL();
   void fillMu();
-  const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-		     const coxtypes::Generator& s = coxtypes::undef_generator);
+  const KLPol& klPol
+    (coxtypes::CoxNbr x, coxtypes::CoxNbr y, coxtypes::Generator s);
+  const KLPol& klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y);
   klsupport::KLCoeff mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);

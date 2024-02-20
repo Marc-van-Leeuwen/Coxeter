@@ -291,7 +291,7 @@ namespace schubert {
     const {return d_hasse[x];}
   inline bool StandardSchubertContext::isDescent(const coxtypes::CoxNbr& x,
 						 const coxtypes::Generator& s)
-    const {return d_descent[x]&constants::lmask[s];}
+    const {return d_descent[x]&constants::lmask[s];} // whether Right descent
   inline bits::Lflags StandardSchubertContext::lascent(const coxtypes::CoxNbr& x) const
     {return ~ldescent(x)&constants::leqmask[d_rank-1];}
   inline bits::Lflags StandardSchubertContext::ldescent(const coxtypes::CoxNbr& x) const

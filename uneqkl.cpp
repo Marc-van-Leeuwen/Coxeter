@@ -333,7 +333,7 @@ void KLContext::KLHelper::grow(Ulong prev, Ulong n)
  revert:
   error::CATCH_MEMORY_OVERFLOW = false;
   shrink(prev);
-}
+} // |KLContext::KLHelper::grow|
 
 void KLContext::fillKL() { d_help->fill_KL_table(); }
 
@@ -525,7 +525,7 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
 
     seen.setBit(x);
   } // |for(x)|
-} // ||
+} // |KLContext::KLHelper::permute|
 
 /*
   Reverts the sizes of the lists to size n. This is meant to be used

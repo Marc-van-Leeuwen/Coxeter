@@ -303,6 +303,7 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
     }
   }
 
+  // play it again, Sam
   for (coxtypes::CoxNbr x = prev_size; x < size(); ++x) {
     coxtypes::Generator s = p.firstRDescent(x);
     coxtypes::CoxNbr xs = p.rshift(x,s);
@@ -322,7 +323,7 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
   for (coxtypes::CoxNbr x = prev_size; x < size(); ++x) {
     coxtypes::Generator s = p.firstLDescent(x);
     coxtypes::CoxNbr sx = p.lshift(x,s);
-    if (sx)
+    if (sx!=0)
       d_last[x] = d_last[sx];
     else /* x = s */
       d_last[x] = s;
