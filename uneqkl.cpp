@@ -129,11 +129,10 @@ struct KLContext::KLHelper
   void fill_mu_table ();
   const KLPol& klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y);
   const MuPol mu
-   (const coxtypes::Generator& s,
-    const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
-  void move_KL_row_to_inverse(const coxtypes::CoxNbr& x);
+    (coxtypes::Generator s, coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+  void move_KL_row_to_inverse(coxtypes::CoxNbr x);
   void apply_inverse_permutation
-    (const coxtypes::CoxNbr& y, const bits::Permutation& a);
+    (coxtypes::CoxNbr y, const bits::Permutation& a);
   HeckeElt KL_row_as_HeckeElt(coxtypes::CoxNbr y);
 
 private:
@@ -412,8 +411,7 @@ const MuPol KLContext::mu(const coxtypes::Generator& s,
 { return d_help->mu(s,x,y); }
 
 const MuPol KLContext::KLHelper::mu
-  (const coxtypes::Generator& s,
-   const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+  (coxtypes::Generator s, coxtypes::CoxNbr x, coxtypes::CoxNbr y)
 {
   // either use existing row or start one from scratch
   if (no_mu_yet(s,y))
@@ -439,116 +437,7 @@ const MuPol KLContext::KLHelper::mu
   }
 
   return *mp; // return found or coputed mu polynomial
-}
-
-
-
-/*
-  Exchange rows for |x| and |inverse(x)| in klList. It is assumed that the row
-  for |inverse(x)| is allocated.
-*/
-void KLContext::applyInverse(const coxtypes::CoxNbr& x)
-{ d_help->move_KL_row_to_inverse(x);
-}
-
-void KLContext::KLHelper::move_KL_row_to_inverse(const coxtypes::CoxNbr& x)
-{
-  coxtypes::CoxNbr xi = inverse(x);
-  d_klList[x] = std::move(d_klList[xi]);
-}
-
-void KLContext::applyIPermutation
-  (const coxtypes::CoxNbr& y, const bits::Permutation& a)
-{ d_help->apply_inverse_permutation(y,a); }
-
-void KLContext::KLHelper::apply_inverse_permutation
-  (const coxtypes::CoxNbr& y, const bits::Permutation& a)
-{ right_permute(*d_klList[y],a); }
-
-
-/*
-  Apply the permutation |a| to the context. See the |permute| function of
-  |klsupport::KLSupport| for a detailed explanation.
-*/
-void KLContext::permute(const bits::Permutation& a)
-{ d_help->permute(a); }
-
-void KLContext::KLHelper::permute(const bits::Permutation& a)
-{
-  // permute values inside each row of |muTable|
-  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = d_muTable[s];
-    for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
-      if (no_mu_yet(s,y))
-	continue;
-      MuRow& row = *t[y];
-      for (Ulong j = 0; j < row.size(); ++j)
-	row[j].x = a[row[j].x];
-      std::sort(row.begin(),row.end());
-    }
-  }
-  // permute ranges
-  bits::BitMap seen(a.size());
-
-  for (coxtypes::CoxNbr x = 0; x < size(); ++x)
-  {
-    if (seen.getBit(x))
-      continue;
-    // now |x| starts an as yet unseen nontrivial cycle in |a|
-    containers::vector<MuRowPtr> mu_buf(d_muTable.size()); // Coxeter rank
-
-    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
-    {
-      std::swap(d_length[y],d_length[x]);
-
-      // back up values for y
-      auto kl_buf = std::move(d_klList[y]);
-      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = d_muTable[s];
-	mu_buf[s] = std::move(t[y]);
-      }
-      // move values from |x| in |y|
-      d_klList[y] = std::move(d_klList[x]);
-      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = d_muTable[s];
-	t[y] = std::move(t[x]);
-      }
-
-      /* store backed up values in x */
-      d_klList[x] = std::move(kl_buf);
-      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = d_muTable[s];
-	t[x] = std::move(mu_buf[s]);
-      }
-      seen.setBit(y);
-    }  // |for(y)|
-
-    seen.setBit(x);
-  } // |for(x)|
-} // |KLContext::KLHelper::permute|
-
-/*
-  Reverts the sizes of the lists to size n. This is meant to be used
-  only immediately after a failing context extension, to preserve the
-  consistency of the various list sizes. In particular, it will fail
-  miserably if a premutation has taken place in between.
-*/
-void KLContext::revertSize(const Ulong& n)
-{
-  d_help->shrink(n);
-}
-
-void KLContext::KLHelper::shrink(const Ulong& n)
-{
-  d_klList.resize(n);
-
-  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = d_muTable[s];
-    t.resize(n); // drop any extension of |d_muTable[s]|
-  }
-  d_length.resize(n);
-}
-
+} // |KLContext::KLHelper::mu(s,x,y)|
 
 /*
   This function makes sure that the row corresponding to y in the K-L table
@@ -598,6 +487,116 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
   return h;
 } // |KLContext::row|
 
+
+
+/*
+  Reverts the sizes of the lists to size n. This is meant to be used
+  only immediately after a failing context extension, to preserve the
+  consistency of the various list sizes. In particular, it will fail
+  miserably if a premutation has taken place in between.
+*/
+void KLContext::revertSize(const Ulong& n)
+{
+  d_help->shrink(n);
+}
+
+void KLContext::KLHelper::shrink(const Ulong& n)
+{
+  d_klList.resize(n);
+
+  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+    MuTable& t = d_muTable[s];
+    t.resize(n); // drop any extension of |d_muTable[s]|
+  }
+  d_length.resize(n);
+}
+
+
+
+/*
+  Exchange rows for |x| and |inverse(x)| in klList. It is assumed that the row
+  for |inverse(x)| is allocated.
+*/
+void KLContext::applyInverse(const coxtypes::CoxNbr& x)
+{ d_help->move_KL_row_to_inverse(x);
+}
+
+void KLContext::KLHelper::move_KL_row_to_inverse(coxtypes::CoxNbr x)
+{
+  coxtypes::CoxNbr xi = inverse(x);
+  d_klList[x] = std::move(d_klList[xi]);
+}
+
+void KLContext::applyIPermutation
+  (const coxtypes::CoxNbr& y, const bits::Permutation& a)
+{ d_help->apply_inverse_permutation(y,a); }
+
+void KLContext::KLHelper::apply_inverse_permutation
+  (coxtypes::CoxNbr y, const bits::Permutation& a)
+{ right_permute(*d_klList[y],a); }
+
+
+/*
+  Apply the permutation |a| to the context. See the |permute| function of
+  |klsupport::KLSupport| for a detailed explanation.
+*/
+void KLContext::permute(const bits::Permutation& a)
+{ d_help->permute(a); }
+
+void KLContext::KLHelper::permute(const bits::Permutation& a)
+{
+  // permute values inside each row of |muTable|
+  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+    MuTable& t = d_muTable[s];
+    for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
+      if (no_mu_yet(s,y))
+	continue;
+      MuRow& row = *t[y];
+      for (Ulong j = 0; j < row.size(); ++j)
+	row[j].x = a[row[j].x];
+      std::sort(row.begin(),row.end());
+    }
+  }
+
+  // permute ranges
+  bits::BitMap seen(a.size());
+
+  for (coxtypes::CoxNbr x = 0; x < size(); ++x)
+  {
+    if (seen.getBit(x))
+      continue;
+    // now |x| starts an as yet unseen nontrivial cycle in |a|
+    containers::vector<MuRowPtr> mu_buf(d_muTable.size()); // Coxeter rank
+
+    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
+    {
+      std::swap(d_length[y],d_length[x]);
+
+      // back up values for y
+      auto kl_buf = std::move(d_klList[y]);
+      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+	MuTable& t = d_muTable[s];
+	mu_buf[s] = std::move(t[y]);
+      }
+      // move values from |x| in |y|
+      d_klList[y] = std::move(d_klList[x]);
+      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+	MuTable& t = d_muTable[s];
+	t[y] = std::move(t[x]);
+      }
+
+      /* store backed up values in x */
+      d_klList[x] = std::move(kl_buf);
+      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
+	MuTable& t = d_muTable[s];
+	t[x] = std::move(mu_buf[s]);
+      }
+      seen.setBit(y);
+    }  // |for(y)|
+
+    seen.setBit(x);
+  } // |for(x)|
+} // |KLContext::KLHelper::permute|
 
 
 

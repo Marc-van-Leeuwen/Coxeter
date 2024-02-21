@@ -74,7 +74,7 @@ public:
   // KLPol& subtract(const KLPol& p, const MuPol& mp, const Ulong& n);
 };
 
-struct KLStatus {
+struct KLStats {
   static const bits::Lflags kl_done = 1L;
   static const bits::Lflags mu_done = (1L << 1);
   bits::Lflags flags;
@@ -88,9 +88,8 @@ struct KLStatus {
 /* constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-  {return memory::arena().free(ptr,sizeof(KLStatus));}
-  KLStatus();
-  ~KLStatus();
+    { return memory::arena().free(ptr,sizeof(KLStats)); }
+  KLStats();
 };
 
 struct MuData {
@@ -99,11 +98,14 @@ struct MuData {
   coxtypes::Length height;
 /* constructors */
   MuData() {};
-  MuData(const coxtypes::CoxNbr& d_x, const klsupport::KLCoeff& d_mu, const coxtypes::Length& d_h)
+  MuData(const coxtypes::CoxNbr& d_x,
+	 const klsupport::KLCoeff& d_mu,
+	 const coxtypes::Length& d_h)
     :x(d_x), mu(d_mu), height(d_h) {};
   ~MuData() {};
 /* comparison */
-  bool operator> (const MuData& m) const;                        /* inlined */
+  bool operator> (const MuData& m) const { return x > m.x; }
+
 };
 
 class MuFilter {
@@ -114,16 +116,14 @@ class MuFilter {
   MuFilter(const schubert::SchubertContext& p, const coxtypes::Length& l);
   MuFilter(const schubert::SchubertContext& p, const coxtypes::CoxNbr& y);
   ~MuFilter();
-  bool operator() (const coxtypes::CoxNbr& x) const;                       /* inlined */
+  bool operator() (const coxtypes::CoxNbr& x) const
+  { coxtypes::Length d = d_l-d_p.length(x); return d%2!=0 and d > 1; }
 };
 
 class KLContext {
  private:
-  klsupport::KLSupport* d_klsupport;
   list::List<KLRow*> d_klList;
   list::List<MuRow*> d_muList;
-  search::BinaryTree<KLPol> d_klTree;
-  KLStatus* d_status;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
  public:
@@ -134,31 +134,36 @@ class KLContext {
   KLContext(klsupport::KLSupport* kls);
   ~KLContext();
 /* accessors */
+  const klsupport::KLSupport& klsupport() const; // uses reference in helper
+  KLStats& stats();
+  const KLStats& stats() const;
+
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
   { return klsupport().extrList(y); }
 
-  coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                        /* inlined */
-  const bits::BitMap& involution() const;                             /* inlined */
+  coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
+  { return klsupport().inverse(x); }
+  const bits::BitMap& involution() const { return klsupport().involution(); }
   bool isExtrAllocated(const coxtypes::CoxNbr& x) const
-  { return d_klsupport->isExtrAllocated(x); }
-  bool isFullKL() const;                                        /* inlined */
-  bool isFullMu() const;                                        /* inlined */
-  bool isKLAllocated(const coxtypes::CoxNbr& x) const;                    /* inlined */
-  bool isMuAllocated(const coxtypes::CoxNbr& x) const;                    /* inlined */
+  { return klsupport().isExtrAllocated(x); }
+  bool isFullKL() const { return stats().flags&KLStats::kl_done; }
+  bool isFullMu() const { return stats().flags&KLStats::mu_done; }
+  bool isKLAllocated(const coxtypes::CoxNbr& x) const {return d_klList[x] != 0;}
+  bool isMuAllocated(const coxtypes::CoxNbr& x) const {return d_muList[x] != 0;}
   const KLRow& klList(const coxtypes::CoxNbr& y) const;
-  const klsupport::KLSupport& klsupport() const;
-  coxtypes::Generator last(const coxtypes::CoxNbr& y) const;                        /* inlined */
+  coxtypes::Generator last(const coxtypes::CoxNbr& y) const
+  { return klsupport().last(y); }
   const MuRow& muList(const coxtypes::CoxNbr& y) const;
-  coxtypes::Rank rank() const;                                            /* inlined */
-  const schubert::SchubertContext& schubert() const
-  { return d_klsupport->schubert(); }
+  coxtypes::Rank rank() const { return klsupport().rank(); }
+ const schubert::SchubertContext& schubert() const
+  { return klsupport().schubert(); }
   Ulong size() const;
-  const search::BinaryTree<KLPol>& tree() const;                        /* inlined */
 /* manipulators */
   void applyInverse(const coxtypes::CoxNbr& y);
-  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);/* inlined */
-  void clearFullKL();                                           /* inlined */
-  void clearFullMu();                                           /* inlined */
+  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a)
+  { return rightRangePermute(*d_klList[y],a); }
+  void clearFullKL() { stats().flags &= ~KLStats::kl_done;}
+  void clearFullMu() { stats().flags &= ~KLStats::mu_done;}
   void fillKL();
   void fillMu();
   const KLPol& klPol
@@ -168,13 +173,14 @@ class KLContext {
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
-  void setFullKL();                                             /* inlined */
-  void setFullMu();                                             /* inlined */
+  void setFullKL() { stats().flags |= KLStats::kl_done;}
+  void setFullMu() { stats().flags |= KLStats::mu_done;}
   void setSize(const Ulong& n);
 /* input/output */
   // String& append(String& str, const coxtypes::CoxNbr& x) const;
-  void print(FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I) const;
-                                                                /* inlined */
+  void print
+    (FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I)
+  const { schubert().print(file,x,I); }
   void printStatus(FILE* file) const;
 /* to be taken out! */
   void compareMu();
@@ -186,39 +192,7 @@ class KLContext {
 
 namespace kl {
 
-inline bool MuData::operator> (const MuData& m) const {return x > m.x;}
 
-inline bool MuFilter::operator() (const coxtypes::CoxNbr& x) const
-  {coxtypes::Length l = d_p.length(x); return ((d_l-l)%2) && ((d_l-l) > 1);}
-
-inline coxtypes::CoxNbr KLContext::inverse(const coxtypes::CoxNbr& x) const
-  {return d_klsupport->inverse(x);}
-inline const bits::BitMap& KLContext::involution() const
-  {return d_klsupport->involution();}
-inline bool KLContext::isFullKL() const
-  {return d_status->flags&KLStatus::kl_done;}
-inline bool KLContext::isFullMu() const
-  {return d_status->flags&KLStatus::mu_done;}
-inline bool KLContext::isKLAllocated(const coxtypes::CoxNbr& x) const
-  {return d_klList[x] != 0;}
-inline bool KLContext::isMuAllocated(const coxtypes::CoxNbr& x) const
-  {return d_muList[x] != 0;}
-inline coxtypes::Generator KLContext::last(const coxtypes::CoxNbr& y) const
-  {return d_klsupport->last(y);}
-inline coxtypes::Rank KLContext::rank() const {return d_klsupport->rank();}
-inline const search::BinaryTree<KLPol>& KLContext::tree() const
-  {return d_klTree;}
-inline void KLContext::print
-  (FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I)
-  const {schubert().print(file,x,I);}
-
-inline void KLContext::applyIPermutation
-  (const coxtypes::CoxNbr& y, const bits::Permutation& a)
-  {return rightRangePermute(*d_klList[y],a);}
-inline void KLContext::clearFullKL() {d_status->flags &= ~KLStatus::kl_done;}
-inline void KLContext::clearFullMu() {d_status->flags &= ~KLStatus::mu_done;}
-inline void KLContext::setFullKL() {d_status->flags |= KLStatus::kl_done;}
-inline void KLContext::setFullMu() {d_status->flags |= KLStatus::mu_done;}
 
 };
 
