@@ -83,16 +83,14 @@ template <class T> Vector<T>& Vector<T>::operator*= (const T& a)
   return *this;
 }
 
-template <class T> void Vector<T>::reduceDim()
 
 /*
   This function reduces the dimension to the smallest value that will contain
   all non-zero coefficients in the current vector.
 */
-
+template <class T> void Vector<T>::reduceDim()
 {
-  for (Ulong j = dim(); j;) {
-    j--;
+  for (Ulong j = dim(); j-->0; ) {
     if (d_list[j]) {
       d_list.setSize(j+1);
       return;

@@ -76,8 +76,9 @@ template <class T> class List {
   void setData(const T* source, Ulong r) { setData(source,0,r); }
   void setSize(Ulong n); // set |d_size| while ensuring corresponding memory
   void setSizeValue(const Ulong& n);                              /* inlined */
-  void setZero(Ulong first, Ulong r);                             /* inlined */
-  void setZero(Ulong r);                                          /* inlined */
+  void setZero(Ulong first, Ulong r)
+    { std::fill(d_ptr+first,d_ptr+first+r,static_cast<T>(0));}
+  void setZero(Ulong r) {setZero(0,r);}
   void setZero() { setZero(0,d_size); } // zero out all entries, keep size
   void shallowCopy(const List& w);                                /* inlined */
   void shiftPtr(const long& d);                                   /* inlined */
@@ -114,9 +115,6 @@ template<class T> inline T& List<T>::operator[] (Ulong j)
   {return d_ptr[j];}
 template<class T> void List<T>::setSizeValue(const Ulong& n)
   {d_size = n;}
-template<class T> inline void List<T>::setZero(Ulong first, Ulong r)
-  { std::fill(d_ptr+first,d_ptr+first+r,static_cast<T>(0));}
-template<class T> inline void List<T>::setZero(Ulong r) {setZero(0,r);}
 template<class T> inline void List<T>::shallowCopy(const List<T>& w)
   { d_ptr = w.d_ptr; d_size=w.d_size; d_allocated=w.d_allocated; }
 template<class T> inline void List<T>::shiftPtr(const long& d)

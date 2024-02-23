@@ -25,254 +25,149 @@
 
 namespace polynomials {
 
-template <class T> Polynomial<T>::~Polynomial()
-
-/*
-  Destruction is automatic.
-*/
-
-{}
 
 /******** operators *********************************************************/
 
 template <class T>
 Polynomial<T>& Polynomial<T>::operator+= (const Polynomial<T>& q)
-
-/*
-  Adds q to the current polynomial.
-*/
-
 {
-  /* check for zero */
-
   if (q.isZero())  /* do nothing */
     return *this;
 
-  if (isZero()) { /* set p to q */
-    *this = q;
-    return *this;
+  if (isZero())
+    return *this = q;
+
+  if (deg()>q.deg())
+    for (unsigned i=0; i<q.v.size(); ++i)
+      v[i]+=q.v[i];
+  else if (deg()<q.deg())
+  {
+    for (unsigned i=0; i<v.size(); ++i)
+      v[i]+=q.v[i];
+    v.insert(v.end(),q.v.begin()+v.size(),q.v.end()); // copy high coefficients
   }
-
-  v += q.v;
-  v.reduceDim();  /* set the degree to the correct value */
-
+  else
+  {
+    for (unsigned i=0; i<v.size(); ++i)
+      v[i]+=q.v[i];
+    reduceDeg();  /* set the degree to the correct value */
+  }
   return *this;
 }
 
 
 template <class T>
 Polynomial<T>& Polynomial<T>::operator-= (const Polynomial<T>& q)
-
-/*
-  Adds q to the current polynomial.
-*/
-
 {
-  Degree j;
-
-  /* check for zero */
-
   if (q.isZero())  /* do nothing */
     return *this;
 
-  if (isZero()) { /* set p to -q */
-    *this = q;
-    for (j = 0; j <= deg(); j++)
-      v[j] = -v[j];
+  if (isZero())
+  {
+    v = q.v;
+    for (auto& x : v)
+      x = -x;
     return *this;
   }
 
-  v -= q.v;
-  v.reduceDim();  /* set the degree to the correct value */
-
+  if (deg()>q.deg())
+    for (unsigned i=0; i<q.v.size(); ++i)
+      v[i]-=q.v[i];
+  else if (deg()<q.deg())
+  {
+    v.resize(q.v.size(),0);
+    for (unsigned i=0; i<v.size(); ++i)
+      v[i]-=q.v[i];
+  }
+  else
+  {
+    for (unsigned i=0; i<v.size(); ++i)
+      v[i]-=q.v[i];
+    reduceDeg();  /* set the degree to the correct value */
+  }
   return *this;
 }
-
-template <class T>
-Polynomial<T>& Polynomial<T>::operator*= (const Polynomial<T>& q)
-
-/*
-  Multiplies the current polynomial by q.
-
-  NOTE : we have used tmp as workspace for simplicity, although this can
-  be eliminated altogether.
-*/
-
-{
-  static vector::Vector<T> tmp;
-
-  if ( isZero() || q.isZero() )  /* result is 0 */
-    {
-      setDeg(undef_degree);
-      return *this;
-    }
-
-  tmp.setDim(deg()+q.deg()+1);
-
-  Degree i, j;
-
-  for (i = 0; i <= deg(); i++)
-    for (j = 0; j <= q.deg(); j++)
-      tmp[i+j] += v[i]*q[j];
-
-  setDeg(deg()+q.deg()+1);
-  v = tmp;
-
-  return *this;
-}
-
 
 template <class T> Polynomial<T>& Polynomial<T>::operator*= (const T& a)
-
-/*
-  Scalar multiplication by a.
-*/
-
 {
-  if ( isZero() || (a == 0) /* should be isZero<T>(a) */)  /* result is 0 */
-    {
-      setDeg(undef_degree);
-      return *this;
-    }
-
-  v *= a;
-
-  return *this;
-}
-
-template <class T>
-Polynomial<T>& Polynomial<T>::operator/= (const Polynomial<T>& q)
-
-/*
-  Euclidian division by q; we assume that the leading coefficient of
-  q is one. It turns out that everything can be done within p's
-  memory space (even when p = q!).
-*/
-
-{
-  if (deg() < q.deg()) { /* result is 0 */
-    setDeg(undef_degree);
+  if (a == T(0))
+  {
+    v.clear();
     return *this;
   }
 
-  Degree i, j;
-
-  for (j = deg()-q.deg()+1; j;)
-    {
-      j--;
-      for (i = 0; i < q.deg(); i++)
-        v[i+j] -= v[q.deg()+j]*q[i];
-    }
-
-  v.setVect(v.ptr()+q.deg(),deg()-q.deg()+1);
-  setDeg(deg()-q.deg());
+  for (auto& x : v)
+    x *= a;
 
   return *this;
 }
 
-};
+
+/*
+  Multiply our polynomial by |q|.
+
+  NOTE : Fokko noted that (supposedly after resizing) all can be done in-place
+  in the vector |v|, which is therefore what we implemented below.
+*/
+template <class T>
+Polynomial<T>& Polynomial<T>::operator*= (const Polynomial<T>& q)
+{
+  if (isZero())
+    return *this;
+  if (q.isZero())
+    v.clear();
+  else
+  {
+    v.resize(v.size()+q.deg(),0);
+    for (Degree i=v.size(); i-->0; )
+    {
+      auto c = v[i]; // save coefficient that will be overwritten
+      Degree j=i;
+      auto it=q.v.begin();
+      for (v[j++] = c * *it++; it!=q.v.end(); ++j,++it)
+	v[j] += c * *it;
+    }
+  }
+  return *this;
+}
+
+
+
+
+/*
+  Euclidian division by |q|; we assume that the leading coefficient of
+  |q| is one. It turns out that everything can be done within p's
+  memory space (even when p = q!).
+*/
+template <class T>
+Polynomial<T>& Polynomial<T>::operator/= (const Polynomial<T>& q)
+{
+  assert(q.v.back()==T(1)); // we only implement division by a monic polynomial
+  if (deg() < q.deg()) { // quotient is 0, remainder |*this| is thrown away
+    v.clear();
+    return *this;
+  }
+
+  const Degree d=q.deg();
+  for (Degree j = v.size(); j-->d;)
+  {
+    auto it = &v[j];
+    auto c = *it; // this leading coefficient of remainder now enters quotient
+    for (Degree i = q; i-->0; ) // use all non-leading coefs of |q|
+      *--it -= c * q[i]; // subtract product from tommost coefs of remainder
+  }
+
+  v.erase(&v[0],&v[d]); // drop size |d| remainder, and shift quotient in place
+
+  return *this;
+}
+
 
 /*****************************************************************************
 
-        Chapter II -- Comparison operators.
-
-  This section defines comparison operators for polynomials, assuming
-  that the corresponding comparison operators for type T have beeb defined.
-
-  We define the following :
-
-   - operator== (p,q);
-   - operator!= (p,q); (inlined)
-   - operator< (p,q);
-   - operator> (p,q);
+        Chapter II -- Comparison operators. Everything is inlined
 
 ******************************************************************************/
-
-namespace polynomials {
-
-template <class T>
-bool operator== (const Polynomial<T>& p, const Polynomial<T>& q)
-
-/*
-  Equality operator for polynomials. Two polynomials are equal, if both
-  are zero, or if their degrees are equal and the corresponding coefficients
-  are equal. It is assumed that operator != is defined for T.
-*/
-
-{
-  if (p.isZero())
-    return q.isZero();
-
-  if (p.deg() != q.deg())
-    return false;
-
-  for (Ulong j = 0; j <= p.deg(); ++j) {
-    if (p[j] != q[j])
-      return false;
-  }
-
-  return true;
-}
-
-template <class T>
-bool operator<= (const Polynomial<T>& p, const Polynomial<T>& q)
-
-/*
-  We have p <= q if either p = 0, or deg(p) < deg(q), or degrees are equal and
-  coefficients are in order, starting from the top. It is assumed that
-  operator< is defined for T
-*/
-
-{
-  if (p.deg() < q.deg())
-    return true;
-  if (p.deg() > q.deg())
-    return false;
-
-  /* now degrees are equal */
-
-  for (Ulong j = p.deg()+1; j;) { /* loop is empty if p = 0 */
-    --j;
-    if (p[j] > q[j])
-      return false;
-    if (p[j] < q[j])
-      return true;
-  }
-
-  /* now polynomials are equal */
-
-  return true;
-}
-
-template <class T>
-bool operator>= (const Polynomial<T>& p, const Polynomial<T>& q)
-
-/*
-  We have p >= q if either deg(p) > deg(q), or degrees are equal and coefficients
-  are in order, starting from the top. It is assumed that operator< is defined
-  for T
-*/
-
-{
-  if (p.deg() > q.deg())
-    return true;
-  if (p.deg() < q.deg())
-    return false;
-
-  /* now degrees are equal */
-
-  for (Ulong j = p.deg()+1; j;) { /* loop is empty if p = 0 */
-    --j;
-    if (p[j] < q[j])
-      return false;
-    if (p[j] > q[j])
-      return true;
-  }
-
-  /* now polynomials are equal */
-
-  return true;
-}
 
 };
 
@@ -311,84 +206,74 @@ std::string& append(std::string& str, const Polynomial<T> &p, const char *x)
     return str;
   }
 
-  int firstcoeff = 1;
-  Degree j = p.deg()+1;
+  bool firstcoeff = true;
 
-  while (j) {
-    j--;
+  for (Degree j = p.deg()+1; j-->0; )
+  {
     if (p[j] == 0)
-      continue;
-    if (firstcoeff)
-      firstcoeff = 0;
-    else
-      if (p[j] > 0)
-	str.append("+");
-    switch (j)
-      {
-      case 0:
-	io::append(str,p[j]);
-	break;
-      default:
-	if ((p[j] != 1) && (p[j] != (T)(-1)))
-	  io::append(str,p[j]);
-	else if (p[j] == (T)(-1))
-	  str.append("-");
-	break;
-      };
-    switch (j)
-      {
-      case 0:
-	break;
-      case 1:
-	str.append(x);
-	break;
-      default:
-	str.append(x);
-	str.append("^");
-	io::append(str,j);
-	break;
-      };
+      continue; // skip zero terms
+    if (firstcoeff) // then skip printing "+"
+      firstcoeff = false;
+    else if (p[j] > 0)
+      str.append("+");
+
+    if (j==0)
+      io::append(str,p[j]); // print the constant term, even if $\pm1$
+    else if (p[j] != T(1) and p[j] != T(-1)) // deg>0, non-unit coefficient
+      io::append(str,p[j]); // print it with possible minus sign
+    else if (p[j] == T(-1)) // for coef $-1$ just print '-' before |x|
+      str.append("-");
+
+    switch (j) // print monomial in |x|
+    {
+    case 0:
+      break;
+    case 1:
+      str.append(x);
+      break;
+    default:
+      str.append(x);
+      str.append("^");
+      io::append(str,j);
+      break;
+    } // |switch|
   }
 
   return str;
 }
 
-template <class T>
-std::string& append(std::string& str, const LaurentPolynomial<T> &p, const char *x)
 
 /*
   Appends the string representation of p to l, using the string x to
   represent the indeterminate.
 */
-
+template <class T>
+  std::string& append
+    (std::string& str, const LaurentPolynomial<T> &p, const char *x)
 {
   if (p.isZero()) {
     str.append("0");
     return str;
   }
 
-  int firstcoeff = 1;
+  bool firstcoeff = true;
 
-  for (long j = p.val(); j <= p.deg(); ++j) {
+  for (long j = p.val(); j <= p.deg(); ++j) // print Laurent polynomials rising
+  {
     if (p[j] == 0)
       continue;
     if (firstcoeff)
-      firstcoeff = 0;
-    else
-      if (p[j] > 0)
-	str.append("+");
-    switch (j)
-      {
-      case 0:
-	io::append(str,p[j]);
-	break;
-      default:
-	if ((p[j] != 1) && (p[j] != (T)(-1)))
-	  io::append(str,p[j]);
-	else if (p[j] == (T)(-1))
-	  str.append("-");
-	break;
-      };
+      firstcoeff = false;
+    else if (p[j] > 0)
+      str.append("+");
+
+    if (j==0)
+      io::append(str,p[j]); // print the constant term, even if $\pm1$
+    else if (p[j] != T(1) and p[j] != T(-1)) // deg>0, non-unit coefficient
+      io::append(str,p[j]); // print it with possible minus sign
+    else if (p[j] == T(-1)) // for coef $-1$ just print '-' before |x|
+      str.append("-");
+
     switch (j)
       {
       case 0:
@@ -407,46 +292,41 @@ std::string& append(std::string& str, const LaurentPolynomial<T> &p, const char 
   return str;
 }
 
-template <class T>
-std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
-	       const long& m, const char *x)
 
 /*
   Appends the string representation of p to str, using the string x to
-  represent the indeterminate. In this version, X^d is first substituted
-  in the polynomial, and afterwards the whole thing is shifted by m.
+  represent the indeterminate. In this version, the substitution $X:=X^d$
+  is first made, followed by a multiplication by $X^m$.
 */
-
+template <class T>
+std::string& append
+  (std::string& str, const Polynomial<T> &p,
+   const Degree& d, const long& m, const char *x)
 {
-  if (p.deg() == undef_degree) {
+  if (p.isZero()) {
     str.append("0");
     return str;
   }
 
-  int firstcoeff = 1;
-  Degree j = p.deg()+1;
+  bool firstcoeff = true;
 
-  while (j) {
-    j--;
+  for (Degree j = p.deg()+1; j-->0; )
+  {
     if (p[j] == 0)
       continue;
     if (firstcoeff)
-      firstcoeff = 0;
-    else
-      if (p[j] > 0)
-	str.append("+");
-    long a = j*d + m;
-    switch (a) {
-    case 0:
-      append(str,p[j]);
-      break;
-    default:
-      if ((p[j] != (T)1) && (p[j] != (T)(-1)))
-	append(str,p[j]);
-      else if (p[j] == (T)(-1))
-	str.append("-");
-      break;
-    };
+      firstcoeff = false;
+    else if (p[j] > 0)
+      str.append("+");
+
+    auto a = j*d + m; // effective degree
+    if (a==0)
+      io::append(str,p[j]); // print the constant term, even if $\pm1$
+    else if (p[j] != T(1) and p[j] != T(-1)) // deg>0, non-unit coefficient
+      io::append(str,p[j]); // print it with possible minus sign
+    else if (p[j] == T(-1)) // for coef $-1$ just print '-' before |x|
+      str.append("-");
+
     switch (a) {
     case 0:
       break;
@@ -464,19 +344,18 @@ std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
   return str;
 }
 
-template <class T>
-std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
-	       const long& m, const char *x, io::GAP)
 
 /*
-  Appends the GAP representation of p to str, using the string x to
+  Append the GAP representation of p to str, using the string x to
   represent the indeterminate. In this version, X^d is first substituted
   in the polynomial, and afterwards the whole thing is shifted by m.
 
   The only difference with the ordinary print is that a * is required between
   then coefficient and the indeterminate.
 */
-
+template <class T>
+std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
+	       const long& m, const char *x, io::GAP)
 {
   if (p.deg() == undef_degree) {
     str.append("0");
@@ -526,9 +405,6 @@ std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
   return str;
 }
 
-template <class T>
-std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
-	       const long& m, const char *x, io::Terse)
 
 /*
   Appends the Terse representation of p to str, using the string x to
@@ -540,7 +416,9 @@ std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
   from one, or m is different from zero, the polynomial is preceded by
   a pair (d,m), also enclosed in parentheses.
 */
-
+template <class T>
+std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
+	       const long& m, const char *x, io::Terse)
 {
   if (p.deg() == undef_degree) {
     str.append("()");
@@ -570,83 +448,44 @@ std::string& append(std::string& str, const Polynomial<T> &p, const Degree& d,
 
 template <class T> void print(FILE* file, const Polynomial<T>& p,
 			      const char* x)
-
 {
-  static std::string buf;
-
-  buf.clear();
+  std::string buf;
   append(buf,p,x);
   io::print(file,buf);
-
-  return;
 }
 
 template <class T> void print(FILE* file, const LaurentPolynomial<T>& p,
 			      const char* x)
-
 {
-  static std::string buf;
-
-  buf.clear();
+  std::string buf;
   append(buf,p,x);
   io::print(file,buf);
-
-  return;
 }
 
 template <class T> void print(FILE* file, const Polynomial<T>& p,
 			      const Degree& d, const long& m, const char* x)
-
-/*
-  Prints the polynomial with x^d substituted for x, and shifted by m (so that
-  we may actually be printing a Laurent polynomial.)
-*/
-
 {
-  static std::string buf;
-
-  buf.clear();
+  std::string buf;
   append(buf,p,d,m,x);
   io::print(file,buf);
-
-  return;
 }
 
 template <class T> void print(FILE* file, const Polynomial<T>& p,
 			      const Degree& d, const long& m, const char* x,
 			      io::GAP)
-
-/*
-  Prints the polynomial with x^d substituted for x, and shifted by m (so that
-  we may actually be printing a Laurent polynomial.)
-*/
-
 {
-  static std::string buf;
-
-  buf.clear();
+  std::string buf;
   append(buf,p,d,m,x,io::GAP());
   io::print(file,buf);
-
-  return;
 }
 
 template <class T> void print(FILE* file, const Polynomial<T>& p,
 			      const Degree& d, const long& m, const char* x,
 			      io::Terse)
-
-/*
-  Prints the polynomial in terse style.
-*/
-
 {
-  static std::string buf;
-
-  buf.clear();
+  std::string buf;
   append(buf,p,d,m,x,io::Terse());
   io::print(file,buf);
-
-  return;
 }
 
 /*****************************************************************************
@@ -658,93 +497,20 @@ template <class T> void print(FILE* file, const Polynomial<T>& p,
   is just a shift to be taken into account. The degree (valuation) of a Laurent
   polynomial is the position of its largest (smallest) non-zero coefficient.
 
-  The following functions are defined :
 
-   - constructors and destructors :
-
-     - LaurentPolynomial(const SDegree&, const SDegree&) : constructs a
-       Laurent polynomial capable of holding the given degree and valuation;
-     - ~LaurentPolynomial();
-
-   - accessors :
-
-     - operator== (const LaurentPolynomial<T>&);
-     - operator<= (const LaurentPolynomial<T>&);
-     - operator>= (const LaurentPolynomial<T>&);
-
-   - manipulators :
-
-     - setBounds(const SDegree&, const SDegree&) : sets both the degree and
-       the valuation, enlarging if necessary;
-     - setDeg(const SDegree&) : sets the degree, enlarging if necessary;
-     - setVal(const SDegree&) : sets the valuation, enlarging if necessary;
-
-  The following comparison operators are defined :
-
-   - operator== : equality of valuations and polynomials;
-   - operator!= : the negation of ==; (inlined)
-   - operator<= : inequality of valuations and of polynomials; (inlined)
-   - operator>= : inequality of valuations and polynomials; (inlined)
-   - operator< : negation of <=; (inlined)
-   - operator> : negation of >=; (inlined)
-
- *****************************************************************************/
-
-
-/******** accessors *********************************************************/
-
-template<class T>
-bool LaurentPolynomial<T>::operator== (const LaurentPolynomial<T>& p) const
-{
-  if (isZero())
-    return p.isZero();
-  if (p.isZero())
-    return false;
-
-  if (d_valuation != p.d_valuation)
-    return false;
-
-  return coef == p.coef;
-}
-
-
-/*
-  Comparison operator for Laurent polynomials. Zero is larger than any
-  polynomial; otherwise comparison is valuation-first.
-*/
-template<class T>
-bool LaurentPolynomial<T>::operator<= (const LaurentPolynomial<T>& p) const
-{
-  if (p.isZero())
-    return true;
-  if (isZero())
-    return false;
-  if (d_valuation < p.d_valuation)
-    return true;
-
-  return  coef <= p.coef;
-}
-
-template<class T>
-bool LaurentPolynomial<T>::operator>= (const LaurentPolynomial<T>& p) const
-
-/*
-  Comparison operator for Laurent polynomials. Zero is larger than any
-  polynomial; otherwise comparison is valuation-first.
 */
 
-{
-  if (isZero())
-    return true;
-  if (p.isZero())
-    return false;
-  if (d_valuation > p.d_valuation)
-    return true;
+// comparison is there just for the sake of ordering containers
 
-  return  coef >= p.coef;
+template<class T>
+bool LaurentPolynomial<T>::operator< (const LaurentPolynomial<T>& p) const
+{ if (isZero())
+    return false; // zero is maximum
+  else if (p.isZero())
+    return true;
+  else if (val()!=p.val())
+    return p.val()<val(); // compare opposite to valuation
+  return coef<p.coef;
 }
-
-/******** manipulators ******************************************************/
-
 
 };
