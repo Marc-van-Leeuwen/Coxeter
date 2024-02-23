@@ -1496,7 +1496,7 @@ KLPol& KLPol::subtract(const KLPol& p, const MuPol& mp, const Ulong& n)
 	return *this;
       if (isZero() || (i+j) > deg())
 	setDeg(i+j);
-      klsupport::safeAdd(v[i+j],-a);
+      klsupport::safeAdd((*this)[i+j],-a);
       if (error::ERRNO)
 	return *this;
     }

@@ -82,7 +82,7 @@ namespace polynomials {
 
 
 template <class T> class Polynomial {
- protected:
+
   vector::Vector<T> v;
  public:
   typedef struct {} const_tag;
@@ -96,22 +96,22 @@ template <class T> class Polynomial {
   Polynomial<T>(const T& c, const_tag):v(1) {v[0] = c; setDegValue(0);}
   ~Polynomial<T>();
 /* manipulators */
-  T& operator[] (const Ulong& j);                                /* inlined */
-  void reduceDeg();                                              /* inlined */
-  void setDeg(const Degree& d);                                  /* inlined */
-  void setDegValue(const Degree& d);                             /* inlined */
-  void setVect(const T *source, const Ulong& n);                 /* inlined */
+  T& operator[] (const Ulong& j) { return v[j]; }
+  void reduceDeg() { v.reduceDim(); }
+  void setDeg(const Degree& d)  { v.setDim(d+1); }
+  void setDegValue(const Degree& d) { v.setDimValue(d+1); }
+  void setVect(const T *source, const Ulong& n) { v.setVect(source,n); }
   void setZero() { v.dim() = 0; } // empty coefficient vector
   void setZero(const Ulong& r) { v.setZero(r); } // zero out coefficients
-  void setZero(const Ulong& first, const Ulong& r);              /* inlined */
-  vector::Vector<T>& vect();                                     /* inlined */
+  void setZero(const Ulong& first, const Ulong& r) { v.setZero(first,r); }
+
 /* accessors */
-  const T& operator[] (const Ulong& j) const;                    /* inlined */
-  Ulong deg() const;                                             /* inlined */
-  bool isZero() const;                                           /* inlined */
-  const vector::Vector<T>& vect() const;                                 /* inlined */
+  const T& operator[] (const Ulong& j) const { return v[j]; }
+  Ulong deg() const { return v.dim()-1; }
+  bool isZero() const { return deg() == undef_degree; }
+
 /* operators and operations */
-  Polynomial<T>& operator= (const Polynomial<T>& q);             /* inlined */
+  Polynomial<T>& operator= (const Polynomial<T>& q) {v = q.v; return *this;}
   Polynomial<T>& operator+= (const Polynomial<T>& q);
   Polynomial<T>& operator-= (const Polynomial<T>& q);
   Polynomial<T>& operator*= (const T& a);
@@ -178,32 +178,7 @@ inline bool operator> (const Polynomial<T>& p, const Polynomial<T>& q)
   {return !(p <= q);}
 
 
-template<class T> inline T& Polynomial<T>::operator[] (const Ulong& j)
-  {return v[j];}
-template<class T> inline void Polynomial<T>::reduceDeg() {v.reduceDim();}
-template<class T> inline void Polynomial<T>::setDeg(const Degree& d)
-  {v.setDim(d+1);}
-template<class T> inline void Polynomial<T>::setDegValue(const Degree& d)
-  {v.setDimValue(d+1);}
-template<class T> inline void Polynomial<T>::setVect(const T *source,
-						     const Ulong& n)
-  {v.setVect(source,n);}
-template<class T> inline void Polynomial<T>::setZero(const Ulong& first,
-						     const Ulong& r)
-  {v.setZero(first,r);}
-template<class T> inline vector::Vector<T>& Polynomial<T>::vect() {return v;}
 
-template<class T> inline const T& Polynomial<T>::operator[] (const Ulong& j)
-  const {return v[j];}
-template<class T>
-inline Polynomial<T>& Polynomial<T>::operator= (const Polynomial<T>& q)
-  {v = q.v; return *this;}
-
-template<class T> inline Ulong Polynomial<T>::deg() const {return v.dim()-1;}
-template<class T> inline bool Polynomial<T>::isZero() const
-  {return deg() == undef_degree;}
-template<class T> inline const vector::Vector<T>& Polynomial<T>::vect() const
-  {return v;}
 
 }; // |namespace polynomials|
 

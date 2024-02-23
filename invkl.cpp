@@ -13,10 +13,10 @@
   the ordinary ones; for finite groups of course it is always possible to
   move from one to the other using the longest element.
 
-  The inverse k-l polynomial Q_{x,y} is just the Stanley polynomial for the
+  The inverse K-L polynomial Q_{x,y} is just the Stanley polynomial for the
   interval [x,y]^o (dual to [x,y]), corresponding to the usual R-function on
   [x,y]. Therefore, it may be computed via an induction procedure quite
-  similar to the one used for ordinary k-l polynomials :
+  similar to the one used for ordinary K-L polynomials :
 
     - first, we extremalize the pair; this means taking y as far down as it
       will go under the up-set of x, until we reach a situation where the
@@ -127,9 +127,9 @@ namespace {
 
      - applyInverse(const coxtypes::CoxNbr&) : exchanges rows for x and x_inverse in
        kl_list;
-     - fillKL() : fills the full k-l table;
+     - fillKL() : fills the full K-L table;
      - fillMu() : fills the full mu-table;
-     - klPol(x,y) : returns the k-l polynomial P_{x,y};
+     - klPol(x,y) : returns the K-L polynomial P_{x,y};
      - permute(const Permutation&) : applies a permutation to the context;
      - reverseSize(const Ulong&) : reverts to a previous size;
      - setSize(const Ulong&) : sets the context to a larger size;
@@ -420,11 +420,11 @@ void KLContext::revertSize(const Ulong& n)
 
 
 /*
-  This function returns in h the data for the full row of y in the k-l table,
+  This function returns in h the data for the full row of y in the K-L table,
   sorted in the context number order.
 
   NOTE : this is probably not the natural concept of row in the context of
-  inverse k-l polynomials, but it's the only one that's reasonably
+  inverse K-L polynomials, but it's the only one that's reasonably
   implementable, so we'll keep it anyway.
 */
 void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
@@ -496,22 +496,22 @@ void KLContext::setSize(const Ulong& n)
 
   The purpose of the KLHelper class is to hide from the public eye a number
   of helper functions, used in the construction and maintenance of the
-  k-l context. This unclutters kl.h quite a bit.
+  K-L context. This unclutters kl.h quite a bit.
 
   The following functions are defined :
 
    - addCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
      KLPol& pol) : ads the corrections for mu and coatoms;
-   - allocKLRow(const coxtypes::CoxNbr& y) : allocates a row in the k-l list;
+   - allocKLRow(const coxtypes::CoxNbr& y) : allocates a row in the K-L list;
    - allocRowComputation(const coxtypes::CoxNbr& y) : initial allocation for a
      row-computation
-   - checkKLRow(const coxtypes::CoxNbr& y) : checks if a k-l row is fully computed;
+   - checkKLRow(const coxtypes::CoxNbr& y) : checks if a K-L row is fully computed;
    - coatomCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : subtracts the
      terms ofr coatoms in the mu-correction, for a full row;
    - computeMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) : computes a mu-coefficient;
    - fillKLPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s =
      undef_generator) : fills in one polynomial, using s as descent;
-   - fillKLRow(const coxtypes::CoxNbr& y) : fills in one row in the k-l table;
+   - fillKLRow(const coxtypes::CoxNbr& y) : fills in one row in the K-L table;
      coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) : returns the inverse of y;
    - initWorkspace(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : another preliminary
      to the computation of a row;
@@ -521,7 +521,7 @@ void KLContext::setSize(const Ulong& n)
      last term P_{x,ys} in the computation of a full row;
    - muCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : subtracts the non-coatom
      mu-part in the computation of a row;
-   - readMuRow(const coxtypes::CoxNbr& y) : fills in the mu-row from the k-l row;
+   - readMuRow(const coxtypes::CoxNbr& y) : fills in the mu-row from the K-L row;
    - writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : transfers the
      polynomials from pol to klList;
 
@@ -748,7 +748,7 @@ void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List
   each z look at the coatoms of z, and see which are extremal w.r.t. y.
 
   This is certainly quite a bit more cumbersome than the procedure for
-  ordinary k-l polynomials, but I haven't a better idea just yet.
+  ordinary K-L polynomials, but I haven't a better idea just yet.
 */
 
 {
@@ -803,7 +803,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu(const coxtypes::CoxNbr& x, con
   commute; in particular they act on the same side; assume this is on the
   right. So we have yst < ys < y < yt, xs < x < xt. Assume that x <= ys
   (otherwise mu(x,y) = mu(xs,ys)). Then from the fact that xt > x, yst < ys,
-  exactly as in the proof of thm. 4.2. in the original k-l paper, one sees
+  exactly as in the proof of thm. 4.2. in the original K-L paper, one sees
   that at most four terms survive in the recursion formula : we have
 
   mu(x,y) = mu(xs,ys) - mu(x,yst) + mu(xt,ys)(if xts > xt)
@@ -901,7 +901,7 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x, const cox
 					    const coxtypes::Generator& d_s)
 
 /*
-  This function fills in a single k-l polynomial. In this function our goal is
+  This function fills in a single K-L polynomial. In this function our goal is
   not speed, but rather computing as few things as possible. So only the terms
   that actually do come up in the recursion are computed. On the other hand,
   when a row in the klList or in the muList is allocated, it has to be
@@ -1517,23 +1517,22 @@ KLStatus::~KLStatus()
 
 namespace invkl {
 
-KLPol& KLPol::add(const KLPol& p, const klsupport::KLCoeff& mu, const Ulong& n)
 
 /*
   Adds the polynomial p*mu.X^n to the current polynomial. We don't test for
-  p = 0 because a k-l polynomial is never zero. Also, we assume that the
+  p = 0 because a K-L polynomial is never zero. Also, we assume that the
   coefficients are positive, so the degree is easily determined. Also, we
   assume mu is non-zero.
 
   Forwards the error KLCOEFF_OVERFLOW in case of error.
 */
-
+KLPol& KLPol::add(const KLPol& p, const klsupport::KLCoeff& mu, const Ulong& n)
 {
   if (deg() < p.deg()+n)
     setDeg(p.deg()+n);
 
   for (Ulong j = 0; j <= p.deg(); ++j) {
-    klsupport::safeAdd(v[j+n],p[j]*mu);
+    klsupport::safeAdd((*this)[j+n],p[j]*mu);
     if (error::ERRNO)
       return *this;
   }
