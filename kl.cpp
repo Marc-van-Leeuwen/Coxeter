@@ -7,6 +7,7 @@
 
 #include "kl.h"
 
+#include "sl_list.h"
 #include "error.h"
 #include "iterator.h"
 
@@ -763,11 +764,10 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
 
 /*
-  This function allocates one row in the muList. There is one entry for
-  each x < y which is extremal w.r.t. y, and has odd length-difference > 1
-  with y. As with allocKLRow, this function is not designed for maximal
-  efficiency; row allocations for big computations should be handled
-  differently.
+  Allocate one row in the muList. There is one entry for each x < y which is
+  extremal w.r.t. y, and has odd length-difference > 1 with y. As with
+  allocKLRow, this function is not designed for maximal efficiency; row
+  allocations for big computations should be handled differently.
 */
 void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 {
@@ -797,26 +797,26 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
   coxtypes::Length ly = p.length(y);
 
-  d_kl.d_muList[y].reset(new MuRow(e.size()));
+  d_kl.d_muList[y].reset(new MuRow);
   if (ERRNO)
-    goto abort;
-  muList(y).setSizeValue(e.size());
+  {
+    Error(ERRNO);
+    ERRNO = ERROR_WARNING;
+    return;
+  }
 
-  for (Ulong j = 0; j < e.size(); ++j) {
+  auto& dest = muList(y);
+  dest.reserve(e.size());
+
+  for (Ulong j = 0; j < e.size(); ++j)
+  {
     coxtypes::CoxNbr x = e[j];
     coxtypes::Length lx = p.length(x);
-    new(muList(y).ptr()+j) MuData(x,klsupport::undef_klcoeff,(ly-lx-1)/2);
+    dest.emplace_back(x,klsupport::undef_klcoeff,(ly-lx-1)/2);
   }
 
   status().munodes += e.size();
   status().murows++;
-
-  return;
-
- abort:
-  Error(ERRNO);
-  ERRNO = ERROR_WARNING;
-  return;
 }
 
 
@@ -858,38 +858,35 @@ void KLContext::KLHelper::allocMuRow(MuRow& row, const coxtypes::CoxNbr& y)
     mu_count++;
   }
 
-  row.setSize(mu_count);
+  row.clear();
+  row.reserve(mu_count);
 
   for (Ulong j = 0; j < mu_count; ++j) {
     coxtypes::CoxNbr x = e[j];
     coxtypes::Length lx = p.length(x);
-    new(row.ptr()+j) MuData(x,klsupport::undef_klcoeff,(ly-lx-1)/2);
+    row.emplace_back(x,klsupport::undef_klcoeff,(ly-lx-1)/2);
   }
-
-  return;
 }
 
-void KLContext::KLHelper::allocMuTable()
 
 /*
-  This function does the allocation of the full muList, using the closure
-  iterator. It is not as satisfactory as it should be, because the rows
-  are not obtained in order, and therefore we can not fill them right
-  away to eliminate zero entries. So I am currently not too happy with
-  the situation. Even if we recover the memory later on, it will be
-  highly fragmented.
+  Do the allocation of the full muList, using the closure iterator. It is not as
+  satisfactory as it should be, because the rows are not obtained in order, and
+  therefore we can not fill them right away to eliminate zero entries. So I am
+  currently not too happy with the situation. Even if we recover the memory
+  later on, it will be highly fragmented.
 
   So currently this is just an exercise in formal elegance.
 
 */
-
+void KLContext::KLHelper::allocMuTable()
 {
   typedef FilteredIterator<Ulong,bits::BitMap::Iterator,MuFilter> I;
 
   const schubert::SchubertContext& p = schubert();
 
-  for (schubert::ClosureIterator cl(p); cl; ++cl) {
-
+  for (schubert::ClosureIterator cl(p); cl; ++cl)
+  {
     coxtypes::CoxNbr y = cl.current();
     if (inverse(y) < y)
       continue;
@@ -918,22 +915,22 @@ void KLContext::KLHelper::allocMuTable()
     /* transfer to muList */
 
     coxtypes::Length ly = p.length(y);
-    d_kl.d_muList[y].reset(new MuRow(e.size()));
-    muList(y).setSizeValue(e.size());
+    d_kl.d_muList[y].reset(new MuRow);
+    auto& dest = muList(y);
+    dest.reserve(e.size());
 
-    for (Ulong j = 0; j < e.size(); ++j) {
+    for (Ulong j = 0; j < e.size(); ++j)
+    {
       coxtypes::CoxNbr x = e[j];
       coxtypes::Length lx = p.length(x);
-      MuData mu_data(x,klsupport::undef_klcoeff,(ly-lx-1)/2);
-      muList(y).append(mu_data);
-      if (ERRNO) {
+      dest.emplace_back(x,klsupport::undef_klcoeff,(ly-lx-1)/2);
+      if (ERRNO)
 	goto abort;
-      }
-    }
+    } // |for(j)|
 
     status().murows++;
     status().munodes += e.size();
-  }
+  } // |for(cl)|
 
   return;
 
@@ -945,10 +942,10 @@ void KLContext::KLHelper::allocMuTable()
 
 
 /*
-  This function does the primary memory allocation for the computation
-  of a schubert row. This means that for each initial subword of the
-  normal form of y, we check if the corresponding row in klList (or the
-  inverse row, if appropriate) is allocated, and if not, do the allocation.
+  Do the primary memory allocation for the computation of a schubert row. This
+  means that for each initial subword of the normal form of y, we check if the
+  corresponding row in klList (or the inverse row, if appropriate) is allocated,
+  and if not, do the allocation.
 
   First, we determine the sequence of left and right shifts that takes
   y to the identity element, as follows : if inverse(y) >= y, we shift
@@ -1815,26 +1812,25 @@ void KLContext::KLHelper::prepareRow(const coxtypes::CoxNbr& y, const coxtypes::
   return;
 }
 
-void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
 
 /*
   This function fills the mu-row from the corresponding kl-row. If the
   row has not been allocated yet, it makes sure that no unnecessary
   allocations are made.
 */
-
+void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
   const KLRow& kl_row = klList(y);
   const klsupport::ExtrRow& e_row = extrList(y);
 
-  if (!isMuAllocated(y)) { /* make row from scratch */
-    MuRow mu_buf(0);
-    mu_buf.setSizeValue(0);
+  if (not isMuAllocated(y))
+  { /* make row from scratch */
+    containers::sl_list<MuData> mus;
     coxtypes::Length ly = p.length(y);
 
-    for (Ulong j = 0; j < kl_row.size(); ++j) {
-
+    for (Ulong j = 0; j < kl_row.size(); ++j)
+    {
       coxtypes::CoxNbr x = e_row[j];
       coxtypes::Length lx = p.length(x);
 
@@ -1850,22 +1846,19 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
       if (pol.deg() < d)
 	continue;
 
-      MuData m(x,pol[d],d);
-      mu_buf.append(m);
-      if (ERRNO)
-	goto abort;
-    }
+      mus.emplace_back(x,pol[d],d);
+    } // |for(j)|
 
-    d_kl.d_muList[y].reset(new MuRow(mu_buf));
+    d_kl.d_muList[y].reset(new MuRow(mus.to_vector()));
     if (ERRNO)
       goto abort;
 
-    status().munodes += mu_buf.size();
-    status().mucomputed += mu_buf.size();
+    status().munodes += mus.size();
+    status().mucomputed += mus.size();
     status().murows++;
   }
-  else {
-
+  else
+  {
     Ulong i = 0;
     MuRow& mu_row = muList(y);
 
@@ -1883,8 +1876,8 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
 	status().muzero++;
       }
       status().mucomputed++;
-    }
-  }
+    } // |for(j)|
+  } // else|
 
   return;
 
@@ -2136,13 +2129,13 @@ void KLContext::KLHelper::writeKLRow
     } // |for(j)| and |if(..)|
 }
 
-void KLContext::KLHelper::writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y)
 
 /*
-  This function copies row to the corresponding row in the mu-list. The idea
-  is to copy only the non-zero entries.
+  Copy nonzero entries of |row| to the corresponding row in the mu-list.
 */
 
+void KLContext::KLHelper::writeMuRow
+  (const MuRow& row, const coxtypes::CoxNbr& y)
 {
   /* count non-zero entries */
 
@@ -2153,21 +2146,18 @@ void KLContext::KLHelper::writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y
       count++;
   }
 
-  MuRow& y_row = muList(y);
-  y_row.setSize(count);
+  MuRow& y_row = muList(y); // existing but cleared |MuRow| (?!)
+  y_row.clear();
+  y_row.reserve(count);
   if (ERRNO) {
     Error(ERRNO);
     ERRNO = ERROR_WARNING;
     return;
   }
 
-  count = 0;
-
   for (Ulong j = 0; j < row.size(); ++j) {
-    if (row[j].mu != 0) {
-      new(y_row.ptr()+count) MuData(row[j].x,row[j].mu,row[j].height);
-      count++;
-    }
+    if (row[j].mu != 0)
+      y_row.emplace_back(row[j].x,row[j].mu,row[j].height);
   }
 
   status().munodes += count;
@@ -3107,8 +3097,8 @@ namespace {
 
 
 /*
-  Finds |x| in |row| and returns the address of the corresponding row.
-  Returns zero if x is not found. Uses binary search.
+  Find |x| in |row| and return the address of the corresponding row.
+  Returns null pointer if |x| is not found. Uses binary search.
 */
 MuData* find(MuRow& row, const coxtypes::CoxNbr& x)
 {
@@ -3117,14 +3107,14 @@ MuData* find(MuRow& row, const coxtypes::CoxNbr& x)
   for (Ulong j1 = row.size(); j1-j0 > 1;) {
     Ulong j = j0 + (j1-j0)/2;
     if (row[j].x == x) // m was found
-      return row.ptr()+j;
+      return &row[j];
     if (row[j].x < x)
       j0 = j;
     else
       j1 = j;
   }
 
-  return 0;
+  return nullptr;
 }
 
 }; // |namespace|

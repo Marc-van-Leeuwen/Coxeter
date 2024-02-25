@@ -30,7 +30,7 @@ namespace kl {
 
   class KLPol;
   typedef list::List<const KLPol*> KLRow;
-  using MuRow = list::List<MuData>;
+  using MuRow = containers::vector<MuData>;
   using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
   using MuTable = containers::vector<MuRowPtr>;
   using HeckeElt = containers::vector<hecke::HeckeMonomial<KLPol> >;
