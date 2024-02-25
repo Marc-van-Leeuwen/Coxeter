@@ -61,7 +61,6 @@ namespace kl {
 /******** type definitions **************************************************/
 
 #include "interface.h"
-#include "search.h"
 
 namespace kl {
 
@@ -125,8 +124,6 @@ class MuFilter {
 
 class KLContext {
  private:
-  KLTable d_klList;
-  MuTable d_muList;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
  public:
@@ -144,27 +141,26 @@ class KLContext {
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
   { return klsupport().extrList(y); }
 
+  coxtypes::Generator last(const coxtypes::CoxNbr& y) const
+  { return klsupport().last(y); }
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
   { return klsupport().inverse(x); }
   const bits::BitMap& involution() const { return klsupport().involution(); }
   bool isExtrAllocated(const coxtypes::CoxNbr& x) const
   { return klsupport().isExtrAllocated(x); }
-  bool isFullKL() const { return stats().flags&KLStats::kl_done; }
-  bool isFullMu() const { return stats().flags&KLStats::mu_done; }
-  bool isKLAllocated(const coxtypes::CoxNbr& x) const {return d_klList[x] != 0;}
-  bool isMuAllocated(const coxtypes::CoxNbr& x) const {return d_muList[x] != 0;}
-  const KLRow& klList(const coxtypes::CoxNbr& y) const;
-  coxtypes::Generator last(const coxtypes::CoxNbr& y) const
-  { return klsupport().last(y); }
-  const MuRow& muList(const coxtypes::CoxNbr& y) const;
   coxtypes::Rank rank() const { return klsupport().rank(); }
  const schubert::SchubertContext& schubert() const
   { return klsupport().schubert(); }
+  bool isFullKL() const;
+  bool isFullMu() const;
+  bool isKLAllocated(const coxtypes::CoxNbr& x) const;
+  bool isMuAllocated(const coxtypes::CoxNbr& x) const;
+  const KLRow& klList(const coxtypes::CoxNbr& y) const;
+  const MuRow& muList(const coxtypes::CoxNbr& y) const;
   Ulong size() const;
 /* manipulators */
   void applyInverse(const coxtypes::CoxNbr& y);
-  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a)
-  { return right_permute(*d_klList[y],a); }
+  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
   void clearFullKL() { stats().flags &= ~KLStats::kl_done;}
   void clearFullMu() { stats().flags &= ~KLStats::mu_done;}
   void fillKL();

@@ -79,6 +79,8 @@ struct KLContext::KLHelper
   KLContext& d_kl;
   klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
 
+  KLTable d_klList;
+  MuTable d_muList;
   containers::bag<KLPol> d_klTree;
   KLStats d_stats;
 
@@ -89,9 +91,16 @@ struct KLContext::KLHelper
   KLHelper(klsupport::KLSupport& kls,KLContext* kl)
     : d_kl(*kl)
     , d_klsupport(kls)
+    , d_klList(kls.size())
+    , d_muList(kls.size())
     , d_klTree()
     , d_stats()
-  {}
+  {
+    d_klList[0].reset(new KLRow(1));
+    (*d_klList[0])[0] = d_klTree.find(one());
+
+    d_muList[0].reset(new MuRow(0));
+}
 
 // methods
 // relay methods
@@ -127,7 +136,7 @@ struct KLContext::KLHelper
     bool isKLAllocated(const coxtypes::CoxNbr& y)
       { return d_kl.isKLAllocated(y); }
     bool isMuAllocated(const coxtypes::CoxNbr& y) {return d_kl.isMuAllocated(y);}
-    KLRow& klList(const coxtypes::CoxNbr& y) {return *d_kl.d_klList[y];}
+    KLRow& klList(const coxtypes::CoxNbr& y) {return *d_klList[y];}
     klsupport::KLSupport& klsupport() {return d_klsupport;}
     containers::bag<KLPol>& klTree() {return d_klTree;}
     coxtypes::Generator last(const coxtypes::CoxNbr& x) {return klsupport().last(x);}
@@ -135,14 +144,14 @@ struct KLContext::KLHelper
     void muCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
     void muCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
 		      list::List<KLPol>& pol, const Ulong& a);
-    MuRow& muList(const coxtypes::CoxNbr& y) {return *d_kl.d_muList[y];}
+    MuRow& muList(const coxtypes::CoxNbr& y) {return *d_muList[y];}
     void prepareRow(const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
     coxtypes::Rank rank() {return d_kl.rank();}
     void readMuRow(const coxtypes::CoxNbr& y);
     klsupport::KLCoeff recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
     const schubert::SchubertContext& schubert() {return klsupport().schubert();}
     void secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
-    Ulong size() {return d_kl.d_klList.size(); }
+    Ulong size() {return d_klList.size(); }
     void writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
     void writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y);
 
@@ -219,18 +228,11 @@ namespace {
  ****************************************************************************/
 
 KLContext::KLContext(klsupport::KLSupport* kls)
-  : d_klList(kls->size()), d_muList(kls->size())
+  : d_help(new KLHelper(*kls,this))
 {
-  d_help = new KLHelper(*kls,this);
-
-  d_klList[0].reset(new KLRow(1));
-  (*d_klList[0])[0] = d_help->d_klTree.find(one());
-
   stats().klnodes++;
   stats().klrows++;
   stats().klcomputed++;
-
-  d_muList[0].reset(new MuRow(0));
 }
 
 
@@ -242,9 +244,15 @@ KLStats& KLContext::stats() { return d_help->d_stats; }
 const KLStats& KLContext::stats() const { return d_help->d_stats; }
 Ulong KLContext::size() const { return d_help->size(); }
 const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
-  { return *d_klList[y]; }
+  { return *d_help->d_klList[y]; }
 const MuRow& KLContext::muList(const coxtypes::CoxNbr& y) const
-  { return *d_muList[y]; }
+  { return *d_help->d_muList[y]; }
+bool KLContext::isFullKL() const { return stats().flags&KLStats::kl_done; }
+bool KLContext::isFullMu() const { return stats().flags&KLStats::mu_done; }
+bool KLContext::isKLAllocated(const coxtypes::CoxNbr& x) const
+  { return d_help->d_klList[x] != nullptr; }
+bool KLContext::isMuAllocated(const coxtypes::CoxNbr& x) const
+  { return d_help->d_muList[x] != nullptr; }
 
 /******** manipulators *******************************************************/
 
@@ -264,10 +272,10 @@ void KLContext::KLHelper::grow(Ulong prev, Ulong n)
 
   CATCH_MEMORY_OVERFLOW = true;
 
-  d_kl.d_klList.resize(n);
+  d_klList.resize(n);
   if (ERRNO)
     goto revert;
-  d_kl.d_muList.resize(n);
+  d_muList.resize(n);
   if (ERRNO)
     goto revert;
 
@@ -330,7 +338,7 @@ void KLContext::KLHelper::fill_mu_table ()
   for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
     if (inverse(y) < y)
       inverseMuRow(inverse(y));
-    fillMuRow(*d_kl.d_muList[y],y);
+    fillMuRow(*d_muList[y],y);
     if (ERRNO)
       goto abort;
   }
@@ -475,7 +483,7 @@ klsupport::KLCoeff KLContext::KLHelper::mu
   }
 
   // find x in |*d_muList[y]|
-  MuRow& m = *d_kl.d_muList[y];
+  MuRow& m = *d_muList[y];
   MuData* md = find(m,x);
   if (md == nullptr)
     return 0;
@@ -542,9 +550,12 @@ void KLContext::applyInverse(const coxtypes::CoxNbr& x)
 void KLContext::KLHelper::move_KL_row_to_inverse(coxtypes::CoxNbr x)
 {
   coxtypes::CoxNbr xi = inverse(x);
-  d_kl.d_klList[x] = std::move(d_kl.d_klList[xi]);
+  d_klList[x] = std::move(d_klList[xi]);
 }
 
+void KLContext::applyIPermutation
+  (const coxtypes::CoxNbr& y, const bits::Permutation& a)
+{ return right_permute(*d_help->d_klList[y],a); }
 
 /*
   This function permutes the context according to the permutation a. The
@@ -588,7 +599,7 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
   for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
     if (!isMuAllocated(y))
       continue;
-    MuRow& row = *d_kl.d_muList[y];
+    MuRow& row = *d_muList[y];
     for (Ulong j = 0; j < row.size(); ++j)
       row[j].x = a[row[j].x];
     std::sort(row.begin(),row.end());
@@ -608,14 +619,14 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
     for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
     {
       /* back up values for y */
-      auto kl_buf = std::move(d_kl.d_klList[y]);
-      auto mu_buf = std::move(d_kl.d_muList[y]);
+      auto kl_buf = std::move(d_klList[y]);
+      auto mu_buf = std::move(d_muList[y]);
       /* put values for x in y */
-      d_kl.d_klList[y] = std::move(d_kl.d_klList[x]);
-      d_kl.d_muList[y] = std::move(d_kl.d_muList[x]);
+      d_klList[y] = std::move(d_klList[x]);
+      d_muList[y] = std::move(d_muList[x]);
       /* store backup values in x */
-      d_kl.d_klList[x] = std::move(kl_buf);
-      d_kl.d_muList[x] = std::move(mu_buf);
+      d_klList[x] = std::move(kl_buf);
+      d_muList[x] = std::move(mu_buf);
       /* set bit*/
       b.setBit(y);
     }  // |for(y)|
@@ -637,8 +648,8 @@ void KLContext::revertSize(const Ulong& n)
 
 void KLContext::KLHelper::shrink(const Ulong& n)
 {
-  d_kl.d_klList.resize(n);
-  d_kl.d_muList.resize(n);
+  d_klList.resize(n);
+  d_muList.resize(n);
 } // |shrink|
 
 
@@ -736,7 +747,7 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
   Ulong n = extrList(y).size();
 
-  d_kl.d_klList[y].reset(new KLRow(n));
+  d_klList[y].reset(new KLRow(n));
   if (ERRNO)
     return;
 
@@ -780,7 +791,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
   coxtypes::Length ly = p.length(y);
 
-  d_kl.d_muList[y].reset(new MuRow);
+  d_muList[y].reset(new MuRow);
   if (ERRNO)
   {
     Error(ERRNO);
@@ -898,7 +909,7 @@ void KLContext::KLHelper::allocMuTable()
     /* transfer to muList */
 
     coxtypes::Length ly = p.length(y);
-    d_kl.d_muList[y].reset(new MuRow);
+    d_muList[y].reset(new MuRow);
     auto& dest = muList(y);
     dest.reserve(e.size());
 
@@ -961,7 +972,7 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 
     if (!isKLAllocated(y2))
     {
-      d_kl.d_klList[y2].reset(new KLRow(e.size()));
+      d_klList[y2].reset(new KLRow(e.size()));
       if (ERRNO)
 	goto abort;
       status().klnodes += extrList(y2).size();
@@ -1551,7 +1562,7 @@ void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
     status().munodes -= m.size();
   }
 
-  d_kl.d_muList[yi].reset(new MuRow(muList(y))); // make a copy
+  d_muList[yi].reset(new MuRow(muList(y))); // make a copy
   MuRow& m = muList(yi);
 
   for (Ulong j = 0; j < m.size(); ++j) {
@@ -1832,7 +1843,7 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
       mus.emplace_back(x,pol[d],d);
     } // |for(j)|
 
-    d_kl.d_muList[y].reset(new MuRow(mus.to_vector()));
+    d_muList[y].reset(new MuRow(mus.to_vector()));
     if (ERRNO)
       goto abort;
 
@@ -2029,22 +2040,22 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& d_x,
   return klsupport::undef_klcoeff;
 }
 
-void KLContext::KLHelper::secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 
 /*
-  This function takes care of the "second term" q.P_{x,ys} in the
-  recursion formula for P_{x,y}. It is assumed that y <= inverse(y)
-  and that the descent strategy is via last.
+  Take care of the "second term" q.P_{x,ys} in the recursion formula for
+  P_{x,y}. It is assumed that y <= inverse(y) and that the descent strategy is
+  via last.
 
-  Here all the memory allocations have been made successfully; the
-  only cause of error would be an overflow condition. In that case,
-  the error is treated and ERROR_WARNING is set.
+  Here all the memory allocations have been made successfully; the only cause of
+  error would be an overflow condition. In that case, the error is treated and
+  ERROR_WARNING is set.
 
-  Since we want to avoid all calls to InOrder, the method here is
-  to extract [e,ys], extremalize it w.r.t. the descent set of y,
-  and run through it and make the correction.
+  Since we want to avoid all calls to InOrder, the method here is to extract
+  [e,ys], extremalize it w.r.t. the descent set of y, and run through it and
+  make the correction.
 */
-
+void KLContext::KLHelper::secondTerm
+  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 {
   const schubert::SchubertContext& p = schubert();
   bits::BitMap b(0);
@@ -2267,18 +2278,17 @@ void printMuTable(FILE* file, const KLContext& kl, const interface::Interface& I
   return;
 }
 
-void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& d_y,
-	       const interface::Interface& I, const coxtypes::Generator& d_s)
 
 /*
-  This function prints out the various terms appearing in the computation
-  of the Kazhdan-Lusztig polynomial P_{x,y} through the standard recursion
-  formula, using the generator s as descent generator.
+  Print out the various terms appearing in the computation of the
+  Kazhdan-Lusztig polynomial P_{x,y} through the standard recursion formula,
+  using the generator |s| as descent generator.
 
-  It is assumed that x <= y in the Bruhat order, and that s is indeed a
-  descent generator for y.
+  It is assumed that $x \eq y$ in the Bruhat order, and that $s$ is indeed a
+  descent generator for $y$.
 */
-
+void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& d_y,
+	       const interface::Interface& I, const coxtypes::Generator& d_s)
 {
   static std::string buf;
 
@@ -2492,14 +2502,14 @@ void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const cox
   return;
 }
 
-void showMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& y,
-	    const interface::Interface& I)
 
 /*
-  Maps out the computation of a mu-coefficient. See
-  KLContext::KLHelper::computeMu for the algorithm.
+  Map out the computation of a mu-coefficient. See
+  |KLContext::KLHelper::computeMu| for the algorithm.
 */
-
+void showMu(FILE* file, KLContext& kl,
+	    const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& y,
+	    const interface::Interface& I)
 {
   static std::string buf;
 
@@ -2890,7 +2900,7 @@ void showSimpleMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x,
 
 
 /*
-  This function returns in h the singular locus of cl(X_y). The point is to
+  Return in h the singular locus of cl(X_y). The point is to
   do this while computing as few K-L polynomials as possible.
 */
 void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
@@ -2923,18 +2933,18 @@ void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
   return;
 }
 
-bool isSingular(const HeckeElt& h)
 
 /*
-  This function answers yes if one of the polynomials in the row is distinct
-  from one, no otherwise. This is equivalent to rational singularity of the
-  Schubert variety, when such a geometric context is defined, and the row
-  is the extremal row for an element y.
+  Whether one of the polynomials in the row is distinct from unity. This is
+  equivalent to the existence of a rational rational singularity of the Schubert
+  variety, when such a geometric context is defined, and the row is the extremal
+  row for an element |y|.
 
   NOTE : conjecturally, annulation of the term corresponding to the
   extremalization of the origin ensures annulation of all the others.
 */
 
+bool isSingular(const HeckeElt& h)
 {
   for (Ulong j = 0; j < h.size(); ++j) {
     const KLPol& pol = h[j].pol();
@@ -2945,15 +2955,14 @@ bool isSingular(const HeckeElt& h)
   return false;
 }
 
-bool isSingular(const KLRow& row)
 
 /*
-  This function answers yes if one of the polynomials in the row is distinct
-  from one, no otherwise. This is equivalent to rational singularity of the
-  Schubert variety, when such a geometric context is defined, and the row
-  is the extremal row for an element y.
+  Whether one of the polynomials in the row is distinct from unity. This is
+  equivalent to the existence of a rational singularity of the Schubert variety,
+  when such a geometric context is defined, and the row is the extremal row for
+  an element |y|.
 */
-
+bool isSingular(const KLRow& row)
 {
   for (Ulong j = 0; j < row.size(); ++j) {
     const KLPol* pol = row[j];
@@ -3008,8 +3017,6 @@ void ihBetti(schubert::Homology& h, const coxtypes::CoxNbr& y, KLContext& kl)
 	h[d+i] += pol[i];
     }
   }
-
-  return;
 }
 
 
@@ -3051,8 +3058,6 @@ void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
     const KLPol& pol = kl.klPol(*x,y);
     h.emplace_back(*x,&pol);
   }
-
-  return;
 }
 
 
@@ -3075,8 +3080,6 @@ void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
  ****************************************************************************/
 
 namespace {
-
-
 
 
 /*
