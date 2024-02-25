@@ -14,7 +14,6 @@
 #include "coxtypes.h"
 #include "klsupport.h"
 #include "hecke.h"
-#include "list.h"
 #include "polynomials.h"
 #include "bits.h"
 #include "io.h"
@@ -31,7 +30,9 @@ namespace kl {
 
   class KLPol;
   typedef list::List<const KLPol*> KLRow;
-  typedef list::List<MuData> MuRow;
+  using MuRow = list::List<MuData>;
+  using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
+  using MuTable = containers::vector<MuRowPtr>;
   using HeckeElt = containers::vector<hecke::HeckeMonomial<KLPol> >;
 };
 
@@ -97,14 +98,14 @@ struct MuData {
   klsupport::KLCoeff mu;
   coxtypes::Length height;
 /* constructors */
-  MuData() {};
+  MuData() {}
   MuData(const coxtypes::CoxNbr& d_x,
 	 const klsupport::KLCoeff& d_mu,
 	 const coxtypes::Length& d_h)
-    :x(d_x), mu(d_mu), height(d_h) {};
-  ~MuData() {};
+    :x(d_x), mu(d_mu), height(d_h)
+  {}
 /* comparison */
-  bool operator> (const MuData& m) const { return x > m.x; }
+  bool operator< (const MuData& m) const { return x < m.x; }
 
 };
 
@@ -123,7 +124,7 @@ class MuFilter {
 class KLContext {
  private:
   list::List<KLRow*> d_klList;
-  list::List<MuRow*> d_muList;
+  MuTable d_muList;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
  public:

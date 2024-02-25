@@ -231,8 +231,7 @@ KLContext::KLContext(klsupport::KLSupport* kls)
   stats().klrows++;
   stats().klcomputed++;
 
-  d_muList.setSizeValue(kls->size());
-  d_muList[0] = new MuRow(0);
+  d_muList[0].reset(new MuRow(0));
 }
 
 
@@ -243,10 +242,8 @@ KLContext::KLContext(klsupport::KLSupport* kls)
 */
 KLContext::~KLContext()
 {
-  for (Ulong j = 0; j < size(); ++j) {
+  for (Ulong j = 0; j < size(); ++j)
     delete d_klList[j];
-    delete d_muList[j];
-  }
 }
 
 /******** accessors **********************************************************/
@@ -282,7 +279,7 @@ void KLContext::KLHelper::grow(Ulong prev, Ulong n)
   d_kl.d_klList.setSize(n);
   if (ERRNO)
     goto revert;
-  d_kl.d_muList.setSize(n);
+  d_kl.d_muList.resize(n);
   if (ERRNO)
     goto revert;
 
@@ -606,7 +603,7 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
     MuRow& row = *d_kl.d_muList[y];
     for (Ulong j = 0; j < row.size(); ++j)
       row[j].x = a[row[j].x];
-    row.sort();
+    std::sort(row.begin(),row.end());
   }
 
   // permute ranges
@@ -620,16 +617,17 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
       continue;
     }
 
-    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y]) {
+    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
+    {
       /* back up values for y */
       KLRow* kl_buf = d_kl.d_klList[y];
-      MuRow* mu_buf = d_kl.d_muList[y];
+      auto mu_buf = std::move(d_kl.d_muList[y]);
       /* put values for x in y */
       d_kl.d_klList[y] = d_kl.d_klList[x];
-      d_kl.d_muList[y] = d_kl.d_muList[x];
+      d_kl.d_muList[y] = std::move(d_kl.d_muList[x]);
       /* store backup values in x */
       d_kl.d_klList[x] = kl_buf;
-      d_kl.d_muList[x] = mu_buf;
+      d_kl.d_muList[x] = std::move(mu_buf);
       /* set bit*/
       b.setBit(y);
     }  // |for(y)|
@@ -652,7 +650,7 @@ void KLContext::revertSize(const Ulong& n)
 void KLContext::KLHelper::shrink(const Ulong& n)
 {
   d_kl.d_klList.setSize(n);
-  d_kl.d_muList.setSize(n);
+  d_kl.d_muList.resize(n);
 } // |shrink|
 
 
@@ -799,7 +797,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
   coxtypes::Length ly = p.length(y);
 
-  d_kl.d_muList[y] = new MuRow(e.size());
+  d_kl.d_muList[y].reset(new MuRow(e.size()));
   if (ERRNO)
     goto abort;
   muList(y).setSizeValue(e.size());
@@ -920,7 +918,7 @@ void KLContext::KLHelper::allocMuTable()
     /* transfer to muList */
 
     coxtypes::Length ly = p.length(y);
-    d_kl.d_muList[y] = new MuRow(e.size());
+    d_kl.d_muList[y].reset(new MuRow(e.size()));
     muList(y).setSizeValue(e.size());
 
     for (Ulong j = 0; j < e.size(); ++j) {
@@ -1549,21 +1547,20 @@ void KLContext::KLHelper::initWorkspace(const coxtypes::CoxNbr& y, list::List<KL
   return;
 }
 
-void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
 
 /*
-  This function constructs the mu-row for the inverse of y from that of y.
-  It is assumed that the row for inverse(y) is filled in, and that y is
-  not equal to its inverse. We delete the row for y, since it will be
-  faster to reconstruct it in any case than to extract the non-computed values
-  from the inverse list.
+  Construct the mu-row for |inverse(y)| from that of |y|, where it is assumed
+  the two are distinct and that the row for |inverse(y)| is filled in. We delete
+  the old row for |inverse(y)|, since it is faster to reconstruct all its values
+  from those of |y| than to only extract the not yet present values from |y|.
 */
-
+void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
 {
   coxtypes::CoxNbr yi = inverse(y);
 
-  if (isMuAllocated(yi)) { /* deallocate; update status */
-    MuRow& m = muList(yi);
+  if (isMuAllocated(yi))  // then update stats for coming destruction
+  {
+    const MuRow& m = muList(yi);
     for (Ulong j = 0; j < m.size(); ++j) {
       klsupport::KLCoeff mu = m[j].mu;
       if (mu != klsupport::undef_klcoeff)
@@ -1572,17 +1569,16 @@ void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
 	status().muzero--;
     }
     status().munodes -= m.size();
-    delete &m;
   }
 
-  d_kl.d_muList[yi] = new MuRow(muList(y));
+  d_kl.d_muList[yi].reset(new MuRow(muList(y))); // make a copy
   MuRow& m = muList(yi);
 
   for (Ulong j = 0; j < m.size(); ++j) {
     m[j].x = inverse(m[j].x);
   }
 
-  m.sort();
+  std::sort(m.begin(),m.end());
 
   /* update status */
 
@@ -1595,8 +1591,6 @@ void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
   }
 
   status().munodes += m.size();
-
-  return;
 }
 
 void KLContext::KLHelper::makeMuRow(const coxtypes::CoxNbr& y)
@@ -1862,7 +1856,7 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
 	goto abort;
     }
 
-    d_kl.d_muList[y] = new MuRow(mu_buf);
+    d_kl.d_muList[y].reset(new MuRow(mu_buf));
     if (ERRNO)
       goto abort;
 

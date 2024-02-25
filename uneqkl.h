@@ -23,7 +23,6 @@ namespace uneqkl {
   class KLContext;
   class KLPol;
   class MuPol;
-  struct KLStatus;
   struct MuData;
 
   using KLRow = containers::vector<const KLPol*>; // non-owning pointers
