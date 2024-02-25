@@ -26,10 +26,13 @@ namespace uneqkl {
   struct MuData;
 
   using KLRow = containers::vector<const KLPol*>; // non-owning pointers
+  using KLRowPtr = std::unique_ptr<KLRow>;
+  using KLTable = containers::vector<KLRowPtr>;
 
   using MuRow = containers::vector<MuData>;
   using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
   using MuTable = containers::vector<MuRowPtr>;
+
   using HeckeElt = containers::vector<hecke::HeckeMonomial<KLPol> >;
 };
 

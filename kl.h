@@ -17,7 +17,6 @@
 #include "polynomials.h"
 #include "bits.h"
 #include "io.h"
-#include "list.h"
 
 
 /******** type declarations *************************************************/
@@ -29,7 +28,10 @@ namespace kl {
   class MuFilter;
 
   class KLPol;
-  typedef list::List<const KLPol*> KLRow;
+  using KLRow = containers::vector<const KLPol*>;
+  using KLRowPtr = std::unique_ptr<KLRow>;
+  using KLTable = containers::vector<KLRowPtr>;
+
   using MuRow = containers::vector<MuData>;
   using MuRowPtr = std::unique_ptr<MuRow>; // half of the time |nullptr|
   using MuTable = containers::vector<MuRowPtr>;
@@ -123,7 +125,7 @@ class MuFilter {
 
 class KLContext {
  private:
-  list::List<KLRow*> d_klList;
+  KLTable d_klList;
   MuTable d_muList;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
@@ -133,7 +135,7 @@ class KLContext {
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(KLContext));}
   KLContext(klsupport::KLSupport* kls);
-  ~KLContext();
+
 /* accessors */
   const klsupport::KLSupport& klsupport() const; // uses reference in helper
   KLStats& stats();
@@ -162,7 +164,7 @@ class KLContext {
 /* manipulators */
   void applyInverse(const coxtypes::CoxNbr& y);
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a)
-  { return rightRangePermute(*d_klList[y],a); }
+  { return right_permute(*d_klList[y],a); }
   void clearFullKL() { stats().flags &= ~KLStats::kl_done;}
   void clearFullMu() { stats().flags &= ~KLStats::mu_done;}
   void fillKL();

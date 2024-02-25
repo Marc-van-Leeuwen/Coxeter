@@ -223,9 +223,7 @@ KLContext::KLContext(klsupport::KLSupport* kls)
 {
   d_help = new KLHelper(*kls,this);
 
-  d_klList.setSizeValue(kls->size());
-  d_klList[0] = new KLRow(1);
-  d_klList[0]->setSizeValue(1);
+  d_klList[0].reset(new KLRow(1));
   (*d_klList[0])[0] = d_help->d_klTree.find(one());
 
   stats().klnodes++;
@@ -235,17 +233,6 @@ KLContext::KLContext(klsupport::KLSupport* kls)
   d_muList[0].reset(new MuRow(0));
 }
 
-
-/*
-  Recall that a KLContext is assumed to own its schubert::SchubertContext. The
-  only destructions that are not done automatically are those of the Schubert
-  context, the status pointer, and the |klList| and |muList| pointers.
-*/
-KLContext::~KLContext()
-{
-  for (Ulong j = 0; j < size(); ++j)
-    delete d_klList[j];
-}
 
 /******** accessors **********************************************************/
 
@@ -277,7 +264,7 @@ void KLContext::KLHelper::grow(Ulong prev, Ulong n)
 
   CATCH_MEMORY_OVERFLOW = true;
 
-  d_kl.d_klList.setSize(n);
+  d_kl.d_klList.resize(n);
   if (ERRNO)
     goto revert;
   d_kl.d_muList.resize(n);
@@ -551,11 +538,11 @@ void KLContext::applyInverse(const coxtypes::CoxNbr& x)
 { d_help->move_KL_row_to_inverse(x);
 }
 
+// this function moes in the opposite direction of what its name suggests!
 void KLContext::KLHelper::move_KL_row_to_inverse(coxtypes::CoxNbr x)
 {
   coxtypes::CoxNbr xi = inverse(x);
-  d_kl.d_klList[x] = d_kl.d_klList[xi];
-  d_kl.d_klList[xi] = nullptr;
+  d_kl.d_klList[x] = std::move(d_kl.d_klList[xi]);
 }
 
 
@@ -621,13 +608,13 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
     for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
     {
       /* back up values for y */
-      KLRow* kl_buf = d_kl.d_klList[y];
+      auto kl_buf = std::move(d_kl.d_klList[y]);
       auto mu_buf = std::move(d_kl.d_muList[y]);
       /* put values for x in y */
-      d_kl.d_klList[y] = d_kl.d_klList[x];
+      d_kl.d_klList[y] = std::move(d_kl.d_klList[x]);
       d_kl.d_muList[y] = std::move(d_kl.d_muList[x]);
       /* store backup values in x */
-      d_kl.d_klList[x] = kl_buf;
+      d_kl.d_klList[x] = std::move(kl_buf);
       d_kl.d_muList[x] = std::move(mu_buf);
       /* set bit*/
       b.setBit(y);
@@ -650,7 +637,7 @@ void KLContext::revertSize(const Ulong& n)
 
 void KLContext::KLHelper::shrink(const Ulong& n)
 {
-  d_kl.d_klList.setSize(n);
+  d_kl.d_klList.resize(n);
   d_kl.d_muList.resize(n);
 } // |shrink|
 
@@ -730,10 +717,9 @@ void KLContext::printStatus(FILE* file) const
 
  ****************************************************************************/
 
-void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
 /*
-  This function allocates one row of the kl_list. The row contains one
+  Allocates one row of the kl_list. The row contains one
   entry for each x <= y which is extremal w.r.t. the descent set of y.
 
   The algorithm is as follows : we extract the interval [e,y] as a
@@ -743,22 +729,19 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
   Forwards the error MEMORY_WARNING if there is a memory overflow
   and CATCH_MEMORY_OVERFLOW is turned on.
 */
-
+void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 {
-  if (!isExtrAllocated(y))
+  if (not isExtrAllocated(y))
     allocExtrRow(y);
 
   Ulong n = extrList(y).size();
 
-  d_kl.d_klList[y] = new KLRow(n);
+  d_kl.d_klList[y].reset(new KLRow(n));
   if (ERRNO)
     return;
-  klList(y).setSizeValue(n);
 
   status().klnodes += n;
   status().klrows++;
-
-  return;
 
 }
 
@@ -976,11 +959,11 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
     coxtypes::CoxNbr y2 = klsupport().inverseMin(y1);
     const klsupport::ExtrRow& e = extrList(y2);
 
-    if (!isKLAllocated(y2)) {
-      d_kl.d_klList[y2] = new KLRow(e.size());
+    if (!isKLAllocated(y2))
+    {
+      d_kl.d_klList[y2].reset(new KLRow(e.size()));
       if (ERRNO)
 	goto abort;
-      klList(y2).setSizeValue(extrList(y2).size());
       status().klnodes += extrList(y2).size();
       status().klrows++;
     }

@@ -36,7 +36,7 @@ struct KLContext::KLHelper
 // data
   klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
 
-  containers::vector<std::unique_ptr<KLRow> > d_klList;
+  KLTable d_klList;
   containers::vector<MuTable> d_muTable; // indexed by |s|
   containers::vector<coxtypes::Length> d_L; // lengths of generators
   containers::vector<coxtypes::Length> d_length; // lengths of context elements
