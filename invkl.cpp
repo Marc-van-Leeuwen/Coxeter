@@ -1432,44 +1432,36 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& x,
   return klsupport::undef_klcoeff;
 }
 
-void KLContext::KLHelper::writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 
 /*
-  This function writes the polynomials from the list pol to klList(y);
-  more precisely, it finds their adresses in klTree(), and writes those
-  to klList(y). First it has to put the true degrees in the pol[j].
+  Write the polynomials from the list pol to klList(y); more precisely, it finds
+  their adresses in klTree(), and writes those to klList(y). First it has to put
+  the true degrees in the pol[j].
 
   It is assumed that y <= inverse(y).
 
   The only error that can occur here is memory overflow because of the
-  allocation for new polynomials in klTree(). In that case, the error
-  is treated, and error::ERROR_WARNING is set.
+  allocation for new polynomials in klTree(). In that case, the error is
+  reported, and ERROR_WARNING is set.
 */
-
+void KLContext::KLHelper::writeKLRow
+  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 {
   KLRow& kl_row = klList(y);
 
-  for (Ulong j = 0; j < kl_row.size(); ++j) {
-    if (kl_row[j])
-      continue;
-    /* find degree of polynomial */
-    polynomials::Degree d = pol[j].deg();
-    for (; d; --d) {
-      if (pol[j][d])
-	break;
-    }
-    pol[j].setDeg(d);
-    const KLPol* q = klTree().find(pol[j]);
-    if (q == 0) { /* an error occurred */
-      error::Error(error::ERRNO);
-      error::ERRNO = error::ERROR_WARNING;
-      return;
-    }
-    kl_row[j] = q;
-    status().klcomputed++;
-  }
-
-  return;
+  for (Ulong j = 0; j < kl_row.size(); ++j)
+    if (kl_row[j]==nullptr) // dont't overwrite already stored K-L polynomials
+    {
+      pol[j].snap_degree();
+      kl_row[j] = klTree().find(pol[j]);
+      if (kl_row[j] == nullptr)
+      { /* an error occurred */
+	error::Error(error::ERRNO);
+	error::ERRNO = error::ERROR_WARNING;
+	return; // give up storing remaining  polynomials
+      }
+      status().klcomputed++;
+    } // |for(j)| and |if(..)|
 }
 
 };
@@ -1519,17 +1511,16 @@ namespace invkl {
 
 
 /*
-  Adds the polynomial p*mu.X^n to the current polynomial. We don't test for
-  p = 0 because a K-L polynomial is never zero. Also, we assume that the
-  coefficients are positive, so the degree is easily determined. Also, we
-  assume mu is non-zero.
+  Add the polynomial $\mu*p*X^n$ to the current polynomial. We don't test for
+  |p.isZero()| because a K-L polynomial is never zero, and we assume |mu!=0|.
+  We also assume that the coefficients are positive, so the degree will not fall
+  after the addition: no call to |snap_degree| is necessary.
 
   Forwards the error KLCOEFF_OVERFLOW in case of error.
 */
 KLPol& KLPol::add(const KLPol& p, const klsupport::KLCoeff& mu, const Ulong& n)
 {
-  if (deg() < p.deg()+n)
-    setDeg(p.deg()+n);
+  ensure_degree(p.deg()+n); // make space
 
   for (Ulong j = 0; j <= p.deg(); ++j) {
     klsupport::safeAdd((*this)[j+n],p[j]*mu);
@@ -1540,30 +1531,25 @@ KLPol& KLPol::add(const KLPol& p, const klsupport::KLCoeff& mu, const Ulong& n)
   return *this;
 }
 
-KLPol& KLPol::subtract(const KLPol& p, const Ulong& n)
 
 /*
-  This function subtracts q^n.p from the current polynomial, checking for
-  underflow.
+  Subtract $q^n.p$ from the current polynomial, checking for underflow.
 
   Sets the error KLCOEFF_UNDERFLOW in case of error.
 */
 
+KLPol& KLPol::subtract(const KLPol& p, const Ulong& n)
 {
-  /* make sure the degree will hold the computation */
+  ensure_degree(p.deg()+n); // make sure degree accommodates computation
 
-  if (deg() < p.deg()+n)
-    setDeg(p.deg()+n);
-
-  /* subtract */
-
+  // do the subtraction
   for (polynomials::Degree j = 0; j <= p.deg(); ++j) {
     klsupport::safeSubtract((*this)[j+n],p[j]);
     if (error::ERRNO)
       return *this;
   }
 
-  reduceDeg();
+  snap_degree();
 
   return *this;
 }

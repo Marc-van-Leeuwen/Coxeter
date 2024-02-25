@@ -50,7 +50,7 @@ Polynomial<T>& Polynomial<T>::operator+= (const Polynomial<T>& q)
   {
     for (unsigned i=0; i<v.size(); ++i)
       v[i]+=q.v[i];
-    reduceDeg();  /* set the degree to the correct value */
+    snap_degree();  /* set the degree to the correct value */
   }
   return *this;
 }
@@ -83,7 +83,7 @@ Polynomial<T>& Polynomial<T>::operator-= (const Polynomial<T>& q)
   {
     for (unsigned i=0; i<v.size(); ++i)
       v[i]-=q.v[i];
-    reduceDeg();  /* set the degree to the correct value */
+    snap_degree();  /* set the degree to the correct value */
   }
   return *this;
 }

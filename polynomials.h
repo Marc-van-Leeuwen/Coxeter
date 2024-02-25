@@ -57,12 +57,7 @@ namespace polynomials {
   template <class T>
   void print(FILE* file, const Polynomial<T>& p, const Degree& d,
 	     const long& m, const char *x,io::Terse);
-  template <class T>
-  SDegree sumDegree(const LaurentPolynomial<T>& p,
-		    const LaurentPolynomial<T>& q);
-  template <class T>
-  SDegree sumValuation(const LaurentPolynomial<T>& p,
-		       const LaurentPolynomial<T>& q);
+
 
 /******** type definitions ***************************************************/
 
@@ -72,9 +67,8 @@ template <class T> class Polynomial {
   containers::vector<T> v;
  public:
   typedef struct {} const_tag;
-/* constructors and destructors */
-  void operator delete(void* ptr)
-    {return memory::arena().free(ptr,sizeof(Polynomial<T>));}
+
+  /* constructors and destructors */
   Polynomial<T>():v() {} // polynomial with empty coefficient vector (is zero)
   Polynomial<T>(Degree d) : v(d+1,0) {} // prepare for degree |d| but zero coefs
   Polynomial<T>(const Polynomial<T>& q) = default;
@@ -83,14 +77,8 @@ template <class T> class Polynomial {
 
 /* manipulators */
   T& operator[] (const Ulong& j) { return v[j]; }
-  void reduceDeg() { while (not v.empty() and v.back()==T(0)) v.pop_back(); }
-  void setDeg(const Degree& d)  { v.resize(d+1,T(0)); }
-  void setDegValue(const Degree& d) { v.resize(d+1,T(0)); } // no difference
-  void setVect(const T *source, const Ulong& n) { v.assign(source,source+n); }
-  void setZero() { std::fill(v.begin(),v.end(),0); } // empty coefficient vector
-  void setZero(const Ulong& r) { std::fill(&v[0],&v[r],0); } // zero out
-  void setZero(const Ulong& first, const Ulong& r)
-    { std::fill(&v[first],&v[first+r],0); }
+  void snap_degree() { while (not v.empty() and v.back()==T(0)) v.pop_back(); }
+  void ensure_degree(const Degree& d) { if (d+1>v.size()) v.resize(d+1,T(0)); }
 
 /* accessors */
   const T& operator[] (const Ulong& j) const { return v[j]; }

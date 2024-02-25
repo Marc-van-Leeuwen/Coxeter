@@ -1430,24 +1430,14 @@ void KLContext::KLHelper::store_row(const MuRow& row,
 
  *****************************************************************************/
 
-KLPol& KLPol::add(const KLPol& p, const long& n)
 
 /*
-  Increments the polynomial by p shifted by n, i.e. X^n.p, while checking
+  Increment the polynomial by $p*X^n$, while checking
   that the coefficients of the result remain within bounds.
-
-  NOTE : a correct implementation would check beforehand the size of the
-  result, so as not to waste memory; we are content with setting the size
-  to the correct value after the fact. This doesn't matter as this function
-  will be used only on temporaries.
 */
-
+KLPol& KLPol::add(const KLPol& p, const long& n)
 {
-  /* set degree and valuation of the result */
-
-  if (deg() < p.deg()+n) {
-    setDeg(p.deg()+n);
-  }
+  ensure_degree(p.deg()+n);
 
   for (polynomials::Degree j = 0; j <= p.deg(); ++j) {
     klsupport::safeAdd((*this)[j+n],p[j]);
@@ -1455,38 +1445,37 @@ KLPol& KLPol::add(const KLPol& p, const long& n)
       return *this;
   }
 
-  reduceDeg();
+  snap_degree();
 
   return *this;
 }
 
-KLPol& KLPol::subtract(const KLPol& p, const MuPol& mp, const Ulong& n)
 
 /*
-  This function subtracts from the current polynomial the polynomial p*mu
-  shifted by q^{n/2}. Here mp is a MuPol, i.e., a Laurent polynomial in
-  q^{1/2}; it is assumed that n is such that mp*q^{n/2} is a polynomial in
-  q.
+  Subtract from the current polynomial the polynomial $p*mp*X^{n/2}$. Here |mp|
+  is a Laurent polynomial in X^{1/2}; it is assumed that n is such that
+  $mp*X^{n/2}$ is a polynomial in $X$, so every other coef of |\mu| is zero.
 
-  It is known that for unequal parameters, negative coefficients can occur
-  in K-L polynomials. So we only check for overflow during the computation,
-  and set the error KLCOEFF_OVERFLOW or KLCOEFF_UNDERFLOW accordingly.
+  For unequal parameters, negative coefficients can occur in K-L polynomials. So
+  we only check for overflow during the computation, and set the error
+  KLCOEFF_OVERFLOW or KLCOEFF_UNDERFLOW accordingly.
 */
-
+KLPol& KLPol::subtract(const KLPol& p, const MuPol& mp, const Ulong& n)
 {
-  KLPol q(0);
-  q.setDeg((mp.deg()+n)/2);
+  assert((mp.deg()+n)%2==0);
+  KLPol q((mp.deg()+n)/2); // zero, with that degee in $X$
 
-  for (long j = mp.val(); j <= mp.deg(); ++j) {
-    if (mp[j] == 0)
-      continue;
-    /* if we get here, n + j is even */
-    q[(n+j)/2] = mp[j];
-  }
+  for (long j = mp.val(); j <= mp.deg(); ++j)
+    if (mp[j] != 0)
+    {
+      assert((n+j)%2==0);
+      q[(n+j)/2] = mp[j];
+    }
 
-  /* compute the product and check for overflow */
-
-  for (Ulong i = 0; i <= q.deg(); ++i) {
+  ensure_degree(p.deg()+q.deg());
+  // compute the product |p*q| and check for overflow
+  for (Ulong i = 0; i <= q.deg(); ++i)
+  {
     if (q[i] == 0)
       continue;
     for (Ulong j = 0; j <= p.deg(); ++j) {
@@ -1494,15 +1483,13 @@ KLPol& KLPol::subtract(const KLPol& p, const MuPol& mp, const Ulong& n)
       klsupport::safeMultiply(a,q[i]);
       if (error::ERRNO)
 	return *this;
-      if (isZero() || (i+j) > deg())
-	setDeg(i+j);
       klsupport::safeAdd((*this)[i+j],-a);
       if (error::ERRNO)
 	return *this;
     }
   }
 
- reduceDeg();
+ snap_degree();
  return *this;
 }
 
@@ -1597,6 +1584,7 @@ void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
   for (Ulong j = 0; j <= q.deg(); ++j)
     r[static_cast<long>(d*j)+m] = q[j];
 
+  p.ensure_degree(r.deg()+mp.deg()); // zero-extend the coefficient vector
   for (long j = mp.val(); j <= mp.deg(); ++j)
     if (mp[j]!=0)
       for (long i = r.val(); i <= r.deg(); ++i)
@@ -1606,34 +1594,29 @@ void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
 	  klsupport::safeMultiply(a,r[i]);
 	  if (error::ERRNO)
 	    return;
-	  if (p.isZero() or i+j > static_cast<long>(p.deg())) // if required
-	    p.setDeg(i+j); // zero-extend the coefficient vector
 	  klsupport::safeAdd(p[i+j],-a);
 	  if (error::ERRNO)
 	    return;
 	}
 
-  p.reduceDeg();
+  p.snap_degree();
 }
 
 
 /*
-  Return the positive part (i.e. the part with positive degree) of the
+  Return the positive part (i.e. the part with non-negative degree) of the
   Laurent polynomial $q[X:=u^d]*u^m$ (in all calls |d==2|)
 */
 KLPol positivePart(const KLPol& q, const Ulong& d, const long& m)
 {
-  KLPol p; // start out with zero
-
   /* compute degree of result */
 
-  long h = q.deg()*d + m;
+  long h = q.deg()*d + m; // degree of result
 
   if (h < 0)
-    return p;
+    return KLPol(); // nothing in non-negative degee
 
-  p.setDeg(h); // resize
-  p.setZero(h+1); // zero-fill
+  KLPol p(h); // start out with zero of degree |h|
 
   for (polynomials::Degree j = q.deg()+1; h>=0 and j-->0; h-=d)
     // run index |h| through |p| decreasingly with steps |d|

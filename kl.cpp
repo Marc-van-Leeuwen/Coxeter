@@ -2110,44 +2110,36 @@ void KLContext::KLHelper::secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol
   return;
 }
 
-void KLContext::KLHelper::writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 
 /*
-  This function writes the polynomials from the list pol to klList(y);
-  more precisely, it finds their adresses in klTree(), and writes those
-  to klList(y). First it has to put the true degrees in the pol[j].
+  Write the polynomials from the list pol to klList(y); more precisely, it finds
+  their adresses in klTree(), and writes those to klList(y). First it has to put
+  the true degrees in the pol[j].
 
   It is assumed that y <= inverse(y).
 
   The only error that can occur here is memory overflow because of the
-  allocation for new polynomials in klTree(). In that case, the error
-  is treated, and ERROR_WARNING is set.
+  allocation for new polynomials in klTree(). In that case, the error is
+  reported, and ERROR_WARNING is set.
 */
-
+void KLContext::KLHelper::writeKLRow
+  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 {
   KLRow& kl_row = klList(y);
 
-  for (Ulong j = 0; j < kl_row.size(); ++j) {
-    if (kl_row[j])
-      continue;
-    /* find degree of polynomial */
-    polynomials::Degree d = pol[j].deg();
-    for (; d; --d) {
-      if (pol[j][d])
-	break;
-    }
-    pol[j].setDeg(d);
-    const KLPol* q = klTree().find(pol[j]);
-    if (q == 0) { /* an error occurred */
-      Error(ERRNO);
-      ERRNO = ERROR_WARNING;
-      return;
-    }
-    kl_row[j] = q;
-    status().klcomputed++;
-  }
-
-  return;
+  for (Ulong j = 0; j < kl_row.size(); ++j)
+    if (kl_row[j]==nullptr) // dont't overwrite already stored K-L polynomials
+    {
+      pol[j].snap_degree();
+      kl_row[j] = klTree().find(pol[j]);
+      if (kl_row[j] == nullptr)
+      { /* an error occurred */
+	Error(ERRNO);
+	ERRNO = ERROR_WARNING;
+	return; // give up storing remaining  polynomials
+      }
+      status().klcomputed++;
+    } // |for(j)| and |if(..)|
 }
 
 void KLContext::KLHelper::writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y)
@@ -3155,15 +3147,13 @@ namespace {
 
 
 /*
-  This function increments p by q, shifted by x^n, checking for overflow.
-  It is assumed that the result fits in p.
+  Increment |p| by $q*X^n$, checking for overflow.
 
   Forwards the error KLCOEFF_OVERFLOW in case of error.
 */
 KLPol& safeAdd(KLPol& p, const KLPol& q, const polynomials::Degree& n)
 {
-  if (p.deg() < (q.deg()+n))
-    p.setDeg(q.deg() + n);
+  p.ensure_degree(q.deg() + n);
 
   for (polynomials::Degree j = 0; j <= q.deg(); ++j) {
     klsupport::safeAdd(p[j+n],q[j]);
@@ -3195,7 +3185,7 @@ KLPol& safeSubtract(KLPol& p, const KLPol& q, const klsupport::KLCoeff& mu,
       return p;
   }
 
-  p.reduceDeg();
+  p.snap_degree();
 
   return p;
 }
