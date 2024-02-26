@@ -151,18 +151,12 @@ class KLContext {
   coxtypes::Rank rank() const { return klsupport().rank(); }
  const schubert::SchubertContext& schubert() const
   { return klsupport().schubert(); }
-  bool isFullKL() const;
-  bool isFullMu() const;
-  bool isKLAllocated(const coxtypes::CoxNbr& x) const;
-  bool isMuAllocated(const coxtypes::CoxNbr& x) const;
   const KLRow& klList(const coxtypes::CoxNbr& y) const;
   const MuRow& muList(const coxtypes::CoxNbr& y) const;
   Ulong size() const;
 /* manipulators */
   void applyInverse(const coxtypes::CoxNbr& y);
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
-  void clearFullKL() { stats().flags &= ~KLStats::kl_done;}
-  void clearFullMu() { stats().flags &= ~KLStats::mu_done;}
   void fillKL();
   void fillMu();
   const KLPol& klPol
@@ -172,17 +166,18 @@ class KLContext {
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
-  void setFullKL() { stats().flags |= KLStats::kl_done;}
-  void setFullMu() { stats().flags |= KLStats::mu_done;}
   void setSize(const Ulong& n);
+
+  bool isFullKL() const;
+  bool isFullMu() const;
+  void clearFullKL();
+  void clearFullMu();
 /* input/output */
   // String& append(String& str, const coxtypes::CoxNbr& x) const;
   void print
     (FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I)
   const { schubert().print(file,x,I); }
   void printStatus(FILE* file) const;
-/* to be taken out! */
-  void compareMu();
 };
 
 };

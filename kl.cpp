@@ -76,7 +76,6 @@ namespace kl {
 struct KLContext::KLHelper
 {
 // data
-  KLContext& d_kl;
   klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
 
   KLTable d_klList;
@@ -89,8 +88,7 @@ struct KLContext::KLHelper
   void operator delete(void* ptr)
       {return memory::arena().free(ptr,sizeof(KLHelper));}
   KLHelper(klsupport::KLSupport& kls,KLContext* kl)
-    : d_kl(*kl)
-    , d_klsupport(kls)
+    : d_klsupport(kls)
     , d_klList(kls.size())
     , d_muList(kls.size())
     , d_klTree()
@@ -133,9 +131,10 @@ struct KLContext::KLHelper
     void inverseMuRow(const coxtypes::CoxNbr& y);
     bool isExtrAllocated(const coxtypes::CoxNbr& y)
       { return klsupport().isExtrAllocated(y); }
-    bool isKLAllocated(const coxtypes::CoxNbr& y)
-      { return d_kl.isKLAllocated(y); }
-    bool isMuAllocated(const coxtypes::CoxNbr& y) {return d_kl.isMuAllocated(y);}
+  bool isKLAllocated(const coxtypes::CoxNbr& x) const
+  { return d_klList[x] != nullptr; }
+  bool isMuAllocated(const coxtypes::CoxNbr& x) const
+  { return d_muList[x] != nullptr; }
     KLRow& klList(const coxtypes::CoxNbr& y) {return *d_klList[y];}
     klsupport::KLSupport& klsupport() {return d_klsupport;}
     containers::bag<KLPol>& klTree() {return d_klTree;}
@@ -146,7 +145,7 @@ struct KLContext::KLHelper
 		      list::List<KLPol>& pol, const Ulong& a);
     MuRow& muList(const coxtypes::CoxNbr& y) {return *d_muList[y];}
     void prepareRow(const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
-    coxtypes::Rank rank() {return d_kl.rank();}
+  coxtypes::Rank rank() { return klsupport().rank();}
     void readMuRow(const coxtypes::CoxNbr& y);
     klsupport::KLCoeff recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
     const schubert::SchubertContext& schubert() {return klsupport().schubert();}
@@ -165,6 +164,13 @@ struct KLContext::KLHelper
   const KLPol& klPol(coxtypes::CoxNbr x, coxtypes::CoxNbr y,
 		     coxtypes::Generator s);
   klsupport::KLCoeff mu(coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+
+  void setFullKL() { d_stats.flags |= KLStats::kl_done;}
+  void setFullMu() { d_stats.flags |= KLStats::mu_done;}
+  bool isFullKL() const { return d_stats.flags&KLStats::kl_done; }
+  bool isFullMu() const { return d_stats.flags&KLStats::mu_done; }
+  void clearFullKL() { d_stats.flags &= ~KLStats::kl_done;}
+  void clearFullMu() { d_stats.flags &= ~KLStats::mu_done;}
 
   HeckeElt KL_row_as_HeckeElt(coxtypes::CoxNbr y);
   void move_KL_row_to_inverse(coxtypes::CoxNbr x);
@@ -249,10 +255,8 @@ const MuRow& KLContext::muList(const coxtypes::CoxNbr& y) const
   { return *d_help->d_muList[y]; }
 bool KLContext::isFullKL() const { return stats().flags&KLStats::kl_done; }
 bool KLContext::isFullMu() const { return stats().flags&KLStats::mu_done; }
-bool KLContext::isKLAllocated(const coxtypes::CoxNbr& x) const
-  { return d_help->d_klList[x] != nullptr; }
-bool KLContext::isMuAllocated(const coxtypes::CoxNbr& x) const
-  { return d_help->d_muList[x] != nullptr; }
+void KLContext::clearFullKL() { stats().flags &= ~KLStats::kl_done;}
+void KLContext::clearFullMu() { stats().flags &= ~KLStats::mu_done;}
 
 /******** manipulators *******************************************************/
 
@@ -281,14 +285,14 @@ void KLContext::KLHelper::grow(Ulong prev, Ulong n)
 
   CATCH_MEMORY_OVERFLOW = false;
 
-  d_kl.clearFullKL();
-  d_kl.clearFullMu();
+  clearFullKL();
+  clearFullMu();
 
   return;
 
  revert:
   CATCH_MEMORY_OVERFLOW = false;
-  d_kl.revertSize(prev_size);
+  shrink(prev_size);
 } // |KLContext::KLHelper::grow|
 
 
@@ -299,7 +303,7 @@ void KLContext::fillKL() { d_help->fill_KL_table(); }
 
 void KLContext::KLHelper::fill_KL_table ()
 {
-  if (d_kl.isFullKL())
+  if (isFullKL())
     return;
 
   for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
@@ -311,7 +315,7 @@ void KLContext::KLHelper::fill_KL_table ()
     readMuRow(y);
   }
 
-  d_kl.setFullKL();
+  setFullKL();
 } // |KLContext::KLHelper::fill_KL_table|
 
 
@@ -325,7 +329,7 @@ void KLContext::fillMu() { d_help->fill_mu_table(); }
 
 void KLContext::KLHelper::fill_mu_table ()
 {
-  if (d_kl.isFullMu())
+  if (isFullMu())
     return;
 
   static MuRow mu_row(0);
@@ -343,7 +347,7 @@ void KLContext::KLHelper::fill_mu_table ()
       goto abort;
   }
 
-  d_kl.setFullMu();
+  setFullMu();
   return;
 
  abort:
