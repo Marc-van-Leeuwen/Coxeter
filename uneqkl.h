@@ -125,8 +125,8 @@ class KLContext
   ~KLContext();
 /* accessors */
   Ulong size() const;
-  const klsupport::KLSupport& klsupport() const;
   coxtypes::Rank rank() const {return klsupport().rank();}
+  const klsupport::KLSupport& klsupport() const;
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
     { return klsupport().inverse(x); }
   const schubert::SchubertContext& schubert() const
@@ -137,7 +137,7 @@ class KLContext
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
     { return klsupport().extrList(y); }
 
-// manipulators
+  // manipulators that may expand/shrink tables as only side effect
   void setSize(const Ulong& n);
   void revertSize(const Ulong& n);
   // the following are 5 methods entry points, called from |CoxGroup| methods
@@ -149,6 +149,7 @@ class KLContext
 		 const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
 
+  // manipulators that drastically alter the state
   void applyInverse(const coxtypes::CoxNbr& y);
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
   void permute(const bits::Permutation& a);

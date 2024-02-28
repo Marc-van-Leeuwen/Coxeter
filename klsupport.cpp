@@ -147,7 +147,7 @@ void KLSupport::standardPath(list::List<coxtypes::Generator>& g, const coxtypes:
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set.
 */
-void KLSupport::allocExtrRow(const coxtypes::CoxNbr& y)
+void KLSupport::ensure_extr_row_exists(const coxtypes::CoxNbr& y)
 {
   if (d_extrList[y]!=nullptr)
     return;

@@ -86,7 +86,7 @@ class KLSupport {
   void sortIRow(const coxtypes::CoxNbr& y, bits::Permutation& a) const; /* inlined */
   void standardPath(list::List<coxtypes::Generator>& g, const coxtypes::CoxNbr& x) const;
 /* manipulators */
-  void allocExtrRow(const coxtypes::CoxNbr& y);
+  void ensure_extr_row_exists(const coxtypes::CoxNbr& y);
   void allocRowComputation(const coxtypes::CoxNbr& y);
   void applyInverse(const coxtypes::CoxNbr& y);
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a); /* inlined */

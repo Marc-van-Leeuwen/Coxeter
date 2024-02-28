@@ -38,26 +38,6 @@ namespace kl {
   using HeckeElt = containers::vector<hecke::HeckeMonomial<KLPol> >;
 };
 
-/******** function declarations *********************************************/
-
-namespace kl {
-  void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl);
-  void extractDufloInvolutions(const KLContext& kl, const bits::Partition& pi,
-			       bits::BitMap& b);
-  void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl);
-  void ihBetti(schubert::Homology& h, const coxtypes::CoxNbr& y, KLContext& kl);
-  const KLPol& one();
-  bool isSingular(const HeckeElt& h);
-  bool isSingular(const KLRow& row);
-  void print(FILE* file, const schubert::Homology& h);
-  void printMuTable(FILE* file, const KLContext& kl, const interface::Interface& I);
-  void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-		 const interface::Interface& I, const coxtypes::Generator& s = coxtypes::undef_generator);
-  void showMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-	      const interface::Interface& I);
-  void sortByPol(KLRow& row);
-};
-
 /******** type definitions **************************************************/
 
 #include "interface.h"
@@ -99,7 +79,6 @@ struct MuData {
   klsupport::KLCoeff mu;
   coxtypes::Length height;
 /* constructors */
-  MuData() {}
   MuData(const coxtypes::CoxNbr& d_x,
 	 const klsupport::KLCoeff& d_mu,
 	 const coxtypes::Length& d_h)
@@ -133,61 +112,75 @@ class KLContext {
     {return memory::arena().free(ptr,sizeof(KLContext));}
   KLContext(klsupport::KLSupport* kls);
 
-/* accessors */
+  // relay methods
   const klsupport::KLSupport& klsupport() const; // uses reference in helper
-  KLStats& stats();
-  const KLStats& stats() const;
-
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
   { return klsupport().extrList(y); }
-
   coxtypes::Generator last(const coxtypes::CoxNbr& y) const
   { return klsupport().last(y); }
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
   { return klsupport().inverse(x); }
   const bits::BitMap& involution() const { return klsupport().involution(); }
-  bool isExtrAllocated(const coxtypes::CoxNbr& x) const
-  { return klsupport().isExtrAllocated(x); }
-  coxtypes::Rank rank() const { return klsupport().rank(); }
- const schubert::SchubertContext& schubert() const
+  const schubert::SchubertContext& schubert() const
   { return klsupport().schubert(); }
+
+  void print
+    (FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I)
+    const
+  { schubert().print(file,x,I); }
+
+  const KLStats& stats() const;
+
+  // accessors
+  Ulong size() const;
+  coxtypes::Rank rank() const { return klsupport().rank(); }
   const KLRow& klList(const coxtypes::CoxNbr& y) const;
   const MuRow& muList(const coxtypes::CoxNbr& y) const;
-  Ulong size() const;
-/* manipulators */
-  void applyInverse(const coxtypes::CoxNbr& y);
-  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
-  void fillKL();
-  void fillMu();
+
+  // manipulators that may expand/shrink tables as only side effect
   const KLPol& klPol
     (coxtypes::CoxNbr x, coxtypes::CoxNbr y, coxtypes::Generator s);
   const KLPol& klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y);
   klsupport::KLCoeff mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
-  void permute(const bits::Permutation& a);
-  void revertSize(const Ulong& n);
   void row(HeckeElt& h, const coxtypes::CoxNbr& y);
+  void fillKL();
+  void fillMu();
   void setSize(const Ulong& n);
+  void revertSize(const Ulong& n);
 
-  bool isFullKL() const;
-  bool isFullMu() const;
-  void clearFullKL();
-  void clearFullMu();
-/* input/output */
-  // String& append(String& str, const coxtypes::CoxNbr& x) const;
-  void print
-    (FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I)
-  const { schubert().print(file,x,I); }
-  void printStatus(FILE* file) const;
-};
+  // manipulators that drastically alter the state
+  void applyInverse(const coxtypes::CoxNbr& y);
+  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
+  void permute(const bits::Permutation& a);
 
-};
+}; // |class KLContext|
 
-/******** inlined definitions **********************************************/
+/******** function declarations *********************************************/
 
-namespace kl {
+  void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl);
+  void extractDufloInvolutions(const KLContext& kl, const bits::Partition& pi,
+			       bits::BitMap& b);
+  void genericSingularities
+    (HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl);
+  void ihBetti(schubert::Homology& h, const coxtypes::CoxNbr& y, KLContext& kl);
+  const KLPol& one();
+  bool isSingular(const HeckeElt& h);
+  bool isSingular(const KLRow& row);
+  void print_stats(const KLContext& kl, FILE* f); // unused
+  void print(FILE* file, const schubert::Homology& h);
+  void printMuTable
+    (FILE* file, const KLContext& kl, const interface::Interface& I);
+  void showKLPol
+    (FILE* file,
+     KLContext& kl, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+     const interface::Interface& I,
+     const coxtypes::Generator& s = coxtypes::undef_generator);
+  void showMu
+    (FILE* file,
+     KLContext& kl, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+     const interface::Interface& I);
+  void sortByPol(KLRow& row);
 
-
-
-};
+}; // |namespace kl|
 
 #endif

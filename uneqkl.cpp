@@ -12,32 +12,22 @@
 
 namespace uneqkl {
 
-namespace {
-  void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
-		     const Ulong& d, const long& m);
-  KLPol positivePart(const KLPol& q, const Ulong& d, const long& m);
-}; // |namespace|
-
 /*
 			      The |KLHelper| class
 
-  This is a subclass that holds a non-|const| reference to the main |KLContext|
-  that created it and vice versa; its methods can therefore freely operate on
-  the private members of |KLContext|. This relation is dangerous, as the |const|
-  correctness is completely left to the discipline of the implementations below:
-  a |const| method of |KLContext| can freely call a non-|const| method of the
-  helper class (through is non-|const| pointer to it), and vice versa. This is
-  avoided however, in large part by providing methods in the helper class that
-  just call |KLContext| methods with the same name and |const|-ness.
-
+  This is a subclass that that data for the parent |KLContext| (which has a
+  pointer to it but not vice versa. The |const| correctness is ensured by the
+  voluntary discipline of only calling |const| methods of the helper class from
+  |const| methods of |KLContext|, even though, |KLContext| holding a pointer
+  to non-|const| to the helper, such methods could call non-|const| helper ones.
  */
 struct KLContext::KLHelper
 {
 // data
   klsupport::KLSupport& d_klsupport; // unowned, |CoxGroup| owns it
 
-  KLTable d_klList;
-  containers::vector<MuTable> d_muTable; // indexed by |s|
+  KLTable KL_table;
+  containers::vector<MuTable> mu_Tables; // indexed by |s|
   containers::vector<coxtypes::Length> d_L; // lengths of generators
   containers::vector<coxtypes::Length> d_length; // lengths of context elements
   containers::bag<KLPol> KL_pool; // this owns the |KLPol| values
@@ -53,52 +43,38 @@ struct KLContext::KLHelper
      const graph::CoxGraph& G, const interface::Interface& I);
 
 // methods
-// relay methods
-  coxtypes::Rank rank() { return d_klsupport.rank(); }
+// relay methods, mostly |const|:
+  const klsupport::KLSupport& klsupport() const // method used when |const|
+    { return d_klsupport; }
+  const KLStats& stats() const { return d_stats; } // method used when |const|
+  coxtypes::Rank rank() const{ return klsupport().rank(); }
   const schubert::SchubertContext& schubert() const
-    { return d_klsupport.schubert();}
+    { return klsupport().schubert();}
   coxtypes::Generator last(coxtypes::CoxNbr x) const
-    { return d_klsupport.last(x); }
+    { return klsupport().last(x); }
   const klsupport::ExtrRow& extrList(coxtypes::CoxNbr y) const
-    { return d_klsupport.extrList(y); }
-  bool isExtrAllocated(coxtypes::CoxNbr y) const
-    { return d_klsupport.isExtrAllocated(y);}
-  void ensure_extr_row_exists(coxtypes::CoxNbr y)
-    { d_klsupport.allocExtrRow(y); }
+    { return klsupport().extrList(y); }
   coxtypes::CoxNbr inverse (coxtypes::CoxNbr y) const
-    { return d_klsupport.inverse(y);}
+    { return klsupport().inverse(y);}
+
+  // relay manipulator
+  void ensure_extr_row_exists(coxtypes::CoxNbr y)
+    { d_klsupport.ensure_extr_row_exists(y); }
 
   Ulong gen_length(const coxtypes::Generator& s) const { return d_L[s]; }
   Ulong length(const coxtypes::CoxNbr& x) const { return d_length[x]; }
-  Ulong size() const { return d_klList.size(); }
-  KLStats& stats() { return d_stats; }
+  Ulong size() const { return KL_table.size(); }
 
-  KLRow& klList(coxtypes::CoxNbr y) { return *d_klList[y]; }
-  MuTable& muTable(coxtypes::Generator s) { return d_muTable[s]; }
-  MuRow& muList(coxtypes::Generator s, coxtypes::CoxNbr y)
-    { return *d_muTable[s][y]; }
-  bool row_needs_creation(coxtypes::CoxNbr y) const
-    { return d_klList[y]==nullptr; }
+  KLRow& KL_row(coxtypes::CoxNbr y) { return *KL_table[y]; }
+  MuTable& muTable(coxtypes::Generator s) { return mu_Tables[s]; }
+  MuRow& mu_row(coxtypes::Generator s, coxtypes::CoxNbr y)
+    { return *mu_Tables[s][y]; }
 
 // modifiers
-  const MuPol* to_MuPol(const KLPol& p); // transform |p| to |MuPol| and record
-  MuRow mu_row_frame(coxtypes::Generator s, coxtypes::CoxNbr y);
-  // ensure a row exists to store polynomials |mu(s,x,y)| in
-  void create_mu_row(coxtypes::Generator s, coxtypes::CoxNbr y);
-  // whether the row corresponding to y in muTable[s] has been completely filled.
-  bool mu_is_complete(coxtypes::Generator s, coxtypes::CoxNbr y);
-  // transfer a complete row of computed |MuPol| values for $(y,s)$ to mu-table
-  void store_row(const MuRow& row, // already transformed and recorded |MuPol|s
-		 coxtypes::Generator s, coxtypes::CoxNbr y);
-  void ensure_KL_row(coxtypes::CoxNbr y); // prepare KL row for mu computation
-  void compute_mu_row // compute and pass through |store_row| a row of |mu|s
-    (coxtypes::Generator s, coxtypes::CoxNbr y);
-
-  const MuPol* compute_mu // bare computation of $\mu(s,x,y)$ (via |to_MuPol|)
-    (coxtypes::Generator s, coxtypes::CoxNbr x, coxtypes::CoxNbr y);
-
 
   // KL computations
+  bool row_needs_creation(coxtypes::CoxNbr y) const
+    { return KL_table[y]==nullptr; }
   bool row_is_complete(coxtypes::CoxNbr y); // whether already done for |y|
   // ensure that |d_klsupport| contains all extremal lists that can arise
   void prepareRowComputation (coxtypes::CoxNbr y, coxtypes::Generator s);
@@ -120,6 +96,23 @@ struct KLContext::KLHelper
   void mu_correct_KL_pol
     (KLPol& pol, coxtypes::Generator s, coxtypes::CoxNbr x, coxtypes::CoxNbr y);
 
+  void ensure_KL_row(coxtypes::CoxNbr y); // prepare KL row for mu computation
+  const MuPol* to_MuPol(const KLPol& p); // transform |p| to |MuPol| and record
+  MuRow mu_row_frame(coxtypes::Generator s, coxtypes::CoxNbr y);
+  // ensure a row exists to store polynomials |mu(s,x,y)| in
+  void create_mu_row(coxtypes::Generator s, coxtypes::CoxNbr y);
+  // whether the row corresponding to y in muTable[s] has been completely filled.
+  bool mu_is_complete(coxtypes::Generator s, coxtypes::CoxNbr y);
+  // transfer a complete row of computed |MuPol| values for $(y,s)$ to mu-table
+  void store_row(const MuRow& row, // already transformed and recorded |MuPol|s
+		 coxtypes::Generator s, coxtypes::CoxNbr y);
+  void compute_mu_row // compute and pass through |store_row| a row of |mu|s
+    (coxtypes::Generator s, coxtypes::CoxNbr y);
+
+  const MuPol* compute_mu // bare computation of $\mu(s,x,y)$ (via |to_MuPol|)
+    (coxtypes::Generator s, coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+
+
   // direct service to |KLContext| methods
   void permute(const bits::Permutation& a);
   void grow(Ulong prev, Ulong n);
@@ -137,7 +130,7 @@ struct KLContext::KLHelper
 
 private:
   bool no_mu_yet (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
-    { return d_muTable[s][y] == nullptr; }
+    { return mu_Tables[s][y] == nullptr; }
 
 }; // |struct KLContext::KLHelper|
 
@@ -280,13 +273,13 @@ KLContext::~KLContext()
 /******** accessors **********************************************************/
 
 const klsupport::KLSupport& KLContext::klsupport() const
-  { return d_help->d_klsupport; }
+  { return d_help->klsupport(); }
 Ulong KLContext::size() const { return d_help->size(); }
 const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
-  { return *d_help->d_klList[y]; }
+  { return *d_help->KL_table[y]; }
 const MuRow& KLContext::muList
   (const coxtypes::Generator& s, const coxtypes::CoxNbr& y) const
-  { return *d_help->d_muTable[s][y]; }
+  { return *d_help->mu_Tables[s][y]; }
 
 
 /******** manipulators *******************************************************/
@@ -304,10 +297,10 @@ void KLContext::KLHelper::grow(Ulong prev, Ulong n)
   error::CATCH_MEMORY_OVERFLOW = true;
 
   try {
-    d_klList.resize(n);
+    KL_table.resize(n);
 
-    for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s)
-      d_muTable[s].resize(n);
+    for (coxtypes::Generator s = 0; s < mu_Tables.size(); ++s)
+      mu_Tables[s].resize(n);
   }
   catch (...) {
     goto revert;
@@ -388,7 +381,7 @@ const KLPol& KLContext::KLHelper::klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y)
   Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
 
   // look up to see if $P(x,y)$ is already stored
-  const KLPol* pol = (*d_klList[y])[m];
+  const KLPol* pol = (*KL_table[y])[m];
 
   // if not, compute it explicitly
   if (pol == nullptr) { /* we have to compute the polynomial */
@@ -416,14 +409,14 @@ const MuPol KLContext::KLHelper::mu
   // either use existing row or start one from scratch
   if (no_mu_yet(s,y))
     create_mu_row(s,y);
-  const MuRow& mu_row = muList(s,y);
+  const MuRow& row = mu_row(s,y);
 
   // find |x| in that row
   const MuData mx(x,nullptr);
-  auto it = std::lower_bound(mu_row.begin(),mu_row.end(),mx);
+  auto it = std::lower_bound(row.begin(),row.end(),mx);
 
   // absent |x|s certainly have $\mu(s,x,y)=0$
-  if (it == mu_row.end() or it->x!=x)
+  if (it == row.end() or it->x!=x)
     return MuPol::zero();
 
   // get location for |mu(s,x,y)|
@@ -462,7 +455,7 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
   { if (y <= inverse(y)) {
       const klsupport::ExtrRow& e = extrList(y);
       h.reserve(e.size());
-      const KLRow& klr = klList(y);
+      const KLRow& klr = KL_row(y);
       for (Ulong j = 0; j < e.size(); ++j) {
 	h.emplace_back(e[j],klr[j]);
       }
@@ -471,7 +464,7 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
       coxtypes::CoxNbr yi = inverse(y);
       const klsupport::ExtrRow& e = extrList(yi);
       h.reserve(e.size());
-      const KLRow& klr = klList(yi);
+      const KLRow& klr = KL_row(yi);
       for (Ulong j = 0; j < e.size(); ++j) {
 	h.emplace_back(inverse(e[j]),klr[j]);
       }
@@ -502,11 +495,11 @@ void KLContext::revertSize(const Ulong& n)
 
 void KLContext::KLHelper::shrink(const Ulong& n)
 {
-  d_klList.resize(n);
+  KL_table.resize(n);
 
-  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = d_muTable[s];
-    t.resize(n); // drop any extension of |d_muTable[s]|
+  for (coxtypes::Generator s = 0; s < mu_Tables.size(); ++s) {
+    MuTable& t = mu_Tables[s];
+    t.resize(n); // drop any extension of |mu_Tables[s]|
   }
   d_length.resize(n);
 }
@@ -524,7 +517,7 @@ void KLContext::applyInverse(const coxtypes::CoxNbr& x)
 void KLContext::KLHelper::move_KL_row_to_inverse(coxtypes::CoxNbr x)
 {
   coxtypes::CoxNbr xi = inverse(x);
-  d_klList[x] = std::move(d_klList[xi]);
+  KL_table[x] = std::move(KL_table[xi]);
 }
 
 void KLContext::applyIPermutation
@@ -533,7 +526,7 @@ void KLContext::applyIPermutation
 
 void KLContext::KLHelper::apply_inverse_permutation
   (coxtypes::CoxNbr y, const bits::Permutation& a)
-{ right_permute(*d_klList[y],a); }
+{ right_permute(*KL_table[y],a); }
 
 
 /*
@@ -546,8 +539,8 @@ void KLContext::permute(const bits::Permutation& a)
 void KLContext::KLHelper::permute(const bits::Permutation& a)
 {
   // permute values inside each row of |muTable|
-  for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-    MuTable& t = d_muTable[s];
+  for (coxtypes::Generator s = 0; s < mu_Tables.size(); ++s) {
+    MuTable& t = mu_Tables[s];
     for (coxtypes::CoxNbr y = 0; y < size(); ++y) {
       if (no_mu_yet(s,y))
 	continue;
@@ -566,29 +559,29 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
     if (seen.getBit(x))
       continue;
     // now |x| starts an as yet unseen nontrivial cycle in |a|
-    containers::vector<MuRowPtr> mu_buf(d_muTable.size()); // Coxeter rank
+    containers::vector<MuRowPtr> mu_buf(mu_Tables.size()); // Coxeter rank
 
     for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
     {
       std::swap(d_length[y],d_length[x]);
 
       // back up values for y
-      auto kl_buf = std::move(d_klList[y]);
-      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = d_muTable[s];
+      auto kl_buf = std::move(KL_table[y]);
+      for (coxtypes::Generator s = 0; s < mu_Tables.size(); ++s) {
+	MuTable& t = mu_Tables[s];
 	mu_buf[s] = std::move(t[y]);
       }
       // move values from |x| in |y|
-      d_klList[y] = std::move(d_klList[x]);
-      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = d_muTable[s];
+      KL_table[y] = std::move(KL_table[x]);
+      for (coxtypes::Generator s = 0; s < mu_Tables.size(); ++s) {
+	MuTable& t = mu_Tables[s];
 	t[y] = std::move(t[x]);
       }
 
       /* store backed up values in x */
-      d_klList[x] = std::move(kl_buf);
-      for (coxtypes::Generator s = 0; s < d_muTable.size(); ++s) {
-	MuTable& t = d_muTable[s];
+      KL_table[x] = std::move(kl_buf);
+      for (coxtypes::Generator s = 0; s < mu_Tables.size(); ++s) {
+	MuTable& t = mu_Tables[s];
 	t[x] = std::move(mu_buf[s]);
       }
       seen.setBit(y);
@@ -634,8 +627,8 @@ KLContext::KLHelper::KLHelper
   (klsupport::KLSupport& kls,
    const graph::CoxGraph& G, const interface::Interface& I)
 : d_klsupport(kls)
-, d_klList(kls.size())
-, d_muTable()
+, KL_table(kls.size())
+, mu_Tables()
 , d_L(2*kls.rank()) // the size expected by |interactive::getLength|
 , d_length{0} // start with a single length entry 0
 , KL_pool() // empty set of |KLPol|
@@ -655,13 +648,13 @@ KLContext::KLHelper::KLHelper
     d_length.push_back(d_length[xs] + d_L[s]);
   }
 
-  d_klList[0].reset(new KLRow(1,KL_pool.find(one())));
+  KL_table[0].reset(new KLRow(1,KL_pool.find(one())));
 
-  d_muTable.reserve(rank());
+  mu_Tables.reserve(rank());
 
   for (coxtypes::Generator s = 0; s < rank(); ++s) {
-    d_muTable.emplace_back(kls.size()); // create a |MuTable| of |kls->size()|
-    MuTable& t = d_muTable.back();
+    mu_Tables.emplace_back(kls.size()); // create a |MuTable| of |kls->size()|
+    MuTable& t = mu_Tables.back();
     t[0].reset(new MuRow); // create one entry (empty list) in initial slot
   }
 
@@ -683,10 +676,10 @@ void KLContext::KLHelper::create_KL_row(coxtypes::CoxNbr y)
 
   Ulong n_extremals = extrList(y).size();
 
-  d_klList[y].reset(new KLRow(n_extremals,nullptr));
+  KL_table[y].reset(new KLRow(n_extremals,nullptr));
 
-  stats().klnodes += n_extremals;
-  stats().klrows++;
+  d_stats.klnodes += n_extremals;
+  d_stats.klrows++;
 }
 
 
@@ -718,7 +711,7 @@ void KLContext::KLHelper::create_mu_row
   (coxtypes::Generator s, coxtypes::CoxNbr y)
 {
   muTable(s)[y].reset(new MuRow(mu_row_frame(s,y)));
-  d_stats.munodes += muList(s,y).size();
+  d_stats.munodes += mu_row(s,y).size();
   d_stats.murows++;
 }
 
@@ -734,7 +727,7 @@ bool KLContext::KLHelper::row_is_complete(coxtypes::CoxNbr y)
   if (row_needs_creation(y))
     return false;
 
-  for (auto entry : klList(y))
+  for (auto entry : KL_row(y))
     if (entry==nullptr)
       return false;
 
@@ -811,11 +804,11 @@ const KLPol* KLContext::KLHelper::compute_KL_pol
   /* check if x is comparable to ys */
 
   if (!p.inOrder(x,ys)) { /* return the answer immediately */
-    stats().klcomputed++;
+    d_stats.klcomputed++;
     const auto& eL = extrList(y);
     Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
-    klList(y)[m] = &klPol(xs,ys);
-    return klList(y)[m];
+    KL_row(y)[m] = &klPol(xs,ys);
+    return KL_row(y)[m];
   }
 
   /* get workspace */
@@ -856,13 +849,13 @@ const KLPol* KLContext::KLHelper::compute_KL_pol
       goto abort;
     const auto& eL = extrList(y);
     Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
-    klList(y)[m] = p_xy;
+    KL_row(y)[m] = p_xy;
 
     /* return workspace and exit */
 
     error::CATCH_MEMORY_OVERFLOW = false;
 
-    stats().klcomputed++;
+    d_stats.klcomputed++;
     return p_xy;
   }
 
@@ -931,6 +924,13 @@ void KLContext::KLHelper::compute_KL_row (coxtypes::CoxNbr y)
 }
 
 
+namespace { // two auxiliaries to |compute_mu| below
+  void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
+		     const Ulong& d, const long& m);
+  KLPol positivePart(const KLPol& q, const Ulong& d, const long& m);
+}; // |namespace|
+
+
 /*
   Compute the mu-polynomial for $\mu(s,x,y)$, recording it in |kl.mu_pool|. It
   is assumed that $x < y$, $sy > y$, $sx < x$. This mu-polynomial is the unique
@@ -946,14 +946,14 @@ void KLContext::KLHelper::compute_KL_row (coxtypes::CoxNbr y)
   read them from our |klPol|'s.
 
   Returns |nullptr| in case of error, otherwise a pointer into the
-  |d_muTable| of our |KLContext|.
+  |mu_Tables| of our |KLContext|.
 */
 const MuPol* KLContext::KLHelper::compute_mu
   (coxtypes::Generator s,
    coxtypes::CoxNbr x, coxtypes::CoxNbr y)
 {
   KLPol pos_mu;
-  MuRow& mu_row = muList(s,y);
+  MuRow& row = mu_row(s,y);
 
   // initialize |pol| with the value $u^(L(x)-L(y)+L(s))P_{x,y}(u^2)$
   const KLPol& pol = klPol(x,y);
@@ -968,12 +968,12 @@ const MuPol* KLContext::KLHelper::compute_mu
 
   MuData mx(x,nullptr);
   auto loc_x =
-    std::lower_bound(mu_row.begin(),mu_row.end(),mx); // search cannot fail
+    std::lower_bound(row.begin(),row.end(),mx); // search cannot fail
 
   // subtract correcting terms
 
   const schubert::SchubertContext& p = schubert();
-  for (auto it = std::next(loc_x); it!=mu_row.end(); ++it)
+  for (auto it = std::next(loc_x); it!=row.end(); ++it)
   {
     coxtypes::CoxNbr z = it->x;
     if (not p.inOrder(x,z))
@@ -1029,7 +1029,9 @@ const MuPol* KLContext::KLHelper::compute_mu
 void KLContext::KLHelper::compute_mu_row
   (coxtypes::Generator s, coxtypes::CoxNbr y)
 {
-  ensure_KL_row(y); // ensure that calls |klPol(x,y)| will directly return a result
+  // ensure that calls |klPol(x,y)| will directly return a result
+  ensure_KL_row(y);
+
   MuRow mu_row = mu_row_frame(s,y); // construct a |MuRow| into |mu_row|
   containers::vector<KLPol> pos_mu(mu_row.size());
 
@@ -1099,9 +1101,72 @@ void KLContext::KLHelper::compute_mu_row
 
 }
 
+namespace { // here are the details of the auxiliaries
 
 /*
-  This function sets pol to a row of one polynomial for each x in klList(y),
+  This auxiliary to |compute_mu| subtracts from |p|, which is destined to hold
+  the positive degree part of a mu-polynomial, the positive degree part of
+  $mp*r$, where $r=q[X:=u^d]*u^m$ (a Laurent polynomial in $u$)
+
+  Forwards an error if there is overflow or underflow of the coefficients.
+
+  NOTE : it is assumed that mp is non-zero!
+*/
+void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
+		   const Ulong& d, const long& m)
+{
+  assert(not mp.isZero());
+  MuPol r(d*q.deg()+m,m);
+
+  for (Ulong j = 0; j <= q.deg(); ++j)
+    r[static_cast<long>(d*j)+m] = q[j];
+
+  p.ensure_degree(r.deg()+mp.deg()); // zero-extend the coefficient vector
+  for (long j = mp.val(); j <= mp.deg(); ++j)
+    if (mp[j]!=0)
+      for (long i = r.val(); i <= r.deg(); ++i)
+	if (i+j >= 0) // ignore negative degree comtributions
+        {
+	  klsupport::SKLcoeff a = mp[j];
+	  klsupport::safeMultiply(a,r[i]);
+	  if (error::ERRNO)
+	    return;
+	  klsupport::safeAdd(p[i+j],-a);
+	  if (error::ERRNO)
+	    return;
+	}
+
+  p.snap_degree();
+}
+
+
+/*
+  Return the positive part (i.e. the part with non-negative degree) of the
+  Laurent polynomial $q[X:=u^d]*u^m$ (in all calls |d==2|)
+*/
+KLPol positivePart(const KLPol& q, const Ulong& d, const long& m)
+{
+  /* compute degree of result */
+
+  long h = q.deg()*d + m; // degree of result
+
+  if (h < 0)
+    return KLPol(); // nothing in non-negative degee
+
+  KLPol p(h); // start out with zero of degree |h|
+
+  for (polynomials::Degree j = q.deg()+1; h>=0 and j-->0; h-=d)
+    // run index |h| through |p| decreasingly with steps |d|
+    p[h] = q[j];
+  return p;
+}
+
+
+
+}; // |namespace|
+
+/*
+  This function sets pol to a row of one polynomial for each x in KL_row(y),
   and initializes the corresponding pol[j] to klPol(xs,ys).
 
   It is assumed that |prepareRowComputation| has been called for y and s,
@@ -1152,7 +1217,7 @@ containers::vector<KLPol>
   of Lusztig it is known that these are actually polynomials in q as well.
 
   We minimize the number of calls to the Bruhat order functions by proceeding
-  as follows : for each z in muList(s,ys), we extract the interval [e,z],
+  as follows : for each z in mu_row(s,ys), we extract the interval [e,z],
   extremalize w.r.t. y, and subtract the appropriate term from P_{x,y}.
 */
 void KLContext::KLHelper::mu_correct_row
@@ -1162,15 +1227,15 @@ void KLContext::KLHelper::mu_correct_row
   const schubert::SchubertContext& p = schubert();
   const klsupport::ExtrRow& e = extrList(y);
   coxtypes::CoxNbr ys = p.rshift(y,s);
-  const MuRow& mu_row = muList(s,ys);
+  const MuRow& row = mu_row(s,ys);
 
-  for (Ulong j = 0; j < mu_row.size(); ++j)
+  for (Ulong j = 0; j < row.size(); ++j)
   {
-    const MuPol& mu_pol = *mu_row[j].pol;
+    const MuPol& mu_pol = *row[j].pol;
     if (mu_pol.isZero())
       continue;
 
-    coxtypes::CoxNbr z = mu_row[j].x;
+    coxtypes::CoxNbr z = row[j].x;
     bits::BitMap b(size());
     p.extractClosure(b,z);
     schubert::select_maxima_for(p,b,p.descent(y));
@@ -1216,11 +1281,11 @@ void KLContext::KLHelper::mu_correct_KL_pol
   }
 
   {
-    const MuRow& mu_row = muList(s,ys);
+    const MuRow& row = mu_row(s,ys);
 
-    for (Ulong j = 0; j < mu_row.size(); ++j) {
+    for (Ulong j = 0; j < row.size(); ++j) {
 
-      coxtypes::CoxNbr z = mu_row[j].x;
+      coxtypes::CoxNbr z = row[j].x;
       if (!p.inOrder(x,z))
 	continue;
 
@@ -1278,12 +1343,12 @@ void KLContext::KLHelper::prepareRowComputation(coxtypes::CoxNbr y,
 	goto abort;
     }
 
-    const MuRow& mu_row = muList(s,ys);
+    const MuRow& row = mu_row(s,ys);
 
-    for (Ulong j = 0; j < mu_row.size(); ++j) {
-      if (mu_row[j].pol->isZero())
+    for (Ulong j = 0; j < row.size(); ++j) {
+      if (row[j].pol->isZero())
 	continue;
-      coxtypes::CoxNbr z = mu_row[j].x;
+      coxtypes::CoxNbr z = row[j].x;
       if (not row_is_complete(z)) { // ensure extremal lists in descent path |z|
 	d_klsupport.allocRowComputation(z); // are all created in |klsupport()|
 	if (error::ERRNO)
@@ -1344,9 +1409,9 @@ void KLContext::KLHelper::add_second_terms
 
 
 /*
-  This function writes the polynomials from the list pol to klList(y);
+  This function writes the polynomials from the list pol to KL_row(y);
   more precisely, it finds their adresses in |KL_pool|, and writes those
-  to klList(y).
+  to KL_row(y).
 
   It is assumed that y <= inverse(y).
 
@@ -1357,7 +1422,7 @@ void KLContext::KLHelper::add_second_terms
 void KLContext::KLHelper::store_KL_row
   ( containers::vector<KLPol>& pols, coxtypes::CoxNbr y)
 {
-  KLRow& kl_row = klList(y);
+  KLRow& kl_row = KL_row(y);
 
   for (Ulong j = 0; j < kl_row.size(); ++j)
     if (kl_row[j] != nullptr)
@@ -1371,7 +1436,7 @@ void KLContext::KLHelper::store_KL_row
 	return;
       }
       kl_row[j] = q; // store newly computed (and recorded) polynomial
-      stats().klcomputed++;
+      d_stats.klcomputed++;
     } // |else| and |for|
 }
 
@@ -1563,71 +1628,5 @@ const KLPol& one()
 }
 
 
-namespace {
-
-
-/*
-  This function is an auxiliary to |compute_mu|. It subtracts from |p|, which is
-  destined to hold the positive degree part of a mu-polynomial, the positive
-  degree part of $mp*r$, where $r=q[X:=u^d]*u^m$ (a Laurent polynomial in $u$)
-
-  Forwards an error if there is overflow or underflow of the coefficients.
-
-  NOTE : it is assumed that mp is non-zero!
-*/
-void muSubtraction(KLPol& p, const MuPol& mp, const KLPol& q,
-		   const Ulong& d, const long& m)
-{
-  assert(not mp.isZero());
-  MuPol r(d*q.deg()+m,m);
-
-  for (Ulong j = 0; j <= q.deg(); ++j)
-    r[static_cast<long>(d*j)+m] = q[j];
-
-  p.ensure_degree(r.deg()+mp.deg()); // zero-extend the coefficient vector
-  for (long j = mp.val(); j <= mp.deg(); ++j)
-    if (mp[j]!=0)
-      for (long i = r.val(); i <= r.deg(); ++i)
-	if (i+j >= 0) // ignore negative degree comtributions
-        {
-	  klsupport::SKLcoeff a = mp[j];
-	  klsupport::safeMultiply(a,r[i]);
-	  if (error::ERRNO)
-	    return;
-	  klsupport::safeAdd(p[i+j],-a);
-	  if (error::ERRNO)
-	    return;
-	}
-
-  p.snap_degree();
-}
-
-
-/*
-  Return the positive part (i.e. the part with non-negative degree) of the
-  Laurent polynomial $q[X:=u^d]*u^m$ (in all calls |d==2|)
-*/
-KLPol positivePart(const KLPol& q, const Ulong& d, const long& m)
-{
-  /* compute degree of result */
-
-  long h = q.deg()*d + m; // degree of result
-
-  if (h < 0)
-    return KLPol(); // nothing in non-negative degee
-
-  KLPol p(h); // start out with zero of degree |h|
-
-  for (polynomials::Degree j = q.deg()+1; h>=0 and j-->0; h-=d)
-    // run index |h| through |p| decreasingly with steps |d|
-    p[h] = q[j];
-  return p;
-}
-
-
-// This function symmetrizes |p| and returns its address within the tree |t|
-
-
-}; // |namespace|
 
 }; // |namespace uneqkl|

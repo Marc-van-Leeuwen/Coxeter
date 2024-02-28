@@ -55,7 +55,8 @@ namespace invkl {
 /* member functions */
     void addCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
 		       KLPol& pol);
-    void allocExtrRow(const coxtypes::CoxNbr& y) {klsupport().allocExtrRow(y);}
+    void ensure_extr_row_exists(const coxtypes::CoxNbr& y)
+      { klsupport().ensure_extr_row_exists(y);}
     void allocKLRow(const coxtypes::CoxNbr& y);
     void allocMuRow(const coxtypes::CoxNbr& y);
     void allocRowComputation(const coxtypes::CoxNbr& y);
@@ -601,8 +602,7 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 */
 
 {
-  if (!isExtrAllocated(y))
-    allocExtrRow(y);
+  ensure_extr_row_exists(y);
 
   Ulong n = extrList(y).size();
 
@@ -678,7 +678,7 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
     if (inverse(z) < z)
       continue;
     if (!isExtrAllocated(z)) {
-      klsupport().allocExtrRow(z);
+      klsupport().ensure_extr_row_exists(z);
       if (error::ERRNO)
 	return;
     }
