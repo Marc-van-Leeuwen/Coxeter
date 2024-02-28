@@ -129,24 +129,29 @@ struct KLContext::KLHelper
   bool row_needs_creation(coxtypes::CoxNbr x) const
     { return KL_table[x] == nullptr; }
   void create_KL_row(coxtypes::CoxNbr y);
+  bool row_is_incomplete(coxtypes::CoxNbr y);
   void compute_KL_row(coxtypes::CoxNbr y);
+  void copy_mu_row_from_KL(coxtypes::CoxNbr y);
+  void fill_KL_table ();
 
   void allocMuRow(const coxtypes::CoxNbr& y);
   void allocMuTable();
   void allocRowComputation(const coxtypes::CoxNbr& y);
 
-  bool checkKLRow(const coxtypes::CoxNbr& y);
-  bool checkMuRow(const coxtypes::CoxNbr& y);
+  bool mu_row_is_complete(const coxtypes::CoxNbr& y);
     klsupport::KLCoeff computeMu
       (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
     void fillMuRow(MuRow& row, const coxtypes::CoxNbr& y);
-    const KLPol* fillKLPol
-      (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-       const coxtypes::Generator& s = coxtypes::undef_generator);
-  containers::vector<KLPol> initWorkspace(coxtypes::CoxNbr y);
+    const KLPol* compute_KL_pol
+      (coxtypes::CoxNbr x, coxtypes::CoxNbr y,
+       coxtypes::Generator s = coxtypes::undef_generator);
+  void prepareRow(coxtypes::CoxNbr y, coxtypes::Generator s);
+  containers::vector<KLPol> initial_polys
+    (coxtypes::CoxNbr y,coxtypes::Generator s);
   void secondTerm(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pols);
   void muCorrection(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pols);
-  void coatomCorrection(const coxtypes::CoxNbr& y,containers::vector<KLPol>& pols);
+  void coatomCorrection
+    (const coxtypes::CoxNbr& y,containers::vector<KLPol>& pols);
   void writeKLRow(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pols);
     void inverseMuRow(const coxtypes::CoxNbr& y);
     bool isExtrAllocated(const coxtypes::CoxNbr& y)
@@ -154,26 +159,21 @@ struct KLContext::KLHelper
   bool isMuAllocated(const coxtypes::CoxNbr& x) const
   { return mu_Table[x] != nullptr; }
     void makeMuRow(const coxtypes::CoxNbr& y);
-  void muCorrection
+  void mu_correct_KL_pol
     (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-     const coxtypes::Generator& s,
-     list::List<KLPol>& pol, const Ulong& a);
-    void prepareRow(const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
-    void readMuRow(const coxtypes::CoxNbr& y);
+     const coxtypes::Generator& s, KLPol& pol);
     klsupport::KLCoeff recursiveMu
       (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
        const coxtypes::Generator& s);
     void writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y);
 
-  void coatomCorrection
+  void coatom_correct_KL_pol
     (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-     const coxtypes::Generator& s,  list::List<KLPol>& pols,
-     const Ulong& a);
+     const coxtypes::Generator& s,  KLPol& pol);
 
   void grow(Ulong prev, Ulong n);
   void shrink(const Ulong& n);
 
-  void fill_KL_table ();
   void fill_mu_table ();
 
   const KLPol& klPol(coxtypes::CoxNbr x, coxtypes::CoxNbr y);
@@ -205,11 +205,12 @@ namespace {
   KLPol& safeAdd(KLPol& p, const KLPol& q, const polynomials::Degree& n);
   KLPol& safeSubtract(KLPol& p, const KLPol& q, const klsupport::KLCoeff& mu,
 		      const coxtypes::Length& h);
-  void showSimpleMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x,
-		    const coxtypes::CoxNbr& y, const klsupport::KLCoeff& r,
-		    const interface::Interface& I);
-  void showRecursiveMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x,
-		       const coxtypes::CoxNbr& y, const klsupport::KLCoeff& r, const interface::Interface& I);
+  void showSimpleMu(FILE* file, KLContext& kl,
+		    coxtypes::CoxNbr x, coxtypes::CoxNbr y,
+		    klsupport::KLCoeff r, const interface::Interface& I);
+  void showRecursiveMu(FILE* file, KLContext& kl,
+		       coxtypes::CoxNbr x, coxtypes::CoxNbr y,
+		       klsupport::KLCoeff r, const interface::Interface& I);
   KLPol& zeroPol();
 }; // |namespace|
 
@@ -318,7 +319,7 @@ void KLContext::KLHelper::fill_KL_table ()
     if (y<=inverse(y))
     {
       compute_KL_row(y);
-      readMuRow(y);
+      copy_mu_row_from_KL(y);
     }
 
   set_KL_filled();
@@ -337,8 +338,6 @@ void KLContext::KLHelper::fill_mu_table ()
 {
   if (mu_is_filled())
     return;
-
-  static MuRow mu_row;
 
   allocMuTable();
 
@@ -403,7 +402,7 @@ const KLPol& KLContext::KLHelper::klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y)
   const KLPol*& pol = KL_row(y)[m];
 
   if (pol == nullptr) { // now  we have to compute the polynomial
-    pol = fillKLPol(x,y,last(y));
+    pol = compute_KL_pol(x,y,last(y));
     if (ERRNO)
       return zeroPol();
   }
@@ -444,7 +443,7 @@ const KLPol& KLContext::KLHelper::klPol
   const KLPol*& pol = KL_row(y)[m];
 
   if (pol == nullptr) { /* we have to compute the polynomial */
-    pol = fillKLPol(x,y,s);
+    pol = compute_KL_pol(x,y,s);
     if (ERRNO)
       return zeroPol();
   }
@@ -517,7 +516,7 @@ void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
 HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
 {
   HeckeElt h;
-  if (not checkKLRow(y)) {
+  if (row_is_incomplete(y)) {
     allocRowComputation(y);
     compute_KL_row(y);
   }
@@ -679,36 +678,38 @@ void KLContext::KLHelper::shrink(const Ulong& n)
    - allocMuTable() : allocates the full mu-table;
    - allocRowComputation(const coxtypes::CoxNbr& y) : initial allocation for a
      row-computation
-   - checkKLRow(const coxtypes::CoxNbr& y) : whether a K-L row is fully computed;
-   - coatomCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : subtracts the
+   - row_is_incomplete(const coxtypes::CoxNbr& y) : whether a K-L row is not
+     yet fully computed;
+   - coatomCorrection(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pol) : subtracts the
      terms ofr coatoms in the mu-correction, for a full row;
-   - coatomCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
-     list::List<KLPol>& pol, const Ulong& a) : same, for a single polynomial
+   - coatom_correct_KL_pol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
+     containers::vector<KLPol>& pol, const Ulong& a) : same, for a single polynomial
    - computeMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) : computes a mu-coefficient;
    - fillMuRow(MuRow& row, const coxtypes::CoxNbr& y) : fills a row in the mu-table;
-   - fillKLPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s =
+   - compute_KL_pol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s =
      coxtypes::undef_generator) : fills in one polynomial, using s as descent;
    - compute_KL_row(const coxtypes::CoxNbr& y) : fills in one row in the K-L table;
      coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) : returns the inverse of y;
-   - initWorkspace(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : another preliminary
-     to the computation of a row;
+   - initial_polys(coxtypes::CoxNbr y, coxtypes::Generator s):
+     another preliminary to the computation of a row;
    - inverseMuRow(const coxtypes::CoxNbr& y) : constructs the mu-row for y from that
      of the inverse of y;
    - makeMuRow(const coxtypes::CoxNbr& y);
-   - muCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : subtracts the non-coatom
+   - muCorrection(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pol) : subtracts the non-coatom
      mu-part in the computation of a row;
-   - muCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
-     list::List<KLPol>& pol, const Ulong& a) : subtracts the non-coatom mu-part,
+   - mu_correct_KL_pol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
+     containers::vector<KLPol>& pol, const Ulong& a) : subtracts the non-coatom mu-part,
      for the computation of a single polynomial;
    - mu_row(const coxtypes::CoxNbr& y) : returns the row for y in muList;
    - prepareRow(const coxtypes::CoxNbr& y, const coxtypes::Generator& s) : a preliminary to the
      computation of a row;
-   - readMuRow(const coxtypes::CoxNbr& y) : fills in the mu-row from the K-L row;
+   - copy_mu_row_from_KL(const coxtypes::CoxNbr& y) :
+     fills in the mu-row from the K-L row;
    - recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s) :
      computes mu(x,y) using the general recursive formula;
-   - secondTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : takes care of the
+   - secondTerm(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pol) : takes care of the
      second term P_{x,ys} in the computation of a full row;
-   - writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol) : transfers the
+   - writeKLRow(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pol) : transfers the
      polynomials from |pol| to |KL_row(y)|;
    - writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y) transfers the
      mu-coefficients from row to muList;
@@ -913,8 +914,7 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 {
   d_klsupport.allocRowComputation(y);
 
-  list::List<coxtypes::Generator> g(0);
-  klsupport().standardPath(g,y);
+  containers::vector<coxtypes::Generator> g = klsupport().standard_path(y);
 
   coxtypes::CoxNbr y1 = 0;
 
@@ -945,29 +945,27 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 
 
 // Whether the row for |y| (or for |inverse(y)|) in |klList| has been filled.
-bool KLContext::KLHelper::checkKLRow(const coxtypes::CoxNbr& d_y)
+bool KLContext::KLHelper::row_is_incomplete(coxtypes::CoxNbr y)
 {
-  coxtypes::CoxNbr y = d_y;
-
   if (inverse(y) < y)
     y = inverse(y);
 
   if (row_needs_creation(y)) /* row is not allocated */
-    return false;
+    return true;
 
   KLRow& kl_row = KL_row(y);
 
   for (Ulong j = 0; j < kl_row.size(); ++j) {
-    if (kl_row[j] == 0)
-      return false;
+    if (kl_row[j] == nullptr)
+      return true;
   }
 
-  return true;
+  return false;
 }
 
 
 // Whether the row for y in muList has been filled.
-bool KLContext::KLHelper::checkMuRow(const coxtypes::CoxNbr& y)
+bool KLContext::KLHelper::mu_row_is_complete(const coxtypes::CoxNbr& y)
 {
   if (!isMuAllocated(y)) /* row is not allocated */
     return false;
@@ -1036,14 +1034,13 @@ void KLContext::KLHelper::coatomCorrection
   coatoms z of ys s.t. zs < s; the corresponding subtraction is q.P_{x,z}.
 
 */
-
-void KLContext::KLHelper::coatomCorrection
+void KLContext::KLHelper::coatom_correct_KL_pol
   (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-   const coxtypes::Generator& s, list::List<KLPol>& pol,
-   const Ulong& a)
+   const coxtypes::Generator& s, KLPol& pol)
 {
   const schubert::SchubertContext& p = schubert();
-  coxtypes::CoxNbr ys = p.shift(y,s);  const schubert::CoatomList& c = p.hasse(ys);
+  coxtypes::CoxNbr ys = p.shift(y,s);
+  const schubert::CoatomList& c = p.hasse(ys);
 
   for (Ulong j = 0; j < c.size(); ++j) {
 
@@ -1060,15 +1057,13 @@ void KLContext::KLHelper::coatomCorrection
     const KLPol& p_xz = klPol(x,z);
     if (ERRNO)
       return;
-    safeSubtract(pol[a],p_xz,1,1);
+    safeSubtract(pol,p_xz,1,1);
     if (ERRNO) {
       Error(ERRNO,this,x,y);
       ERRNO = ERROR_WARNING;
       return;
     }
   }
-
-  return;
 }
 
 
@@ -1220,12 +1215,9 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
   computed polynomials), it should labor under the constraint of
   CATCH_MEMORY_OVERFLOW.
 */
-const KLPol* KLContext::KLHelper::fillKLPol
-  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-   const coxtypes::Generator& d_s)
+const KLPol* KLContext::KLHelper::compute_KL_pol
+  (coxtypes::CoxNbr x, coxtypes::CoxNbr y, coxtypes::Generator s)
 {
-  static list::List<KLPol> pol(0);
-
   const schubert::SchubertContext& p = schubert();
 
   /* check easy cases */
@@ -1236,8 +1228,6 @@ const KLPol* KLContext::KLHelper::fillKLPol
     d_stats.klcomputed++;
     return &(one());
   }
-
-  coxtypes::Generator s = d_s;
 
   /* If d_s is coxtypes::undef_generator, we compute the polynomial using descent by
      last term in normal form */
@@ -1259,41 +1249,34 @@ const KLPol* KLContext::KLHelper::fillKLPol
 
   CATCH_MEMORY_OVERFLOW = true;
 
-  Ulong a = pol.size();
-  pol.setSize(a+1);
-
   /* initialize the workspace to P_{xs,ys} */
 
-  const KLPol& p_xsys = klPol(xs,ys);
+  KLPol pol = klPol(xs,ys);
   if (ERRNO)
     goto abort;
-  pol[a] = p_xsys;
 
-  /* add q.P_{x,ys} */
-
-  {
+  { // add $q.P_{x,ys}$
     const KLPol& p_xys = klPol(x,ys);
     if (ERRNO)
       goto abort;
-    safeAdd(pol[a],p_xys,1);
+    safeAdd(pol,p_xys,1);
     if (ERRNO)
       goto abort;
   }
 
-  /* subtract correction terms */
-
-  coatomCorrection(x,y,s,pol,a);
+  // subtract correction terms
+  coatom_correct_KL_pol(x,y,s,pol);
   if (ERRNO)
     goto abort;
 
-  muCorrection(x,y,s,pol,a);
+  mu_correct_KL_pol(x,y,s,pol);
   if (ERRNO)
     goto abort;
 
   /* find address of polynomial */
 
   {
-    const KLPol& p_xy = *KL_pool.find(pol[a]);
+    const KLPol& p_xy = *KL_pool.find(pol);
     if (ERRNO)
       goto abort;
 
@@ -1301,7 +1284,6 @@ const KLPol* KLContext::KLHelper::fillKLPol
 
     CATCH_MEMORY_OVERFLOW = false;
 
-    pol.setSize(a);
     d_stats.klcomputed++;
     return &p_xy;
   }
@@ -1318,7 +1300,7 @@ const KLPol* KLContext::KLHelper::fillKLPol
 
 /*
   Fill the |rows klList(y)| and |muList(y)|. It is to be called
-  if checkKLRow(y) has returned the value false.
+  if |row_is_incomplete(y)| holds.
 
   This is one of the big functions in the program, of course. It is typically
   called when an element of the K-L basis of the Hecke algebra is required,
@@ -1339,12 +1321,12 @@ const KLPol* KLContext::KLHelper::fillKLPol
    - then, we fill the corresponding rows, starting from the identity;
      the nice thing here is that it will always be guaranteed that
      P_{xs,ys}, P_{x,ys} and the mu(z,ys) are available; this is a recursive
-     call to compute_KL_row, except that we can be sure that the rows have
+     call to |compute_KL_row|, except that we can be sure that the rows have
      been allocated already.
 
    - then, we run through mu_row(ys), which has been filled, and determine
      the z for which mu(z,ys) != 0, and zs < z; these are the terms which
-     cause corrections. For each such z, we call compute_KL_row(z).
+     cause corrections. For each such z, we call |compute_KL_row(z)|.
 
    - we do the same for the coatom list of y;
 
@@ -1359,7 +1341,7 @@ const KLPol* KLContext::KLHelper::fillKLPol
    One nice thing of this setup is that the work on the rows for y starts
    only when all the preparations are finished; it is guaranteed that there
    will not be any recursive calls in the duration of this filling. So,
-   contrary to the fillKLPol function, workspace doesn't have to be managed
+   contrary to the compute_KL_pol function, workspace doesn't have to be managed
    as a stack.
 
   Returns the error ERROR_WARNING in case of failure, after printing an
@@ -1370,7 +1352,7 @@ void KLContext::KLHelper::compute_KL_row(coxtypes::CoxNbr y)
   if (y == 0)
     return;
 
-  if (inverse(y) < y) /* fill in the row for inverse(y) */
+  if (inverse(y) < y) // then actually fill the row for |inverse(y)|
     y = inverse(y);
 
   if (row_needs_creation(y))
@@ -1383,8 +1365,8 @@ void KLContext::KLHelper::compute_KL_row(coxtypes::CoxNbr y)
   coxtypes::Generator s = last(y);
   coxtypes::CoxNbr ys = p.rshift(y,s);
 
-  if (!checkKLRow(ys)) {
-    compute_KL_row(ys);
+  if (row_is_incomplete(ys)) {
+    compute_KL_row(ys); // recursive call
     if (ERRNO)
       goto abort;
   }
@@ -1399,7 +1381,7 @@ void KLContext::KLHelper::compute_KL_row(coxtypes::CoxNbr y)
   /* prepare workspace; pol holds the row of polynomials;
      initialize workspace with P_{xs,ys} */
 
-    auto pol = initWorkspace(y);
+    auto pol = initial_polys(y,s);
 
     /* add q.P_{x,ys} when appropriate */
 
@@ -1424,14 +1406,13 @@ void KLContext::KLHelper::compute_KL_row(coxtypes::CoxNbr y)
 
     return;
   }
-  
+
  abort:
   Error(ERRNO);
   ERRNO = ERROR_WARNING;
   return;
 }
 
-void KLContext::KLHelper::fillMuRow(MuRow& row, const coxtypes::CoxNbr& y)
 
 /*
   Fills row with the values for the mu(x,y). It is assumed that the row
@@ -1439,7 +1420,7 @@ void KLContext::KLHelper::fillMuRow(MuRow& row, const coxtypes::CoxNbr& y)
   with odd length difference > 1 w.r.t. y, and at least one entry for each
   non-zero mu.)
 */
-
+void KLContext::KLHelper::fillMuRow(MuRow& row, const coxtypes::CoxNbr& y)
 {
   for (Ulong j = 0; j < row.size(); ++j) {
     if (row[j].mu == klsupport::undef_klcoeff) {
@@ -1458,34 +1439,32 @@ void KLContext::KLHelper::fillMuRow(MuRow& row, const coxtypes::CoxNbr& y)
   Return a row of one polynomial for each |x| in |KL_row(y)|, initialized to
   |klPol(xs,ys)|.
 */
-containers::vector<KLPol> KLContext::KLHelper::initWorkspace(coxtypes::CoxNbr y)
+containers::vector<KLPol>
+  KLContext::KLHelper::initial_polys(coxtypes::CoxNbr y, coxtypes::Generator s)
 {
   const schubert::SchubertContext& p = schubert();
   const klsupport::ExtrRow& e = extrList(y);
   containers::vector<KLPol> pols; pols.reserve(e.size());
 
-  if (ERRNO)
-    goto abort;
-
-  { // avoid jumping across variable definitions
-    coxtypes::Generator s = last(y);
-    coxtypes::CoxNbr ys = p.rshift(y,s);
-
-    for (Ulong j = 0; j < e.size(); ++j)
-    {
-      coxtypes::CoxNbr xs = p.shift(e[j],s);
-      pols.push_back(klPol(xs,ys));
-      if (ERRNO)
-	goto abort;
-    }
-
+  try {
+    pols.reserve(e.size());
+  }
+  catch(...) {
+    error::Error(error::MEMORY_WARNING);
+    error::ERRNO = error::ERROR_WARNING;
+    return pols;
   }
 
-  return pols;
+  // initialize with values $P_{xs,ys}$
+  { // avoid jumping across variable definitions
+    coxtypes::CoxNbr ys = p.rshift(y,s);
 
- abort:
-  Error(ERRNO); // report error
-  ERRNO = ERROR_WARNING; // an warn that we did not succeed
+    for (Ulong j = 0; j < e.size(); ++j) {
+      coxtypes::CoxNbr xs = p.rshift(e[j],s);
+      pols.push_back(klPol(xs,ys)); // no error can occur here
+    }
+  }
+
   return pols;
 }
 
@@ -1615,7 +1594,7 @@ void KLContext::KLHelper::muCorrection
 
   corresponding to the z in [x,ys] s.t. mu(z,ys) != 0, zs < z, and l(ys)-l(z)
   >= 3; the correction for the coatoms in [x,ys] is dealt with in the
-  function coatomCorrection.
+  function coatom_correct_KL_pol.
 
   NOTE : as usual, we watch out for memory overflow --- it is assumed that
   CATCH_MEMORY_OVERFLOW is turned on. Overflow in the coefficients cannot
@@ -1623,9 +1602,9 @@ void KLContext::KLHelper::muCorrection
   is found, as this would be a major discovery!
 
 */
-void KLContext::KLHelper::muCorrection
+void KLContext::KLHelper::mu_correct_KL_pol
   (const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& y,
-   const coxtypes::Generator& d_s, list::List<KLPol>& pol, const Ulong& a)
+   const coxtypes::Generator& d_s, KLPol& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -1671,7 +1650,7 @@ void KLContext::KLHelper::muCorrection
 	  if (ERRNO)
 	    goto abort;
 
-	  safeSubtract(pol[a],p_xz,m[j].mu,h);
+	  safeSubtract(pol,p_xz,m[j].mu,h);
 	  if (ERRNO)
 	    goto abort;
 	}
@@ -1687,29 +1666,28 @@ void KLContext::KLHelper::muCorrection
   return;
 }
 
-void KLContext::KLHelper::prepareRow(const coxtypes::CoxNbr& y, const coxtypes::Generator& d_s)
 
 /*
-  This function prepares for the filling of row y in klList and
-  muList, by making sure that all the correction terms are available.
-  It is assumed that compute_KL_row(ys) has already been called.
+  Prepares for the filling of row y in klList and muList, by making sure that
+  all the correction terms are available. It is assumed that compute_KL_row(ys)
+  has already been called.
 
   Deals with the error if it occurs, and sets the error ERROR_WARNING;
 */
 
+void KLContext::KLHelper::prepareRow(coxtypes::CoxNbr y, coxtypes::Generator s)
 {
   const schubert::SchubertContext& p = schubert();
 
-  coxtypes::Generator s = d_s;
-  coxtypes::CoxNbr ys = p.shift(y,s);
+  coxtypes::CoxNbr ys = p.rshift(y,s);
 
-  if (!checkMuRow(ys)) {
+  if (not mu_row_is_complete(ys)) {
     if (inverse(ys) < ys) {
-      readMuRow(inverse(ys));
+      copy_mu_row_from_KL(inverse(ys));
       inverseMuRow(inverse(ys));
     }
     else
-      readMuRow(ys);
+      copy_mu_row_from_KL(ys);
   }
 
   const MuRow& row = mu_row(ys);
@@ -1720,7 +1698,7 @@ void KLContext::KLHelper::prepareRow(const coxtypes::CoxNbr& y, const coxtypes::
     coxtypes::CoxNbr z = row[j].x;
     if (p.shift(z,s) > z)
       continue;
-    if (!checkKLRow(z)) {
+    if (row_is_incomplete(z)) {
       allocRowComputation(z);
       if (ERRNO)
 	goto abort;
@@ -1737,7 +1715,7 @@ void KLContext::KLHelper::prepareRow(const coxtypes::CoxNbr& y, const coxtypes::
       coxtypes::CoxNbr z = c[j];
       if (p.shift(z,s) > z)
 	continue;
-      if (!checkKLRow(z)) {
+      if (row_is_incomplete(z)) {
 	allocRowComputation(z);
 	if (ERRNO)
 	  goto abort;
@@ -1759,17 +1737,16 @@ void KLContext::KLHelper::prepareRow(const coxtypes::CoxNbr& y, const coxtypes::
 
 /*
   This function fills the mu-row from the corresponding kl-row. If the
-  row has not been allocated yet, it makes sure that no unnecessary
-  allocations are made.
+  row has not been allocated yet, it allocates for nonzero values only
 */
-void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
+void KLContext::KLHelper::copy_mu_row_from_KL(coxtypes::CoxNbr y)
 {
   const schubert::SchubertContext& p = schubert();
   const KLRow& kl_row = KL_row(y);
   const klsupport::ExtrRow& e_row = extrList(y);
 
   if (not isMuAllocated(y))
-  { /* make row from scratch */
+  { // make row from scratch, use only those values that are nonzero
     containers::sl_list<MuData> mus;
     coxtypes::Length ly = p.length(y);
 
@@ -1802,14 +1779,14 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
     d_stats.murows++;
   }
   else
-  {
+  { // a row already exists, write its |mu| fields with coefs from |kl_row|
     Ulong i = 0;
     MuRow& row = mu_row(y);
 
     for (Ulong j = 0; j < row.size(); ++j) {
       MuData& mu = row[j];
       coxtypes::CoxNbr x = mu.x;
-      while(e_row[i] < x)
+      while(e_row[i] < x) // search for corresponding |i| in |extrList(y)|
 	++i;
       const KLPol& pol = *kl_row[i];
       coxtypes::Length d = mu.height;
@@ -2250,16 +2227,12 @@ void printMuTable(FILE* file, const KLContext& kl, const interface::Interface& I
   It is assumed that $x \eq y$ in the Bruhat order, and that $s$ is indeed a
   descent generator for $y$.
 */
-void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& d_y,
-	       const interface::Interface& I, const coxtypes::Generator& d_s)
+void showKLPol
+  (FILE* file, KLContext& kl,
+   coxtypes::CoxNbr x, coxtypes::CoxNbr y,
+   const interface::Interface& I, coxtypes::Generator s)
 {
-  static std::string buf;
-
   const schubert::SchubertContext& p = kl.schubert();
-
-  coxtypes::CoxNbr x = d_x;
-  coxtypes::CoxNbr y = d_y;
-  coxtypes::Generator s = d_s;
 
   const KLPol& pol = kl.klPol(x,y,s);
   if (ERRNO) {
@@ -2267,9 +2240,11 @@ void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const cox
     return;
   }
 
+  const coxtypes::CoxNbr x_orig = x;
+
   unsigned long ls = io::LINESIZE;
 
-  buf.clear();
+  std::string buf;
 
   buf.append("x = ");
   p.append(buf,x,I);
@@ -2295,7 +2270,7 @@ void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const cox
 
   bits::Lflags f = p.descent(y);
   x = p.maximize(x,f);
-  if (x > d_x) {
+  if (x > x_orig) {
       fprintf(file,"x is not extremal w.r.t. y\nnew x: ");
       p.print(file,x,I);
       fprintf(file,"\n\n");
@@ -2314,7 +2289,8 @@ void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const cox
     coxtypes::CoxNbr ys = p.shift(y,s);
 
     if (!p.inOrder(x,ys)) { /* easy case */
-      if (s < kl.rank()) { /* action is on the right */
+      if (s < kl.rank())
+	{ // action is on the right
 	fprintf(file,"x not comparable to ys for s = %d\n",s+1);
 	buf.clear();
 	buf.append("xs = ");
@@ -2325,7 +2301,8 @@ void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const cox
 	fprintf(file,"\n\n");
 	goto end;
       }
-      else { /* action is on the left */
+      else
+      { // action is on the left
 	fprintf(file,"x not comparable to sy for s = %d\n",s+1-kl.rank());
 	buf.clear();
 	buf.append("sx = ");
@@ -2471,14 +2448,14 @@ void showKLPol(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x, const cox
   |KLContext::KLHelper::computeMu| for the algorithm.
 */
 void showMu(FILE* file, KLContext& kl,
-	    const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& y,
+	    coxtypes::CoxNbr x, coxtypes::CoxNbr y,
 	    const interface::Interface& I)
 {
-  static std::string buf;
+  std::string buf;
 
   const schubert::SchubertContext& p = kl.schubert();
 
-  coxtypes::CoxNbr x = d_x;
+  const coxtypes::CoxNbr x_orig = x;
 
   klsupport::KLCoeff r = kl.mu(x,y);
   if (ERRNO)
@@ -2486,9 +2463,6 @@ void showMu(FILE* file, KLContext& kl,
 
   {
     unsigned long ls = io::LINESIZE;
-
-    buf.clear();
-
     buf.append("x = ");
     p.append(buf,x,I);
     buf.append("  y = ");
@@ -2502,7 +2476,7 @@ void showMu(FILE* file, KLContext& kl,
 
     bits::Lflags fy = p.descent(y);
     x = p.maximize(x,fy);
-    if (x > d_x) {
+    if (x > x_orig) {
       fprintf(file,"x is not extremal w.r.t. y\n\nresult: 0\n\n");
       return;
     }
@@ -2544,21 +2518,20 @@ void showMu(FILE* file, KLContext& kl,
 
 namespace {
 
-void showRecursiveMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x,
-		     const coxtypes::CoxNbr& y, const klsupport::KLCoeff& r, const interface::Interface& I)
 
 /*
   Maps out the computation in the case where the recursion formula has to
   be used.
 */
-
+void showRecursiveMu(FILE* file, KLContext& kl,
+		     coxtypes::CoxNbr x, coxtypes::CoxNbr y,
+		     klsupport::KLCoeff r, const interface::Interface& I)
 {
-  static std::string buf;
+  std::string buf;
 
   const schubert::SchubertContext& p = kl.schubert();
   unsigned long ls = io::LINESIZE;
 
-  coxtypes::CoxNbr x = d_x;
   coxtypes::Generator s = kl.last(y);
   coxtypes::Length l = p.length(y) - p.length(x); /* l is odd > 1 */
 
@@ -2722,18 +2695,17 @@ void showRecursiveMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& d_x,
    return;
 }
 
-void showSimpleMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x,
-		  const coxtypes::CoxNbr& y, const klsupport::KLCoeff& r,
-		  const interface::Interface& I)
 
 /*
   Auxiliary to ShowMu. Maps out the computation of a mu-coefficient in the
   case where there is a direct recursion. It is assumed that the computation
   proper has already been tried with success.
 */
-
+void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
+		  coxtypes::CoxNbr y, klsupport::KLCoeff r,
+		  const interface::Interface& I)
 {
-  static std::string buf;
+  std::string buf;
 
   const schubert::SchubertContext& p = kl.schubert();
   unsigned long ls = io::LINESIZE;
@@ -2866,7 +2838,7 @@ void showSimpleMu(FILE* file, KLContext& kl, const coxtypes::CoxNbr& x,
   Return in h the singular locus of cl(X_y). The point is to
   do this while computing as few K-L polynomials as possible.
 */
-void genericSingularities(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
+void genericSingularities(HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
@@ -2959,7 +2931,7 @@ bool isSingular(const KLRow& row)
   the value to undef_coxsize in case of overflow; this should be improved of
   course if it happens too often, using long integers for instance.
 */
-void ihBetti(schubert::Homology& h, const coxtypes::CoxNbr& y, KLContext& kl)
+void ihBetti(schubert::Homology& h, coxtypes::CoxNbr y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
@@ -3007,7 +2979,7 @@ void ihBetti(schubert::Homology& h, const coxtypes::CoxNbr& y, KLContext& kl)
   but is now usually denoted c. The C-basis from the K-L paper doesn't seem
   worth implementing.
 */
-void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
+void cBasis(HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 

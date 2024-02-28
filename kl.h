@@ -157,12 +157,12 @@ class KLContext {
 
 /******** function declarations *********************************************/
 
-  void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl);
+  void cBasis(HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl);
   void extractDufloInvolutions(const KLContext& kl, const bits::Partition& pi,
 			       bits::BitMap& b);
   void genericSingularities
-    (HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl);
-  void ihBetti(schubert::Homology& h, const coxtypes::CoxNbr& y, KLContext& kl);
+    (HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl);
+  void ihBetti(schubert::Homology& h, coxtypes::CoxNbr y, KLContext& kl);
   const KLPol& one();
   bool isSingular(const HeckeElt& h);
   bool isSingular(const KLRow& row);
@@ -171,13 +171,13 @@ class KLContext {
   void printMuTable
     (FILE* file, const KLContext& kl, const interface::Interface& I);
   void showKLPol
-    (FILE* file,
-     KLContext& kl, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+    (FILE* file, KLContext& kl,
+     coxtypes::CoxNbr x, coxtypes::CoxNbr y,
      const interface::Interface& I,
-     const coxtypes::Generator& s = coxtypes::undef_generator);
+     coxtypes::Generator s = coxtypes::undef_generator);
   void showMu
     (FILE* file,
-     KLContext& kl, const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+     KLContext& kl, coxtypes::CoxNbr x, coxtypes::CoxNbr y,
      const interface::Interface& I);
   void sortByPol(KLRow& row);
 

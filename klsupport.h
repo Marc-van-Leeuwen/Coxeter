@@ -85,6 +85,8 @@ class KLSupport {
   coxtypes::CoxNbr size() const { return d_schubert->size(); }
   void sortIRow(const coxtypes::CoxNbr& y, bits::Permutation& a) const; /* inlined */
   void standardPath(list::List<coxtypes::Generator>& g, const coxtypes::CoxNbr& x) const;
+  containers::vector<coxtypes::Generator>
+    standard_path(coxtypes::CoxNbr x) const;
 /* manipulators */
   void ensure_extr_row_exists(const coxtypes::CoxNbr& y);
   void allocRowComputation(const coxtypes::CoxNbr& y);
@@ -94,9 +96,9 @@ class KLSupport {
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);
   schubert::SchubertContext& schubert() { return *d_schubert; }
-};
+}; // |class KLSupport|
 
-};
+}; // namespace sklupport|
 
 /******** inlined definitions ************************************************/
 

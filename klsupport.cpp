@@ -6,6 +6,7 @@
 */
 
 #include "klsupport.h"
+#include <algorithm> // for |std::reverse|
 
 /*
   This module contains code for the operations that can be "factored out"
@@ -137,6 +138,41 @@ void KLSupport::standardPath(list::List<coxtypes::Generator>& g, const coxtypes:
   return;
 }
 
+/*
+  Find a series of left or right shifts (=multiplications in the group) such
+  that, when applied in order to an element initially $e$, one traces a minimal
+  length path in the Bruhat interval [e,x] with the following addition property.
+  For each point $p$ on the path, if the last step was a left shift then
+  $p^{-1}<p$ numerically, and for a right shift $p\leq{p^{-1}}$ numerically.
+ */
+containers::vector<coxtypes::Generator>
+  KLSupport::standard_path(coxtypes::CoxNbr x) const
+{
+  const schubert::SchubertContext& p = schubert();
+
+  // find sequence of shifts
+  containers::vector<coxtypes::Generator> result;
+  result.reserve(p.length(x));
+
+  while (x!=0)
+    if (inverse(x) < x) // left shift
+    {
+      coxtypes::Generator s = last(inverse(x));
+      result.push_back(s + rank());
+      x = p.lshift(x,s);
+    }
+    else // right shift
+    {
+      coxtypes::Generator s = last(x);
+      result.push_back(s);
+      x = p.rshift(x,s);
+    }
+
+  std::reverse(result.begin(),result.end());
+
+  return result;
+}
+
 /******** manipulators ******************************************************/
 
 
@@ -166,26 +202,24 @@ void KLSupport::ensure_extr_row_exists(const coxtypes::CoxNbr& y)
 
 
 /*
-  This function makes sure that all the extremal rows in the standard
-  descent path from y are allocated. The idea is that all these rows
-  will come up when the full row for y is computed, so one might as
-  well fill them anyway; doing them all at the same time will save
-  many Bruhat closure computations, which are relatively expensive.
-  Still, this function looks like overkill to me. I'm leaving it in
+  Make sure that all the extremal rows in the standard descent path from |y| are
+  allocated. The idea is that all these rows will come up when the full row for
+  |y| is computed, so one might as well fill them anyway; doing them all at the
+  same time will save many Bruhat closure computations, which are relatively
+  expensive. Still, this function looks like overkill to me. I'm leaving it in
   because it is working and it was a pain to write! [dixit Fokko]
 
   Things wouldn't be so bad if there wasn't also the passage to inverses!
 */
 void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 {
-  static list::List<coxtypes::Generator> e(0);
-  const schubert::SchubertContext& p = schubert();
-
+  if (recursively_allocated.is_member(y))
+    return;
   /* find sequence of shifts */
 
-  standardPath(e,y);
+  auto e = standard_path(y);
 
-  bits::SubSet q(size());
+  bits::SubSet q(size()); // bitmap over current subset of the group
 
   q.reset();
   q.add(0);
@@ -193,20 +227,23 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
     goto abort;
 
   {
+    const schubert::SchubertContext& p = schubert();
 
-    coxtypes::CoxNbr y1 = 0;
+    coxtypes::CoxNbr y1 = 0; // start at the identity
 
-    for (Ulong j = 0; j < e.size(); ++j) {
+    for (Ulong j = 0; j < e.size(); ++j)
+    {
 
       coxtypes::Generator s = e[j];
       p.extendSubSet(q,s);  /* extend the subset */
       if (error::ERRNO)
 	goto abort;
 
-      y1 = p.shift(y1,s);
+      y1 = p.shift(y1,s); // left or right shift, as |s| specifies
       coxtypes::CoxNbr y2 = inverseMin(y1);
 
-      if (not isExtrAllocated(y2)) { /* allocate row */
+      if (not isExtrAllocated(y2))
+      { /* allocate row */
 
 	/* copy bitmap of subset to buffer */
 
@@ -221,12 +258,13 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 
 	/* go over to inverses if necessary */
 
-	if (s >= rank()) {
+	if (s >= rank()) // was the shift a left shift?
+	{
 	  applyInverse(y2);
 	  std::sort(d_extrList[y2]->begin(),d_extrList[y2]->end());
-	}
-      }
-    }
+	} // |if (left shift)|
+      } // |if (not allocated)|
+    } // |for(j)|
 
   }
 
@@ -287,6 +325,7 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
   d_involution.setSize(size());
   if (error::ERRNO)
     goto revert;
+  recursively_allocated.set_capacity(size());
 
   error::CATCH_MEMORY_OVERFLOW = false;
 
@@ -338,15 +377,15 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
   return coxtypes::undef_coxnbr;
 }
 
-void KLSupport::permute(const bits::Permutation& a)
 
 /*
-  Applies the permutation a to the data in the context. The meaning of a
-  is that it takes element number x in the context to element number a(x).
+  Apply the permutation |a| of group elements to the data in the context. The
+  meaning of |a| is that it takes element number |x| in the context to element
+  number |a[x]|.
 
   The procedure is explained in full in kl.h.
 */
-
+void KLSupport::permute(const bits::Permutation& a)
 {
   /* permute schubert context */
 
@@ -406,25 +445,21 @@ void KLSupport::permute(const bits::Permutation& a)
 
     b.setBit(x);
   }
-
-  return;
-}
+} // |KLSupport::permute|
 
 
 /*
-  This function reverts the size of the context to a previous (smaller) value n.
-  Note that the allocated sizes of the lists are not changed; we simply preserve
-  the consistency of the various size values.
+  Revert the size of the context to a previous (smaller) value n. Note that the
+  allocated sizes of the lists are not changed; we simply preserve the
+  consistency of the various size values.
 */
-
 void KLSupport::revertSize(const Ulong& n)
 {
   d_schubert->revertSize(n);
   d_extrList.resize(n);
   d_inverse.setSize(n);
   d_last.setSize(n);
-
-  return;
+  recursively_allocated.set_capacity(n);
 }
 
 };
