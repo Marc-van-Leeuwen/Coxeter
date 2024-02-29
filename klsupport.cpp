@@ -241,7 +241,9 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 	goto abort;
 
       y1 = p.shift(y1,s); // left or right shift, as |s| specifies
-      coxtypes::CoxNbr y2 = inverseMin(y1);
+
+      coxtypes::CoxNbr y2 = s<rank() ? y1 : inverse(y1);
+      assert(y2 == inverseMin(y1));
 
       if (not isExtrAllocated(y2))
       { /* allocate row */
@@ -261,12 +263,14 @@ void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
 
 	if (s >= rank()) // was the shift a left shift?
 	{
-	  applyInverse(y2);
+	  applyInverse(y2); // move list from |y1| to (smaller) |y2|
 	  std::sort(d_extrList[y2]->begin(),d_extrList[y2]->end());
 	} // |if (left shift)|
       } // |if (not allocated)|
+      recursively_allocated.insert(y1);
     } // |for(j)|
 
+    assert(y1==y);
   }
 
   return;
