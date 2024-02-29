@@ -57,10 +57,6 @@ struct KLContext::KLHelper
   coxtypes::CoxNbr inverse (coxtypes::CoxNbr y) const
     { return klsupport().inverse(y);}
 
-  // relay manipulator
-  void ensure_extr_row_exists(coxtypes::CoxNbr y)
-    { d_klsupport.ensure_extr_row_exists(y); }
-
   Ulong gen_length(coxtypes::Generator s) const { return d_L[s]; }
   Ulong length(coxtypes::CoxNbr x) const { return d_length[x]; }
   Ulong size() const { return KL_table.size(); }
@@ -444,7 +440,7 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
 {
   HeckeElt h;
   if (row_is_incomplete(y)) {
-    d_klsupport.allocRowComputation(y);
+    d_klsupport.ensure_extr_rows_for(y);
     if (error::ERRNO)
       goto error_exit;
     compute_KL_row(y);
@@ -672,9 +668,7 @@ KLContext::KLHelper::KLHelper
 */
 void KLContext::KLHelper::create_KL_row(coxtypes::CoxNbr y)
 {
-  ensure_extr_row_exists(y);
-
-  Ulong n_extremals = extrList(y).size();
+  Ulong n_extremals = d_klsupport.extr_list(y).size(); // may generate list
 
   KL_table[y].reset(new KLRow(n_extremals,nullptr));
 
@@ -760,7 +754,7 @@ bool KLContext::KLHelper::mu_is_complete
 void KLContext::KLHelper::ensure_KL_row(coxtypes::CoxNbr y)
 {
   if (row_is_incomplete(y)) {
-    d_klsupport.allocRowComputation(y);
+    d_klsupport.ensure_extr_rows_for(y);
     if (error::ERRNO)
       goto abort;
     compute_KL_row(y);
@@ -1347,7 +1341,7 @@ void KLContext::KLHelper::prepareRowComputation(coxtypes::CoxNbr y,
 	continue;
       coxtypes::CoxNbr z = row[j].x;
       if (row_is_incomplete(z)) { // ensure extremal lists in descent path |z|
-	d_klsupport.allocRowComputation(z); // are all created in |klsupport()|
+	d_klsupport.ensure_extr_rows_for(z); // are all created in |klsupport()|
 	if (error::ERRNO)
 	  goto abort;
 	compute_KL_row(z);

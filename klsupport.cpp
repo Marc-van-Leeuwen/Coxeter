@@ -178,16 +178,16 @@ containers::vector<coxtypes::Generator>
 
 
 /*
-  Allocates one row in d_extrList. The row contains the list of elements
+  Allocate one row in d_extrList. The row contains the list of elements
   x <= y s.t. LR(y) is contained in LR(x), i.e., which cannot be taken
   further up by the application of a generator in LR(y).
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set.
 */
-void KLSupport::ensure_extr_row_exists(const coxtypes::CoxNbr& y)
+
+// private function called when |extr_list| finds null pointer at |y|
+void KLSupport::generate_extr_list(coxtypes::CoxNbr y)
 {
-  if (d_extrList[y]!=nullptr)
-    return;
   const schubert::SchubertContext& p = schubert();
   bits::BitMap b(size()); // take full scurrent size of the |KLSupport| class
 
@@ -212,7 +212,7 @@ void KLSupport::ensure_extr_row_exists(const coxtypes::CoxNbr& y)
 
   Things wouldn't be so bad if there wasn't also the passage to inverses!
 */
-void KLSupport::allocRowComputation(const coxtypes::CoxNbr& y)
+void KLSupport::ensure_extr_rows_for(const coxtypes::CoxNbr& y)
 {
   if (recursively_allocated.is_member(y))
     return;

@@ -17,8 +17,8 @@ namespace schubert {
 
   This file contains the definition of the general functions pertaining
   to Schubert contexts, and the definition of the StandardSchubertContext
-  class. Other implementations of Schubert contexts will be found in
-  other files.
+  class. Other implementations of Schubert contexts will not be found in
+  other files, maybe they were meant to be wriiten
 
   A Schubert context contains a description of a finite downwards closed subset
   Q of the Coxeter group (initially the singleton {e}), and should be capable of

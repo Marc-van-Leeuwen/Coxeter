@@ -117,9 +117,6 @@ struct KLContext::KLHelper
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) const
     { return klsupport().inverse(y); }
 
-  // relay manipulator
-  void ensure_extr_row_exists(coxtypes::CoxNbr y)
-    { d_klsupport.ensure_extr_row_exists(y); }
 
   Ulong size() const { return KL_table.size(); }
 
@@ -672,7 +669,6 @@ void KLContext::KLHelper::shrink(const Ulong& n)
 
   The following functions are defined :
 
-   - ensure_extr_row_exists(const coxtypes::CoxNbr& y): (relay to |klsupport()|)
    - create_KL_row(const coxtypes::CoxNbr& y) : allocate row in the K-L list;
    - allocMuRow(const coxtypes::CoxNbr& y) : allocate row in the mu list;
    - allocMuTable() : allocates the full mu-table;
@@ -747,14 +743,9 @@ KLContext::KLHelper::KLHelper(klsupport::KLSupport& kls,KLContext* kl)
 */
 void KLContext::KLHelper::create_KL_row(coxtypes::CoxNbr y)
 {
-  ensure_extr_row_exists(y);
-
-  Ulong n = extrList(y).size();
+  Ulong n = d_klsupport.extr_list(y).size(); // might generate that lsit
 
   KL_table[y].reset(new KLRow(n));
-  if (ERRNO)
-    return;
-
   d_stats.klnodes += n;
   d_stats.klrows++;
 
@@ -912,7 +903,7 @@ void KLContext::KLHelper::allocMuTable()
 */
 void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 {
-  d_klsupport.allocRowComputation(y);
+  d_klsupport.ensure_extr_rows_for(y); // along the |standard_path(y)|
 
   containers::vector<coxtypes::Generator> g = klsupport().standard_path(y);
 
@@ -922,8 +913,10 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 
     coxtypes::Generator s = g[j];
     y1 = schubert().shift(y1,s);
-    coxtypes::CoxNbr y2 = klsupport().inverseMin(y1);
-    const klsupport::ExtrRow& e = extrList(y2);
+    coxtypes::CoxNbr y2 = s<rank() ? y1 : inverse(y1);
+    assert(y2 == klsupport().inverseMin(y1));
+
+    const auto& e = extrList(y2);
 
     if (row_needs_creation(y2))
     {
@@ -935,6 +928,7 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
     }
 
   }
+  assert(y1==y);
 
   return;
  abort:

@@ -75,6 +75,8 @@ class KLSupport {
   ~KLSupport();
 /* accessors */
   const ExtrRow& extrList(const coxtypes::CoxNbr& y) const;       /* inlined */
+  const ExtrRow& extr_list(coxtypes::CoxNbr y)
+  { if (d_extrList[y]==nullptr) generate_extr_list(y); return *d_extrList[y]; }
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;      /* inlined */
   coxtypes::CoxNbr inverseMin(const coxtypes::CoxNbr& x) const;
   const bits::BitMap& involution() const;                         /* inlined */
@@ -91,14 +93,16 @@ class KLSupport {
   containers::vector<coxtypes::Generator>
     standard_path(coxtypes::CoxNbr x) const;
 /* manipulators */
-  void ensure_extr_row_exists(const coxtypes::CoxNbr& y);
-  void allocRowComputation(const coxtypes::CoxNbr& y);
+  void ensure_extr_rows_for(const coxtypes::CoxNbr& y);
   void applyInverse(const coxtypes::CoxNbr& y);
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a); /* inlined */
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);
   schubert::SchubertContext& schubert() { return *d_schubert; }
+
+private:
+  void generate_extr_list(coxtypes::CoxNbr y);
 }; // |class KLSupport|
 
 }; // namespace sklupport|

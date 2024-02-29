@@ -55,8 +55,6 @@ namespace invkl {
 /* member functions */
     void addCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
 		       KLPol& pol);
-    void ensure_extr_row_exists(const coxtypes::CoxNbr& y)
-      { klsupport().ensure_extr_row_exists(y);}
     void allocKLRow(const coxtypes::CoxNbr& y);
     void allocMuRow(const coxtypes::CoxNbr& y);
     void allocRowComputation(const coxtypes::CoxNbr& y);
@@ -587,7 +585,6 @@ void KLContext::KLHelper::addCorrection(const coxtypes::CoxNbr& x, const coxtype
   return;
 }
 
-void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 
 /*
   This function allocates one row of the kl_list. The row contains one
@@ -600,11 +597,9 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
   Forwards the error MEMORY_WARNING if there is a memory overflow
   and error::CATCH_MEMORY_OVERFLOW is turned on.
 */
-
+void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
 {
-  ensure_extr_row_exists(y);
-
-  Ulong n = extrList(y).size();
+  Ulong n = klsupport().extr_list(y).size();
 
   d_kl->d_klList[y] = new KLRow(n);
   if (error::ERRNO)
@@ -656,7 +651,6 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   return;
 }
 
-void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 
 /*
   This function does the memory allocation for the computation of a full row
@@ -665,7 +659,7 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 
   For now, this is implemented in a straightforward manner.
 */
-
+void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
   bits::BitMap b(0);
@@ -677,13 +671,10 @@ void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
     coxtypes::CoxNbr z = *i;
     if (inverse(z) < z)
       continue;
-    if (!isExtrAllocated(z)) {
-      klsupport().ensure_extr_row_exists(z);
+    if (not isKLAllocated(z)) {
+      const klsupport::ExtrRow& e = klsupport().extr_list(z);
       if (error::ERRNO)
 	return;
-    }
-    if (!isKLAllocated(z)) {
-      const klsupport::ExtrRow& e = extrList(z);
       d_kl->d_klList[z] = new KLRow(0);
       klList(z).setSize(e.size());
       if (error::ERRNO)
