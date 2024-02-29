@@ -54,6 +54,7 @@ affine.o: affine.cpp affine.h globals.h coxgroup.h coxtypes.h constants.h \
  wgraph.h files.hpp cells.h
 automata.o: automata.cpp automata.h globals.h bits.h list.h memory.h \
   constants.h list.hpp error.h io.h
+bitmap.o: bitmap.cpp bitmap.h constants.h bits.h
 bits.o: bits.cpp bits.h globals.h list.h memory.h constants.h list.hpp \
  error.h io.h
 cells.o: cells.cpp cells.h globals.h bits.h list.h memory.h constants.h \

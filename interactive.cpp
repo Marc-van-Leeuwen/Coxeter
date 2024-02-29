@@ -1387,7 +1387,7 @@ Ulong parse(const interface::Interface& I, coxtypes::Generator &s,
     ERRNO = PARSE_ERROR;
     return q;
   }
-  if (!(f & constants::lmask[s+tok-1])) { /* error */
+  if (!(f & constants::eq_mask[s+tok-1])) { /* error */
     ERRNO = NOT_DESCENT;
     return q;
   }

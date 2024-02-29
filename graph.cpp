@@ -87,7 +87,7 @@ CoxGraph::CoxGraph(const type::Type& x, const coxtypes::Rank& l)
 
   if (l <= coxtypes::MEDRANK_MAX) // required to have |bits::Lflags| large enough
   {
-    d_S = constants::leqmask[d_rank-1]; // all |d_rank| initial bits set
+    d_S = constants::lt_mask[d_rank]; // all |d_rank| initial bits set
     d_star = vertex_stars(d_matrix,d_rank);
   }
 
@@ -102,7 +102,7 @@ CoxGraph::~CoxGraph() {}
 // Return the connected component of |s| in |I| as a |bits::Lflags|
 bits::Lflags CoxGraph::component(bits::Lflags I, coxtypes::Generator s) const
 {
-  bits::Lflags nf = constants::lmask[s];
+  bits::Lflags nf = constants::eq_mask[s];
   bits::Lflags f = 0;
 
   while (nf)  /* there are new elements to be considered */
@@ -132,7 +132,7 @@ bits::Lflags CoxGraph::extremities(bits::Lflags I) const
     {
       coxtypes::Generator s = constants::firstBit(f1);
       if (bits::bitCount(d_star[s]&I) == 1)  /* s is an extremity */
-	f |= constants::lmask[s];
+	f |= constants::eq_mask[s];
       f1 &= f1-1;
     }
 
@@ -158,7 +158,7 @@ bits::Lflags CoxGraph::nodes(bits::Lflags I) const
     {
       s = constants::firstBit(f1);
       if (bits::bitCount(d_star[s]&I) > 2)  /* s is a node */
-	f |= constants::lmask[s];
+	f |= constants::eq_mask[s];
       f1 &= f1-1;
     }
 
@@ -678,7 +678,7 @@ containers::vector<bits::Lflags> vertex_stars
     bits::Lflags star = 0;
     for (coxtypes::Generator t = 0; t < l; t++)
       if ((m[s*l + t] > 2) or (m[s*l + t] == 0)) // neither 1 nor 2
-	star |= constants::lmask[t];
+	star |= constants::eq_mask[t];
     result.push_back(star);
   }
 
@@ -701,7 +701,7 @@ containers::vector<bits::Lflags> finite_edge_list
   for (coxtypes::Generator s = 0; s < l; ++s)
     for (coxtypes::Generator t = s+1; t < l; ++t)
       if ((m[s*l + t] > 2) && (m[s*l + t] != infty)) // finite edge condition
-	result.push_back(constants::lmask[s] | constants::lmask[t]);
+	result.push_back(constants::eq_mask[s] | constants::eq_mask[t]);
 
   return result.to_vector();
 }
@@ -1092,7 +1092,7 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
 	switch (bits::bitCount(f))
 	  {
 	  case 2: /* exactly one long branch */
-	    J = f | constants::lmask[n];
+	    J = f | constants::eq_mask[n];
 	    if (isSimplyLaced(G,J))  /* type is b */
 	      type[0] = 'b';
 	    return type;
@@ -1325,7 +1325,7 @@ coxtypes::ParSize extrQuotOrder(CoxGraph& G, bits::Lflags I, coxtypes::Generator
   if (l == 1)
     return (coxtypes::ParSize)2;
 
-  I1 = I & ~constants::lmask[s];
+  I1 = I & ~constants::eq_mask[s];
   const type::Type& t1 = irrType(G,I1);
 
   switch (t[0])
@@ -1410,7 +1410,7 @@ coxtypes::ParSize extrQuotOrder(CoxGraph& G, bits::Lflags I, coxtypes::Generator
 	    };
 	};
     case 'I':
-      I &= ~(constants::lmask[s]);
+      I &= ~(constants::eq_mask[s]);
       s1 = constants::firstBit(I);
       m = G.M(s,s1);
       return (coxtypes::ParSize)m;
@@ -1606,15 +1606,15 @@ coxtypes::ParSize quotOrder(CoxGraph& G, bits::Lflags I, bits::Lflags J)
 
   s = lastGenerator(G,I);
 
-  I1 = I & ~(constants::lmask[s]);
-  bits::Lflags J1 = J & ~(constants::lmask[s]);
+  I1 = I & ~(constants::eq_mask[s]);
+  bits::Lflags J1 = J & ~(constants::eq_mask[s]);
 
   coxtypes::ParSize c1 = lastQuotOrder(type,l);
   coxtypes::ParSize c2 = quotOrder(G,I1,J1);
   if (c2 == 0)
     return 0;
 
-  if ((J & constants::lmask[s]) == 0)  /* s is not in J */
+  if ((J & constants::eq_mask[s]) == 0)  /* s is not in J */
     goto exit;
 
   J = G.component(J,s);
@@ -1696,13 +1696,13 @@ containers::vector<bits::Lflags> conjugacy_classes(const CoxGraph& G)
     odd_star.push_back(0);
     for (coxtypes::Generator t = 0; t < G.rank(); ++t)
       if ((G.M(s,t)%2) && (G.M(s,t) > 1))
-	odd_star.back() |= constants::lmask[t];
+	odd_star.back() |= constants::eq_mask[t];
   }
 
   containers::vector<bits::Lflags> classes;
 
   for (bits::Lflags fS = G.supp(); fS; /* |fS &= ~f| */) {
-    bits::Lflags nf = constants::lmask[constants::firstBit(fS)];
+    bits::Lflags nf = constants::eq_mask[constants::firstBit(fS)];
     bits::Lflags f = 0;
     while (nf)  /* there are new elements to be considered */
       {
@@ -1752,7 +1752,7 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 	case 3:
 	  return s;
 	case 4:
-	  f &= ~(constants::lmask[s]);
+	  f &= ~(constants::eq_mask[s]);
 	  return constants::firstBit(f);
 	};
     }
@@ -1776,8 +1776,8 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 	case 7:
 	case 8: {
 	  coxtypes::Generator t = constants::firstBit(G.star(I,s));
-	  if (constants::lmask[t] & G.star(n)) {
-	    f &= ~(constants::lmask[s]);
+	  if (constants::eq_mask[t] & G.star(n)) {
+	    f &= ~(constants::eq_mask[s]);
 	    return constants::firstBit(f);
 	  }
 	  else
@@ -1796,7 +1796,7 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 	case 3:
 	  return s;
 	case 5:
-	  f &= ~(constants::lmask[s]);
+	  f &= ~(constants::eq_mask[s]);
 	  return constants::firstBit(f);
 	};
     }
@@ -1811,7 +1811,7 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 	case 3:
 	  return s;
 	case 4:
-	  f &= ~(constants::lmask[s]);
+	  f &= ~(constants::eq_mask[s]);
 	  return constants::firstBit(f);
 	};
     }
@@ -1834,9 +1834,9 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 	  f &= ~(G.star(n));
 	  coxtypes::Generator s = constants::firstBit(f);
 	  coxtypes::Generator t = constants::firstBit(G.star(I,s));
-	  if (constants::lmask[t] & G.star(n))
+	  if (constants::eq_mask[t] & G.star(n))
 	    {
-	      f &= ~(constants::lmask[s]);
+	      f &= ~(constants::eq_mask[s]);
 	      return constants::firstBit(f);
 	    }
 	  else
@@ -1846,11 +1846,11 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
     }
     case 'f': {
       coxtypes::Generator s = constants::firstBit(f);
-      bits::Lflags I1 = I & ~(constants::lmask[s]);
+      bits::Lflags I1 = I & ~(constants::eq_mask[s]);
       switch ((irrType(G,I1))[0])
 	{
 	case 'B':
-	  f &= ~(constants::lmask[s]);
+	  f &= ~(constants::eq_mask[s]);
 	  return constants::firstBit(f);
 	case 'F':
 	  return s;
@@ -1865,7 +1865,7 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 	case 3:
 	  return s;
 	case 6:
-	  f &= ~(constants::lmask[s]);
+	  f &= ~(constants::eq_mask[s]);
 	  return constants::firstBit(f);
 	};
     }

@@ -1221,7 +1221,7 @@ void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  bits::Lflags S = constants::leqmask[kl.rank()-1];
+  bits::Lflags S = constants::lt_mask[kl.rank()];
 
   /* reset X */
 
@@ -1269,7 +1269,7 @@ void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  bits::Lflags S = constants::leqmask[kl.rank()-1];
+  bits::Lflags S = constants::lt_mask[kl.rank()];
 
   /* write down right edges */
 
@@ -1306,7 +1306,7 @@ void rGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  bits::Lflags S = constants::leqmask[kl.rank()-1];
+  bits::Lflags S = constants::lt_mask[kl.rank()];
 
   /* reset X */
 

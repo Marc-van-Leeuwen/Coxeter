@@ -270,7 +270,7 @@ class ClosureIterator {
 
 namespace schubert {
   inline bits::Lflags StandardSchubertContext::ascent(const coxtypes::CoxNbr& x) const
-    {return ~d_descent[x]&constants::leqmask[2*d_rank-1];}
+    {return ~d_descent[x]&constants::lt_mask[2*d_rank];}
   inline bits::Lflags StandardSchubertContext::descent(const coxtypes::CoxNbr& x) const
     {return d_descent[x];}
   inline const bits::BitMap& StandardSchubertContext::downset(const coxtypes::Generator& s)
@@ -291,9 +291,9 @@ namespace schubert {
     const {return d_hasse[x];}
   inline bool StandardSchubertContext::isDescent(const coxtypes::CoxNbr& x,
 						 const coxtypes::Generator& s)
-    const {return d_descent[x]&constants::lmask[s];} // whether Right descent
+    const {return d_descent[x]&constants::eq_mask[s];} // whether Right descent
   inline bits::Lflags StandardSchubertContext::lascent(const coxtypes::CoxNbr& x) const
-    {return ~ldescent(x)&constants::leqmask[d_rank-1];}
+    {return ~ldescent(x)&constants::lt_mask[d_rank];}
   inline bits::Lflags StandardSchubertContext::ldescent(const coxtypes::CoxNbr& x) const
     {return d_descent[x] >> d_rank;}
   inline coxtypes::Length StandardSchubertContext::length(const coxtypes::CoxNbr& x) const
@@ -307,14 +307,14 @@ namespace schubert {
     {return d_parity[d_length[x]%2];}
   inline coxtypes::Rank StandardSchubertContext::rank() const {return d_rank;}
   inline bits::Lflags StandardSchubertContext::rascent(const coxtypes::CoxNbr& x) const
-    {return ~rdescent(x)&constants::leqmask[d_rank-1];}
+    {return ~rdescent(x)&constants::lt_mask[d_rank];}
   inline bits::Lflags StandardSchubertContext::rdescent(const coxtypes::CoxNbr& x) const
-    {return d_descent[x] & constants::leqmask[d_rank-1];}
+    {return d_descent[x] & constants::lt_mask[d_rank];}
   inline coxtypes::CoxNbr StandardSchubertContext::rshift
     (const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
     const {return d_shift[x][s];}
   inline bits::Lflags StandardSchubertContext::S() const
-    {return constants::leqmask[d_rank-1];}
+    {return constants::lt_mask[d_rank];}
   inline coxtypes::CoxNbr StandardSchubertContext::shift
     (const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
     const {return d_shift[x][s];}

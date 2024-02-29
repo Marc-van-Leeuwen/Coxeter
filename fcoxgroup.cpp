@@ -389,7 +389,7 @@ bits::Lflags FiniteCoxGroup::rDescent(const coxtypes::CoxArr& a) const
 	  coxtypes::ParNbr xt = X->shift(x,t);
 	  if (xt <= undefined) { /* we can decide */
 	    if (xt < x)
-	    f |= constants::lmask[s];
+	    f |= constants::eq_mask[s];
 	    break;
 	  }
 	  t = xt - undefined - 1;

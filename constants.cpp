@@ -8,8 +8,9 @@
 #include "constants.h"
 
 namespace constants {
-  Ulong *lmask;
-  Ulong *leqmask;
+  Ulong *eq_mask;
+  Ulong *lt_mask;
+  Ulong *leq_mask;
   unsigned *firstbit;
   unsigned *lastbit;
 };
@@ -28,19 +29,19 @@ namespace constants {
 void initConstants()
 
 {
-  static Ulong d_lmask[BITS(Ulong)];
-  static Ulong d_leqmask[BITS(Ulong)];
+  static Ulong d_eq_mask[BITS(Ulong)];
+  static Ulong d_lt_mask[BITS(Ulong)+1];
 
-  lmask = d_lmask; // point pointer to that static array
-  leqmask = d_leqmask;
+  eq_mask = &d_eq_mask[0]; // point pointer to that static array
+  lt_mask = &d_lt_mask[0];
+  leq_mask = &d_lt_mask[1];
 
-  leqmask[0] = 1L;
-  lmask[0] = 1L;
+  lt_mask[0] = 0L;
 
-  for (Ulong j = 1; j < BITS(Ulong); j++)
+  for (Ulong j = 0; j < BITS(Ulong); j++)
     {
-      lmask[j] = lmask[j-1] << 1;
-      leqmask[j] = leqmask[j-1] | lmask[j];
+      eq_mask[j] = 1ul << j;
+      leq_mask[j] = lt_mask[j] | eq_mask[j];
     }
 
   static unsigned d_firstbit[1<<CHAR_BIT];

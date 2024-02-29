@@ -259,7 +259,7 @@ bool BitMap::isEmpty(const Ulong& m) const
   Ulong ml = m/BITS(Lflags);
   Ulong mr = m%BITS(Lflags);
   Ulong mc = BITS(Lflags)-1 - mr;
-  Lflags f = constants::leqmask[mc] << mr;
+  Lflags f = constants::leq_mask[mc] << mr;
 
   if (d_map[ml]&f)
     return(false);
@@ -538,7 +538,7 @@ BitMap::Iterator& BitMap::Iterator::operator-- ()
   Lflags f = 0;
 
   if (bitPos()) {
-    f = *d_chunk & constants::leqmask[bitPos()-1];
+    f = *d_chunk & constants::lt_mask[bitPos()];
   }
 
   if (f) {

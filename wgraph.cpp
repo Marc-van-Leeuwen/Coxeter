@@ -157,7 +157,7 @@ void WGraph::print(FILE* file, const interface::Interface& I) const
   // find alignement
 
   std::string str;
-  bits::Lflags f = constants::leqmask[I.rank()-1];
+  bits::Lflags f = constants::lt_mask[I.rank()];
   interface::append(str,f,I);
   Ulong descent_maxwidth = str.length();
 

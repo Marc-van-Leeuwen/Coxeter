@@ -13,6 +13,8 @@
 
 #include "coxtypes.h"
 #include "list.h"
+#include "bits.h" // for |bits::BitMap|
+#include "bitmap.h" // for |bitmap::BitMap|
 #include "polynomials.h"
 #include "schubert.h"
 
@@ -61,6 +63,7 @@ class KLSupport {
   list::List<coxtypes::CoxNbr> d_inverse;
   list::List<coxtypes::Generator> d_last;
   bits::BitMap d_involution;
+  bitmap::BitMap recursively_allocated;
  public:
   containers::vector<std::unique_ptr<ExtrRow> >& extrList()
     { return d_extrList; } // this should go

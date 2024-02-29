@@ -542,7 +542,7 @@ void printLCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
 {
   // set flag parameter
 
-  bits::Lflags f = constants::leqmask[kl.rank()-1] << kl.rank();
+  bits::Lflags f = constants::lt_mask[kl.rank()] << kl.rank();
 
   // print W-graphs
 
@@ -597,7 +597,7 @@ void printLRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
 {
   // set flag parameter
 
-  bits::Lflags f = constants::leqmask[2*kl.rank()-1];
+  bits::Lflags f = constants::lt_mask[2*kl.rank()];
 
   // print graphs
 
@@ -648,7 +648,7 @@ template <class KL>
 
   wgraph::WGraph X(0);
   cells::lrWGraph(X,kl);
-  bits::Lflags f = constants::leqmask[2*kl.rank()-1];
+  bits::Lflags f = constants::lt_mask[2*kl.rank()];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[lrWGraphH]);
@@ -697,7 +697,7 @@ template <class KL>
 
   wgraph::WGraph X(0);
   cells::lWGraph(X,kl);
-  bits::Lflags f = constants::leqmask[kl.rank()-1] << kl.rank();
+  bits::Lflags f = constants::lt_mask[kl.rank()] << kl.rank();
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[lWGraphH]);
@@ -834,7 +834,7 @@ void printRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
 		       const interface::Interface& I, OutputTraits& traits)
 
 {
-  bits::Lflags f = constants::leqmask[kl.rank()-1];
+  bits::Lflags f = constants::lt_mask[kl.rank()];
 
   io::print(file,traits.prefix[rCellWGraphsH]);
   printWGraphList(file,lp,f,kl,I,traits);
@@ -883,7 +883,7 @@ template <class KL>
 
   wgraph::WGraph X(0);
   cells::rWGraph(X,kl);
-  bits::Lflags f = constants::leqmask[kl.rank()-1];
+  bits::Lflags f = constants::lt_mask[kl.rank()];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[rWGraphH]);

@@ -238,15 +238,15 @@ namespace bits {
 
   inline BitMap& BitMap::operator= (const BitMap& map) {return assign(map);}
   inline void BitMap::clearBit(const Ulong& n)
-    {d_map[n/BITS(Lflags)] &= ~(constants::lmask[n%BITS(Lflags)]);}
+    {d_map[n/BITS(Lflags)] &= ~(constants::eq_mask[n%BITS(Lflags)]);}
   inline Lflags BitMap::chunk(const Ulong& m) const {return d_map[m];}
   inline bool BitMap::getBit(const Ulong& n) const
-    {return d_map[n/BITS(Lflags)] & constants::lmask[n%BITS(Lflags)];}
+    {return d_map[n/BITS(Lflags)] & constants::eq_mask[n%BITS(Lflags)];}
   inline Lflags BitMap::lastchunk() const
-    {return constants::leqmask[(size()-1)%BITS(Lflags)];}
+    {return constants::leq_mask[(size()-1)%BITS(Lflags)];}
   inline void BitMap::reset() {d_map.setZero();}
   inline void BitMap::setBit(const Ulong& n)
-    {d_map[n/BITS(Lflags)] |= constants::lmask[n%BITS(Lflags)];}
+    {d_map[n/BITS(Lflags)] |= constants::eq_mask[n%BITS(Lflags)];}
   inline void BitMap::setBit(const Ulong& n, const bool& t)
     {if (t) setBit(n); else clearBit(n);}
   inline Ulong BitMap::size() const {return d_size;}

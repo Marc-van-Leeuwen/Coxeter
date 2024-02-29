@@ -244,14 +244,12 @@ void Interface::setAutomaton()
 {
   bits::Lflags f = 0;
 
-  using constants::lmask;
-
   if (d_in->prefix.length())
-    f |= lmask[prefix_bit];
+    f |= constants::eq_mask[prefix_bit];
   if (d_in->postfix.length())
-    f |= lmask[postfix_bit];
+    f |= constants::eq_mask[postfix_bit];
   if (d_in->separator.length())
-    f |= lmask[separator_bit];
+    f |= constants::eq_mask[separator_bit];
 
   d_tokenAut = tokenAutomaton(f);
 
@@ -400,7 +398,7 @@ bool Interface::readCoxElt(interface::ParseInterface& P) const
   // f hold the part already read
 
   for (Ulong j = 0; j < P.c.length(); ++j)
-    f |= constants::lmask[P.c[j]-1];
+    f |= constants::eq_mask[P.c[j]-1];
 
   // read new part
 
@@ -413,18 +411,18 @@ bool Interface::readCoxElt(interface::ParseInterface& P) const
       break;
     P.x = y;
     if (tok_type == generator_type) {
-      if (f & constants::lmask[tok-1]) { // generator already appeared
+      if (f & constants::eq_mask[tok-1]) { // generator already appeared
 	ERRNO = NOT_COXELT;
 	return true;
       }
-      f |= constants::lmask[tok-1];
+      f |= constants::eq_mask[tok-1];
       P.c.append(tok);
     }
     P.offset += p;
   }
 
   if (d_tokenAut->isAccept(P.x)) { /* input is subword of coxelt */
-    if ((f != 0) && (f != constants::leqmask[rank()-1]))
+    if ((f != 0) && (f != constants::lt_mask[rank()]))
       ERRNO = NOT_COXELT;
     else
       P.x = 0;
@@ -1143,7 +1141,7 @@ std::string& appendTwosided(std::string& str, const bits::Lflags& f, const Inter
 
   str.append(d.twosidedSeparator);
 
-  for (bits::Lflags f1 = f&constants::leqmask[I.rank()-1]; f1;) // right descents
+  for (bits::Lflags f1 = f&constants::lt_mask[I.rank()]; f1;) // right descents
     {
       coxtypes::Generator s = constants::firstBit(f1);
       appendSymbol(str,s,I);
@@ -1224,7 +1222,7 @@ void printTwosided
 
   io::print(file,DI.twosidedSeparator);
 
-  for (bits::Lflags f1 = f&constants::leqmask[l-1]; f1;) // right descents
+  for (bits::Lflags f1 = f&constants::lt_mask[l]; f1;) // right descents
     {
       coxtypes::Generator s = constants::firstBit(f1);
       io::print(file,GI.symbol[s]);
@@ -1359,11 +1357,11 @@ Ulong descentWidth(const bits::Lflags& f, const Interface& I)
 {
   std::string str;
 
-  if (f == constants::leqmask[2*I.rank()-1]) {    // two-sided descents
+  if (f == constants::lt_mask[2*I.rank()]) {    // two-sided descents
     interface::appendTwosided(str,f,I);
   }
   else {                               // one-sided descents
-    interface::append(str,constants::leqmask[I.rank()-1],I);
+    interface::append(str,constants::lt_mask[I.rank()],I);
   }
 
   return(str.length());

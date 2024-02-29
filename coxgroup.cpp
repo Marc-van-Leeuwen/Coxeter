@@ -140,7 +140,7 @@ void CoxGroup::coatoms
 bool CoxGroup::isDescent
   (const coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 {
-  return (descent(g) & constants::lmask[s])!=0;
+  return (descent(g) & constants::eq_mask[s])!=0;
 }
 
 // Whether |g| is a dihedral element.

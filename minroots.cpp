@@ -834,7 +834,7 @@ void InitMinTable::fillReflectionRow(const graph::CoxGraph& G, MinNbr r, coxtype
     case cos2:
     case half:  /* descent */
     case hinvgold:
-      if (G.star(constants::lmask[t],s)) { /* M(t,s) > 2 */
+      if (G.star(constants::eq_mask[t],s)) { /* M(t,s) > 2 */
 	graph::CoxEntry m = G.M(s,t);
 	MinNbr y = dihedralShift(r,s,t,2*m-1);
 	d_min[r][t] = y;
@@ -1101,7 +1101,7 @@ bits::Lflags MinTable::descent(const coxtypes::CoxWord& g) const
 
   for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(g,s))
-      f |= constants::lmask[s];
+      f |= constants::eq_mask[s];
   }
 
   h = g;
@@ -1109,7 +1109,7 @@ bits::Lflags MinTable::descent(const coxtypes::CoxWord& g) const
 
   for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(h,s))
-      f |= constants::lmask[d_rank+s];
+      f |= constants::eq_mask[d_rank+s];
   }
 
   return f;
@@ -1130,7 +1130,7 @@ bits::Lflags MinTable::ldescent(const coxtypes::CoxWord& g) const
 
   for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(h,s))
-      f |= constants::lmask[s];
+      f |= constants::eq_mask[s];
   }
 
   return f;
@@ -1147,7 +1147,7 @@ bits::Lflags MinTable::rdescent(const coxtypes::CoxWord& g) const
 
   for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(g,s))
-      f |= constants::lmask[s];
+      f |= constants::eq_mask[s];
   }
 
   return f;
@@ -1579,7 +1579,7 @@ bits::Lflags minroots::descent(MinTable& T, MinNbr r)
 
   for (Ulong j = 0; j < T.rank(); ++j)
     if (T.dot(r,j) > 0)
-      A |= constants::lmask[j];
+      A |= constants::eq_mask[j];
 
   return A;
 }
@@ -1640,11 +1640,11 @@ bits::Lflags minroots::support(MinTable& T, MinNbr r)
 	break;
     if (s == T.rank())
       break;
-    f |= constants::lmask[s];
+    f |= constants::eq_mask[s];
     r = T.min(r,s);
   }
 
-  return f | constants::lmask[r];
+  return f | constants::eq_mask[r];
 }
 
 

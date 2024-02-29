@@ -77,7 +77,7 @@ KLSupport::KLSupport(std::unique_ptr<schubert::SchubertContext> p)
   , d_inverse(1)
   , d_last(1)
   , d_involution(1)
-
+  , recursively_allocated(1)
 {
   /* make first row of d_extrList, for the identity element */
 
@@ -89,6 +89,7 @@ KLSupport::KLSupport(std::unique_ptr<schubert::SchubertContext> p)
   d_last[0] = coxtypes::undef_generator;
 
   d_involution.setBit(0);
+  recursively_allocated.insert(0);
 }
 
 

@@ -2734,14 +2734,14 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
 
   buf.clear();
 
-  if (p.descent(xt) & constants::lmask[s]) { /* xts < xt */
+  if (p.descent(xt) & constants::eq_mask[s]) { /* xts < xt */
 
     buf.append("xs = ");
     p.append(buf,xs,I);
     buf.append("  ys = ");
     p.append(buf,ys,I);
 
-    if (p.descent(yst) & constants::lmask[s]) { /* ysts < yst */
+    if (p.descent(yst) & constants::eq_mask[s]) { /* ysts < yst */
       buf.append("  yst = ");
       p.append(buf,yst,I);
       io::foldLine(file,buf,ls,0,"xy");
@@ -2761,7 +2761,7 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
     }
   }
   else { /* xts > xt */
-    if (p.descent(yst) & constants::lmask[s]) { /* ysts < yst */
+    if (p.descent(yst) & constants::eq_mask[s]) { /* ysts < yst */
       buf.append("xs = ");
       p.append(buf,xs,I);
       buf.append("  xt = ");
@@ -2781,7 +2781,7 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
       return;
     }
     else { /* ysts > yst */
-      if (p.descent(xs) & constants::lmask[t]) {
+      if (p.descent(xs) & constants::eq_mask[t]) {
 	buf.append("xs = ");
 	p.append(buf,xs,I);
 	buf.append("  xt = ");

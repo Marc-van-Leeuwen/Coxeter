@@ -812,7 +812,8 @@ void StandardSchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
     z = c[0];
 
   if (d_length[x] == m) { /* descents for s,t on both sides */
-    d_descent[x] |= constants::lmask[t] | constants::lmask[s1] | constants::lmask[t1];
+    d_descent[x] |=
+      constants::eq_mask[t] | constants::eq_mask[s1] | constants::eq_mask[t1];
     d_downset[t].setBit(x);
     d_downset[s1].setBit(x);
     d_downset[t1].setBit(x);
@@ -835,13 +836,13 @@ void StandardSchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
     if (d_length[x] % 2) { /* xs and sx */
       d_shift[x][s1] = z;
       d_shift[z][s1] = x;
-      d_descent[x] |= constants::lmask[s1];
+      d_descent[x] |= constants::eq_mask[s1];
       d_downset[s1].setBit(x);
     }
     else { /* xs and tx */
       d_shift[x][t1] = z;
       d_shift[z][t1] = x;
-      d_descent[x] |= constants::lmask[t1];
+      d_descent[x] |= constants::eq_mask[t1];
       d_downset[t1].setBit(x);
     }
   }
@@ -873,7 +874,7 @@ void StandardSchubertContext::fillShifts(const coxtypes::CoxNbr& first,
       t = s - d_rank;
     d_shift[0][t] = x;
     d_shift[x][t] = 0;
-    d_descent[x] |= constants::lmask[t];
+    d_descent[x] |= constants::eq_mask[t];
     d_downset[t].setBit(x);
     ++x;
   }
@@ -892,7 +893,7 @@ void StandardSchubertContext::fillShifts(const coxtypes::CoxNbr& first,
       bool firstplus = true;
       coxtypes::CoxNbr z = coxtypes::undef_coxnbr;
       for (Ulong j = 0; j < c.size(); ++j) {
-	if (!(constants::lmask[t] & d_descent[c[j]])) { /* coatom has ascent */
+	if (!(constants::eq_mask[t] & d_descent[c[j]])) { /* coatom has ascent */
 	  if (firstplus) { /* it's the first time */
 	    firstplus = false;
 	    z = c[j]; // z is the coatom that goes up
@@ -905,7 +906,7 @@ void StandardSchubertContext::fillShifts(const coxtypes::CoxNbr& first,
       /* if we reach this point there was exactly one ascent */
       d_shift[x][t] = z;
       d_shift[z][t] = x;
-      d_descent[x] |= constants::lmask[t];
+      d_descent[x] |= constants::eq_mask[t];
       d_downset[t].setBit(x);
     nextt:
       continue;
@@ -1077,7 +1078,7 @@ void StandardSchubertContext::fullExtension(bits::SubSet& q, const coxtypes::Gen
       d_shift[xs][s] = x;
       d_length[xs] = d_length[x] + 1;
       d_parity[d_length[xs]%2].setBit(xs);
-      d_descent[xs] |= constants::lmask[s];
+      d_descent[xs] |= constants::eq_mask[s];
       d_downset[s].setBit(xs);
       xs++;
     }
