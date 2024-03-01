@@ -120,7 +120,8 @@ class KLContext {
   coxtypes::Generator last(const coxtypes::CoxNbr& y) const;                        /* inlined */
   const MuRow& muList(const coxtypes::CoxNbr& y) const;                   /* inlined */
   coxtypes::Rank rank() const;                                            /* inlined */
-  const schubert::SchubertContext& schubert() const;                      /* inlined */
+  const schubert::SchubertContext& schubert() const
+  { return d_klsupport->schubert(); }
   Ulong size() const;                                         /* inlined */
   const search::BinaryTree<KLPol>& tree() const;                /* inlined */
 /* manipulators */
@@ -174,8 +175,6 @@ inline coxtypes::Generator KLContext::last(const coxtypes::CoxNbr& y) const
 inline const MuRow& KLContext::muList(const coxtypes::CoxNbr& y) const
   {return *d_muList[y];}
 inline coxtypes::Rank KLContext::rank() const {return d_klsupport->rank();}
-inline const schubert::SchubertContext& KLContext::schubert() const
-  {return d_klsupport->schubert();}
 inline Ulong KLContext::size() const {return d_klList.size();}
 inline const search::BinaryTree<KLPol>& KLContext::tree() const
   {return d_klTree;}

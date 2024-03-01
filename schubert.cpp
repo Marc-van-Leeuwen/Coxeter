@@ -217,21 +217,22 @@ SchubertContext::~SchubertContext()
 
 /******** accessors ********************************************************/
 
-coxtypes::CoxWord& SchubertContext::append(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x) const
 
 /*
-  This function appends to g the ShortLex normal form of x. The normal form is
+  Appends to |g| the ShortLex normal form of x. The normal form is
   easily obtained using the left descent sets.
 
-  NOTE : it is the progarmmer's responsibilty when using this function, to
+  NOTE : it is the programmer's responsibilty when using this function, to
   guarantee that the result is reduced. Otherwise, use "prod".
 */
 
+coxtypes::CoxWord& SchubertContext::append
+  (coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x) const
 {
   coxtypes::CoxNbr x = d_x;
 
-  while (x) {
-    coxtypes::Generator s = constants::firstBit(ldescent(x));
+  while (x>0) {
+    coxtypes::Generator s = firstLDescent(x);
     g.append(s+1);
     x = lshift(x,s);
   }
@@ -261,8 +262,8 @@ coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) cons
 
 
 /*
-  This function puts in b the subset [e,x] of p. It is assumed that b
-  is capable of holding a subset of p.
+  Put into |b| the subset $[e,x]$ of |p|. It is assumed that |b|
+  is capable of holding a subset of |p|.
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
 
@@ -282,6 +283,33 @@ void SchubertContext::extractClosure
   b = q.bitMap();
 
   return;
+}
+
+containers::sl_list<coxtypes::Generator>
+  SchubertContext::word (coxtypes::CoxNbr x) const
+{
+  containers::sl_list<coxtypes::Generator> result;
+  while (x>0)
+  {
+    coxtypes::Generator s = firstLDescent(x);
+    result.push_back(s);
+    x = lshift(x,s);
+  }
+  return result;
+}
+
+bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
+{
+  assert(x<size());
+  bitmap::BitMap result(x+1);
+  result.insert(0);
+  for (auto s : word(x))
+  { const auto copy = result; // making a copy is cleaner, but not essential
+    for (coxtypes::CoxNbr y : copy) // without, we might have more iterations
+      result.insert(rshift(y,s)); // may or may not be new
+  }
+
+  return result;
 }
 
 bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
@@ -361,23 +389,23 @@ coxtypes::CoxNbr SchubertContext::minimize(const coxtypes::CoxNbr& x, const bits
   return x1;
 }
 
-coxtypes::CoxWord& SchubertContext::normalForm(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x,
-		                          const bits::Permutation& order) const
 
 /*
   This function returns the normal form of x for the given ordering of the
-  generators. The order parameter is typically d_out in interface; so
+  generators. The |order| argument is typically |d_out| of the interface; so
   order[j] is the external number of the internal generator #j.
 
   NOTE : this function is more expensive than append; its main intention
   is for use in i/o functions.
 */
-
+coxtypes::CoxWord& SchubertContext::normalForm
+  (coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x,
+   const bits::Permutation& order) const
 {
   g.reset();
   coxtypes::CoxNbr x = d_x;
 
-  while (x) {
+  while (x>0) {
     coxtypes::Generator s = minDescent(ldescent(x),order);
     g.append(s+1);
     x = lshift(x,s);
@@ -467,16 +495,16 @@ coxtypes::CoxNbr SchubertContext::extendContext
 }
 
 
-void SchubertContext::extendSubSet(bits::SubSet& q, const coxtypes::Generator& s) const
 
 /*
   Given a subset q of p holding a decreasing subset, and a geneator s s.t.
-  q.s. is contained in the context, in the context, this function puts in q
+  q.s. is contained in the context, this function puts in q
   the set q.s ( here s can be either a right or a left shift.)
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
 */
-
+void SchubertContext::extendSubSet
+  (bits::SubSet& q, coxtypes::Generator s) const
 {
   Ulong a = q.size();
 
@@ -1438,9 +1466,17 @@ void select_maxima_for
 
   while(f1) {
     coxtypes::Generator s = constants::firstBit(f1);
-    b &= p.downset(s);
+    b &= p.downset(s); // retain elements for which |s| is a right descent
     f1 &= f1-1;
   }
+}
+
+void select_maxima_for
+  (const SchubertContext& p, bitmap::BitMap& b, bits::Lflags f)
+{ // maybe not fastest, unless |b| is quite sparse
+  for (coxtypes::CoxNbr x : b)
+    if ((p.ascent(x)&f)!=0) // then some generator in |f| is an ascent for |x|
+      b.remove(x); // so remove |x| from |b|
 }
 
 void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)

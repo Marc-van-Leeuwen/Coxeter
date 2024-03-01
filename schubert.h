@@ -11,6 +11,8 @@
 #include "globals.h"
 #include "coxtypes.h"
 #include "graph.h"
+#include "bitmap.h"
+#include "sl_list.h"
 #include "io.h"
 #include "list.h"
 #include "stack.h"
@@ -41,6 +43,8 @@ namespace schubert {
 		       list::List<Ulong>& a);
   void select_maxima_for
     (const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f);
+  void select_maxima_for
+    (const SchubertContext& p, bitmap::BitMap& b, bits::Lflags f);
   Ulong min(const bits::Set& c, NFCompare& nfc);
   Ulong minDescent(const bits::Lflags& f, const bits::Permutation& order);
   void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f);
@@ -167,7 +171,7 @@ class SchubertContext
   list::List<bits::Lflags> d_descent;
   list::List<coxtypes::CoxNbr*> d_shift;
   list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
-  bits::BitMap* d_downset;
+  bits::BitMap* d_downset; // array of length |2*d_rank| of |BitMap|s
   bits::BitMap* d_parity;
   bits::SubSet d_subset;
   stack::Stack<ContextExtension*> d_history;
@@ -194,11 +198,14 @@ class SchubertContext
   bits::Lflags ascent(const coxtypes::CoxNbr& x) const;                          /* inlined */
   coxtypes::CoxNbr contextNumber(const coxtypes::CoxWord& g) const;
   bits::Lflags descent(const coxtypes::CoxNbr& x) const;                         /* inlined */
-  const bits::BitMap& downset(const coxtypes::Generator& s) const;               /* inlined */
-  void extendSubSet(bits::SubSet& q, const coxtypes::Generator& s) const;
+  const bits::BitMap& downset(coxtypes::Generator s) const
+  { return d_downset[s]; }
+  void extendSubSet(bits::SubSet& q, coxtypes::Generator s) const;
   void extractClosure(bits::BitMap& b, const coxtypes::CoxNbr& x) const;
+  bitmap::BitMap closure(coxtypes::CoxNbr x) const;
   coxtypes::Generator firstDescent(const coxtypes::CoxNbr& x) const;                 /* inlined */
-  coxtypes::Generator firstLDescent(const coxtypes::CoxNbr& x) const;                /* inlined */
+  coxtypes::Generator firstLDescent(const coxtypes::CoxNbr& x) const
+  { return constants::firstBit(ldescent(x)); }
   coxtypes::Generator firstRDescent(const coxtypes::CoxNbr& x) const;                /* inlined */
   coxtypes::Generator firstDescent(const coxtypes::CoxNbr& x, const bits::Permutation& order)
     const;                                                       /* inlined */
@@ -211,7 +218,8 @@ class SchubertContext
   bool isDescent(const coxtypes::CoxNbr& x, const coxtypes::Generator& s) const;     /* inlined */
   bool isSuperExtremal(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) const;
   bits::Lflags lascent(const coxtypes::CoxNbr& x) const;                         /* inlined */
-  bits::Lflags ldescent(const coxtypes::CoxNbr& x) const;                        /* inlined */
+  bits::Lflags ldescent(const coxtypes::CoxNbr& x) const
+  { return d_descent[x] >> d_rank; } // left descents as (neutral) generators
   coxtypes::Length length(const coxtypes::CoxNbr& x) const;                          /* inlined */
   coxtypes::CoxNbr lshift(const coxtypes::CoxNbr& x, const coxtypes::Generator& s) const;      /* inlined */
   coxtypes::CoxNbr maximize(const coxtypes::CoxNbr& x, const bits::Lflags& f) const;
@@ -231,7 +239,9 @@ class SchubertContext
   coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r) const
     { return d_star[x][r]; }
   bits::Lflags twoDescent(const coxtypes::CoxNbr& x) const;
-  const type::Type& type() const;                                      /* inlined */
+  const type::Type& type() const { return d_graph.type(); }
+
+  containers::sl_list<coxtypes::Generator> word(coxtypes::CoxNbr x) const;
 /* manipulators */
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
   void permute(const bits::Permutation& a);
@@ -277,12 +287,8 @@ namespace schubert {
     {return ~d_descent[x]&constants::lt_mask[2*d_rank];}
   inline bits::Lflags SchubertContext::descent(const coxtypes::CoxNbr& x) const
     {return d_descent[x];}
-  inline const bits::BitMap& SchubertContext::downset(const coxtypes::Generator& s)
-    const {return d_downset[s];}
   inline coxtypes::Generator SchubertContext::firstDescent(const coxtypes::CoxNbr& x) const
     {return constants::firstBit(descent(x));}
-  inline coxtypes::Generator SchubertContext::firstLDescent(const coxtypes::CoxNbr& x)
-    const {return constants::firstBit(ldescent(x));}
   inline coxtypes::Generator SchubertContext::firstRDescent(const coxtypes::CoxNbr& x)
     const {return constants::firstBit(rdescent(x));}
   inline coxtypes::Generator SchubertContext::firstDescent(const coxtypes::CoxNbr& x,
@@ -298,8 +304,6 @@ namespace schubert {
     const {return d_descent[x]&constants::eq_mask[s];} // whether Right descent
   inline bits::Lflags SchubertContext::lascent(const coxtypes::CoxNbr& x) const
     {return ~ldescent(x)&constants::lt_mask[d_rank];}
-  inline bits::Lflags SchubertContext::ldescent(const coxtypes::CoxNbr& x) const
-    {return d_descent[x] >> d_rank;}
   inline coxtypes::Length SchubertContext::length(const coxtypes::CoxNbr& x) const
     {return d_length[x];}
   inline coxtypes::CoxNbr SchubertContext::lshift(const coxtypes::CoxNbr& x,
@@ -323,8 +327,6 @@ namespace schubert {
     (const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
     const {return d_shift[x][s];}
   inline coxtypes::CoxNbr SchubertContext::size() const {return d_size;}
-  inline const type::Type& SchubertContext::type() const
-    {return d_graph.type();}
 
   inline const bits::SubSet& ClosureIterator::operator()() const {return d_subSet;}
   inline ClosureIterator::operator bool() const {return d_valid;}

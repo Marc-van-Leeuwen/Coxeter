@@ -1211,27 +1211,19 @@ void KLContext::KLHelper::add_second_terms
   (containers::vector<KLPol>& pols, coxtypes::CoxNbr y)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(0);
-  coxtypes::Generator s = last(y);
-  coxtypes::CoxNbr ys = p.rshift(y,s);
+  coxtypes::CoxNbr ys = p.rshift(y,last(y));
 
-  /* extract [e,ys] */
+  auto b = p.closure(ys); // Bruhat interval [e,ys]
 
-  p.extractClosure(b,ys);
-
-  /* extremalize w.r.t. y */
-
+  // retain two-sided extrema for |y| only
   schubert::select_maxima_for(p,b,p.descent(y));
 
-  /* add to appropriate terms */
-
   Ulong i = 0;
-  bits::BitMap::Iterator b_end = b.end();
   const klsupport::ExtrRow& e = extrList(y);
 
-  for (bits::BitMap::Iterator j = b.begin(); j != b_end; ++j) {
-    coxtypes::CoxNbr x = *j;
-    while(e[i] < x)
+  for (coxtypes::CoxNbr x : b)
+  {
+    while(e[i] < x) // linearly advance |i| until |e[i]==x|
       ++i;
     safeAdd(pols[i],klPol(x,ys),1);
     if (ERRNO) {

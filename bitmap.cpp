@@ -596,6 +596,16 @@ void BitMap::swap(BitMap& other)
   it is not an invariant of the |BitMap::iterator| class that it always points
   at a set bit.
 
+  It is well defined what happens when one inserts new elements into a |BitMap|
+  while iterating with an iterator |it|: if the value inserted is greater than
+  |*it|, then further incrementing |it| will at some point stop at the inserted
+  value. If the value inserted is less than |*it|, then further incrementing of
+  |it| will no be affected by the insertion. This behaviour is because no part
+  of the bitmap itself is copied into the iterator: for each increment we fetch
+  the word containing the bit we were on, but shift away any bits up to and
+  including that bit before advancing to the next set bit, if any. It looping
+  until |it==end()|, that condition is unaffected by the state of the bits.
+
   The most delicate operation is |operator++|, which has to move to the the
   next set bit, or stop at the end of the bitmap if there is no such.
   Therefore we included the data for the end of the bitmap in the iterator.
