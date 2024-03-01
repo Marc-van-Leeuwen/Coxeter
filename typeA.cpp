@@ -25,7 +25,7 @@ namespace typeA {
 TypeACoxGroup::TypeACoxGroup(const coxtypes::Rank& l)
 : FiniteCoxGroup(type::Type("A"),l)
 {
-  d_interface.reset(new TypeAInterface(l)); // install derived class
+  d_interface.reset(d_typeAInterface=new TypeAInterface(l));
 }
 
 TypeACoxGroup::~TypeACoxGroup()
