@@ -88,7 +88,7 @@ CoxGroup::CoxGroup(const type::Type& x, const coxtypes::Rank& l)
   : d_graph(x,l)
   , d_mintable(d_graph)
   , d_klsupport(std::unique_ptr<schubert::SchubertContext>
-		 (new schubert::StandardSchubertContext(d_graph))
+		 (new schubert::SchubertContext(d_graph))
 	       )
   , d_kl(nullptr)
   , d_invkl(nullptr)

@@ -75,13 +75,13 @@ struct NFCompare {
   {return shortLexOrder(p,x,y,order);}
 };
 
-class SchubertContext {
+class AbstractSchubertContext {
   friend class ClosureIterator;
  public:
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return memory::arena().free(ptr,sizeof(SchubertContext));}
-  virtual ~SchubertContext() {};
+    {return memory::arena().free(ptr,sizeof(AbstractSchubertContext));}
+  virtual ~AbstractSchubertContext() {};
 /* accessors */
   virtual coxtypes::CoxWord& append(coxtypes::CoxWord& g, const coxtypes::CoxNbr& x) const = 0;
   virtual bits::Lflags ascent(const coxtypes::CoxNbr& x) const = 0;
@@ -137,20 +137,24 @@ class SchubertContext {
     const = 0;
 };
 
-class StandardSchubertContext:public SchubertContext {
+class SchubertContext
+#if 0
+  : public AbstractSchubertContext
+#endif
+{
  private:
 /* private class declaration */
   class ContextExtension {
   private:
-    StandardSchubertContext& d_schubert;
+    SchubertContext& d_schubert;
     Ulong d_size;
     coxtypes::CoxNbr* d_shift;
-    coxtypes::CoxNbr* d_star; 
+    coxtypes::CoxNbr* d_star;
   public:
     void* operator new(size_t size) {return memory::arena().alloc(size);}
     void operator delete(void* ptr)
       {return memory::arena().free(ptr,sizeof(ContextExtension));}
-    ContextExtension(StandardSchubertContext& p, const Ulong& c);
+    ContextExtension(SchubertContext& p, const Ulong& c);
     ~ContextExtension();
     Ulong size() {return d_size;}
   };
@@ -177,14 +181,14 @@ class StandardSchubertContext:public SchubertContext {
  public:
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
-    {return memory::arena().free(ptr,sizeof(StandardSchubertContext));}
+    {return memory::arena().free(ptr,sizeof(SchubertContext));}
 /* friend declaration */
-  friend ContextExtension::ContextExtension(StandardSchubertContext&,
+  friend ContextExtension::ContextExtension(SchubertContext&,
 					    const Ulong& c);
   friend ContextExtension::~ContextExtension();
 /* constructors and destructors */
-  StandardSchubertContext(const graph::CoxGraph& G);
-  ~StandardSchubertContext();
+  SchubertContext(const graph::CoxGraph& G);
+  ~SchubertContext();
 /* accessors */
   coxtypes::CoxWord& append(coxtypes::CoxWord& g, const coxtypes::CoxNbr& x) const;
   bits::Lflags ascent(const coxtypes::CoxNbr& x) const;                          /* inlined */
@@ -269,57 +273,57 @@ class ClosureIterator {
 /******** inline definitions **********************************************/
 
 namespace schubert {
-  inline bits::Lflags StandardSchubertContext::ascent(const coxtypes::CoxNbr& x) const
+  inline bits::Lflags SchubertContext::ascent(const coxtypes::CoxNbr& x) const
     {return ~d_descent[x]&constants::lt_mask[2*d_rank];}
-  inline bits::Lflags StandardSchubertContext::descent(const coxtypes::CoxNbr& x) const
+  inline bits::Lflags SchubertContext::descent(const coxtypes::CoxNbr& x) const
     {return d_descent[x];}
-  inline const bits::BitMap& StandardSchubertContext::downset(const coxtypes::Generator& s)
+  inline const bits::BitMap& SchubertContext::downset(const coxtypes::Generator& s)
     const {return d_downset[s];}
-  inline coxtypes::Generator StandardSchubertContext::firstDescent(const coxtypes::CoxNbr& x) const
+  inline coxtypes::Generator SchubertContext::firstDescent(const coxtypes::CoxNbr& x) const
     {return constants::firstBit(descent(x));}
-  inline coxtypes::Generator StandardSchubertContext::firstLDescent(const coxtypes::CoxNbr& x)
+  inline coxtypes::Generator SchubertContext::firstLDescent(const coxtypes::CoxNbr& x)
     const {return constants::firstBit(ldescent(x));}
-  inline coxtypes::Generator StandardSchubertContext::firstRDescent(const coxtypes::CoxNbr& x)
+  inline coxtypes::Generator SchubertContext::firstRDescent(const coxtypes::CoxNbr& x)
     const {return constants::firstBit(rdescent(x));}
-  inline coxtypes::Generator StandardSchubertContext::firstDescent(const coxtypes::CoxNbr& x,
+  inline coxtypes::Generator SchubertContext::firstDescent(const coxtypes::CoxNbr& x,
     const bits::Permutation& order) const {return firstRDescent(x,order);}
-  inline coxtypes::Generator StandardSchubertContext::firstLDescent(const coxtypes::CoxNbr& x,
+  inline coxtypes::Generator SchubertContext::firstLDescent(const coxtypes::CoxNbr& x,
     const bits::Permutation& order) const {return minDescent(ldescent(x),order);}
-  inline coxtypes::Generator StandardSchubertContext::firstRDescent(const coxtypes::CoxNbr& x,
+  inline coxtypes::Generator SchubertContext::firstRDescent(const coxtypes::CoxNbr& x,
     const bits::Permutation& order) const {return minDescent(rdescent(x),order);}
-  inline const CoatomList& StandardSchubertContext::hasse(const coxtypes::CoxNbr& x)
+  inline const CoatomList& SchubertContext::hasse(const coxtypes::CoxNbr& x)
     const {return d_hasse[x];}
-  inline bool StandardSchubertContext::isDescent(const coxtypes::CoxNbr& x,
+  inline bool SchubertContext::isDescent(const coxtypes::CoxNbr& x,
 						 const coxtypes::Generator& s)
     const {return d_descent[x]&constants::eq_mask[s];} // whether Right descent
-  inline bits::Lflags StandardSchubertContext::lascent(const coxtypes::CoxNbr& x) const
+  inline bits::Lflags SchubertContext::lascent(const coxtypes::CoxNbr& x) const
     {return ~ldescent(x)&constants::lt_mask[d_rank];}
-  inline bits::Lflags StandardSchubertContext::ldescent(const coxtypes::CoxNbr& x) const
+  inline bits::Lflags SchubertContext::ldescent(const coxtypes::CoxNbr& x) const
     {return d_descent[x] >> d_rank;}
-  inline coxtypes::Length StandardSchubertContext::length(const coxtypes::CoxNbr& x) const
+  inline coxtypes::Length SchubertContext::length(const coxtypes::CoxNbr& x) const
     {return d_length[x];}
-  inline coxtypes::CoxNbr StandardSchubertContext::lshift(const coxtypes::CoxNbr& x,
+  inline coxtypes::CoxNbr SchubertContext::lshift(const coxtypes::CoxNbr& x,
 					    const coxtypes::Generator& s)
     const {return d_shift[x][d_rank+s];}
-  inline coxtypes::Length StandardSchubertContext::maxlength() const
+  inline coxtypes::Length SchubertContext::maxlength() const
     {return d_maxlength;}
-  inline const bits::BitMap& StandardSchubertContext::parity(const coxtypes::CoxNbr& x) const
+  inline const bits::BitMap& SchubertContext::parity(const coxtypes::CoxNbr& x) const
     {return d_parity[d_length[x]%2];}
-  inline coxtypes::Rank StandardSchubertContext::rank() const {return d_rank;}
-  inline bits::Lflags StandardSchubertContext::rascent(const coxtypes::CoxNbr& x) const
+  inline coxtypes::Rank SchubertContext::rank() const {return d_rank;}
+  inline bits::Lflags SchubertContext::rascent(const coxtypes::CoxNbr& x) const
     {return ~rdescent(x)&constants::lt_mask[d_rank];}
-  inline bits::Lflags StandardSchubertContext::rdescent(const coxtypes::CoxNbr& x) const
+  inline bits::Lflags SchubertContext::rdescent(const coxtypes::CoxNbr& x) const
     {return d_descent[x] & constants::lt_mask[d_rank];}
-  inline coxtypes::CoxNbr StandardSchubertContext::rshift
+  inline coxtypes::CoxNbr SchubertContext::rshift
     (const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
     const {return d_shift[x][s];}
-  inline bits::Lflags StandardSchubertContext::S() const
+  inline bits::Lflags SchubertContext::S() const
     {return constants::lt_mask[d_rank];}
-  inline coxtypes::CoxNbr StandardSchubertContext::shift
+  inline coxtypes::CoxNbr SchubertContext::shift
     (const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
     const {return d_shift[x][s];}
-  inline coxtypes::CoxNbr StandardSchubertContext::size() const {return d_size;}
-  inline const type::Type& StandardSchubertContext::type() const
+  inline coxtypes::CoxNbr SchubertContext::size() const {return d_size;}
+  inline const type::Type& SchubertContext::type() const
     {return d_graph.type();}
 
   inline const bits::SubSet& ClosureIterator::operator()() const {return d_subSet;}

@@ -16,7 +16,7 @@ namespace schubert {
 /****************************************************************************
 
   This file contains the definition of the general functions pertaining
-  to Schubert contexts, and the definition of the StandardSchubertContext
+  to Schubert contexts, and the definition of the SchubertContext
   class. Other implementations of Schubert contexts will not be found in
   other files, maybe they were meant to be wriiten
 
@@ -76,7 +76,7 @@ namespace schubert {
       and we wish to revert;)
     - size() : returns the current size of the context;
 
-  The StandardSchubertContext class contains lengths, shifts, coatoms and
+  The SchubertContext class contains lengths, shifts, coatoms and
   downsets as tables, so the above functions are really simply table accesses.
   The context extension and interval extraction is done as described in my
   paper "Computing Kazhdan-Lusztig polynomials for arbitrary Coxeter groups",
@@ -97,14 +97,14 @@ namespace {
 
 /****************************************************************************
 
-        Chapter I -- The StandardSchubertContext class.
+        Chapter I -- The SchubertContext class.
 
-  This section defines the functions in the SchubertContext class :
+  This section defines the functions in the AbstractSchubertContext class :
 
   - constructors and destructors :
 
-    - StandardSchubertContext(G);
-    - ~StandardSchubertContext
+    - SchubertContext(G);
+    - ~SchubertContext
 
   - accessors :
 
@@ -144,7 +144,7 @@ namespace schubert {
 
 /******** constructors ******************************************************/
 
-StandardSchubertContext::StandardSchubertContext(const graph::CoxGraph& G)
+SchubertContext::SchubertContext(const graph::CoxGraph& G)
   :d_graph(G), d_rank(G.rank()), d_maxlength(0), d_size(1), d_length(1),
   d_hasse(1), d_descent(1), d_shift(1), d_star(1), d_subset(1)
 
@@ -180,7 +180,7 @@ StandardSchubertContext::StandardSchubertContext(const graph::CoxGraph& G)
   d_parity[0].setBit(0);
 }
 
-StandardSchubertContext::~StandardSchubertContext()
+SchubertContext::~SchubertContext()
 
 /*
   Destructing a SchubertContext turns out to be a little bit tricky,
@@ -217,7 +217,7 @@ StandardSchubertContext::~StandardSchubertContext()
 
 /******** accessors ********************************************************/
 
-coxtypes::CoxWord& StandardSchubertContext::append(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x) const
+coxtypes::CoxWord& SchubertContext::append(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x) const
 
 /*
   This function appends to g the ShortLex normal form of x. The normal form is
@@ -239,7 +239,7 @@ coxtypes::CoxWord& StandardSchubertContext::append(coxtypes::CoxWord& g, const c
   return g;
 }
 
-coxtypes::CoxNbr StandardSchubertContext::contextNumber(const coxtypes::CoxWord& g) const
+coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) const
 
 /*
   This functions returns the number corresponding to g in the current
@@ -267,7 +267,7 @@ coxtypes::CoxNbr StandardSchubertContext::contextNumber(const coxtypes::CoxWord&
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
 
 */
-void StandardSchubertContext::extractClosure
+void SchubertContext::extractClosure
   (bits::BitMap& b, const coxtypes::CoxNbr& x) const
 {
   bits::SubSet q(d_size);
@@ -284,7 +284,7 @@ void StandardSchubertContext::extractClosure
   return;
 }
 
-bool StandardSchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
+bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
 
 /*
   Checks if x <= y in the Bruhat ordering, using the well-known recursive
@@ -313,7 +313,7 @@ bool StandardSchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) co
     return inOrder(x,ys);
 }
 
-coxtypes::CoxNbr StandardSchubertContext::maximize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
+coxtypes::CoxNbr SchubertContext::maximize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
   const
 
 /*
@@ -338,7 +338,7 @@ coxtypes::CoxNbr StandardSchubertContext::maximize(const coxtypes::CoxNbr& x, co
   return x1;
 }
 
-coxtypes::CoxNbr StandardSchubertContext::minimize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
+coxtypes::CoxNbr SchubertContext::minimize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
   const
 
 /*
@@ -361,7 +361,7 @@ coxtypes::CoxNbr StandardSchubertContext::minimize(const coxtypes::CoxNbr& x, co
   return x1;
 }
 
-coxtypes::CoxWord& StandardSchubertContext::normalForm(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x,
+coxtypes::CoxWord& SchubertContext::normalForm(coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x,
 		                          const bits::Permutation& order) const
 
 /*
@@ -386,7 +386,7 @@ coxtypes::CoxWord& StandardSchubertContext::normalForm(coxtypes::CoxWord& g, con
   return g;
 }
 
-bits::Lflags StandardSchubertContext::twoDescent(const coxtypes::CoxNbr& x) const
+bits::Lflags SchubertContext::twoDescent(const coxtypes::CoxNbr& x) const
 
 /*
   Returns the "super-descent" set of x; this is the union of the descent
@@ -424,7 +424,7 @@ bits::Lflags StandardSchubertContext::twoDescent(const coxtypes::CoxNbr& x) cons
   generator s in g, we add the elements in [e,hs] not already in the
   context, and we update everything.
 */
-coxtypes::CoxNbr StandardSchubertContext::extendContext
+coxtypes::CoxNbr SchubertContext::extendContext
   (const coxtypes::CoxWord& g)
 {
   coxtypes::CoxNbr y = 0;
@@ -467,7 +467,7 @@ coxtypes::CoxNbr StandardSchubertContext::extendContext
 }
 
 
-void StandardSchubertContext::extendSubSet(bits::SubSet& q, const coxtypes::Generator& s) const
+void SchubertContext::extendSubSet(bits::SubSet& q, const coxtypes::Generator& s) const
 
 /*
   Given a subset q of p holding a decreasing subset, and a geneator s s.t.
@@ -496,7 +496,7 @@ void StandardSchubertContext::extendSubSet(bits::SubSet& q, const coxtypes::Gene
   return;
 }
 
-void StandardSchubertContext::permute(const bits::Permutation& a)
+void SchubertContext::permute(const bits::Permutation& a)
 
 /*
   This function applies the permutation a to the context. We have explained
@@ -596,7 +596,7 @@ void StandardSchubertContext::permute(const bits::Permutation& a)
 
 }
 
-void StandardSchubertContext::revertSize(const Ulong& n)
+void SchubertContext::revertSize(const Ulong& n)
 
 /*
   This function reverts the size of the context to some previous value. It
@@ -622,7 +622,7 @@ void StandardSchubertContext::revertSize(const Ulong& n)
   return;
 }
 
-void StandardSchubertContext::setSize(const Ulong& n)
+void SchubertContext::setSize(const Ulong& n)
 
 /*
   Resizes the various data structures to accomodate a context of size n.
@@ -661,7 +661,7 @@ void StandardSchubertContext::setSize(const Ulong& n)
 
 /******** input/output ****************************************************/
 
-std::string& StandardSchubertContext::append(std::string& str, const coxtypes::CoxNbr& x)
+std::string& SchubertContext::append(std::string& str, const coxtypes::CoxNbr& x)
   const
 
 {
@@ -673,7 +673,7 @@ std::string& StandardSchubertContext::append(std::string& str, const coxtypes::C
   return str;
 }
 
-std::string& StandardSchubertContext::append
+std::string& SchubertContext::append
   (std::string& str, const coxtypes::CoxNbr& x,
    const interface::Interface& I) const
 
@@ -687,7 +687,7 @@ std::string& StandardSchubertContext::append
   }
 }
 
-void StandardSchubertContext::print(FILE* file, const coxtypes::CoxNbr& x) const
+void SchubertContext::print(FILE* file, const coxtypes::CoxNbr& x) const
 
 {
   if (x == coxtypes::undef_coxnbr)
@@ -698,7 +698,7 @@ void StandardSchubertContext::print(FILE* file, const coxtypes::CoxNbr& x) const
   return;
 }
 
-void StandardSchubertContext::print(FILE* file, const coxtypes::CoxNbr& x,
+void SchubertContext::print(FILE* file, const coxtypes::CoxNbr& x,
 				    const interface::Interface& I) const
 
 {
@@ -732,7 +732,7 @@ void StandardSchubertContext::print(FILE* file, const coxtypes::CoxNbr& x,
 
 *****************************************************************************/
 
-void StandardSchubertContext::fillCoatoms(const Ulong& first,
+void SchubertContext::fillCoatoms(const Ulong& first,
 					  const coxtypes::Generator& s)
 
 /*
@@ -771,7 +771,7 @@ void StandardSchubertContext::fillCoatoms(const Ulong& first,
   return;
 }
 
-void StandardSchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
+void SchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
 					     const coxtypes::Generator& s)
 
 /*
@@ -850,7 +850,7 @@ void StandardSchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
   return;
 }
 
-void StandardSchubertContext::fillShifts(const coxtypes::CoxNbr& first,
+void SchubertContext::fillShifts(const coxtypes::CoxNbr& first,
 					 const coxtypes::Generator& s)
 
 /*
@@ -935,7 +935,7 @@ void StandardSchubertContext::fillShifts(const coxtypes::CoxNbr& first,
   but this will always happen for elements paired up with a new element,
   so we only have to go through the new ones.
 */
-void StandardSchubertContext::fillStar(const coxtypes::CoxNbr& first)
+void SchubertContext::fillStar(const coxtypes::CoxNbr& first)
 {
   const containers::vector<bits::Lflags>& ops = d_graph.finite_edges();
 
@@ -1011,7 +1011,7 @@ void StandardSchubertContext::fillStar(const coxtypes::CoxNbr& first)
   return;
 }
 
-void StandardSchubertContext::fullExtension(bits::SubSet& q, const coxtypes::Generator& s)
+void SchubertContext::fullExtension(bits::SubSet& q, const coxtypes::Generator& s)
 
 /*
   Given a context p, a subset q of p holding [e,y], and a generator s s.t.
@@ -1128,8 +1128,8 @@ void StandardSchubertContext::fullExtension(bits::SubSet& q, const coxtypes::Gen
 
 namespace schubert {
 
-StandardSchubertContext::ContextExtension::ContextExtension
-  (StandardSchubertContext& p, const Ulong& c)
+SchubertContext::ContextExtension::ContextExtension
+  (SchubertContext& p, const Ulong& c)
   :d_schubert(p),d_size(c)
 
 /*
@@ -1205,7 +1205,7 @@ StandardSchubertContext::ContextExtension::ContextExtension
   return;
 }
 
-StandardSchubertContext::ContextExtension::~ContextExtension()
+SchubertContext::ContextExtension::~ContextExtension()
 
 /*
   Destruction of a context extension.
@@ -1218,7 +1218,7 @@ StandardSchubertContext::ContextExtension::~ContextExtension()
 */
 
 {
-  StandardSchubertContext& p = d_schubert;
+  SchubertContext& p = d_schubert;
   Ulong prev_size = p.d_size-d_size;
 
   /* the pointers d_shift  and d_star were allocated previously */
