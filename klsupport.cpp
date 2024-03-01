@@ -216,8 +216,8 @@ void KLSupport::ensure_extr_rows_for(const coxtypes::CoxNbr& y)
 {
   if (recursively_allocated.is_member(y))
     return;
-  /* find sequence of shifts */
 
+  /* find sequence of shifts */
   auto e = standard_path(y);
 
   bits::SubSet q(size()); // bitmap over current subset of the group
@@ -299,7 +299,7 @@ void KLSupport::applyInverse(const coxtypes::CoxNbr& y)
 
 
 /*
-  Extends the context to accomodate g.
+  Extend the context to accomodate |g|.
 
   The return value is the context number of g in case of success, and
   undef_coxnbr in case of failure.
@@ -347,7 +347,7 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
     }
   }
 
-  // play it again, Sam
+  // play it again, Sam (but from |prev_size| to |size()|)
   for (coxtypes::CoxNbr x = prev_size; x < size(); ++x) {
     coxtypes::Generator s = p.firstRDescent(x);
     coxtypes::CoxNbr xs = p.rshift(x,s);
