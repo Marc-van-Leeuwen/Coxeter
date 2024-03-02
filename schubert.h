@@ -244,7 +244,7 @@ class SchubertContext
     { return minDescent(rdescent(x),order); }
 
   bool isDescent(coxtypes::CoxNbr x, coxtypes::Generator s) const
-   { return d_descent[x]&constants::eq_mask[s]; } // whether Right descent
+    { return (d_descent[x]&constants::eq_mask[s])!=0; } // whether Right descent
 
   coxtypes::CoxNbr shift(coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return d_shift[x][s]; } // left or right shift
