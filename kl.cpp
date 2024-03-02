@@ -938,9 +938,9 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
   coxtypes::Generator s, t;
 
   /* choose s s.t. LR(ys) not contained in LR(x) */
-
-  for (bits::Lflags f1 = p.descent(y); f1; f1 &= f1-1) {
-    coxtypes::Generator u = constants::firstBit(f1);
+  bits::Lflags desc;
+  for (desc = p.descent(y); desc; desc &= desc-1) {
+    coxtypes::Generator u = constants::firstBit(desc);
     coxtypes::CoxNbr yu = p.shift(y,u);
     bits::Lflags fu = p.descent(yu);
     if ((p.descent(x)&fu) != fu) {
@@ -949,6 +949,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
       break;
     }
   }
+  assert(desc!=0); // suppresses optimizer warning about unset |s| and/or |t|
 
   coxtypes::CoxNbr xs = p.shift(x,s);
   coxtypes::CoxNbr ys = p.shift(y,s);
@@ -2613,8 +2614,9 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
   unsigned long ls = io::LINESIZE;
 
   coxtypes::Generator s,t;
-  for (bits::Lflags f1 = p.descent(y); f1; f1 &= f1-1) {
-    coxtypes::Generator u = constants::firstBit(f1);
+  bits::Lflags desc;
+  for (desc = p.descent(y); desc; desc &= desc-1) {
+    coxtypes::Generator u = constants::firstBit(desc);
     coxtypes::CoxNbr yu = p.shift(y,u);
     bits::Lflags fu = p.descent(yu);
     if ((p.descent(x)&fu) != fu) {
@@ -2623,6 +2625,7 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
       break;
     }
   }
+  assert(desc!=0); // suppresses optimizer warning about unset |s| and/or |t|
 
   fprintf(file,"using descent s = %lu and ascent t = %lu\n\n",
 	  static_cast<Ulong>(s+1),static_cast<Ulong>(t+1));

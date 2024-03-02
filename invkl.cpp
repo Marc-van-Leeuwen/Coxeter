@@ -782,7 +782,6 @@ void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List
   return;
 }
 
-klsupport::KLCoeff KLContext::KLHelper::computeMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 
 /*
   This function gets a previously uncomputed entry in the muList. It
@@ -792,10 +791,11 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu(const coxtypes::CoxNbr& x, con
   iff LR(x) does not contain twoDescent(y).) Then let t be in LR(ys), not in
   LR(x) (and hence not in LR(y)). Then it must be so that s and t do not
   commute; in particular they act on the same side; assume this is on the
-  right. So we have yst < ys < y < yt, xs < x < xt. Assume that x <= ys
-  (otherwise mu(x,y) = mu(xs,ys)). Then from the fact that xt > x, yst < ys,
-  exactly as in the proof of thm. 4.2. in the original K-L paper, one sees
-  that at most four terms survive in the recursion formula : we have
+  right. So we have $yst < ys < y < yt$, and $xs < x < xt$. Assume that
+  $x \leq ys$ (otherwise mu(x,y) = mu(xs,ys)). Then from the fact that
+  $xt > x$, and $yst < ys$ exactly as in the proof of thm. 4.2. in the
+  original K-L paper, one sees that at most four terms survive in the
+  recursion formula : we have
 
   mu(x,y) = mu(xs,ys) - mu(x,yst) + mu(xt,ys)(if xts > xt)
             + mu(x,yst)(if ysts > yst)
@@ -806,10 +806,11 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu(const coxtypes::CoxNbr& x, con
   failure (this can be due to memory overflow, or to coefficient over- or
   underflow.)
 */
-
+klsupport::KLCoeff KLContext::KLHelper::computeMu
+  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 {
   if (inverse(y) < y)
-    return computeMu(inverse(x),inverse(y));
+    return computeMu(inverse(x),inverse(y)); // shallow recursion
 
   const schubert::SchubertContext& p = schubert();
 
@@ -821,18 +822,21 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu(const coxtypes::CoxNbr& x, con
 
   coxtypes::Generator s, t;
 
-  /* choose s s.t. LR(ys) not contained in LR(x) */
-
-  for (bits::Lflags f1 = p.descent(y); f1; f1 &= f1-1) {
-    coxtypes::Generator u = constants::firstBit(f1);
+  // choose |s| such that $LR(ys)$ not contained in $LR(x)$
+  bits::Lflags desc;
+  for (desc = p.descent(y); desc!=0; desc &= desc-1)
+  {
+    coxtypes::Generator u = constants::firstBit(desc);
     coxtypes::CoxNbr yu = p.shift(y,u);
     bits::Lflags fu = p.descent(yu);
-    if ((p.descent(x)&fu) != fu) {
+    if ((p.descent(x)&fu) != fu)
+    {
       s = u;
       t = constants::firstBit(fu & ~p.descent(x));
       break;
     }
   }
+  assert(desc!=0); // suppresses optimizer warning about unset |s| and/or |t|
 
   coxtypes::CoxNbr xs = p.shift(x,s);
   coxtypes::CoxNbr ys = p.shift(y,s);
