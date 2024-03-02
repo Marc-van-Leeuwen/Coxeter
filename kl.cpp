@@ -1256,7 +1256,7 @@ containers::vector<KLPol>
 /*
   Take care of the "second term" q.P_{x,ys} in the recursion formula for
   P_{x,y}. It is assumed that y <= inverse(y) and that the descent strategy is
-  via last.
+  via |last|.
 
   Here all the memory allocations have been made successfully; the only cause of
   error would be an overflow condition. In that case, the error is treated and

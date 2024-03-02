@@ -74,8 +74,8 @@ namespace klsupport {
 KLSupport::KLSupport(std::unique_ptr<schubert::SchubertContext> p)
   : d_schubert(std::move(p))
   , d_extrList(1)
-  , d_inverse(1)
-  , d_last(1)
+  , d_inverse{0}
+  , d_last{coxtypes::undef_generator}
   , d_involution(1)
   , recursively_allocated(1)
 {
@@ -83,12 +83,7 @@ KLSupport::KLSupport(std::unique_ptr<schubert::SchubertContext> p)
 
   d_extrList[0].reset(new ExtrRow{0});
 
-  d_inverse.setSizeValue(1);
-
-  d_last.setSizeValue(1);
-  d_last[0] = coxtypes::undef_generator;
-
-  d_involution.setBit(0);
+  d_involution.insert(0);
   recursively_allocated.insert(0);
 }
 
@@ -98,46 +93,6 @@ KLSupport::KLSupport(std::unique_ptr<schubert::SchubertContext> p)
 
 /******** accessors *********************************************************/
 
-coxtypes::CoxNbr KLSupport::inverseMin(const coxtypes::CoxNbr& x) const
-
-/*
-  Returns the minimum of x and x_inverse.
-*/
-
-{
-  if (x <= inverse(x))
-    return x;
-  else
-    return inverse(x);
-}
-
-void KLSupport::standardPath(list::List<coxtypes::Generator>& g, const coxtypes::CoxNbr& x) const
-
-{
-  const schubert::SchubertContext& p = schubert();
-
-  /* find sequence of shifts */
-
-  coxtypes::Length j = p.length(x);
-  g.setSize(j);
-  coxtypes::CoxNbr x1 = x;
-
-  while (j) {
-    --j;
-    if (inverse(x1) < x1) { /* left shift */
-      coxtypes::Generator s = last(inverse(x1));
-      g[j] = s + rank();
-      x1 = p.lshift(x1,s);
-    }
-    else {
-      coxtypes::Generator s = last(x1);
-      g[j] = last(x1);
-      x1 = p.rshift(x1,s);
-    }
-  }
-
-  return;
-}
 
 /*
   Find a series of left or right shifts (=multiplications in the group) such
@@ -212,7 +167,7 @@ void KLSupport::generate_extr_list(coxtypes::CoxNbr y)
 
   Things wouldn't be so bad if there wasn't also the passage to inverses!
 */
-void KLSupport::ensure_extr_rows_for(const coxtypes::CoxNbr& y)
+void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
 {
   if (recursively_allocated.is_member(y))
     return;
@@ -243,7 +198,7 @@ void KLSupport::ensure_extr_rows_for(const coxtypes::CoxNbr& y)
       y1 = p.shift(y1,s); // left or right shift, as |s| specifies
 
       coxtypes::CoxNbr y2 = s<rank() ? y1 : inverse(y1);
-      assert(y2 == inverseMin(y1));
+      assert(y2 == std::min(y1,inverse(y1)));
 
       if (not isExtrAllocated(y2))
       { /* allocate row */
@@ -286,7 +241,7 @@ void KLSupport::ensure_extr_rows_for(const coxtypes::CoxNbr& y)
   (where |yi| is the inverse of |y|) while taking the inverses of all entries.
   The resulting row is not sorted (this can be done with sortIRow).
 */
-void KLSupport::applyInverse(const coxtypes::CoxNbr& y)
+void KLSupport::applyInverse(coxtypes::CoxNbr y)
 {
   coxtypes::CoxNbr yi = inverse(y);
   d_extrList[y] = std::move(d_extrList[yi]);
@@ -321,56 +276,38 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
   d_extrList.resize(size()); // extend with values |std::unique_ptr<>(nullptr)|
   if (error::ERRNO)
     goto revert;
-  d_inverse.setSize(size());
+  d_inverse.resize(size(),coxtypes::undef_coxnbr);
   if (error::ERRNO)
     goto revert;
-  d_last.setSize(size());
+  d_last.resize(size(),coxtypes::undef_generator);
   if (error::ERRNO)
     goto revert;
-  d_involution.setSize(size());
+  d_involution.set_capacity(size());
   if (error::ERRNO)
     goto revert;
   recursively_allocated.set_capacity(size());
 
   error::CATCH_MEMORY_OVERFLOW = false;
 
-  /* extend the list of inverses */
-
-  for (coxtypes::CoxNbr x = 0; x < prev_size; ++x) {
-    if (inverse(x) == coxtypes::undef_coxnbr) { /* try to extend */
+  // extend the list of inverses in the old part
+  for (coxtypes::CoxNbr x = 0; x < size(); ++x)
+    if (inverse(x) == coxtypes::undef_coxnbr) // old: maybe, new: certain
+    { // try to extend to |x|
       coxtypes::Generator s = p.firstRDescent(x);
       coxtypes::CoxNbr xs = p.rshift(x,s);
-      if (inverse(xs) == coxtypes::undef_coxnbr)
-	d_inverse[x] = coxtypes::undef_coxnbr;
-      else
+      if (inverse(xs) != coxtypes::undef_coxnbr)
+      {
 	d_inverse[x] = p.lshift(inverse(xs),s);
+	d_involution.set_to(x,x == d_inverse[x]);
+      }
     }
-  }
 
-  // play it again, Sam (but from |prev_size| to |size()|)
-  for (coxtypes::CoxNbr x = prev_size; x < size(); ++x) {
-    coxtypes::Generator s = p.firstRDescent(x);
-    coxtypes::CoxNbr xs = p.rshift(x,s);
-    if (inverse(xs) == coxtypes::undef_coxnbr)
-      d_inverse[x] = coxtypes::undef_coxnbr;
-    else
-      d_inverse[x] = p.lshift(inverse(xs),s);
-  }
-
-  for (coxtypes::CoxNbr x = prev_size; x < size(); ++x) {
-    if (inverse(x) == x)
-      d_involution.setBit(x);
-  }
-
-  /* extend list of last elements */
-
-  for (coxtypes::CoxNbr x = prev_size; x < size(); ++x) {
+  // extend list of last letters in standard (ShortLex minimal) word
+  for (coxtypes::CoxNbr x = prev_size; x < size(); ++x)
+  {
     coxtypes::Generator s = p.firstLDescent(x);
     coxtypes::CoxNbr sx = p.lshift(x,s);
-    if (sx!=0)
-      d_last[x] = d_last[sx];
-    else /* x = s */
-      d_last[x] = s;
+    d_last[x] = sx==0 ? s : d_last[sx];
   }
 
   return x;
@@ -430,20 +367,14 @@ void KLSupport::permute(const bits::Permutation& a)
       coxtypes::CoxNbr inverse_buf = inverse(y);
       coxtypes::Generator last_buf = last(y);
       bool involution_buf = isInvolution(y);
-      /* put values for x in y */
+      // copy values for x into y
       d_inverse[y] = inverse(x);
       d_last[y] = last(x);
-      if (isInvolution(x))
-	d_involution.setBit(y);
-      else
-	d_involution.clearBit(y);
-      /* store backup values in x */
+      d_involution.set_to(y,isInvolution(x));
+      // store backup values into |x|
       d_inverse[x] = inverse_buf;
       d_last[x] = last_buf;
-      if (involution_buf)
-	d_involution.setBit(x);
-      else
-	d_involution.clearBit(x);
+      d_involution.set_to(x,involution_buf);
       /* set bit*/
       b.setBit(y);
     }
@@ -462,8 +393,9 @@ void KLSupport::revertSize(const Ulong& n)
 {
   d_schubert->revertSize(n);
   d_extrList.resize(n);
-  d_inverse.setSize(n);
-  d_last.setSize(n);
+  d_inverse.resize(n);
+  d_last.resize(n);
+  d_involution.set_capacity(n);
   recursively_allocated.set_capacity(n);
 }
 

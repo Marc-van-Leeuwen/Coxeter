@@ -109,7 +109,7 @@ class KLContext {
 /* accessors */
   const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const;               /* inlined */
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                        /* inlined */
-  const bits::BitMap& involution() const;                             /* inlined */
+  const bitmap::BitMap& involution() const { return d_klsupport->involution(); }
   bool isExtrAllocated(const coxtypes::CoxNbr& x) const;                  /* inlined */
   bool isFullKL() const;                                        /* inlined */
   bool isFullMu() const;                                        /* inlined */
@@ -155,8 +155,6 @@ inline const klsupport::ExtrRow& KLContext::extrList(const coxtypes::CoxNbr& y) 
   {return klsupport().extrList(y);}
 inline coxtypes::CoxNbr KLContext::inverse(const coxtypes::CoxNbr& x) const
   {return d_klsupport->inverse(x);}
-inline const bits::BitMap& KLContext::involution() const
-  {return d_klsupport->involution();}
 inline bool KLContext::isExtrAllocated(const coxtypes::CoxNbr& x) const
   {return d_klsupport->isExtrAllocated(x);}
 inline bool KLContext::isFullKL() const

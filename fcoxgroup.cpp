@@ -502,7 +502,6 @@ const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
     kl::KLContext& kl = *d_kl;
     const schubert::SchubertContext& p = kl.schubert();
 
-    bits::SubSet q(0);
 
     /* make sure left cell partition is available */
 
@@ -510,14 +509,13 @@ const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
 
     /* load involutions in q */
 
-    q.bitMap().assign(kl.involution());
-    q.readBitMap();
+    containers::vector<coxtypes::CoxNbr>
+      q(kl.involution().begin(),kl.involution().end()); // list of involutions
 
-    /* partition involutions by left cells */
-
+    // partition involutions by left cells
     bits::Partition pi(q.size());
-    for (Ulong j = 0; j < q.size(); ++j) {
-      pi[j] = d_lcell[q[j]];
+    for (Ulong i = 0; i < q.size(); ++i) {
+      pi[i] = d_lcell[q[i]];
     }
     pi.setClassCount(d_lcell.classCount());
 

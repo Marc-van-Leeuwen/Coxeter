@@ -1059,12 +1059,12 @@ void SubSet::add(const Ulong& n)
   return;
 }
 
-void SubSet::readBitMap()
 
 /*
   Puts the content of the bitmap in the list in a simple-minded way.
 */
 
+void SubSet::readBitMap()
 {
   d_list.setSize(d_bitmap.bitCount());
 

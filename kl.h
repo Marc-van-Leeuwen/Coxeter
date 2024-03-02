@@ -120,7 +120,7 @@ class KLContext {
   { return klsupport().last(y); }
   coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
   { return klsupport().inverse(x); }
-  const bits::BitMap& involution() const { return klsupport().involution(); }
+  const bitmap::BitMap& involution() const { return klsupport().involution(); }
   const schubert::SchubertContext& schubert() const
   { return klsupport().schubert(); }
 
