@@ -130,13 +130,14 @@ struct KLContext::KLHelper
   void create_KL_row(coxtypes::CoxNbr y);
   bool row_is_incomplete(coxtypes::CoxNbr y);
   void take_mu_row_from_inverse(const coxtypes::CoxNbr& y);
-  void ensure_correction_terms(coxtypes::CoxNbr y, coxtypes::Generator s);
+  void ensure_correction_terms
+    (coxtypes::CoxNbr y, coxtypes::Generator s, bitmap::BitMap* done);
   containers::vector<KLPol> initial_polys
     (coxtypes::CoxNbr y,coxtypes::Generator s);
   void add_second_terms(containers::vector<KLPol>& pols, coxtypes::CoxNbr y);
   void mu_correct_row(containers::vector<KLPol>& pols, coxtypes::CoxNbr y);
   void coatom_correct_row(containers::vector<KLPol>& pols,coxtypes::CoxNbr y);
-  void compute_KL_row(coxtypes::CoxNbr y);
+  void compute_KL_row(coxtypes::CoxNbr y, bitmap::BitMap* done = nullptr);
   void copy_mu_row_from_KL(coxtypes::CoxNbr y);
   void fill_KL_table ();
 
@@ -463,7 +464,9 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
 {
   HeckeElt h;
   if (row_is_incomplete(y))
-    compute_KL_row(y);
+  { bitmap::BitMap done(y+1); // start with no completion information
+    compute_KL_row(y,&done);
+  }
 
   if (ERRNO) {
     Error(ERRNO);
@@ -645,8 +648,8 @@ void KLContext::KLHelper::shrink(const Ulong& n)
      containers::vector<KLPol>& pol, const Ulong& a) : subtracts the non-coatom mu-part,
      for the computation of a single polynomial;
    - mu_row(const coxtypes::CoxNbr& y) : returns the row for y in muList;
-   - ensure_correction_terms(const coxtypes::CoxNbr& y, const coxtypes::Generator& s) : a preliminary to the
-     computation of a row;
+   - ensure_correction_terms(coxtypes::CoxNbr y, coxtypes::Generator s,
+           BitMap* done) : a preliminary to the computation of a row;
    - copy_mu_row_from_KL(const coxtypes::CoxNbr& y) :
      fills in the mu-row from the K-L row;
    - recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s) :
@@ -1161,7 +1164,7 @@ void KLContext::KLHelper::take_mu_row_from_inverse(const coxtypes::CoxNbr& y)
   Deals with the error if it occurs, and sets the error ERROR_WARNING;
 */
 void KLContext::KLHelper::ensure_correction_terms
-  (coxtypes::CoxNbr y, coxtypes::Generator s)
+  (coxtypes::CoxNbr y, coxtypes::Generator s, bitmap::BitMap* done)
 {
   const schubert::SchubertContext& p = schubert();
   coxtypes::CoxNbr ys = p.rshift(y,s);
@@ -1186,20 +1189,23 @@ void KLContext::KLHelper::ensure_correction_terms
   for (const auto& entry : mu_row(ys))
   {
     coxtypes::CoxNbr z = entry.x;
-    if (entry.mu != 0
-	and p.isDescent(z,s) // only |z| for which |s| is descent
-	and row_is_incomplete(z))
+    if (entry.mu != 0 and p.isDescent(z,s)) // only |z| for which |s| is descent
       zs.push_back(z);
   }
 
   // find coatoms of |ys| that for which |s| is a descent
   for (coxtypes::CoxNbr z :  p.hasse(ys))
-    if (p.isDescent(z,s) and row_is_incomplete(z))
+    if (p.isDescent(z,s))
       zs.push_back(z);
 
   for (const auto z : zs)
+    if (done==nullptr ? row_is_incomplete(z)
+	: done->is_member(z) ? false
+	: row_is_incomplete(z) ? true
+	: (done->insert(z),false)
+       )
   {
-    compute_KL_row(z); // this enters into recursion
+    compute_KL_row(z,done); // this enters into recursion
     if (ERRNO)
       goto abort;
   }
@@ -1431,10 +1437,11 @@ void KLContext::KLHelper::coatom_correct_row
   Returns the error ERROR_WARNING in case of failure, after printing an
   error message.
 */
-void KLContext::KLHelper::compute_KL_row(coxtypes::CoxNbr y)
+void KLContext::KLHelper::compute_KL_row
+  (coxtypes::CoxNbr y, bitmap::BitMap* done)
 {
   if (y == 0)
-    return;
+    { if (done!=nullptr) done->insert(0); return; }
 
   if (inverse(y) < y) // then actually fill the row for |inverse(y)|
     y = inverse(y);
@@ -1449,42 +1456,45 @@ void KLContext::KLHelper::compute_KL_row(coxtypes::CoxNbr y)
   coxtypes::Generator s = last(y); // get last right descent for |y|
   coxtypes::CoxNbr ys = p.rshift(y,s);
 
-  if (row_is_incomplete(ys)) {
-    compute_KL_row(ys); // recursive call
+  if (done==nullptr ? row_is_incomplete(ys)
+      : done->is_member(ys) ? false
+      : row_is_incomplete(ys) ? true
+      : (done->insert(ys),false)
+     )
+  {
+    compute_KL_row(ys,done); // recursive call
     if (ERRNO)
       goto abort;
   }
 
-  /* make sure the correcting terms are available */
-
-  ensure_correction_terms(y,s); // more recursive calls are hidden here
+  // make sure the correcting terms are available
+  ensure_correction_terms(y,s,done); // more recursive calls are hidden here
   if (ERRNO)
     goto abort;
 
   {
-    auto pol = initial_polys(y,s);
+    auto pols = initial_polys(y,s);
 
-    /* add q.P_{x,ys} when appropriate */
-
-    add_second_terms(pol,y);
+    // add $q.P_{x,ys}$ when appropriate
+    add_second_terms(pols,y);
     if (ERRNO)
       goto abort;
 
-  /* subtract correcting terms */
-
-    mu_correct_row(pol,y);
+    // subtract correcting terms
+    mu_correct_row(pols,y);
     if (ERRNO)
       goto abort;
-    coatom_correct_row(pol,y);
-    if (ERRNO)
-      goto abort;
-
-  /* copy results to row */
-
-    writeKLRow(y,pol);
+    coatom_correct_row(pols,y);
     if (ERRNO)
       goto abort;
 
+    // copy results to row in KL table
+    writeKLRow(y,pols);
+    if (ERRNO)
+      goto abort;
+
+    if (done!=nullptr)
+      done->insert(y); // finally mark this row as fully computed
     return;
   }
 
@@ -1500,10 +1510,11 @@ void KLContext::KLHelper::fill_KL_table ()
   if (KL_is_filled())
     return;
 
+  bitmap::BitMap done(size());
   for (coxtypes::CoxNbr y = 0; y < size(); ++y)
     if (y<=inverse(y))
     {
-      compute_KL_row(y);
+      compute_KL_row(y,&done);
       copy_mu_row_from_KL(y);
     }
 
