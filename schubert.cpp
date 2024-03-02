@@ -227,7 +227,7 @@ SchubertContext::~SchubertContext()
 */
 
 coxtypes::CoxWord& SchubertContext::append
-  (coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x) const
+  (coxtypes::CoxWord& g, coxtypes::CoxNbr d_x) const
 {
   coxtypes::CoxNbr x = d_x;
 
@@ -269,7 +269,7 @@ coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) cons
 
 */
 void SchubertContext::extractClosure
-  (bits::BitMap& b, const coxtypes::CoxNbr& x) const
+  (bits::BitMap& b, coxtypes::CoxNbr x) const
 {
   bits::SubSet q(d_size);
   resetOne(q);
@@ -341,7 +341,7 @@ bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
     return inOrder(x,ys);
 }
 
-coxtypes::CoxNbr SchubertContext::maximize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
+coxtypes::CoxNbr SchubertContext::maximize(coxtypes::CoxNbr x, const bits::Lflags& f)
   const
 
 /*
@@ -366,7 +366,7 @@ coxtypes::CoxNbr SchubertContext::maximize(const coxtypes::CoxNbr& x, const bits
   return x1;
 }
 
-coxtypes::CoxNbr SchubertContext::minimize(const coxtypes::CoxNbr& x, const bits::Lflags& f)
+coxtypes::CoxNbr SchubertContext::minimize(coxtypes::CoxNbr x, const bits::Lflags& f)
   const
 
 /*
@@ -399,7 +399,7 @@ coxtypes::CoxNbr SchubertContext::minimize(const coxtypes::CoxNbr& x, const bits
   is for use in i/o functions.
 */
 coxtypes::CoxWord& SchubertContext::normalForm
-  (coxtypes::CoxWord& g, const coxtypes::CoxNbr& d_x,
+  (coxtypes::CoxWord& g, coxtypes::CoxNbr d_x,
    const bits::Permutation& order) const
 {
   g.reset();
@@ -414,7 +414,7 @@ coxtypes::CoxWord& SchubertContext::normalForm
   return g;
 }
 
-bits::Lflags SchubertContext::twoDescent(const coxtypes::CoxNbr& x) const
+bits::Lflags SchubertContext::twoDescent(coxtypes::CoxNbr x) const
 
 /*
   Returns the "super-descent" set of x; this is the union of the descent
@@ -689,7 +689,7 @@ void SchubertContext::setSize(const Ulong& n)
 
 /******** input/output ****************************************************/
 
-std::string& SchubertContext::append(std::string& str, const coxtypes::CoxNbr& x)
+std::string& SchubertContext::append(std::string& str, coxtypes::CoxNbr x)
   const
 
 {
@@ -702,7 +702,7 @@ std::string& SchubertContext::append(std::string& str, const coxtypes::CoxNbr& x
 }
 
 std::string& SchubertContext::append
-  (std::string& str, const coxtypes::CoxNbr& x,
+  (std::string& str, coxtypes::CoxNbr x,
    const interface::Interface& I) const
 
 {
@@ -715,7 +715,7 @@ std::string& SchubertContext::append
   }
 }
 
-void SchubertContext::print(FILE* file, const coxtypes::CoxNbr& x) const
+void SchubertContext::print(FILE* file, coxtypes::CoxNbr x) const
 
 {
   if (x == coxtypes::undef_coxnbr)
@@ -726,7 +726,7 @@ void SchubertContext::print(FILE* file, const coxtypes::CoxNbr& x) const
   return;
 }
 
-void SchubertContext::print(FILE* file, const coxtypes::CoxNbr& x,
+void SchubertContext::print(FILE* file, coxtypes::CoxNbr x,
 				    const interface::Interface& I) const
 
 {
@@ -761,7 +761,7 @@ void SchubertContext::print(FILE* file, const coxtypes::CoxNbr& x,
 *****************************************************************************/
 
 void SchubertContext::fillCoatoms(const Ulong& first,
-					  const coxtypes::Generator& s)
+					  coxtypes::Generator s)
 
 /*
   This auxiliary fills the coatom lists of the new elements in p.
@@ -799,8 +799,8 @@ void SchubertContext::fillCoatoms(const Ulong& first,
   return;
 }
 
-void SchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
-					     const coxtypes::Generator& s)
+void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x,
+					     coxtypes::Generator s)
 
 /*
   This function fills in the shifts for x in the dihedral case. It is
@@ -878,8 +878,8 @@ void SchubertContext::fillDihedralShifts(const coxtypes::CoxNbr& x,
   return;
 }
 
-void SchubertContext::fillShifts(const coxtypes::CoxNbr& first,
-					 const coxtypes::Generator& s)
+void SchubertContext::fillShifts(coxtypes::CoxNbr first,
+					 coxtypes::Generator s)
 
 /*
   This function fills in the shift tables of the new elements in p. It is
@@ -963,7 +963,7 @@ void SchubertContext::fillShifts(const coxtypes::CoxNbr& first,
   but this will always happen for elements paired up with a new element,
   so we only have to go through the new ones.
 */
-void SchubertContext::fillStar(const coxtypes::CoxNbr& first)
+void SchubertContext::fillStar(coxtypes::CoxNbr first)
 {
   const containers::vector<bits::Lflags>& ops = d_graph.finite_edges();
 
@@ -1039,7 +1039,7 @@ void SchubertContext::fillStar(const coxtypes::CoxNbr& first)
   return;
 }
 
-void SchubertContext::fullExtension(bits::SubSet& q, const coxtypes::Generator& s)
+void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
 /*
   Given a context p, a subset q of p holding [e,y], and a generator s s.t.
@@ -1367,7 +1367,7 @@ void ClosureIterator::operator++()
 
 /******** private functions *************************************************/
 
-void ClosureIterator::update(const coxtypes::CoxNbr& x, const coxtypes::Generator& s)
+void ClosureIterator::update(coxtypes::CoxNbr x, coxtypes::Generator s)
 
 /*
   Updates the structure, where the new current element is x, gotten through
@@ -1498,8 +1498,8 @@ void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
   return;
 }
 
-bool shortLexOrder(const SchubertContext& p, const coxtypes::CoxNbr& d_x,
-		   const coxtypes::CoxNbr& d_y, const bits::Permutation& order)
+bool shortLexOrder(const SchubertContext& p, coxtypes::CoxNbr d_x,
+		   coxtypes::CoxNbr d_y, const bits::Permutation& order)
 
 /*
   This function checks if x <= y in the ShortLex order of the normal forms
@@ -1738,7 +1738,7 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
 
 namespace schubert {
 
-void betti(Homology& h, const coxtypes::CoxNbr& y, const SchubertContext& p)
+void betti(Homology& h, coxtypes::CoxNbr y, const SchubertContext& p)
 
 /*
   This function puts the ordinary betti numbers of the row in h, in a
