@@ -323,10 +323,10 @@ unsigned long BitMap::position(unsigned long n) const
 /*
   Return |r| bits from position |n|.
 
-  Precondition: |r| divides |longBits|, and |n| is a multiple of |r|.
+  Precondition: no multiples $m$ of |longBits| satisfy $n<m<n+r$, which is
+  ensured for instance when |r| divides both |longBits| and |n|.
 
-  Thus the bits extracted are found in single element of d_map, and such
-  elements define an integral number of disjoint ranges
+  Thus the bits extracted are found in single element of |d_map|.
 
   It is required that |n<capacity()|, but not that |n+r<=capacity()|; if the
   latter fails, the return value is padded out with (leading) zero bits.

@@ -17,6 +17,7 @@
 
 #include "containers.h"
 #include "list.h"
+#include "bitmap.h"
 
 /******** type declarations *************************************************/
 
@@ -80,7 +81,8 @@ class bits::BitMap {
 /* constructors and destructors */
   BitMap() {};
   BitMap(const Ulong& n);
-  BitMap(const BitMap& map): d_map(map.d_map), d_size(map.d_size) {};
+  BitMap(const BitMap& map): d_map(map.d_map), d_size(map.d_size) {}
+  BitMap(const bitmap::BitMap& bm); // convert format fast
   ~BitMap(); /* standard destructor */
 /* modifiers */
   BitMap& operator=(const BitMap& map);                          /* inlined */

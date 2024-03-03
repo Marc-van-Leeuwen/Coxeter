@@ -152,6 +152,8 @@ Permutation& Permutation::compose(const Permutation& a)
   - constructors :
 
     - BitMap(Ulong n);
+    - Bitmap(const BitMap&); // copy constructor
+    - Bitmap(const bitmap::BitMap& bm); // conversion
     - ~BitMap() : standard destructor;
 
   - accessors :
@@ -183,24 +185,33 @@ namespace bits {
 
 /********** constructors and destructors *************************************/
 
-BitMap::BitMap(const Ulong& n)
-  :d_map(n/BITS(Lflags)+(bool)(n%BITS(Lflags))), d_size(n)
 
 /*
   Constructor for the BitMap class; constructs a bitmap capable of
   holding n bits.
 */
-
+BitMap::BitMap(const Ulong& n)
+  :d_map(n/BITS(Lflags)+(bool)(n%BITS(Lflags))), d_size(n)
 {
   d_map.setSize(n/BITS(Lflags)+(bool)(n%BITS(Lflags)));
 }
 
-BitMap::~BitMap()
+BitMap::BitMap(const bitmap::BitMap& bm)
+  : BitMap(bm.capacity())
+{
+  constexpr auto chunk = BITS(Lflags);
+  const size_t limit = d_size/chunk;
+  size_t ii=0;
+  for (size_t i=0; i<limit; ++i,ii+=chunk)
+    d_map[i] = bm.range(ii,chunk);
+  if (bm.capacity()>ii)
+    d_map[limit] = bm.range(ii,bm.capacity()-ii);
+}
 
 /*
   No memory is directly allocated by BitMap.
 */
-
+BitMap::~BitMap()
 {}
 
 /********** accessors ********************************************************/
