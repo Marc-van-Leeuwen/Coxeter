@@ -150,9 +150,9 @@ BitMap::iterator BitMap::end() const
 */
 bool BitMap::back_up(unsigned long& n) const
 {
-  unsigned int i=n>>baseShift;
+  unsigned int i=n>>baseShift; // the index in |d_map| containing bit |n|
   auto m=(n&posBits)==0 ? 0 // taken aside to avoid dereferencing |d_map[i]|
-    : d_map[i]&constants::lt_mask[n&posBits];
+    : d_map[i]&constants::lt_mask[n&posBits]; // masks out bit |n| and larger
 
   while(m==0 and i>0)
     m=d_map[--i];

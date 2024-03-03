@@ -688,9 +688,8 @@ void KLContext::KLHelper::create_KL_row(coxtypes::CoxNbr y)
 MuRow KLContext::KLHelper::mu_row_frame
   (coxtypes::Generator s, coxtypes::CoxNbr y)
 {
-  bits::BitMap b(0);
-  schubert().extractClosure(b,y);
-  b &= schubert().downset(s);
+  auto b = schubert().closure(y);
+  b &= schubert().down_set(s);
 
   MuRow row;
 
@@ -1026,19 +1025,21 @@ void KLContext::KLHelper::compute_mu_row
   ensure_KL_row(y);
 
   MuRow mu_row = mu_row_frame(s,y); // construct a |MuRow| into |mu_row|
-  containers::vector<KLPol> pos_mu(mu_row.size());
-
-  coxtypes::CoxNbr x;
+  containers::vector<KLPol> pos_mu;
+  pos_mu.reserve(mu_row.size());
 
   // initialize |pos_mu((x))| with value from $u^(L(x)-L(y)+L(s))P_{x,y}[u^2]$
 
-  for (Ulong j = 0; j < mu_row.size(); ++j)
+  for (const auto& entry : mu_row)
   {
-    x = mu_row[j].x;
+    coxtypes::CoxNbr x = entry.x;
     const KLPol& pol = klPol(x,y);
     if (error::ERRNO) // this should not happen in typical usage
+    {
+      error::Error(error::MU_FAIL,x,y);
       goto abort;
-    pos_mu[j] = positivePart(pol,2,length(x)-length(y)+gen_length(s));
+    }
+    pos_mu.push_back(positivePart(pol,2,length(x)-length(y)+gen_length(s)));
   }
 
   /* we run through mu_row in decreasing order; for each z in the list,
@@ -1061,27 +1062,28 @@ void KLContext::KLHelper::compute_mu_row
     ensure_KL_row(z); // ensure that |klPol(x,z)| will work
     if (error::ERRNO)
       goto abort;
-    bits::BitMap b(0);
-    schubert().extractClosure(b,z); // set |b| to interval $[e,z]$
-    b &= schubert().downset(s);
-    b.clearBit(z);
-    bits::BitMap::Iterator b_end = b.end();
+    auto b = schubert().closure(z); // set |b| to interval $[e,z]$
+    b &= schubert().down_set(s);
+    b.remove(z);
 
     Ulong i = 0;
 
-    for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
-      x = *k;
+    for (coxtypes::CoxNbr x : b)
+    {
       while (mu_row[i].x != x) // advance |i| to entry for |x|
 	++i;
       const KLPol& pol = klPol(x,z);
       if (error::ERRNO)
+      {
+	error::Error(error::MU_FAIL,x,z);
 	goto abort;
+      }
       muSubtraction(pos_mu[i],mu_row[j].pol[0],pol,2,
 		    length(x)-length(z));
       if (error::ERRNO)
 	goto abort;
       ++i;
-    } // |for(k)| and |x|
+    } // |for(x)|
   } // |for(j)| and |z|
 
   store_row(mu_row,s,y);
@@ -1089,7 +1091,6 @@ void KLContext::KLHelper::compute_mu_row
   return;
 
  abort:
-  error::Error(error::MU_FAIL,x,y);
   error::ERRNO = error::ERROR_WARNING;
 
 }

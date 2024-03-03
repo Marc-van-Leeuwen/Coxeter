@@ -23,11 +23,13 @@ namespace iterator {
 /*
   FilteredIterator is an iterator adapter. The idea is that I is a forward
   iterator class, F a functor class. Objects of type f take one argument of the
-  value-type of I, and return a boolean. The new iterator traverses the
-  values of the old one for which the function object returns true.
-  T is the value-type of I.
-*/
+  value-type of I, and return a boolean. The new iterator traverses the values
+  of the old one for which the function object returns true. T is the value-type
+  of I. Since the filtererd iterator constructor captures the object of type |F|
+  by constant reference, that object should remain in existence (and presumably
+  not change) during the lifetime of the adapted iterator.
 
+*/
 namespace iterator {
 
 template <class T, class I, class F>

@@ -731,7 +731,6 @@ bool KLContext::KLHelper::checkMuRow(const coxtypes::CoxNbr& y)
   return true;
 }
 
-void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 
 /*
   This function adds the correction terms corresponding to the atoms of x in
@@ -741,25 +740,24 @@ void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List
   This is certainly quite a bit more cumbersome than the procedure for
   ordinary K-L polynomials, but I haven't a better idea just yet.
 */
-
+void KLContext::KLHelper::coatomCorrection
+  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(0);
 
   coxtypes::Generator s = last(y);
   coxtypes::CoxNbr ys = p.shift(y,s);
-  p.extractClosure(b,ys);
-  b.andnot(p.downset(s));
+  auto b = p.closure(ys);
+  b.andnot(p.down_set(s));
 
   Lflags fy = p.descent(y);
   const klsupport::ExtrRow& e = extrList(y);
 
-  bits::BitMap::Iterator b_end = b.end();
-
-  for (bits::BitMap::Iterator i = b.begin(); i != b_end; ++i) {
-    coxtypes::CoxNbr z = *i;
+  for (coxtypes::CoxNbr z : b)
+  {
     const schubert::CoatomList& c = p.hasse(z);
-    for (Ulong j = 0; j < c.size(); ++j) {
+    for (Ulong j = 0; j < c.size(); ++j)
+    {
       coxtypes::CoxNbr x = c[j];
       Lflags fx = p.descent(x);
       if ((fx & fy) != fy) // x is not extremal w.r.t. y
@@ -1199,7 +1197,6 @@ void KLContext::KLHelper::makeKLRow(const coxtypes::CoxNbr& y)
   return;
 }
 
-void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 
 /*
   This function adds the correction terms corresponding to the mu(x,z)
@@ -1211,31 +1208,30 @@ void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& y, list::List<KLP
   which mu(x,z) is non-zero, then see if x is in the extremal-list for y,
   and if yes, do the corresponding addition.
 */
-
+void KLContext::KLHelper::muCorrection
+  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
-  bits::BitMap b(0);
   coxtypes::Generator s = last(y);
   coxtypes::CoxNbr ys = p.shift(y,s);
-  p.extractClosure(b,ys);
-  b.andnot(p.downset(s));
+  auto b = p.closure(ys);
+  b.andnot(p.down_set(s));
 
   Lflags fy = p.descent(y);
   const klsupport::ExtrRow& e = extrList(y);
 
-  bits::BitMap::Iterator b_end = b.end();
-
-  for (bits::BitMap::Iterator i = b.begin(); i != b_end; ++i) {
-    coxtypes::CoxNbr z = *i;
+  for (coxtypes::CoxNbr z : b)
+  {
     const MuRow& muR = muList(z);
-    for (Ulong j = 0; j < muR.size(); ++j) {
-      coxtypes::CoxNbr x = muR[j].x;
+    for (const auto& entry : muR)
+    {
+      coxtypes::CoxNbr x = entry.x;
       Lflags fx = p.descent(x);
       if ((fx & fy) != fy) // x is not extremal w.r.t. y
 	continue;
       Ulong k = std::lower_bound(e.begin(),e.end(),x)-e.begin();
-      klsupport::KLCoeff mu = muR[j].mu;
+      klsupport::KLCoeff mu = entry.mu;
       coxtypes::Length h = (p.length(z)-p.length(x)+1)/2;
       pol[k].add(klPol(z,ys),mu,h);
       if (error::ERRNO) {

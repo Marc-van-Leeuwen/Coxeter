@@ -723,7 +723,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   using EI = iterator::FilteredIterator
     <coxtypes::CoxNbr,klsupport::ExtrRow::const_iterator,MuFilter>;
   using BI = iterator::FilteredIterator
-    <Ulong,bits::BitMap::Iterator,MuFilter>;
+    <Ulong,bitmap::BitMap::iterator,MuFilter>;
 
   const schubert::SchubertContext& p = schubert();
   klsupport::ExtrRow e;
@@ -734,9 +734,9 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
     EI last(extrList(y).end(),extrList(y).end(),f);
     e.assign(first,last);
   }
-  else {
-    bits::BitMap b(size());
-    p.extractClosure(b,y);
+  else
+  {
+    auto b = p.closure(y);
     if (ERRNO)
       return;
     schubert::select_maxima_for(p,b,p.descent(y));
@@ -1320,15 +1320,13 @@ void KLContext::KLHelper::mu_correct_row
     if (p.shift(z,s) > z)
       continue;
 
-    bits::BitMap b(size());
-    p.extractClosure(b,z);
+    auto b = p.closure(z);
     schubert::select_maxima_for(p,b,p.descent(y));
 
     Ulong i = 0;
-    bits::BitMap::Iterator b_end = b.end();
 
-    for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
-      coxtypes::CoxNbr x = *k;
+    for (coxtypes::CoxNbr x : b)
+    {
       while (e[i] < x)
 	++i;
       safeSubtract(pols[i],klPol(x,z),mu_value,h+1);
@@ -1353,25 +1351,25 @@ void KLContext::KLHelper::coatom_correct_row
   (containers::vector<KLPol>& pol,coxtypes::CoxNbr y)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(size());
+  bits::BitMap b;
   const klsupport::ExtrRow& e = extrList(y);
   coxtypes::Generator s = last(y);
   coxtypes::CoxNbr ys = p.rshift(y,s);
   const schubert::CoatomList& c = p.hasse(ys);
 
-  for (Ulong j = 0; j < c.size(); ++j) {
+  for (Ulong j = 0; j < c.size(); ++j)
+  {
     coxtypes::CoxNbr z = c[j];
     if (p.shift(z,s) > z)
       continue;
 
-    p.extractClosure(b,z);
+    b = p.closure(z);
     schubert::select_maxima_for(p,b,p.descent(y));
 
     Ulong i = 0;
-    bits::BitMap::Iterator b_end = b.end();
 
-    for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
-      coxtypes::CoxNbr x = *k;
+    for (coxtypes::CoxNbr x : b)
+    {
       while (e[i] < x)
 	++i;
       safeSubtract(pol[i],klPol(x,z),1,1);
@@ -2758,27 +2756,23 @@ void genericSingularities(HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
-  bits::BitMap b(p.size());
-  bits::BitMap bs(p.size());
-
-  p.extractClosure(b,y);
+  auto b = p.closure(y);
   schubert::select_maxima_for(p,b,p.descent(y));
 
   h.clear();
 
-  for (bits::BitMap::ReverseIterator x = b.rbegin(); x != b.rend(); ++x) {
-    const KLPol& pol = kl.klPol(*x,y);
+  Ulong x=p.size(); // prepare for decreasing traversal
+  while (b.back_up(x))
+  {
+    const KLPol& pol = kl.klPol(x,y);
     if (ERRNO)
       return;
-    if (pol.deg() > 0) { /* remove [e,x[ */
-      h.emplace_back(*x,&pol);
-      p.extractClosure(bs,*x);
-      coxtypes::CoxNbr x1 = *x; /* *x will not be correct anymore after modification */
-      b.andnot(bs);
-      b.setBit(x1); /* needed to make the decrement correct */
+    if (pol.deg() > 0)
+    { // remove the almost-interval [e,x[ from |b|
+      h.emplace_back(x,&pol);
+      b.andnot(p.closure(x)); // never mind it removes |x|; this bird has flown
     }
   }
-
   std::reverse(h.begin(),h.end());
 
   return;
