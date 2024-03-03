@@ -146,11 +146,9 @@ containers::vector<coxtypes::Generator>
 void KLSupport::generate_extr_list(coxtypes::CoxNbr y)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(size()); // take full scurrent size of the |KLSupport| class
+  auto bm = p.closure(y);
 
-  p.extractClosure(b,y); // select the Bruhat interval up to |y|
-  if (error::ERRNO)
-    return;
+  bits::BitMap b(bm); // convert to older |BitMap| type
 
   schubert::select_maxima_for(p,b,p.descent(y));
 
