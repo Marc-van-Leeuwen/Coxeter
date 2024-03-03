@@ -7,9 +7,9 @@ dependencies := $(patsubst %.cpp,%.d,$(wildcard *.cpp))
 
 globals = globals.h
 
-pflags = -c $(includedirs) -pg -O
-oflags = -c $(includedirs) -O -Wall
-gflags = -c $(includedirs) -Wall -ggdb
+pflags = $(includedirs) -pg -O
+oflags = $(includedirs) -O -Wall
+gflags = $(includedirs) -Wall -ggdb
 
 cflags = $(gflags) # the default setting
 
@@ -27,13 +27,13 @@ CXX = g++ -std=c++11
 all: coxeter #clean
 
 coxeter: $(objects)
-	$(CXX) -o coxeter $(objects)
+	$(CXX) $(cflags) -o coxeter $(objects)
 
 clean:
 	rm -f $(objects)
 
 %.o:%.cpp
-	$(CXX) $(cflags) $*.cpp
+	$(CXX) -c $(cflags) $*.cpp
 
 # dependencies --- these were generated automatically by make depend on my
 # system; they are explicitly copied for portability. Only local dependencies

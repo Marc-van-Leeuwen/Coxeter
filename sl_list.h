@@ -785,6 +785,8 @@ template<typename T, typename Alloc>
     head->next.reset(result.release()); // attach result after |head|
   }
 
+  simple_list reversed()&& noexcept { reverse(); return *this; }
+
   // reverse range and return new ending iterator
   iterator reverse (const_iterator from, const_iterator to) noexcept
   {
@@ -1725,6 +1727,8 @@ template<typename T, typename Alloc>
   { return splice(pos,std::move(other),node,std::next(node)); }
 
   void reverse () noexcept { reverse(cbegin(),cend()); }
+
+  sl_list reversed()&& noexcept { reverse(); return *this; }
 
   // reverse range and return new ending iterator
   iterator reverse (const_iterator from, const_iterator to) noexcept
