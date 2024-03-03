@@ -971,7 +971,7 @@ void CoxGroup::CoxHelper::checkInverses()
     if (kls.isExtrAllocated(y))
       continue;
     /* if we get here, we should transfer lists from yi to y */
-    kls.applyInverse(y);
+    kls.move_extr_list_from_inverse(y);
     if (d_W->d_kl)
       d_W->d_kl->applyInverse(y);
     if (d_W->d_invkl)

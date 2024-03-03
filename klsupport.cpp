@@ -8,6 +8,8 @@
 #include "klsupport.h"
 #include <algorithm> // for |std::reverse|
 
+#include "bitmap.h"
+
 /*
   This module contains code for the operations that can be "factored out"
   amongst the various K-L tables : the ordinary one, the inverse one, and
@@ -59,7 +61,7 @@
 
    - manipulators :
 
-    - applyInverse(const CoxNbr& y) : writes the row from inverse in y;
+    - move_extr_list_from_inverse(const CoxNbr& y) : writes the row from inverse in y;
     - applyIPermutation(const CoxNbr& y, const Permutation& a) : applies
       the (inverse) permutation to extrList(y); (inlined)
     - extendContext(const CoxWord& g) : extends the context to hold g;
@@ -172,7 +174,7 @@ void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
   if (recursively_allocated.is_member(y))
     return;
 
-  /* find sequence of shifts */
+  // find sequence of shifts
   auto e = standard_path(y);
 
   bits::SubSet q(size()); // bitmap over current subset of the group
@@ -218,7 +220,7 @@ void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
 
 	if (s >= rank()) // was the shift a left shift?
 	{
-	  applyInverse(y2); // move list from |y1| to (smaller) |y2|
+	  move_extr_list_from_inverse(y2); // move list from |y1| to (smaller) |y2|
 	  std::sort(d_extrList[y2]->begin(),d_extrList[y2]->end());
 	} // |if (left shift)|
       } // |if (not allocated)|
@@ -241,15 +243,14 @@ void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
   (where |yi| is the inverse of |y|) while taking the inverses of all entries.
   The resulting row is not sorted (this can be done with sortIRow).
 */
-void KLSupport::applyInverse(coxtypes::CoxNbr y)
+void KLSupport::move_extr_list_from_inverse(coxtypes::CoxNbr y)
 {
-  coxtypes::CoxNbr yi = inverse(y);
-  d_extrList[y] = std::move(d_extrList[yi]);
+  assert(y<inverse(y));
+  d_extrList[y] = std::move(d_extrList[inverse(y)]); // move pointer
 
   ExtrRow& e = *d_extrList[y];
-  for (Ulong j = 0; j < e.size(); ++j) {
-    e[j] = inverse(e[j]);
-  }
+  for (auto& x : e)
+    x = inverse(x);
 }
 
 

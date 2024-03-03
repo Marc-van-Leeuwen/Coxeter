@@ -101,7 +101,7 @@ class KLSupport {
     const;
 /* manipulators */
   void ensure_extr_rows_for(coxtypes::CoxNbr y);
-  void applyInverse(coxtypes::CoxNbr y);
+  void move_extr_list_from_inverse(coxtypes::CoxNbr y);
   void applyIPermutation(coxtypes::CoxNbr y, const bits::Permutation& a)
     { bits::right_permute (*d_extrList[y],a); }
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
