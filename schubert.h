@@ -267,6 +267,7 @@ class SchubertContext
 /* accessors */
   bitmap::BitMap closure(coxtypes::CoxNbr x) const;
   containers::sl_list<coxtypes::Generator> word(coxtypes::CoxNbr x) const;
+  void spread_subset(bitmap::BitMap& q, coxtypes::Generator s) const;
 
   coxtypes::CoxWord& append(coxtypes::CoxWord& g, coxtypes::CoxNbr x) const;
   coxtypes::CoxNbr contextNumber(const coxtypes::CoxWord& g) const;

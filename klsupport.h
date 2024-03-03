@@ -13,7 +13,6 @@
 
 #include "coxtypes.h"
 #include "list.h"
-#include "bits.h" // for |bits::BitMap|
 #include "bitmap.h" // for |bitmap::BitMap|
 #include "polynomials.h"
 #include "schubert.h"

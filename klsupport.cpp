@@ -175,71 +175,46 @@ void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
   // find sequence of shifts
   auto e = standard_path(y);
 
-  bits::SubSet q(size()); // bitmap over current subset of the group
+  bitmap::BitMap q(y+1);
 
-  q.reset();
-  q.add(0);
-  if (error::ERRNO)
-    goto abort;
+  q.insert(0);
+  const schubert::SchubertContext& p = schubert();
 
+  coxtypes::CoxNbr x = 0; // start at the identity
+
+  for (coxtypes::Generator s : e)
   {
-    const schubert::SchubertContext& p = schubert();
+    p.spread_subset(q,s);  /* extend the subset */
+    x = p.shift(x,s); // left or right shift, as |s| specifies
 
-    coxtypes::CoxNbr y1 = 0; // start at the identity
+    coxtypes::CoxNbr x1 = s<rank() ? x : inverse(x);
+    assert(x1 == std::min(x,inverse(x))); // |standard_path| causes this
 
-    for (Ulong j = 0; j < e.size(); ++j)
-    {
+    if (not isExtrAllocated(x1))
+    { // allocate row for |x1|, but we compute for |x| first
 
-      coxtypes::Generator s = e[j];
-      p.extendSubSet(q,s);  /* extend the subset */
-      if (error::ERRNO)
-	goto abort;
+      auto b = q; // make a working copy of interval $[e,x]$
 
-      y1 = p.shift(y1,s); // left or right shift, as |s| specifies
+      // find (double sided) extremal element in interval
+      schubert::select_maxima_for(p,b,p.descent(x));
+      d_extrList[x].reset(new ExtrRow(b.begin(),b.end()));
 
-      coxtypes::CoxNbr y2 = s<rank() ? y1 : inverse(y1);
-      assert(y2 == std::min(y1,inverse(y1)));
+      /* go over to inverses if necessary */
+      if (s >= rank()) // was the shift a left shift?
+	move_extr_list_from_inverse(x1); // move to (smaller) |x1|, inverted
 
-      if (not isExtrAllocated(y2))
-      { /* allocate row */
+    } // |if (not allocated)|
+    recursively_allocated.insert(x);
+  } // |for(j)|
 
-	/* copy bitmap of subset to buffer */
-
-	bits::BitMap b = q.bitMap();
-	if (error::ERRNO)
-	  goto abort;
-
-	/* extremalize */
-
-	schubert::select_maxima_for(p,b,p.descent(y1));
-	d_extrList[y1].reset(new ExtrRow(b.begin(),b.end()));
-
-	/* go over to inverses if necessary */
-
-	if (s >= rank()) // was the shift a left shift?
-	{
-	  move_extr_list_from_inverse(y2); // move list from |y1| to (smaller) |y2|
-	  std::sort(d_extrList[y2]->begin(),d_extrList[y2]->end());
-	} // |if (left shift)|
-      } // |if (not allocated)|
-      recursively_allocated.insert(y1);
-    } // |for(j)|
-
-    assert(y1==y);
-  }
-
-  return;
- abort:
-  error::Error(error::ERRNO);
-  error::ERRNO = error::ERROR_WARNING;
-  return;
+  assert(x==y);
 }
 
 
 /*
   This function moves the contents of |d_extrList[yi]| to |d_extrList[y]|
-  (where |yi| is the inverse of |y|) while taking the inverses of all entries.
-  The resulting row is not sorted (this can be done with sortIRow).
+  (where |yi| is the inverse of |y|) while taking the inverses of all entries
+  and sorting the result afterwards.
 */
 void KLSupport::move_extr_list_from_inverse(coxtypes::CoxNbr y)
 {
@@ -249,6 +224,7 @@ void KLSupport::move_extr_list_from_inverse(coxtypes::CoxNbr y)
   ExtrRow& e = *d_extrList[y];
   for (auto& x : e)
     x = inverse(x);
+  std::sort(e.begin(),e.end());
 }
 
 

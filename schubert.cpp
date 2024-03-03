@@ -287,6 +287,15 @@ void SchubertContext::extractClosure
   return;
 }
 
+void SchubertContext::spread_subset
+  (bitmap::BitMap& q, coxtypes::Generator s) const
+{
+  auto q0 = q; // fix original subset to loop over
+  for (coxtypes::CoxNbr x : q0)
+    if (not isDescent(x,s)) // unnecessary, if |q| is downwards closed
+      q.insert(shift(x,s)); // could be left or right shift (upwards)
+}
+
 containers::sl_list<coxtypes::Generator>
   SchubertContext::word (coxtypes::CoxNbr x) const
 {
