@@ -751,7 +751,7 @@ void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List
   p.extractClosure(b,ys);
   b.andnot(p.downset(s));
 
-  bits::Lflags fy = p.descent(y);
+  Lflags fy = p.descent(y);
   const klsupport::ExtrRow& e = extrList(y);
 
   bits::BitMap::Iterator b_end = b.end();
@@ -761,7 +761,7 @@ void KLContext::KLHelper::coatomCorrection(const coxtypes::CoxNbr& y, list::List
     const schubert::CoatomList& c = p.hasse(z);
     for (Ulong j = 0; j < c.size(); ++j) {
       coxtypes::CoxNbr x = c[j];
-      bits::Lflags fx = p.descent(x);
+      Lflags fx = p.descent(x);
       if ((fx & fy) != fy) // x is not extremal w.r.t. y
 	continue;
       /* find x in the extremal list */
@@ -814,7 +814,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
 
   const schubert::SchubertContext& p = schubert();
 
-  bits::Lflags f = p.twoDescent(y);
+  Lflags f = p.twoDescent(y);
 
   if ((p.descent(x)&f) == f) { /* x is super-extremal w.r.t. y */
     return recursiveMu(x,y,last(y));
@@ -823,12 +823,12 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
   coxtypes::Generator s, t;
 
   // choose |s| such that $LR(ys)$ not contained in $LR(x)$
-  bits::Lflags desc;
+  Lflags desc;
   for (desc = p.descent(y); desc!=0; desc &= desc-1)
   {
     coxtypes::Generator u = constants::firstBit(desc);
     coxtypes::CoxNbr yu = p.shift(y,u);
-    bits::Lflags fu = p.descent(yu);
+    Lflags fu = p.descent(yu);
     if ((p.descent(x)&fu) != fu)
     {
       s = u;
@@ -1221,7 +1221,7 @@ void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& y, list::List<KLP
   p.extractClosure(b,ys);
   b.andnot(p.downset(s));
 
-  bits::Lflags fy = p.descent(y);
+  Lflags fy = p.descent(y);
   const klsupport::ExtrRow& e = extrList(y);
 
   bits::BitMap::Iterator b_end = b.end();
@@ -1231,7 +1231,7 @@ void KLContext::KLHelper::muCorrection(const coxtypes::CoxNbr& y, list::List<KLP
     const MuRow& muR = muList(z);
     for (Ulong j = 0; j < muR.size(); ++j) {
       coxtypes::CoxNbr x = muR[j].x;
-      bits::Lflags fx = p.descent(x);
+      Lflags fx = p.descent(x);
       if ((fx & fy) != fy) // x is not extremal w.r.t. y
 	continue;
       Ulong k = std::lower_bound(e.begin(),e.end(),x)-e.begin();

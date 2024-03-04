@@ -50,15 +50,15 @@ namespace {
   void makeSymbols // copy |n| strings from |symbol| in order to form |list|
     (std::vector<std::string>& list, const std::string* const symbol, Ulong n);
   coxtypes::CoxNbr toCoxNbr(char c);
-  automata::Automaton *tokenAutomaton(bits::Lflags f);
-  automata::Automaton *tokenAut0();
-  automata::Automaton *tokenAut1();
-  automata::Automaton *tokenAut2();
-  automata::Automaton *tokenAut3();
-  automata::Automaton *tokenAut4();
-  automata::Automaton *tokenAut5();
-  automata::Automaton *tokenAut6();
-  automata::Automaton *tokenAut7();
+  automata::Automaton* tokenAutomaton(GenSet f);
+  automata::Automaton* tokenAut0();
+  automata::Automaton* tokenAut1();
+  automata::Automaton* tokenAut2();
+  automata::Automaton* tokenAut3();
+  automata::Automaton* tokenAut4();
+  automata::Automaton* tokenAut5();
+  automata::Automaton* tokenAut6();
+  automata::Automaton* tokenAut7();
 
 };
 
@@ -242,7 +242,7 @@ void Interface::readSymbols()
 void Interface::setAutomaton()
 
 {
-  bits::Lflags f = 0;
+  GenSet f = 0;
 
   if (d_in->prefix.length())
     f |= constants::eq_mask[prefix_bit];
@@ -392,7 +392,7 @@ bool Interface::readCoxElt(interface::ParseInterface& P) const
 
 {
   Token tok = 0;
-  bits::Lflags f = 0;
+  GenSet f = 0;
 
   // in case this is a second attempt after an incomplete read, make
   // f hold the part already read
@@ -1092,19 +1092,18 @@ std::string& append(std::string& str, const coxtypes::CoxWord& g, const GroupElt
   return str;
 }
 
-std::string& append(std::string& str, const bits::Lflags& f, const Interface& I)
 
 /*
   Appends to str the representation of f as a one-sided descent set,
   according to the current DescentSetIntrface in I.
 */
-
+std::string& append(std::string& str, const GenSet& f, const Interface& I)
 {
   const DescentSetInterface& d = I.descentInterface();
 
   str.append(d.prefix);
 
-  for (bits::Lflags f1 = f; f1;)
+  for (GenSet f1 = f; f1;)
     {
       coxtypes::Generator s = constants::firstBit(f1);
       appendSymbol(str,s,I);
@@ -1118,19 +1117,18 @@ std::string& append(std::string& str, const bits::Lflags& f, const Interface& I)
   return str;
 }
 
-std::string& appendTwosided(std::string& str, const bits::Lflags& f, const Interface& I)
 
 /*
   Appends to str the representation of f as a two-sided descent set,
   according to the current DescentSetIntrface in I.
 */
-
+std::string& appendTwosided(std::string& str, const Lflags& f, const Interface& I)
 {
   const DescentSetInterface& d = I.descentInterface();
 
   str.append(d.twosidedPrefix);
 
-  for (bits::Lflags f1 = f>>I.rank(); f1;) // left descents
+  for (GenSet f1 = f>>I.rank(); f1;) // left descents
     {
       coxtypes::Generator s = constants::firstBit(f1);
       appendSymbol(str,s,I);
@@ -1141,7 +1139,7 @@ std::string& appendTwosided(std::string& str, const bits::Lflags& f, const Inter
 
   str.append(d.twosidedSeparator);
 
-  for (bits::Lflags f1 = f&constants::lt_mask[I.rank()]; f1;) // right descents
+  for (GenSet f1 = f&constants::lt_mask[I.rank()]; f1;) // right descents
     {
       coxtypes::Generator s = constants::firstBit(f1);
       appendSymbol(str,s,I);
@@ -1174,7 +1172,7 @@ void print(FILE *file, const coxtypes::CoxWord& g, const GroupEltInterface& GI)
   io::print(file,GI.postfix);
 }
 
-void print(FILE *file, const bits::Lflags& f, const DescentSetInterface& DI,
+void print(FILE *file, const GenSet& f, const DescentSetInterface& DI,
 	   const GroupEltInterface& GI)
 
 /*
@@ -1185,7 +1183,7 @@ void print(FILE *file, const bits::Lflags& f, const DescentSetInterface& DI,
 {
   io::print(file,DI.prefix);
 
-  for (bits::Lflags f1 = f; f1;)
+  for (GenSet f1 = f; f1;)
     {
       coxtypes::Generator s = constants::firstBit(f1);
       io::print(file,GI.symbol[s]);
@@ -1199,19 +1197,18 @@ void print(FILE *file, const bits::Lflags& f, const DescentSetInterface& DI,
   return;
 }
 
-void printTwosided
-  (FILE *file, const bits::Lflags& f, const DescentSetInterface& DI,
-   const GroupEltInterface& GI, const coxtypes::Rank& l)
 
 /*
   Prints f as a two-sided descent set, according to the current
   DescentSetInterface in I.
 */
-
+void printTwosided
+  (FILE *file, const Lflags& f, const DescentSetInterface& DI,
+   const GroupEltInterface& GI, const coxtypes::Rank& l)
 {
   io::print(file,DI.twosidedPrefix);
 
-  for (bits::Lflags f1 = f>>l; f1;) // left descents
+  for (GenSet f1 = f>>l; f1;) // left descents
     {
       coxtypes::Generator s = constants::firstBit(f1);
       io::print(file,GI.symbol[s]);
@@ -1222,7 +1219,7 @@ void printTwosided
 
   io::print(file,DI.twosidedSeparator);
 
-  for (bits::Lflags f1 = f&constants::lt_mask[l]; f1;) // right descents
+  for (GenSet f1 = f&constants::lt_mask[l]; f1;) // right descents
     {
       coxtypes::Generator s = constants::firstBit(f1);
       io::print(file,GI.symbol[s]);
@@ -1347,13 +1344,12 @@ const std::string* checkReserved(const GroupEltInterface& GI, const Interface& I
   return 0;
 }
 
-Ulong descentWidth(const bits::Lflags& f, const Interface& I)
 
 /*
-  Returns the width of the printout of the descent set. We assume that
+  Return the width of the printout of the descent set. We assume that
   f is either full left, full right or full two-sided descents.
 */
-
+Ulong descentWidth(const Lflags& f, const Interface& I)
 {
   std::string str;
 
@@ -1513,8 +1509,7 @@ coxtypes::CoxNbr toCoxNbr(char c)
   return 0;
 }
 
-automata::Automaton *tokenAutomaton(bits::Lflags f)
-
+automata::Automaton* tokenAutomaton(GenSet f)
 {
   switch(f) {
   case 0:

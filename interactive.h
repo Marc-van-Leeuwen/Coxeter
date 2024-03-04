@@ -37,7 +37,7 @@ namespace interactive {
   coxtypes::CoxNbr& getCoxNbr(transducer::Transducer& T) /* not implemented */;
   const coxtypes::CoxWord& getCoxWord(coxgroup::CoxGroup *W);
   coxtypes::Generator getGenerator(coxgroup::CoxGroup *W);
-  coxtypes::Generator getGenerator(coxgroup::CoxGroup *W, const bits::Lflags& f);
+  coxtypes::Generator getGenerator(coxgroup::CoxGroup *W, const GenSet& f);
   void getLength
     (containers::vector<coxtypes::Length>& L, const graph::CoxGraph& G,
      const interface::Interface& I);

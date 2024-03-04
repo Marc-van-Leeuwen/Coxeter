@@ -41,11 +41,11 @@ namespace minroots {
 
 namespace minroots {
   std::string& append(std::string& str, const dotval::DotVal& a);
-  bits::Lflags descent(MinTable& T, MinNbr r);
+  GenSet descent(MinTable& T, MinNbr r);
   coxtypes::Length depth(MinTable& T, MinNbr r);
   void print(FILE *file, MinTable& T);
   coxtypes::CoxWord& reduced(MinTable& T, MinNbr r);
-  bits::Lflags support(MinTable& T, MinNbr r);
+  GenSet support(MinTable& T, MinNbr r);
 };
 
 /******* type definitions ****************************************************/
@@ -70,7 +70,7 @@ class minroots::MinTable {
 /* manipulators */
   void fill(const graph::CoxGraph& G);
 /* accessors */
-  bits::Lflags descent(const coxtypes::CoxWord& g) const;
+  Lflags descent(const coxtypes::CoxWord& g) const;
   dotval::DotVal dot(MinNbr r, coxtypes::Generator s) const
     { return dotval::DotVal(d_dot[r][s]); }
   int insert
@@ -83,7 +83,7 @@ class minroots::MinTable {
      const coxtypes::CoxWord& g, const coxtypes::CoxWord& h)
     const;
   bool isDescent(const coxtypes::CoxWord& g, const coxtypes::Generator& s) const;
-  bits::Lflags ldescent(const coxtypes::CoxWord& g) const;
+  GenSet ldescent(const coxtypes::CoxWord& g) const;
   const coxtypes::CoxWord& normalForm
     (coxtypes::CoxWord& g, const bits::Permutation& order) const;
   MinNbr min(MinNbr r, coxtypes::Generator s) const { return d_min[r][s]; }
@@ -92,7 +92,7 @@ class minroots::MinTable {
     (coxtypes::CoxWord& g, coxtypes::CoxLetter *const h, const Ulong& n) const;
   int prod(coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
   coxtypes::Rank rank() const { return d_rank; }
-  bits::Lflags rdescent(const coxtypes::CoxWord& g) const;
+  GenSet rdescent(const coxtypes::CoxWord& g) const;
   const coxtypes::CoxWord& reduced
     (coxtypes::CoxWord& g, coxtypes::CoxWord& h) const;
   MinNbr size() const { return d_size; }

@@ -57,7 +57,7 @@ class wgraph::WGraph {
  private:
   OrientedGraph* d_graph;
   list::List<CoeffList> d_coeff;
-  list::List<bits::Lflags> d_descent;
+  list::List<GenSet> d_descent;
  public:
 /* constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
@@ -67,13 +67,13 @@ class wgraph::WGraph {
   ~WGraph();
 /* accessors */
   const CoeffList& coeffList(const Vertex& x) const;             /* inlined */
-  const bits::Lflags& descent(const Vertex& x) const;            /* inlined */
+  const GenSet& descent(const Vertex& x) const;            /* inlined */
   const EdgeList& edge(const Vertex& x) const;                   /* inlined */
   const OrientedGraph& graph() const;                            /* inlined */
   Ulong size() const;                                            /* inlined */
 /* modifiers */
   CoeffList& coeffList(const Vertex& x);                         /* inlined */
-  bits::Lflags& descent(const Vertex& x);                        /* inlined */
+  GenSet& descent(const Vertex& x);                        /* inlined */
   EdgeList& edge(const Vertex& x);                               /* inlined */
   OrientedGraph& graph();                                        /* inlined */
   void reset();
@@ -86,7 +86,7 @@ namespace wgraph {
 
   inline const CoeffList& WGraph::coeffList(const Vertex& x) const
     {return d_coeff[x];}
-  inline const bits::Lflags& WGraph::descent(const Vertex& x) const
+  inline const GenSet& WGraph::descent(const Vertex& x) const
     {return d_descent[x];}
   inline const EdgeList& WGraph::edge(const Vertex& x) const
     {return d_graph->edge(x);}
@@ -96,7 +96,7 @@ namespace wgraph {
   inline Ulong WGraph::size() const {return d_graph->size();}
   inline OrientedGraph& WGraph::graph() {return *d_graph;}
 
-  inline bits::Lflags& WGraph::descent(const Vertex& x) {return d_descent[x];}
+  inline GenSet& WGraph::descent(const Vertex& x) {return d_descent[x];}
   inline const EdgeList& OrientedGraph::edge(const Vertex& x) const
     {return d_edge[x];}
   inline Ulong OrientedGraph::size() const {return d_edge.size();}

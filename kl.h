@@ -57,9 +57,8 @@ public:
 };
 
 struct KLStats {
-  static const bits::Lflags kl_done = 1L;
-  static const bits::Lflags mu_done = (1L << 1);
-  bits::Lflags flags;
+  static constexpr unsigned char kl_done = 1L;
+  static constexpr unsigned char mu_done = (1L << 1);
   Ulong klrows;
   Ulong klnodes;
   Ulong klcomputed;
@@ -67,6 +66,7 @@ struct KLStats {
   Ulong munodes;
   Ulong mucomputed;
   Ulong muzero;
+  unsigned char flags;
 /* constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)

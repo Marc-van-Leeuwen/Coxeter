@@ -59,8 +59,8 @@ namespace {
   void checkType(std::string& buf);
   void getCoxFileName(std::string& buf);
   Ulong parse(const interface::Interface& I, coxtypes::Generator &s, const std::string& line);
-  Ulong parse(const interface::Interface& I, coxtypes::Generator &s, const std::string& line,
-		const bits::Lflags& f);
+  Ulong parse(const interface::Interface& I, coxtypes::Generator &s,
+	      const std::string& line, const GenSet& f);
   void printADiagram(FILE* file, const coxgroup::CoxGroup* W);
   void printBDiagram(FILE* file, const coxgroup::CoxGroup* W);
   void printDDiagram(FILE* file, const coxgroup::CoxGroup* W);
@@ -360,7 +360,7 @@ coxtypes::Generator getGenerator(coxgroup::CoxGroup* W)
 }
 
 
-coxtypes::Generator getGenerator(coxgroup::CoxGroup* W, const bits::Lflags& f)
+coxtypes::Generator getGenerator(coxgroup::CoxGroup* W, const GenSet& f)
 
 /*
   Like getGenerator, but moreover checks if s is flagged by f.
@@ -442,7 +442,7 @@ void getLength(containers::vector<coxtypes::Length>& L,
 
     /* set corresponding lengths */
 
-    for (bits::Lflags f = cl[j]; f; f &= f-1)
+    for (GenSet f = cl[j]; f; f &= f-1)
     { coxtypes::Generator s = constants::firstBit(f);
       L[s] = l;
       L[s+G.rank()] = l; // left multiplication
@@ -1336,8 +1336,6 @@ Ulong parse(const interface::Interface& I, coxtypes::Generator &s, const std::st
   return q;
 }
 
-Ulong parse(const interface::Interface& I, coxtypes::Generator &s,
-	    const std::string& line, const bits::Lflags& f)
 
 /*
   This function parses a generator from the line, checking if the
@@ -1347,7 +1345,8 @@ Ulong parse(const interface::Interface& I, coxtypes::Generator &s,
   letters "l" or "r", followed by the input symbol of a generator. The
   only other possibility is the empty (= white) string.
 */
-
+Ulong parse(const interface::Interface& I, coxtypes::Generator &s,
+	    const std::string& line, const GenSet& f)
 {
   interface::Token tok;
 

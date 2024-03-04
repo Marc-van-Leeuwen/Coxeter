@@ -105,7 +105,7 @@ class FiniteCoxGroup : public coxgroup::CoxGroup
   coxtypes::Length length(const coxtypes::CoxArr& a) const;
   const coxtypes::CoxArr& powerArr(coxtypes::CoxArr& a, const Ulong& m) const;
   int prodArr(coxtypes::CoxArr& a, const coxtypes::CoxArr& b) const;
-  bits::Lflags rDescent(const coxtypes::CoxArr& a) const;
+  GenSet rDescent(const coxtypes::CoxArr& a) const;
   const coxtypes::CoxWord& reducedArr(coxtypes::CoxWord& g, const coxtypes::CoxArr& a) const;
   const coxtypes::CoxArr& setZero(coxtypes::CoxArr& a) const;                        /* inlined */
 

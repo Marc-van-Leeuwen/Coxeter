@@ -193,7 +193,7 @@ bool FiniteCoxGroup::isFullContext() const
 
 {
   coxtypes::CoxNbr x = schubert().size()-1;
-  bits::Lflags f = ldescent(x);
+  GenSet f = ldescent(x);
 
   if (f == graph().supp())
     return true;
@@ -369,16 +369,15 @@ int FiniteCoxGroup::prodArr(coxtypes::CoxArr& a, const coxtypes::CoxWord& g) con
 }
 
 
-bits::Lflags FiniteCoxGroup::rDescent(const coxtypes::CoxArr& a) const
 
 /*
   Returns the right descent set of a.
 
   NOTE : makes sense only when the rank is at most MEDRANK_MAX.
 */
-
+GenSet FiniteCoxGroup::rDescent(const coxtypes::CoxArr& a) const
 {
-  bits::Lflags f = 0;
+  GenSet f = 0;
 
   for (coxtypes::Generator s = 0; s < rank(); s++) /* multiply by s */
     {

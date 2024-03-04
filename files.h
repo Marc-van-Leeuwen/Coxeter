@@ -69,7 +69,7 @@ void appendSeparator(std::string& str, const Ulong& n, HeckeTraits& traits);
 template <class KL>
   void makeWGraph
     (wgraph::WGraph& X, const list::List<coxtypes::CoxNbr>& c,
-     const bits::Lflags& f, KL& kl);
+     const Lflags& f, KL& kl);
 void minReps
   (list::List<coxtypes::CoxNbr>& min, const bits::Partition& pi,
    schubert::NFCompare& c);
@@ -91,7 +91,7 @@ template <class KL>
 template <class C>
   void printCoefficient(FILE* file, const C& c,
 			PolynomialTraits& traits);
-void printDescents(FILE* file, const bits::Lflags& df, const bits::Lflags& f,
+void printDescents(FILE* file, const Lflags& df, const Lflags& f,
 		   const interface::Interface& I, WgraphTraits& traits);
 template <class KL>
   void printDuflo(FILE* file, const list::List<coxtypes::CoxNbr>& d, const bits::Partition& pi,
@@ -174,10 +174,10 @@ template <class KL>
 template <class KL>
   void printSingularStratification(FILE* file, const coxtypes::CoxNbr& y, KL& kl,
 				   const interface::Interface& I, OutputTraits& traits);
-void printWGraph(FILE* file, const wgraph::WGraph& X, const bits::Lflags& f,
+void printWGraph(FILE* file, const wgraph::WGraph& X, const Lflags& f,
 		 const interface::Interface& I, WgraphTraits& traits);
 template <class KL>
-  void printWGraphList(FILE* file, const bits::Partition& pi, const bits::Lflags& f,
+  void printWGraphList(FILE* file, const bits::Partition& pi, const Lflags& f,
 		       const interface::Interface& I, KL& kl, OutputTraits& traits);
 template <class H>
   bool setTwoSided(const H& h, const bits::Permutation& a,

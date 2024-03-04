@@ -341,20 +341,19 @@ bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
     return inOrder(x,ys);
 }
 
-coxtypes::CoxNbr SchubertContext::maximize(coxtypes::CoxNbr x, const bits::Lflags& f)
-  const
 
 /*
   This function maximizes x w.r.t. the flags in f. The return value is
   coxtypes::undef_coxnbr if the extremalization takes us outside the context. It
   is assumed that f is a valid set of flags, i.e., contained in S \coprod S.
 */
-
+coxtypes::CoxNbr SchubertContext::maximize
+  (coxtypes::CoxNbr x, const Lflags& f)  const
 {
   coxtypes::CoxNbr x1 = x;
-  bits::Lflags g = f & ~d_descent[x1];
+  Lflags g = f & ~d_descent[x1];
 
-  while (g)
+  while (g!=0)
     {
       coxtypes::Generator s = constants::firstBit(g);
       x1 = d_shift[x1][s];
@@ -366,7 +365,7 @@ coxtypes::CoxNbr SchubertContext::maximize(coxtypes::CoxNbr x, const bits::Lflag
   return x1;
 }
 
-coxtypes::CoxNbr SchubertContext::minimize(coxtypes::CoxNbr x, const bits::Lflags& f)
+coxtypes::CoxNbr SchubertContext::minimize(coxtypes::CoxNbr x, const Lflags& f)
   const
 
 /*
@@ -377,9 +376,9 @@ coxtypes::CoxNbr SchubertContext::minimize(coxtypes::CoxNbr x, const bits::Lflag
 
 {
   coxtypes::CoxNbr x1 = x;
-  bits::Lflags g = f & d_descent[x1];
+  Lflags g = f & d_descent[x1];
 
-  while (g)
+  while (g!=0)
     {
       coxtypes::Generator s = constants::firstBit(g);
       x1 = d_shift[x1][s];
@@ -414,18 +413,18 @@ coxtypes::CoxWord& SchubertContext::normalForm
   return g;
 }
 
-bits::Lflags SchubertContext::twoDescent(coxtypes::CoxNbr x) const
 
 /*
   Returns the "super-descent" set of x; this is the union of the descent
   set of x, and of the descent sets of the xs, where s runs through the
   descent set of x.
 */
-
+Lflags SchubertContext::twoDescent(coxtypes::CoxNbr x) const
 {
-  bits::Lflags f = descent(x);
+  Lflags f = descent(x);
 
-  for (bits::Lflags f1 = f; f1; f1 &= f1-1) {
+  for (Lflags f1 = f; f1; f1 &= f1-1)
+  {
     coxtypes::Generator s = constants::firstBit(f1);
     coxtypes::CoxNbr xs = shift(x,s);
     f |= descent(xs);
@@ -581,7 +580,7 @@ void SchubertContext::permute(const bits::Permutation& a)
 
       coxtypes::Length length_buf = d_length[y];
       hasse_buf.shallowCopy(d_hasse[y]);
-      bits::Lflags descent_buf = d_descent[y];
+      Lflags descent_buf = d_descent[y];
       coxtypes::CoxNbr* shift_buf = d_shift[y];
 
       /* put values for x in y */
@@ -965,15 +964,15 @@ void SchubertContext::fillShifts(coxtypes::CoxNbr first,
 */
 void SchubertContext::fillStar(coxtypes::CoxNbr first)
 {
-  const containers::vector<bits::Lflags>& ops = d_graph.finite_edges();
+  const containers::vector<GenSet>& ops = d_graph.finite_edges();
 
   for (coxtypes::CoxNbr x = first; x < d_size; ++x) {
 
-    bits::Lflags fx = rdescent(x);
+    GenSet fx = rdescent(x);
     for (coxtypes::StarOp j = 0; j < nStarOps(); ++j) {
 
       // determine if x is in domain for right-star right descent set |fx|
-      bits::Lflags f = fx & ops[j];
+      GenSet f = fx & ops[j];
       if ((f == 0) || (f == ops[j])) // must have singleton-intersect |ops[j]|
 	continue;
 
@@ -993,7 +992,7 @@ void SchubertContext::fillStar(coxtypes::CoxNbr first)
       else {
 	coxtypes::CoxNbr x1 = x;
 	while ((d_length[x1] - d_length[x_min]) > (m - d)) {
-	  bits::Lflags f1 = rdescent(x1) & ops[j];
+	  GenSet f1 = rdescent(x1) & ops[j];
 	  coxtypes::Generator s1 = constants::firstBit(f1);
 	  x1 = d_shift[x1][s1];
 	}
@@ -1005,10 +1004,10 @@ void SchubertContext::fillStar(coxtypes::CoxNbr first)
     fx = ldescent(x);
     for (coxtypes::StarOp j = 0; j < nStarOps(); ++j) {
       /* determine if x is in left domain */
-      bits::Lflags f = fx & ops[j];
+      GenSet f = fx & ops[j];
       if ((f == 0) || (f == ops[j]))
 	continue;
-      bits::Lflags lops = ops[j] << d_rank;
+      Lflags lops = static_cast<Lflags>(ops[j]) << d_rank;
       coxtypes::CoxNbr x_min = minimize(x,lops);
       coxtypes::Length d = d_length[x] - d_length[x_min];
       coxtypes::Generator s =
@@ -1026,7 +1025,7 @@ void SchubertContext::fillStar(coxtypes::CoxNbr first)
       else {
 	coxtypes::CoxNbr x1 = x;
 	while ((d_length[x1] - d_length[x_min]) > (m - d)) {
-	  bits::Lflags f1 = ldescent(x1) & ops[j];
+	  GenSet f1 = ldescent(x1) & ops[j];
 	  coxtypes::Generator s1 = constants::firstBit(f1);
 	  x1 = d_shift[x1][s1+d_rank];
 	}
@@ -1325,7 +1324,7 @@ void ClosureIterator::operator++()
 
   /* look at extensions of the current word */
 
-  bits::Lflags f = p.S() & ~p.rdescent(d_current);
+  Lflags f = p.S() & ~p.rdescent(d_current);
 
   for (; f; f &= f-1) {
     coxtypes::Generator s = constants::firstBit(f);
@@ -1460,9 +1459,9 @@ void extractInvolutions(const SchubertContext& p, bits::BitMap& b)
   intersecting with the appropriate downsets.
 */
 void select_maxima_for
-  (const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
+  (const SchubertContext& p, bits::BitMap& b, const Lflags& f)
 {
-  bits::Lflags f1 = f;
+  Lflags f1 = f;
 
   while(f1) {
     coxtypes::Generator s = constants::firstBit(f1);
@@ -1472,14 +1471,14 @@ void select_maxima_for
 }
 
 void select_maxima_for
-  (const SchubertContext& p, bitmap::BitMap& b, bits::Lflags f)
+  (const SchubertContext& p, bitmap::BitMap& b, Lflags f)
 { // maybe not fastest, unless |b| is quite sparse
   for (coxtypes::CoxNbr x : b)
     if ((p.ascent(x)&f)!=0) // then some generator in |f| is an ascent for |x|
       b.remove(x); // so remove |x| from |b|
 }
 
-void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
+void minimize(const SchubertContext& p, bits::BitMap& b, const Lflags& f)
 
 /*
   This function extracts from b the minimal elements w.r.t. f, by
@@ -1487,7 +1486,7 @@ void minimize(const SchubertContext& p, bits::BitMap& b, const bits::Lflags& f)
 */
 
 {
-  bits::Lflags f1 = f;
+  Lflags f1 = f;
 
   while(f1) {
     coxtypes::Generator s = constants::firstBit(f1);
@@ -1595,7 +1594,7 @@ void print(FILE* file, const SchubertContext& p)
     fprintf(file,"}");
 
     fprintf(file,"  R:(");
-    for (bits::Lflags f = p.rdescent(x); f;) {
+    for (GenSet f = p.rdescent(x); f;) {
       fprintf(file,"%lu",static_cast<Ulong>(constants::firstBit(f)+1));
       f &= f-1;
       if (f) /* there is more to come */
@@ -1604,7 +1603,7 @@ void print(FILE* file, const SchubertContext& p)
     fprintf(file,")");
 
     fprintf(file,"  L:(");
-    for (bits::Lflags f = p.ldescent(x); f;) {
+    for (GenSet f = p.ldescent(x); f;) {
       fprintf(file,"%lu",static_cast<Ulong>(constants::firstBit(f)+1));
       f &= f-1;
       if (f) /* there is more to come */
@@ -1846,18 +1845,17 @@ void extractMaximals(const SchubertContext& p, list::List<coxtypes::CoxNbr>& c,
   return;
 }
 
-Ulong minDescent(const bits::Lflags& d_f, const bits::Permutation& order)
 
 /*
   Returns the set bit position in f for which order is smallest. In practice,
   order is the external numbering of the generators; so this gives the
   internal number of the descent generator with smallest external number.
 
-  NOTE : the return value is BITS(bits::Lflags) if f is empty.
+  NOTE : the return value is BITS(Ulong) if f is empty.
 */
-
+Ulong minDescent(const GenSet& d_f, const bits::Permutation& order)
 {
-  bits::Lflags f = d_f;
+  GenSet f = d_f;
   Ulong m = constants::firstBit(f);
   f &= f-1;
 

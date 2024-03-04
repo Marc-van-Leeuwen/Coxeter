@@ -932,7 +932,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
 
   const schubert::SchubertContext& p = schubert();
 
-  bits::Lflags f = p.twoDescent(y);
+  Lflags f = p.twoDescent(y);
 
   if ((p.descent(x)&f) == f) { /* x is super-extremal w.r.t. y */
     return recursiveMu(x,y,last(y));
@@ -941,11 +941,12 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
   coxtypes::Generator s, t;
 
   /* choose s s.t. LR(ys) not contained in LR(x) */
-  bits::Lflags desc;
-  for (desc = p.descent(y); desc; desc &= desc-1) {
+  Lflags desc;
+  for (desc = p.descent(y); desc; desc &= desc-1)
+  {
     coxtypes::Generator u = constants::firstBit(desc);
     coxtypes::CoxNbr yu = p.shift(y,u);
-    bits::Lflags fu = p.descent(yu);
+    Lflags fu = p.descent(yu);
     if ((p.descent(x)&fu) != fu) {
       s = u;
       t = constants::firstBit(fu & ~p.descent(x));
@@ -2182,7 +2183,7 @@ void showKLPol
     fprintf(file,"\n\n");
   }
 
-  bits::Lflags f = p.descent(y);
+  Lflags f = p.descent(y);
   x = p.maximize(x,f);
   if (x > x_orig) {
       fprintf(file,"x is not extremal w.r.t. y\nnew x: ");
@@ -2388,7 +2389,7 @@ void showMu(FILE* file, KLContext& kl,
     io::foldLine(file,buf,ls,0,"yL");
     fprintf(file,"\n\n");
 
-    bits::Lflags fy = p.descent(y);
+    Lflags fy = p.descent(y);
     x = p.maximize(x,fy);
     if (x > x_orig) {
       fprintf(file,"x is not extremal w.r.t. y\n\nresult: 0\n\n");
@@ -2405,8 +2406,8 @@ void showMu(FILE* file, KLContext& kl,
       return;
     }
 
-    bits::Lflags f2 = p.twoDescent(y);
-    bits::Lflags fx = p.descent(x);
+    Lflags f2 = p.twoDescent(y);
+    Lflags fx = p.descent(x);
 
     if ((fx&f2) != f2) { /* recursion case */
 
@@ -2625,11 +2626,11 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
   unsigned long ls = io::LINESIZE;
 
   coxtypes::Generator s,t;
-  bits::Lflags desc;
+  Lflags desc;
   for (desc = p.descent(y); desc; desc &= desc-1) {
     coxtypes::Generator u = constants::firstBit(desc);
     coxtypes::CoxNbr yu = p.shift(y,u);
-    bits::Lflags fu = p.descent(yu);
+    Lflags fu = p.descent(yu);
     if ((p.descent(x)&fu) != fu) {
       s = u;
       t = constants::firstBit(fu & ~p.descent(x));

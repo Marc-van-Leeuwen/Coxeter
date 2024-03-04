@@ -27,7 +27,6 @@ namespace bits {
   class Permutation;
   class SubSet;
   typedef unsigned char Flags;
-  typedef Ulong Lflags;
   typedef Ulong SetElt;
   typedef list::List<SetElt> Set;
 };

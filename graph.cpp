@@ -15,8 +15,8 @@
 namespace {
   using namespace graph;
 
-  coxtypes::CoxSize dihedralOrder(CoxGraph& G, bits::Lflags I);
-  coxtypes::ParSize extrQuotOrder(CoxGraph& G, bits::Lflags I, coxtypes::Generator s);
+  coxtypes::CoxSize dihedralOrder(CoxGraph& G, GenSet I);
+  coxtypes::ParSize extrQuotOrder(CoxGraph& G, GenSet I, coxtypes::Generator s);
   void fillCoxAMatrix(CoxMatrix& m, coxtypes::Rank l);
   void fillCoxBMatrix(CoxMatrix& m, coxtypes::Rank l);
   void fillCoxDMatrix(CoxMatrix& m, coxtypes::Rank l);
@@ -36,16 +36,16 @@ namespace {
   void fillCoxYMatrix(CoxMatrix& m, coxtypes::Rank l);
   coxtypes::CoxSize finiteOrder(const type::Type& type, const coxtypes::Rank& rank);
   Ulong gcd(Ulong a, Ulong b);
-  const type::Type& irrType(CoxGraph& G, bits::Lflags I);
-  coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I);
+  const type::Type& irrType(CoxGraph& G, GenSet I);
+  coxtypes::Generator lastGenerator(CoxGraph& G, GenSet I);
   coxtypes::ParSize lastQuotOrder(const type::Type& type, coxtypes::Rank rank);
   CoxMatrix Coxeter_matrix(const type::Type& x, const coxtypes::Rank& l);
-  containers::vector<bits::Lflags> vertex_stars
+  containers::vector<GenSet> vertex_stars
     (const CoxMatrix& m, const coxtypes::Rank& l);
-  containers::vector<bits::Lflags> finite_edge_list
+  containers::vector<GenSet> finite_edge_list
     (const CoxMatrix& m, const coxtypes::Rank& l);
-  CoxEntry maxCoefficient(CoxGraph& G, bits::Lflags I);
-  CoxEntry minCoefficient(CoxGraph& G, bits::Lflags I);
+  CoxEntry maxCoefficient(CoxGraph& G, GenSet I);
+  CoxEntry minCoefficient(CoxGraph& G, GenSet I);
   coxtypes::CoxSize A_order(coxtypes::Rank rank);
   coxtypes::CoxSize B_order(coxtypes::Rank rank);
   coxtypes::CoxSize D_order(coxtypes::Rank rank);
@@ -99,16 +99,16 @@ CoxGraph::CoxGraph(const type::Type& x, const coxtypes::Rank& l)
 CoxGraph::~CoxGraph() {}
 
 
-// Return the connected component of |s| in |I| as a |bits::Lflags|
-bits::Lflags CoxGraph::component(bits::Lflags I, coxtypes::Generator s) const
+// Return the connected component of |s| in |I| as a |GenSet|
+GenSet CoxGraph::component(GenSet I, coxtypes::Generator s) const
 {
-  bits::Lflags nf = constants::eq_mask[s];
-  bits::Lflags f = 0;
+  GenSet nf = constants::eq_mask[s];
+  GenSet f = 0;
 
   while (nf)  /* there are new elements to be considered */
     {
       f |= nf;
-      for (bits::Lflags f1 = nf; f1; f1 &= f1-1)
+      for (GenSet f1 = nf; f1; f1 &= f1-1)
 	nf |= (I & d_star[constants::firstBit(f1)]);
       nf &= ~f;
     }
@@ -117,7 +117,7 @@ bits::Lflags CoxGraph::component(bits::Lflags I, coxtypes::Generator s) const
 }
 
 
-bits::Lflags CoxGraph::extremities(bits::Lflags I) const
+GenSet CoxGraph::extremities(GenSet I) const
 
 /*
   This function returns a bitmap of the set of points in I which are extremal
@@ -125,8 +125,8 @@ bits::Lflags CoxGraph::extremities(bits::Lflags I) const
 */
 
 {
-  bits::Lflags f = 0;
-  bits::Lflags f1 = I;
+  GenSet f = 0;
+  GenSet f1 = I;
 
   while (f1)
     {
@@ -140,7 +140,7 @@ bits::Lflags CoxGraph::extremities(bits::Lflags I) const
 }
 
 
-bits::Lflags CoxGraph::nodes(bits::Lflags I) const
+GenSet CoxGraph::nodes(GenSet I) const
 
 /*
   This function returns a bitmap of the set of points in I which are nodes
@@ -148,7 +148,7 @@ bits::Lflags CoxGraph::nodes(bits::Lflags I) const
 */
 
 {
-  bits::Lflags f,f1;
+  GenSet f,f1;
   coxtypes::Generator s;
 
   f = 0;
@@ -666,16 +666,16 @@ CoxMatrix Coxeter_matrix(const type::Type& x, const coxtypes::Rank& l)
 
 
 /*
-  Makes the star-array of the Coxeter graph. This is an array of l
-  bits::Lflags, flagging the "stars" of each generator in the Coxeter diagram.
+  Makes the star-array of the Coxeter graph. This is an array of |GenSet| of
+  length|l|, flagging the "stars" of each generator in the Coxeter diagram.
 */
-containers::vector<bits::Lflags> vertex_stars
+containers::vector<GenSet> vertex_stars
   (const CoxMatrix& m, const coxtypes::Rank& l)
 {
-  containers::vector<bits::Lflags> result;
+  containers::vector<GenSet> result;
 
   for(coxtypes::Generator s = 0; s < l; s++) {
-    bits::Lflags star = 0;
+    GenSet star = 0;
     for (coxtypes::Generator t = 0; t < l; t++)
       if ((m[s*l + t] > 2) or (m[s*l + t] == 0)) // neither 1 nor 2
 	star |= constants::eq_mask[t];
@@ -689,14 +689,14 @@ containers::vector<bits::Lflags> vertex_stars
 /*
   Returns a list of the finite edges of the graph, computed from the matrix. For
   each finite edge in the graph (in some order) this list holds 2-element subset
-  that definies the edge, represented as |bits::Lflags|
+  that definies the edge, represented as |GenSet|
 */
-containers::vector<bits::Lflags> finite_edge_list
+containers::vector<GenSet> finite_edge_list
   (const CoxMatrix& m, const coxtypes::Rank& l)
 {
   /* count number of finite edges */
 
-  containers::sl_list<bits::Lflags> result;
+  containers::sl_list<GenSet> result;
 
   for (coxtypes::Generator s = 0; s < l; ++s)
     for (coxtypes::Generator t = s+1; t < l; ++t)
@@ -731,7 +731,7 @@ containers::vector<bits::Lflags> finite_edge_list
 
 namespace graph {
 
-bool isAffine(CoxGraph& G, bits::Lflags I)
+bool isAffine(CoxGraph& G, GenSet I)
 
 /*
   Returns true if the group generated by I is affine, false otherwise. Uses the
@@ -750,7 +750,7 @@ bool isAffine(CoxGraph& G, bits::Lflags I)
 }
 
 
-bool isConnected(CoxGraph& G, bits::Lflags I)
+bool isConnected(CoxGraph& G, GenSet I)
 
 /*
   Returns true if the graph induced on I is connected, false otherwise.
@@ -769,7 +769,7 @@ bool isConnected(CoxGraph& G, bits::Lflags I)
 }
 
 
-bool isCrystallographic(CoxGraph& G, bits::Lflags I)
+bool isCrystallographic(CoxGraph& G, GenSet I)
 
 /*
   Checks if the restriction of the Coxeter graph to I is crystallographic,
@@ -796,7 +796,7 @@ bool isCrystallographic(CoxGraph& G, bits::Lflags I)
 }
 
 
-bool isFinite(CoxGraph& G, bits::Lflags I)
+bool isFinite(CoxGraph& G, GenSet I)
 
 /*
   Returns true if the group generated by I is finite, false otherwise. Uses the
@@ -807,7 +807,7 @@ bool isFinite(CoxGraph& G, bits::Lflags I)
   while (I)
     {
       coxtypes::Generator s = constants::firstBit(I);
-      bits::Lflags f = G.component(I,s);
+      GenSet f = G.component(I,s);
       const type::Type& type = irrType(G,f);
       if (strchr("ABCDEFGHI",type[0]) == NULL)
 	return false;
@@ -818,7 +818,7 @@ bool isFinite(CoxGraph& G, bits::Lflags I)
 }
 
 
-bool isLoop(CoxGraph& G, bits::Lflags I)
+bool isLoop(CoxGraph& G, GenSet I)
 
 /*
   Returns 1 if the graph induced on I is a loop, 0 otherwise. Uses the
@@ -830,7 +830,7 @@ bool isLoop(CoxGraph& G, bits::Lflags I)
   if (!isConnected(G,I))
     return false;
 
-  for (bits::Lflags f = I; f; f &= f-1)
+  for (GenSet f = I; f; f &= f-1)
     {
       coxtypes::Generator s = constants::firstBit(f);
       if (bits::bitCount(G.star(I,s)) != 2)
@@ -845,12 +845,12 @@ bool isLoop(CoxGraph& G, bits::Lflags I)
   Return whether the Coxeter graph restricted to I is simply laced (i.e., all
   edges have label 3).
 */
-bool isSimplyLaced(CoxGraph& G, bits::Lflags I)
+bool isSimplyLaced(CoxGraph& G, GenSet I)
 {
-  for (bits::Lflags fs = I; fs; fs &= fs-1)
+  for (GenSet fs = I; fs; fs &= fs-1)
     {
       coxtypes::Generator s = constants::firstBit(fs);
-      for (bits::Lflags ft = fs & (fs-1); ft; ft &= ft-1)
+      for (GenSet ft = fs & (fs-1); ft; ft &= ft-1)
 	{
 	  coxtypes::Generator t = constants::firstBit(ft);
 	  if ((G.M(s,t) == 0) || (G.M(s,t) > 3))
@@ -861,7 +861,7 @@ bool isSimplyLaced(CoxGraph& G, bits::Lflags I)
   return true;
 }
 
-bool isTree(CoxGraph& G, bits::Lflags I)
+bool isTree(CoxGraph& G, GenSet I)
 
 /*
   Returns 1 if the graph induced on I is a tree, 0 otherwise. Uses the
@@ -875,7 +875,7 @@ bool isTree(CoxGraph& G, bits::Lflags I)
 
   unsigned edgecount = 0;
 
-  for (bits::Lflags f = I; f; f &= f-1)
+  for (GenSet f = I; f; f &= f-1)
     {
       coxtypes::Generator s = constants::firstBit(f);
       edgecount += bits::bitCount(G.star(I,s));
@@ -893,7 +893,7 @@ bool isTree(CoxGraph& G, bits::Lflags I)
 
 namespace {
 
-const type::Type& irrType(CoxGraph& G, bits::Lflags I)
+const type::Type& irrType(CoxGraph& G, GenSet I)
 
 /*
   Returns the type of the subgraph induced on I, if this subgraph is
@@ -959,7 +959,7 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
 
   switch (m) {
   case 3: { /* simply laced : type is A, D, E, d, e if known */
-    bits::Lflags fn = G.nodes(I);
+    GenSet fn = G.nodes(I);
     switch (bits::bitCount(fn))
       {
       case 0: /* type A */
@@ -970,7 +970,7 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
 	switch (bits::bitCount(G.star(n)))
 	  {
 	  case 3: { /* type is D, E or e */
-	    bits::Lflags f = G.extremities(I);
+	    GenSet f = G.extremities(I);
 	    switch (bits::bitCount(f & G.star(n)))  /* short branches */
 	      {
 	      case 3:  /* type is D4 */
@@ -981,7 +981,7 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
 		return type;
 	      case 1: { /* type is E6, E7, E8, e8 or e9 */
 		/* trim branches by one */
-		bits::Lflags J = I & ~f;
+		GenSet J = I & ~f;
 		f = G.extremities(J);
 		switch (bits::bitCount(f & G.star(n)))
 		  {
@@ -1023,11 +1023,11 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
 	  };
       }
       case 2: {
-	bits::Lflags f = G.extremities(I);
+	GenSet f = G.extremities(I);
 	if (bits::bitCount(f) > 4)  /* unknown type */
 	  return type;
 	/* from here on each node has three branches */
-	bits::Lflags J = I & ~f;
+	GenSet J = I & ~f;
 	f = G.extremities(J);
 	if (f == fn)  /* type d */
 	  type[0] = 'd';
@@ -1041,8 +1041,8 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
     switch (bits::bitCount(G.nodes(I)))
       {
       case 0: { /* graph is a string : type is B, F, c or f */
-	bits::Lflags f = G.extremities(I);
-	bits::Lflags J = I & ~f;
+	GenSet f = G.extremities(I);
+	GenSet J = I & ~f;
 	switch (maxCoefficient(G,J))
 	  {
 	  case 1:
@@ -1081,10 +1081,10 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
 	  };
       }
       case 1: { /* type is b if known */
-	bits::Lflags f = G.extremities(I);
+	GenSet f = G.extremities(I);
 	if (bits::bitCount(f) > 3)  /* more than three branches */
 	  return type;
-	bits::Lflags J = I & ~f;
+	GenSet J = I & ~f;
 	if (!isSimplyLaced(G,J))  /* unknown type */
 	  return type;
 	coxtypes::Generator n = constants::firstBit(G.nodes(I));
@@ -1119,8 +1119,8 @@ const type::Type& irrType(CoxGraph& G, bits::Lflags I)
       case 4: {
 	if (G.nodes(I))  /* graph is not a string */
 	  return type;
-	bits::Lflags f = G.extremities(I);
-	bits::Lflags J = I & ~f;
+	GenSet f = G.extremities(I);
+	GenSet J = I & ~f;
 	if (!isSimplyLaced(G,J))  /* unknown type */
 	  return type;
 	J = 0;
@@ -1172,7 +1172,7 @@ namespace graph {
   The result is returned as the static variable |type|, which reference is
   safe until the next call to this function (also called |type|).
 */
-const type::Type& type(CoxGraph& G, bits::Lflags I)
+const type::Type& type(CoxGraph& G, GenSet I)
 {
   static type::Type type(0);
   type.name().resize(G.rank()); // long enough, and '\0' filled
@@ -1180,7 +1180,7 @@ const type::Type& type(CoxGraph& G, bits::Lflags I)
   for (Ulong j = 0; I!=0; j++)  /* run through connected components */
     {
       coxtypes::Generator s = constants::firstBit(I);
-      bits::Lflags f = G.component(I,s);
+      GenSet f = G.component(I,s);
       type[j] = (irrType(G,f))[0];
       I &= ~f;
     }
@@ -1280,7 +1280,7 @@ coxtypes::CoxSize D_order(coxtypes::Rank rank)
   return a;
 }
 
-coxtypes::CoxSize dihedralOrder(CoxGraph& G, bits::Lflags I)
+coxtypes::CoxSize dihedralOrder(CoxGraph& G, GenSet I)
 
 /*
   Assuming that |I| = 2, returns the order of the subgroup generated
@@ -1304,7 +1304,7 @@ coxtypes::CoxSize dihedralOrder(CoxGraph& G, bits::Lflags I)
 }
 
 
-coxtypes::ParSize extrQuotOrder(CoxGraph& G, bits::Lflags I, coxtypes::Generator s)
+coxtypes::ParSize extrQuotOrder(CoxGraph& G, GenSet I, coxtypes::Generator s)
 
 /*
   Assuming I irreducible and s extremal, this function returns
@@ -1315,7 +1315,7 @@ coxtypes::ParSize extrQuotOrder(CoxGraph& G, bits::Lflags I, coxtypes::Generator
 
 {
   coxtypes::Rank l;
-  bits::Lflags I1;
+  GenSet I1;
   coxtypes::Generator s1;
   CoxEntry m;
 
@@ -1519,7 +1519,7 @@ coxtypes::ParSize lastQuotOrder(const type::Type& type, coxtypes::Rank rank)
 
 namespace graph {
 
-coxtypes::CoxSize order(CoxGraph& G, bits::Lflags I)
+coxtypes::CoxSize order(CoxGraph& G, GenSet I)
 
 /*
   Returns the order of the subgroup generated by I, if this fits
@@ -1531,7 +1531,7 @@ coxtypes::CoxSize order(CoxGraph& G, bits::Lflags I)
     return 1;
 
   coxtypes::Generator s = constants::firstBit(I);
-  bits::Lflags J = G.component(I,s);
+  GenSet J = G.component(I,s);
 
   if (J != I)  /* group is not irreducible */
     {
@@ -1552,7 +1552,7 @@ coxtypes::CoxSize order(CoxGraph& G, bits::Lflags I)
 }
 
 
-coxtypes::ParSize quotOrder(CoxGraph& G, bits::Lflags I, bits::Lflags J)
+coxtypes::ParSize quotOrder(CoxGraph& G, GenSet I, GenSet J)
 
 /*
   Returns the number of elements of W_I/W_J, assuming that J is contained
@@ -1565,13 +1565,13 @@ coxtypes::ParSize quotOrder(CoxGraph& G, bits::Lflags I, bits::Lflags J)
     return 1;
 
   coxtypes::Generator s = constants::firstBit(I);
-  bits::Lflags I1 = G.component(I,s);
+  GenSet I1 = G.component(I,s);
 
   if (I1 != I)  /* argue by induction */
     {
-      bits::Lflags J1 = J & I1;
-      bits::Lflags I2 = I & ~I1;
-      bits::Lflags J2 = J & ~J1;
+      GenSet J1 = J & I1;
+      GenSet I2 = I & ~I1;
+      GenSet J2 = J & ~J1;
       coxtypes::ParSize c1 = quotOrder(G,I1,J1);
       coxtypes::ParSize c2 = quotOrder(G,I2,J2);
       if (c1 & c2 & (c2 > coxtypes::LPARNBR_MAX/c1))  /* overflow */
@@ -1607,7 +1607,7 @@ coxtypes::ParSize quotOrder(CoxGraph& G, bits::Lflags I, bits::Lflags J)
   s = lastGenerator(G,I);
 
   I1 = I & ~(constants::eq_mask[s]);
-  bits::Lflags J1 = J & ~(constants::eq_mask[s]);
+  GenSet J1 = J & ~(constants::eq_mask[s]);
 
   coxtypes::ParSize c1 = lastQuotOrder(type,l);
   coxtypes::ParSize c2 = quotOrder(G,I1,J1);
@@ -1687,9 +1687,9 @@ namespace graph {
   is known that these are the connected components of the graph obtained by
   removing from the Coxeter graph all edges with even or infinite labels.
 */
-containers::vector<bits::Lflags> conjugacy_classes(const CoxGraph& G)
+containers::vector<GenSet> conjugacy_classes(const CoxGraph& G)
 {
-  containers::vector<bits::Lflags> odd_star; // odd-edge neighbours of each node
+  containers::vector<GenSet> odd_star; // odd-edge neighbours of each node
   odd_star.reserve(G.rank());
 
   for(coxtypes::Generator s = 0; s < G.rank(); ++s) {
@@ -1699,15 +1699,15 @@ containers::vector<bits::Lflags> conjugacy_classes(const CoxGraph& G)
 	odd_star.back() |= constants::eq_mask[t];
   }
 
-  containers::vector<bits::Lflags> classes;
+  containers::vector<GenSet> classes;
 
-  for (bits::Lflags fS = G.supp(); fS; /* |fS &= ~f| */) {
-    bits::Lflags nf = constants::eq_mask[constants::firstBit(fS)];
-    bits::Lflags f = 0;
+  for (GenSet fS = G.supp(); fS; /* |fS &= ~f| */) {
+    GenSet nf = constants::eq_mask[constants::firstBit(fS)];
+    GenSet f = 0;
     while (nf)  /* there are new elements to be considered */
       {
 	f |= nf;
-	for (bits::Lflags f1 = nf; f1; f1 &= f1-1)
+	for (GenSet f1 = nf; f1; f1 &= f1-1)
 	  nf |= (odd_star[constants::firstBit(f1)]);
 	nf &= ~f;
       }
@@ -1722,7 +1722,7 @@ containers::vector<bits::Lflags> conjugacy_classes(const CoxGraph& G)
 
 namespace {
 
-coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
+coxtypes::Generator lastGenerator(CoxGraph& G, GenSet I)
 
 /*
   Assuming that I is irreducible, this function returns an element
@@ -1737,7 +1737,7 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
   /* from now on the rank is at least three */
 
   const type::Type& x = irrType(G,I);
-  bits::Lflags f = G.extremities(I);
+  GenSet f = G.extremities(I);
 
   switch (x[0])
     {
@@ -1846,7 +1846,7 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
     }
     case 'f': {
       coxtypes::Generator s = constants::firstBit(f);
-      bits::Lflags I1 = I & ~(constants::eq_mask[s]);
+      GenSet I1 = I & ~(constants::eq_mask[s]);
       switch ((irrType(G,I1))[0])
 	{
 	case 'B':
@@ -1875,7 +1875,7 @@ coxtypes::Generator lastGenerator(CoxGraph& G, bits::Lflags I)
 }
 
 
-CoxEntry maxCoefficient(CoxGraph& G, bits::Lflags I)
+CoxEntry maxCoefficient(CoxGraph& G, GenSet I)
 
 /*
   Returns the maximal coefficient in the Coxeter matrix restricted to
@@ -1888,10 +1888,10 @@ CoxEntry maxCoefficient(CoxGraph& G, bits::Lflags I)
 
   CoxEntry m = 2;
 
-  for (bits::Lflags fs = I; fs; fs &= fs-1)
+  for (GenSet fs = I; fs; fs &= fs-1)
     {
       coxtypes::Generator s = constants::firstBit(fs);
-      for (bits::Lflags ft = fs&G.star(s); ft; ft &= ft-1)
+      for (GenSet ft = fs&G.star(s); ft; ft &= ft-1)
 	{
 	  coxtypes::Generator t = constants::firstBit(ft);
 	  if (G.M(s,t) == 0)
@@ -1905,7 +1905,7 @@ CoxEntry maxCoefficient(CoxGraph& G, bits::Lflags I)
 }
 
 
-CoxEntry minCoefficient(CoxGraph& G, bits::Lflags I)
+CoxEntry minCoefficient(CoxGraph& G, GenSet I)
 
 /*
   Returns the minimal coefficient > 2 in the Coxeter matrix restricted
@@ -1922,7 +1922,7 @@ CoxEntry minCoefficient(CoxGraph& G, bits::Lflags I)
     return 2;
 
   for (coxtypes::Generator s = 0; s < G.rank(); s++)
-    for (bits::Lflags f = I&G.star(s); f; f &= f-1)
+    for (GenSet f = I&G.star(s); f; f &= f-1)
       {
 	coxtypes::Generator t = constants::firstBit(f);
 	if ((G.M(s,t) != 0) && (G.M(s,t) < m))

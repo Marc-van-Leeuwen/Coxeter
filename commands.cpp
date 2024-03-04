@@ -1160,7 +1160,7 @@ void descent_f()
     return;
   }
 
-  bits::Lflags f = W->ldescent(g);
+  GenSet f = W->ldescent(g);
   printf("L:");
   W->printFlags(stdout,f);
   printf("; R:");
@@ -2063,7 +2063,7 @@ void show_f()
   }
 
   fprintf(stdout,"generator (carriage return for default) : ");
-  bits::Lflags f = W->descent(y);
+  Lflags f = W->descent(y);
   coxtypes::Generator s = interactive::getGenerator(W,f);
   if (ERRNO) {
     Error (ERRNO);

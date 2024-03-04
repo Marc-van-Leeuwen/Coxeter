@@ -63,14 +63,14 @@ namespace interface {
 namespace interface {
   const std::string* alphabeticSymbols(Ulong n);
   std::string& append(std::string& str, const coxtypes::CoxWord& g, const GroupEltInterface& GI);
-  std::string& append(std::string& buf, const bits::Lflags& f, const Interface& I);
+  std::string& append(std::string& buf, const GenSet& f, const Interface& I);
   std::string& appendSymbol(std::string& str, const coxtypes::Generator& s, const Interface& I);
-  std::string& appendTwosided(std::string& buf, const bits::Lflags& f, const Interface& I);
+  std::string& appendTwosided(std::string& buf, const Lflags& f, const Interface& I);
   const std::string* checkLeadingWhite(const GroupEltInterface& GI);
   bool checkRepeated(const GroupEltInterface& GI);
   const std::string* checkReserved(const GroupEltInterface& GI, const Interface& I);
   const std::string* decimalSymbols(Ulong n);
-  Ulong descentWidth(const bits::Lflags& f, const Interface& I);
+  Ulong descentWidth(const Lflags& f, const Interface& I);
   const std::string* hexSymbols(Ulong n);
   const std::string* hexSymbolsFromZero(Ulong n);
   const bits::Permutation& identityOrder(Ulong n);
@@ -83,14 +83,14 @@ namespace interface {
   bool isModifier(const Token& tok);
   bool isPower(const Token& tok);
   void print(FILE *file, const coxtypes::CoxWord& g, const GroupEltInterface& I);
-  void print(FILE *file, const bits::Lflags& f, const Interface& I);
-  void print(FILE *file, const bits::Lflags& f, const DescentSetInterface& DI,
+  void print(FILE *file, const GenSet& f, const Interface& I);
+  void print(FILE *file, const GenSet& f, const DescentSetInterface& DI,
 	     const GroupEltInterface& GI);
   void printSymbol(FILE *file, const coxtypes::Generator& s, const Interface& I);
-  void printTwosided(FILE *file, const bits::Lflags& f,
+  void printTwosided(FILE *file, const Lflags& f,
 		     const DescentSetInterface& DI,
 		     const GroupEltInterface& GI, const coxtypes::Rank& l);
-  void printTwosided(FILE *file, const bits::Lflags& f, const Interface& I);
+  void printTwosided(FILE *file, const Lflags& f, const Interface& I);
                                                                  /* inlined */
   coxtypes::CoxNbr readCoxNbr(interface::ParseInterface& P, Ulong size);
   automata::Letter tokenType(const Token& tok);
@@ -279,11 +279,11 @@ inline std::string& append(std::string& str, const coxtypes::CoxWord& g, const I
 inline std::string& appendSymbol(std::string& str, const coxtypes::Generator& s,
 			    const Interface& I)
   { return str.append(I.outSymbol(s)); }
-inline void print(FILE *file, const bits::Lflags& f, const Interface& I)
+inline void print(FILE *file, const GenSet& f, const Interface& I)
   {return print(file,f,I.descentInterface(),I.outInterface());}
 inline void printSymbol(FILE *file, const coxtypes::Generator& s, const Interface& I)
   {io::print(file,I.outSymbol(s));}
-inline void printTwosided(FILE *file, const bits::Lflags& f, const Interface& I)
+inline void printTwosided(FILE *file, const Lflags& f, const Interface& I)
   {return printTwosided(file,f,I.descentInterface(),I.outInterface(),
 			I.rank());}
 

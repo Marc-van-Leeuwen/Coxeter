@@ -318,15 +318,14 @@ void lrCells(bits::Partition& pi, kl::KLContext& kl)
   return;
 }
 
-void lDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
   This function writes in pi the partition of p according to the left
   descent sets.
 */
-
+void lDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p)
 {
-  static list::List<bits::Lflags> d(0); /* holds the appearing descent sets */
+  static list::List<GenSet> d(0); /* holds the appearing descent sets */
 
   pi.setSize(p.size());
   d.setSize(0);
@@ -375,9 +374,9 @@ void lStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
 	coxtypes::CoxNbr sz = p.lshift(z,s);
 	if (b.getBit(sz))
 	  continue;
-	bits::Lflags fz = p.ldescent(z);
-	bits::Lflags fsz = p.ldescent(sz);
-	bits::Lflags f = fz & fsz;
+	GenSet fz = p.ldescent(z);
+	GenSet fsz = p.ldescent(sz);
+	GenSet f = fz & fsz;
 	if ((f == fz) || (f == fsz)) /* inclusion */
 	  continue;
 	b.setBit(sz);
@@ -423,9 +422,9 @@ void lStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::Sc
 	coxtypes::CoxNbr sz = p.lshift(z,s);
 	if (b.getBit(sz))
 	  continue;
-	bits::Lflags fz = p.ldescent(z);
-	bits::Lflags fsz = p.ldescent(sz);
-	bits::Lflags f = fz & fsz;
+	GenSet fz = p.ldescent(z);
+	GenSet fsz = p.ldescent(sz);
+	GenSet f = fz & fsz;
 	if ((f == fz) || (f == fsz)) /* inclusion */
 	  continue;
 	if (!q.isMember(sz)) { // q is not stable! this shouldn't happen
@@ -452,7 +451,7 @@ void rDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p)
 */
 
 {
-  static list::List<bits::Lflags> d(0); /* holds the appearing descent sets */
+  static list::List<GenSet> d(0); /* holds the appearing descent sets */
 
   pi.setSize(p.size());
   d.setSize(0);
@@ -496,9 +495,9 @@ void rStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
 	coxtypes::CoxNbr zs = p.rshift(z,s);
 	if (b.getBit(zs))
 	  continue;
-	bits::Lflags fz = p.rdescent(z);
-	bits::Lflags fzs = p.rdescent(zs);
-	bits::Lflags f = fz & fzs;
+	GenSet fz = p.rdescent(z);
+	GenSet fzs = p.rdescent(zs);
+	GenSet f = fz & fzs;
 	if ((f == fz) || (f == fzs)) /* inclusion */
 	  continue;
 	b.setBit(zs);
@@ -543,9 +542,9 @@ void rStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::Sc
 	coxtypes::CoxNbr zs = p.rshift(z,s);
 	if (b.getBit(zs))
 	  continue;
-	bits::Lflags fz = p.rdescent(z);
-	bits::Lflags fzs = p.rdescent(zs);
-	bits::Lflags f = fz & fzs;
+	GenSet fz = p.rdescent(z);
+	GenSet fzs = p.rdescent(zs);
+	GenSet f = fz & fzs;
 	if ((f == fz) || (f == fzs)) /* inclusion */
 	  continue;
 	if (!q.isMember(zs)) { // q is not stable! this shouldn't happen
@@ -1211,17 +1210,16 @@ void rWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 namespace cells {
 
-void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
 /*
   Puts in X the graph corresponding to the left edges in the context. It
   assumes that the (right) mu-table has been filled.
 */
-
+void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  bits::Lflags S = constants::lt_mask[kl.rank()];
+  Lflags S = constants::lt_mask[kl.rank()];
 
   /* reset X */
 
@@ -1234,7 +1232,7 @@ void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
   for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
     coxtypes::CoxNbr yi = kl.inverse(y);
-    for (bits::Lflags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
+    for (GenSet f = ~p.rdescent(y) & S; f; f &= (f-1)) {
       coxtypes::Generator s = constants::firstBit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
       for (Ulong j = 0; j < muRow.size(); ++j) {
@@ -1258,18 +1256,17 @@ void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
   return;
 }
 
-void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
 /*
   Puts in X the graph corresponding to the edges in the context. It assumes
   that the mu-table has been filled. We also assume that the context is stable
   under inverses.
 */
-
+void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  bits::Lflags S = constants::lt_mask[kl.rank()];
+  Lflags S = constants::lt_mask[kl.rank()];
 
   /* write down right edges */
 
@@ -1279,7 +1276,7 @@ void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
   for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
     wgraph::Vertex yi = kl.inverse(y);
-    for (bits::Lflags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
+    for (GenSet f = ~p.rdescent(y) & S; f; f &= (f-1)) {
       coxtypes::Generator s = constants::firstBit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
       for (Ulong j = 0; j < muRow.size(); ++j) {
@@ -1296,29 +1293,26 @@ void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
   return;
 }
 
-void rGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 
 /*
   Puts in X the graph corresponding to the edges in the context. It assumes
   that the mu-table has been filled.
 */
-
+void rGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
   X.setSize(kl.size());
-  bits::Lflags S = constants::lt_mask[kl.rank()];
+  Lflags S = constants::lt_mask[kl.rank()];
 
-  /* reset X */
-
+  // reset X
   for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
     wgraph::EdgeList& e = X.edge(y);
     e.setSize(0);
   }
 
-  /* make edges */
-
+  // make edges
   for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    for (bits::Lflags f = ~p.rdescent(y) & S; f; f &= (f-1)) {
+    for (GenSet f = ~p.rdescent(y) & S; f; f &= (f-1)) {
       coxtypes::Generator s = constants::firstBit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
       for (Ulong j = 0; j < muRow.size(); ++j) {

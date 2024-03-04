@@ -10,9 +10,13 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <cstdint> // for |uint32_t| and |uint64_t|
 
 // these definitions are in the global namspace
 // so it suffices to #include this file to have them
 using Ulong = unsigned long;
+
+using Lflags = std::uint64_t; // can hold two bits per Coxeter genertor
+using GenSet = std::uint32_t; // can hold one bit per Coxeter generator
 
 #endif

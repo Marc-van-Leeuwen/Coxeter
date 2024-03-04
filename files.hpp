@@ -196,13 +196,13 @@ void appendPolynomial(std::string& str, const P& p, PolynomialTraits& traits,
   return;
 }
 
-template <class KL>
-  void makeWGraph(wgraph::WGraph& X, const list::List<coxtypes::CoxNbr>& c, const bits::Lflags& f, KL& kl)
-
 /*
   Puts in X the W-graph for the part of the context contained in c. The flags
   in f are either all left, all right or all two-sided generators.
 */
+template <class KL>
+  void makeWGraph(wgraph::WGraph& X, const list::List<coxtypes::CoxNbr>& c,
+		  const Lflags& f, KL& kl)
 
 {
   bits::SubSet q(kl.size());
@@ -538,11 +538,10 @@ void printLCells(FILE* file, const bits::Partition& lp, KL& kl, const interface:
 template <class KL>
 void printLCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
 		       const interface::Interface& I, OutputTraits& traits)
-
 {
   // set flag parameter
 
-  bits::Lflags f = constants::lt_mask[kl.rank()] << kl.rank();
+  const Lflags f = constants::lt_mask[kl.rank()] << kl.rank();
 
   // print W-graphs
 
@@ -550,9 +549,7 @@ void printLCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
   printWGraphList(file,lp,f,kl,I,traits);
   io::print(file,traits.postfix[lCellWGraphsH]);
   fprintf(file,"\n");
-
-  return;
-}
+} // |printLCellWGraphs|
 
 template <class KL>
 void printLRCOrder(FILE* file, KL& kl, const interface::Interface& I,
@@ -593,20 +590,15 @@ void printLRCells(FILE* file, const bits::Partition& lp, KL& kl, const interface
 template <class KL>
 void printLRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
 			const interface::Interface& I, OutputTraits& traits)
-
 {
   // set flag parameter
-
-  bits::Lflags f = constants::lt_mask[2*kl.rank()];
+  Lflags f = constants::lt_mask[2*kl.rank()];
 
   // print graphs
-
   io::print(file,traits.prefix[lrCellWGraphsH]);
   printWGraphList(file,lp,f,kl,I,traits);
   io::print(file,traits.postfix[lrCellWGraphsH]);
   fprintf(file,"\n");
-
-  return;
 }
 
 template <class KL>
@@ -648,7 +640,7 @@ template <class KL>
 
   wgraph::WGraph X(0);
   cells::lrWGraph(X,kl);
-  bits::Lflags f = constants::lt_mask[2*kl.rank()];
+  Lflags f = constants::lt_mask[2*kl.rank()];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[lrWGraphH]);
@@ -697,14 +689,12 @@ template <class KL>
 
   wgraph::WGraph X(0);
   cells::lWGraph(X,kl);
-  bits::Lflags f = constants::lt_mask[kl.rank()] << kl.rank();
+  Lflags f = constants::lt_mask[kl.rank()] << kl.rank();
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[lWGraphH]);
 
   fprintf(file,"\n");
-
-  return;
 }
 
 template <class C>
@@ -832,9 +822,8 @@ void printRCells(FILE* file, const bits::Partition& lp, KL& kl, const interface:
 template <class KL>
 void printRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
 		       const interface::Interface& I, OutputTraits& traits)
-
 {
-  bits::Lflags f = constants::lt_mask[kl.rank()];
+  Lflags f = constants::lt_mask[kl.rank()];
 
   io::print(file,traits.prefix[rCellWGraphsH]);
   printWGraphList(file,lp,f,kl,I,traits);
@@ -883,7 +872,7 @@ template <class KL>
 
   wgraph::WGraph X(0);
   cells::rWGraph(X,kl);
-  bits::Lflags f = constants::lt_mask[kl.rank()];
+  Lflags f = constants::lt_mask[kl.rank()];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
   io::print(file,traits.postfix[rWGraphH]);
@@ -965,9 +954,6 @@ template <class KL>
   return;
 }
 
-template <class KL>
-void printWGraphList(FILE* file, const bits::Partition& pi, const bits::Lflags& f, KL& kl,
-		     const interface::Interface& I, OutputTraits& traits)
 
 /*
   This function prints out the W-graphs of the classes of the partition pi.
@@ -978,7 +964,9 @@ void printWGraphList(FILE* file, const bits::Partition& pi, const bits::Lflags& 
   The order of the cells, ant the ordering within each cell, are as for
   printPartition.
 */
-
+template <class KL>
+void printWGraphList(FILE* file, const bits::Partition& pi, const Lflags& f,
+		     KL& kl, const interface::Interface& I, OutputTraits& traits)
 {
   const schubert::SchubertContext& p = kl.schubert();
 

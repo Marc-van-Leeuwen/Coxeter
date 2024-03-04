@@ -904,7 +904,7 @@ void InitMinTable::newDepthOneRoot(const graph::CoxGraph& G, MinNbr r, coxtypes:
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+  for (GenSet f = G.star(s); f; f &= f-1) {
     coxtypes::Generator t = constants::firstBit(f);
     if (dot(r,t) == dotval::locked)
       continue;
@@ -932,7 +932,7 @@ void InitMinTable::newDepthTwoRoot(const graph::CoxGraph& G, MinNbr r, coxtypes:
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+  for (GenSet f = G.star(s); f; f &= f-1) {
     coxtypes::Generator t = constants::firstBit(f);
     if (dot(r,t) == dotval::locked)
       continue;
@@ -961,7 +961,7 @@ void InitMinTable::newDihedralRoot(const graph::CoxGraph& G, MinNbr r, coxtypes:
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+  for (GenSet f = G.star(s); f; f &= f-1) {
     coxtypes::Generator t = constants::firstBit(f);
     if (dot(r,t) == dotval::locked)
       continue;
@@ -996,7 +996,7 @@ void InitMinTable::newMinRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Gene
   memcpy(d_dot[d_size],d_dot[r],rank()*sizeof(DotProduct));
   d_dot[d_size][s] = -d_dot[d_size][s];
 
-  for (bits::Lflags f = G.star(s); f; f &= f-1) {
+  for (GenSet f = G.star(s); f; f &= f-1) {
     coxtypes::Generator t = constants::firstBit(f);
     if (dot(r,t) == dotval::locked)
       continue;
@@ -1086,18 +1086,17 @@ MinTable::~MinTable()
   return;
 }
 
-bits::Lflags MinTable::descent(const coxtypes::CoxWord& g) const
 
 /*
   Returns the two-sided descent set of g, in the usual format : the right
   descent set is contained in the rank rightmost bits, the left descent
   set in the next rank bits.
 */
-
+Lflags MinTable::descent(const coxtypes::CoxWord& g) const
 {
   static coxtypes::CoxWord h(0);
 
-  bits::Lflags f = 0;
+  Lflags f = 0;
 
   for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(g,s))
@@ -1115,7 +1114,7 @@ bits::Lflags MinTable::descent(const coxtypes::CoxWord& g) const
   return f;
 }
 
-bits::Lflags MinTable::ldescent(const coxtypes::CoxWord& g) const
+GenSet MinTable::ldescent(const coxtypes::CoxWord& g) const
 
 /*
   Returns the left descent set of g.
@@ -1126,7 +1125,7 @@ bits::Lflags MinTable::ldescent(const coxtypes::CoxWord& g) const
 
   h = g;
   inverse(h);
-  bits::Lflags f = 0;
+  GenSet f = 0;
 
   for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(h,s))
@@ -1136,14 +1135,14 @@ bits::Lflags MinTable::ldescent(const coxtypes::CoxWord& g) const
   return f;
 }
 
-bits::Lflags MinTable::rdescent(const coxtypes::CoxWord& g) const
+GenSet MinTable::rdescent(const coxtypes::CoxWord& g) const
 
 /*
   Returns the right descent set of g.
 */
 
 {
-  bits::Lflags f = 0;
+  GenSet f = 0;
 
   for (coxtypes::Generator s = 0; s < d_rank; ++s) {
     if (isDescent(g,s))
@@ -1572,10 +1571,10 @@ coxtypes::Length minroots::depth(MinTable& T, MinNbr r)
 }
 
 
-bits::Lflags minroots::descent(MinTable& T, MinNbr r)
+GenSet minroots::descent(MinTable& T, MinNbr r)
 
 {
-  bits::Lflags A = 0;
+  GenSet A = 0;
 
   for (Ulong j = 0; j < T.rank(); ++j)
     if (T.dot(r,j) > 0)
@@ -1624,14 +1623,13 @@ coxtypes::CoxWord& minroots::reduced(MinTable& T, MinNbr r)
 }
 
 
-bits::Lflags minroots::support(MinTable& T, MinNbr r)
 
 /*
   Returns the support fo the root of index r.
 */
-
+GenSet minroots::support(MinTable& T, MinNbr r)
 {
-  bits::Lflags f = 0;
+  GenSet f = 0;
 
   while(1) {
     coxtypes::Generator s;

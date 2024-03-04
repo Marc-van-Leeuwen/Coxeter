@@ -1073,7 +1073,7 @@ void printCoatoms(FILE* file, const coxtypes::CoxNbr& y, const schubert::Schuber
   return;
 }
 
-void printDescents(FILE* file, const bits::Lflags& df, const bits::Lflags& f,
+void printDescents(FILE* file, const Lflags& df, const Lflags& f,
 		   const interface::Interface& I, WgraphTraits& traits)
 
 {
@@ -1218,16 +1218,15 @@ void printPartition(FILE* file, const bits::Partition& pi,
   return;
 }
 
-void printWGraph(FILE* file, const WGraph& X, const bits::Lflags& f,
-		 const interface::Interface& I, WgraphTraits& traits)
 
 /*
-  This function prints out a W-graph. We represent a W-graph as a list of
-  pairs [descent set,edge-list]. The edge-list itself is a set of pairs
-  [dest,mu], where dest is the end-point of the edge, and mu is the
-  mu-coefficient.
+  Print out a W-graph. We represent a W-graph as a list of pairs [descent
+  set,edge-list]. The edge-list itself is a set of pairs [dest,mu], where dest
+  is the end-point of the edge, and mu is the mu-coefficient.
 */
 
+void printWGraph(FILE* file, const WGraph& X, const Lflags& f,
+		 const interface::Interface& I, WgraphTraits& traits)
 {
   int d = io::digits(X.size()-1,10);
 

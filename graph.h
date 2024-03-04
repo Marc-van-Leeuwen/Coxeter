@@ -39,18 +39,18 @@ namespace graph {
 
 /******** function declarations **********************************************/
 
-  containers::vector<bits::Lflags> conjugacy_classes(const CoxGraph& G);
-  bool isAffine(CoxGraph& G, bits::Lflags I);
-  bool isConnected(CoxGraph& G, bits::Lflags I);
-  bool isCrystallographic(CoxGraph& G, bits::Lflags I);
-  bool isFinite(CoxGraph& G, bits::Lflags I);
-  bool isLoop(CoxGraph& G, bits::Lflags I);
-  bool isSimplyLaced(CoxGraph& G, bits::Lflags I);
-  bool isTree(CoxGraph& G, bits::Lflags I);
-  coxtypes::CoxSize order(CoxGraph& G, bits::Lflags I);
-  coxtypes::ParSize quotOrder(CoxGraph& G, bits::Lflags I, bits::Lflags J);
-  coxtypes::Generator *standardEnumeration(CoxGraph& G, bits::Lflags I);
-  const type::Type& type(CoxGraph& G, bits::Lflags I);
+  containers::vector<GenSet> conjugacy_classes(const CoxGraph& G);
+  bool isAffine(CoxGraph& G, GenSet I);
+  bool isConnected(CoxGraph& G, GenSet I);
+  bool isCrystallographic(CoxGraph& G, GenSet I);
+  bool isFinite(CoxGraph& G, GenSet I);
+  bool isLoop(CoxGraph& G, GenSet I);
+  bool isSimplyLaced(CoxGraph& G, GenSet I);
+  bool isTree(CoxGraph& G, GenSet I);
+  coxtypes::CoxSize order(CoxGraph& G, GenSet I);
+  coxtypes::ParSize quotOrder(CoxGraph& G, GenSet I, GenSet J);
+  coxtypes::Generator *standardEnumeration(CoxGraph& G, GenSet I);
+  const type::Type& type(CoxGraph& G, GenSet I);
 };
 
 
@@ -62,25 +62,25 @@ class graph::CoxGraph
   type::Type d_type;
   coxtypes::Rank d_rank;
   CoxMatrix d_matrix; // flattened, by row
-  bits::Lflags d_S; // all generators
-  containers::vector<bits::Lflags> d_star; // neighbourhoods of the vertices
-  containers::vector<bits::Lflags> d_finite_edges; // list of non-infinite edges
+  GenSet d_S; // all generators
+  containers::vector<GenSet> d_star; // neighbourhoods of the vertices
+  containers::vector<GenSet> d_finite_edges; // list of non-infinite edges
  public:
 /* constructors and destructors */
   CoxGraph(const type::Type& x, const coxtypes::Rank& l);
   ~CoxGraph();
 /* accessors */
-  bits::Lflags component(bits::Lflags I,coxtypes::Generator s) const;
-  bits::Lflags extremities(bits::Lflags I) const;
+  GenSet component(GenSet I,coxtypes::Generator s) const;
+  GenSet extremities(GenSet I) const;
   CoxEntry M(coxtypes::Generator s, coxtypes::Generator t) const
     { return(d_matrix[s*d_rank + t]); } // this defines the matrix layout
-  bits::Lflags nodes(bits::Lflags I) const;
+  GenSet nodes(GenSet I) const;
   coxtypes::Rank rank() const { return d_rank; }
-  bits::Lflags supp() const { return d_S; }
-  bits::Lflags star(coxtypes::Generator s) const { return(d_star[s]); }
-  bits::Lflags star(bits::Lflags I, coxtypes::Generator s) const
+  GenSet supp() const { return d_S; }
+  GenSet star(coxtypes::Generator s) const { return(d_star[s]); }
+  GenSet star(GenSet I, coxtypes::Generator s) const
     { return(d_star[s]&I); }
-  const containers::vector<bits::Lflags>& finite_edges() const
+  const containers::vector<GenSet>& finite_edges() const
     { return d_finite_edges; }
   const type::Type& type() const { return d_type; }
 

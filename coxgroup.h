@@ -146,9 +146,9 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
   /* descent sets */
 
-  virtual bits::Lflags descent(const coxtypes::CoxWord& g) const;                /* inlined */
-  virtual bits::Lflags ldescent(const coxtypes::CoxWord& g) const;               /* inlined */
-  virtual bits::Lflags rdescent(const coxtypes::CoxWord& g) const;               /* inlined */
+  virtual Lflags descent(const coxtypes::CoxWord& g) const;                /* inlined */
+  virtual GenSet ldescent(const coxtypes::CoxWord& g) const;               /* inlined */
+  virtual GenSet rdescent(const coxtypes::CoxWord& g) const;               /* inlined */
   bool isDescent(const coxtypes::CoxWord& g, const coxtypes::Generator& s) const;
 
 /******** Chapter II : Schubert context **************************************/
@@ -160,9 +160,9 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   virtual coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
   virtual void permute(const bits::Permutation& a);
 
-  virtual bits::Lflags descent(const coxtypes::CoxNbr& x) const;                  /* inlined */
-  virtual bits::Lflags ldescent(const coxtypes::CoxNbr& x) const;                 /* inlined */
-  virtual bits::Lflags rdescent(const coxtypes::CoxNbr& x) const;                 /* inlined */
+  virtual Lflags descent(const coxtypes::CoxNbr& x) const;                  /* inlined */
+  virtual GenSet ldescent(const coxtypes::CoxNbr& x) const;                 /* inlined */
+  virtual GenSet rdescent(const coxtypes::CoxNbr& x) const;                 /* inlined */
 
   virtual coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const;                  /* inlined */
   virtual int prod(coxtypes::CoxNbr& x, const coxtypes::Generator& s) const;
@@ -216,12 +216,12 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
   std::string& append(std::string& str, const coxtypes::Generator& s) const;         /* inlined */
   std::string& append(std::string& str, const coxtypes::CoxWord& g) const;           /* inlined */
-  std::string& append(std::string& str, const bits::Lflags& f) const;            /* inlined */
+  std::string& append(std::string& str, const GenSet& f) const;            /* inlined */
 
   void printSymbol(FILE* file, const coxtypes::Generator& s) const;        /* inlined */
   void print(FILE* file, const coxtypes::CoxWord& g) const;                /* inlined */
   void print(FILE* file, const coxtypes::CoxNbr& x) const;                 /* inlined */
-  void printFlags(FILE* file, const bits::Lflags& f) const;            /* inlined */
+  void printFlags(FILE* file, const GenSet& f) const;            /* inlined */
 
   void parse(interface::ParseInterface& P) const;
   virtual bool parseGroupElement(interface::ParseInterface& P) const;
@@ -282,11 +282,11 @@ inline int CoxGroup::prod(coxtypes::CoxWord& g, const coxtypes::CoxWord& h) cons
 inline const coxtypes::CoxWord& CoxGroup::reduced(coxtypes::CoxWord& g, coxtypes::CoxWord& h) const
  {return mintable().reduced(g,h);}
 
-inline bits::Lflags CoxGroup::descent(const coxtypes::CoxWord& g) const
+inline Lflags CoxGroup::descent(const coxtypes::CoxWord& g) const
  {return mintable().descent(g);}
-inline bits::Lflags CoxGroup::ldescent(const coxtypes::CoxWord& g) const
+inline GenSet CoxGroup::ldescent(const coxtypes::CoxWord& g) const
  {return mintable().ldescent(g);}
-inline bits::Lflags CoxGroup::rdescent(const coxtypes::CoxWord& g) const
+inline GenSet CoxGroup::rdescent(const coxtypes::CoxWord& g) const
  {return mintable().rdescent(g);}
 
 /* Chapter II */
@@ -298,11 +298,11 @@ inline coxtypes::CoxNbr CoxGroup::contextSize() const
 inline coxtypes::Length CoxGroup::length(const coxtypes::CoxNbr& x) const
  {return d_klsupport.length(x);}
 
-inline bits::Lflags CoxGroup::descent(const coxtypes::CoxNbr& x) const
+inline Lflags CoxGroup::descent(const coxtypes::CoxNbr& x) const
   {return schubert().descent(x);}
-inline bits::Lflags CoxGroup::ldescent(const coxtypes::CoxNbr& x) const
+inline GenSet CoxGroup::ldescent(const coxtypes::CoxNbr& x) const
  {return schubert().ldescent(x);}
-inline bits::Lflags CoxGroup::rdescent(const coxtypes::CoxNbr& x) const
+inline GenSet CoxGroup::rdescent(const coxtypes::CoxNbr& x) const
  {return schubert().rdescent(x);}
 
 inline coxtypes::CoxNbr CoxGroup::inverse(const coxtypes::CoxNbr& x) const
@@ -335,7 +335,7 @@ inline std::string& CoxGroup::append(std::string& str, const coxtypes::Generator
   const {return appendSymbol(str,s,interface());}
 inline std::string& CoxGroup::append(std::string& str, const coxtypes::CoxWord& g) const
  {return interface::append(str,g,interface());}
-inline std::string& CoxGroup::append(std::string& str, const bits::Lflags& f) const
+inline std::string& CoxGroup::append(std::string& str, const GenSet& f) const
  {return interface::append(str,f,interface());}
 
 inline void CoxGroup::printSymbol(FILE* file, const coxtypes::Generator& s)
@@ -344,7 +344,7 @@ inline void CoxGroup::print(FILE* file, const coxtypes::CoxWord& g) const
  {return interface().print(file,g);}
 inline void CoxGroup::print(FILE* file, const coxtypes::CoxNbr& x) const
  {return schubert().print(file,x,interface());}
-inline void CoxGroup::printFlags(FILE* file, const bits::Lflags& f) const
+inline void CoxGroup::printFlags(FILE* file, const GenSet& f) const
  {return interface::print(file,f,interface());}
 
 inline void CoxGroup::setInPostfix(const std::string& a)
