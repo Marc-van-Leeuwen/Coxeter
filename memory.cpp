@@ -101,31 +101,30 @@ Arena::~Arena() {}
 */
 void Arena::newBlock(unsigned b)
 {
-  for (unsigned j = b+1; j < BITS(Ulong); ++j) {
-    if (d_list[j]!=nullptr) /* split this block up */
+  for (unsigned i = b+1; i < BITS(Ulong); ++i)
+    if (d_list[i]!=nullptr) /* split this block up */
+    {
+      Align *ptr = reinterpret_cast<Align*> (d_list[i]);
+      d_list[i] = d_list[i]->next;
+      d_allocated[i]--; // this block no longer allocated as size $2^j$
+      while (i-->b) // run back though sequence of (previously absent) block sizes
       {
-	Align *ptr = reinterpret_cast<Align*> (d_list[j]);
-	d_list[j] = d_list[j]->next;
-	d_allocated[j]--;
-	for (unsigned i = b; i < j; ++i) {
-	  assert(d_list[i]==nullptr); // tested before we came here
-	  d_list[i] = reinterpret_cast<MemBlock*> (ptr + (1L<<i));
-	  assert(d_list[i]->next==nullptr); // since free blocks are 0-filled
-	  d_allocated[i]++;
-	}
-	d_list[b]->next = reinterpret_cast<MemBlock*> (ptr); // link @0 after @1
-	d_list[b]->next->next = nullptr; // this one element was not 0-filled
-	d_allocated[b]++;
-	return;
+	assert(d_list[i]==nullptr); // tested before we came here
+	d_list[i] = reinterpret_cast<MemBlock*> (ptr + (1L<<i));
+	assert(d_list[i]->next==nullptr); // since free blocks are 0-filled
+	d_allocated[i]++; // top half of what was left now allocated as size $2^i$
       }
-  }
+      d_list[b]->next = reinterpret_cast<MemBlock*> (ptr); // link @0 after @1
+      d_list[b]->next->next = nullptr; // this one element was not 0-filled
+      d_allocated[b]++; // bottom part is second allocated block of size $2^i$
+      return;
+    }
 
   /* If we get here we need more memory from the system.
      When |Error| is called, it may or may not invoke |exit(0)|, depending
      on |CATCH_MEMORY_OVERFLOW|; the caller must therefore be aware and
      always test that |ERRNO==0| before using |d_list[b]|
  */
-
   if (b >= d_bsBits) { /* get block directly */
     if (d_count > MEMORY_MAX-(1L<<b)) // total memory would exceed 2^64 words
     {
@@ -133,9 +132,9 @@ void Arena::newBlock(unsigned b)
       return;
     }
     d_list[b] = static_cast<MemBlock *> (std::calloc(1L<<b,Arena_Unit));
-    if (d_list[b] == nullptr) // the system failed to honor the request
+    if (d_list[b] == nullptr)
     {
-      Error(OUT_OF_MEMORY);
+      Error(OUT_OF_MEMORY); // the system failed to honor the request
       return;
     }
     d_count += 1L<<b; // record the number of words bought from system
@@ -144,25 +143,29 @@ void Arena::newBlock(unsigned b)
   }
 
   // now we are asking for a very small block, and it needs fresh allocation
-  if (d_count > MEMORY_MAX-(1L<<d_bsBits)) {
-    Error(OUT_OF_MEMORY);
+  if (d_count > MEMORY_MAX-(1L<<d_bsBits))
+  {
+    Error(OUT_OF_MEMORY); // actually out of compiled-in limit
     return;
   }
 
+  // Now buy a block of size $2^{d_bsBits}$ and split it up as before
   Align *ptr = static_cast<Align *> (std::calloc(1L<<d_bsBits,Arena_Unit));
-  if (ptr == 0) {
-    Error(OUT_OF_MEMORY);
+  if (ptr == nullptr) {
+    Error(OUT_OF_MEMORY); // the system failed to honor the request
     return;
   }
 
   d_count += 1L<<d_bsBits;
 
-  for (unsigned j = b; j < d_bsBits; ++j) {
-    d_list[j] = reinterpret_cast<MemBlock *> (ptr + (1L<<j));
-    d_allocated[j]++;
+  for (unsigned i = d_bsBits; i-->b ; )
+  {
+    d_list[i] = reinterpret_cast<MemBlock *> (ptr + (1L<<i)); // top half of remainder
+    d_allocated[i]++;
   }
 
   d_list[b]->next = reinterpret_cast<MemBlock *> (ptr);
+  // d_list[b]->next->next = nullptr; // bottom half was emptied by |calloc|
   d_allocated[b]++;
 
   return;
@@ -281,9 +284,9 @@ void Arena::free(void *ptr, size_t n)
   if (n > Arena_Unit)
     b = lastBit(n-1)-lastBit(Arena_Unit)+1;
 
-  memset(ptr,0,(1L<<b)*Arena_Unit); // erase full contents of allocted block
+  memset(ptr,0,(1L<<b)*Arena_Unit); // erase full contents of returned block
   MemBlock *block = static_cast<MemBlock*>(ptr); // prepare to link in free list
-  block->next = d_list[b]; // push to list (uses one pointer insize the block)
+  block->next = d_list[b]; // push to list (uses one pointer inside the block)
   d_list[b] = block; // set the list to start with this freed block
   d_used[b]--;
 }

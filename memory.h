@@ -99,7 +99,7 @@ template <typename T>
 
   void deallocate(T* p, std::size_t n) // assumes |p| resulted from |allocate(n)|
   {
-    memory::arena().free(p,n);
+    memory::arena().free(p,n*sizeof(T));
   }
 
   bool operator==(const allocator&) const { return true; }
