@@ -1284,10 +1284,11 @@ namespace schubert {
 ClosureIterator::ClosureIterator(const SchubertContext& p)
   : d_schubert(p)
   , state()
+  , elements{0}
   , d_visited(p.size())
 {
   d_visited.insert(0);
-  state.push(node{p.closure(0),coxtypes::CoxNbr(0),p.rascent(0)});
+  state.push(node{p.closure(0), 1, coxtypes::CoxNbr(0), p.rascent(0)});
 }
 
 
@@ -1312,8 +1313,8 @@ void ClosureIterator::operator++()
   const SchubertContext& p = d_schubert;
 
   // find right ascents of |d_current|, possible extensions of the current word
-  do
-  {
+  while(true) // loop exists by |return|, whether past the end or not
+  { // |not state.empty()| is loop invariant
     auto& asc = state.top().asc;
     while (asc!=0) // there are candidates right ascents for |current()| left
     {
@@ -1325,20 +1326,31 @@ void ClosureIterator::operator++()
       if (d_visited.is_member(x)) // nor visit an element already visited
 	continue;
 
-      // now we can extend |current()| on the right by |s|
+      // now |x| is new and obtained by extending |current()| on the right by |s|
       d_visited.insert(x);
-      const auto& prev_closure = closure();
-      state.push(node{closure(),x,p.rascent(x)}); // closure starts as a copy
+      const auto& prev_closure = closure(); // read this from old |state|
+      state.push(node{prev_closure,0,x,p.rascent(x)}); // closure starts as a copy
       auto& new_closure = state.top().closure;
-      for (coxtypes::CoxNbr y : prev_closure)
-	new_closure.insert(p.rshift(y,s)); // a no-op for descents; we don't care
-      return; // we're done
+      containers::sl_list<coxtypes::CoxNbr> layer; // what is added here
+      for (auto y : elements)
+      { auto ys = p.rshift(y,s);
+	if (not prev_closure.is_member(ys))
+	  {
+	    layer.push_back(ys);
+	    new_closure.insert(ys);
+	  }
+      }
+      elements.insert(elements.end(),layer.wbegin(),layer.wend());
+      state.top().closure_size = elements.size();
+      return; // we're done incrementing, and still valid
     } // |for(s)|
 
     // if we get here, there are no extensions of the current word
     state.pop();
-  } while (not state.empty());
-  // if we get here, our iterator is past the end
+    if (state.empty())
+      return; // our iterator is past the end
+    elements.resize(state.top().closure_size); // drop no longer present elements
+  } // |while(true)|
 }
 
 };
