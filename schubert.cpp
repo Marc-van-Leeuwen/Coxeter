@@ -303,12 +303,22 @@ containers::sl_list<coxtypes::Generator>
 bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
 {
   assert(x<size());
-  bitmap::BitMap result(size());
+  bitmap::BitMap result(size()); // full size probably needed by callers
+  containers::vector<coxtypes::CoxNbr> elements; // copy for faster iteration
+  elements.reserve(x+1); // ensure, vitally, no reallocation will occur
   result.insert(0);
+  elements.push_back(0);
   for (auto s : word(x))
-  { const auto copy = result; // making a copy is cleaner, but not essential
-    for (coxtypes::CoxNbr y : copy) // without, we might have more iterations
-      result.insert(rshift(y,s)); // may or may not be new
+  { const auto high_level = elements.end();
+    for (auto it = elements.begin(); it!=high_level; ++it)
+    {
+      const coxtypes::CoxNbr cand = rshift(*it,s);
+      if (not result.is_member(cand)) // actually only excludes old elements
+      {
+	result.insert(cand); // may or may not be new
+	elements.push_back(cand);
+      }
+    }
   }
 
   return result;
@@ -1284,10 +1294,11 @@ namespace schubert {
 ClosureIterator::ClosureIterator(const SchubertContext& p)
   : d_schubert(p)
   , state()
+  , elements{0}
   , d_visited(p.size())
 {
   d_visited.insert(0);
-  state.push(node{p.closure(0),coxtypes::CoxNbr(0),p.rascent(0)});
+  state.push(node{p.closure(0), 1, coxtypes::CoxNbr(0), p.rascent(0)});
 }
 
 
@@ -1310,10 +1321,11 @@ ClosureIterator::ClosureIterator(const SchubertContext& p)
 void ClosureIterator::operator++()
 {
   const SchubertContext& p = d_schubert;
+  elements.reserve(p.size()); // ensure, vitally, no reallocation will occur
 
   // find right ascents of |d_current|, possible extensions of the current word
-  do
-  {
+  while(true) // loop exists by |return|, whether past the end or not
+  { // |not state.empty()| is loop invariant
     auto& asc = state.top().asc;
     while (asc!=0) // there are candidates right ascents for |current()| left
     {
@@ -1325,20 +1337,30 @@ void ClosureIterator::operator++()
       if (d_visited.is_member(x)) // nor visit an element already visited
 	continue;
 
-      // now we can extend |current()| on the right by |s|
+      // now |x| is new and obtained by extending |current()| on the right by |s|
       d_visited.insert(x);
-      const auto& prev_closure = closure();
-      state.push(node{closure(),x,p.rascent(x)}); // closure starts as a copy
+      const auto& prev_closure = closure(); // read this from old |state|
+      state.push(node{prev_closure,0,x,p.rascent(x)}); // closure starts a copy
       auto& new_closure = state.top().closure;
-      for (coxtypes::CoxNbr y : prev_closure)
-	new_closure.insert(p.rshift(y,s)); // a no-op for descents; we don't care
-      return; // we're done
+      const auto end = elements.end(); // must fix current high water mark
+      for (auto it = elements.begin(); it<end; ++it) // iterate over old part
+      { auto ys = p.rshift(*it,s);
+	if (not prev_closure.is_member(ys)) // avoid elements that are not new
+	  { // all others will be added as new, and distinct
+	    elements.push_back(ys); // no realloc, |it| and |end| still valid
+	    new_closure.insert(ys);
+	  }
+      }
+      state.top().closure_size = elements.size();
+      return; // we're done incrementing, and still valid
     } // |for(s)|
 
     // if we get here, there are no extensions of the current word
     state.pop();
-  } while (not state.empty());
-  // if we get here, our iterator is past the end
+    if (state.empty())
+      return; // our iterator is past the end
+    elements.resize(state.top().closure_size); // drop no longer present elements
+  } // |while(true)|
 }
 
 };

@@ -302,10 +302,15 @@ class SchubertContext
 class ClosureIterator {
  private:
   struct node
-  { bitmap::BitMap closure; coxtypes::CoxNbr current; GenSet asc; };
+  { bitmap::BitMap closure; // the Bruhat interval $[e,current]$
+    coxtypes::CoxNbr closure_size; // the size of that interval (for speed)
+    coxtypes::CoxNbr current; // the current Coxeter element
+    GenSet asc; // its not yet explored ascent set
+  };
   const SchubertContext& d_schubert;
   containers::stack<node> state;
-  bitmap::BitMap d_visited;
+  containers::vector<coxtypes::CoxNbr> elements; // closure, for fast traversal
+  bitmap::BitMap d_visited; // everything seen so far
  public:
 /* constructors and destructors */
   ClosureIterator(const SchubertContext& p);
