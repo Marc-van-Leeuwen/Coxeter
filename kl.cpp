@@ -782,7 +782,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 */
 void KLContext::KLHelper::allocMuTable()
 {
-  using I = iterator::FilteredIterator<Ulong,bits::BitMap::Iterator,MuFilter>;
+  using I = iterator::FilteredIterator<Ulong,bitmap::BitMap::iterator,MuFilter>;
 
   const schubert::SchubertContext& p = schubert();
 
@@ -795,8 +795,7 @@ void KLContext::KLHelper::allocMuTable()
       continue;
 
     /* find extremal list */
-
-    bits::BitMap b = cl().bitMap();
+    bitmap::BitMap b = cl.closure();
     if (ERRNO) {
       printf("error! y = %lu\n",static_cast<Ulong>(y));
       goto abort;

@@ -11,6 +11,7 @@
 #include "globals.h"
 #include "coxtypes.h"
 #include "graph.h"
+#include "containers.h"
 #include "bitmap.h"
 #include "sl_list.h"
 #include "io.h"
@@ -174,7 +175,7 @@ class SchubertContext
     ContextExtension(SchubertContext& p, const Ulong& c);
     ~ContextExtension();
     Ulong size() {return d_size;}
-  };
+  }; // |class ContextExtension|
   const graph::CoxGraph& d_graph;
   coxtypes::Rank d_rank;
   coxtypes::Length d_maxlength;
@@ -184,8 +185,8 @@ class SchubertContext
   list::List<Lflags> d_descent;
   list::List<coxtypes::CoxNbr*> d_shift;
   list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
-  bits::BitMap* d_downset; // array of length |2*d_rank| of |BitMap|s
-  bits::BitMap* d_parity;
+  containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
+  bits::BitMap* d_parity; // array of TWO parity bitmaps
   bits::SubSet d_subset;
   stack::Stack<ContextExtension*> d_history;
 /* private member functions */
@@ -253,8 +254,10 @@ class SchubertContext
   coxtypes::CoxNbr lshift(coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return d_shift[x][d_rank+s]; }
 
-  const bits::BitMap& downset(coxtypes::Generator s) const
+  const bitmap::BitMap& down_set(coxtypes::Generator s) const
     { return d_downset[s]; }
+  bits::BitMap downset(coxtypes::Generator s) const
+  { return bits::BitMap(down_set(s)); } // convert
   const CoatomList& hasse(coxtypes::CoxNbr x) const { return d_hasse[x]; }
   const type::Type& type() const { return d_graph.type(); }
 
@@ -298,25 +301,21 @@ class SchubertContext
 
 class ClosureIterator {
  private:
+  struct node
+  { bitmap::BitMap closure; coxtypes::CoxNbr current; GenSet asc; };
   const SchubertContext& d_schubert;
-  bits::SubSet d_subSet;
-  coxtypes::CoxWord d_g;
-  list::List<Ulong> d_subSize;
-  bits::BitMap d_visited;
-  coxtypes::CoxNbr d_current;
-  bool d_valid;
-/* private functions */
-  void update(coxtypes::CoxNbr x, coxtypes::Generator s);
+  containers::stack<node> state;
+  bitmap::BitMap d_visited;
  public:
 /* constructors and destructors */
   ClosureIterator(const SchubertContext& p);
   ~ClosureIterator() {};
 /* iterator operators */
-  operator bool() const { return d_valid; }
+  operator bool() const { return not state.empty(); }
   void operator++();
-/* accessors */
-  coxtypes::CoxNbr current() const { return d_current; }
-  const bits::SubSet& operator()() const { return d_subSet; }
+// accessors (only valid if not past the end)
+  coxtypes::CoxNbr current() const { return state.top().current; }
+  const bitmap::BitMap& closure() const { return state.top().closure; }
 }; // |class ClosureIterator|
 
 }; // |namespace schubert|
