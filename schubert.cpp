@@ -144,9 +144,6 @@ namespace schubert {
 
 /******** constructors ******************************************************/
 
-SchubertContext::SchubertContext(const graph::CoxGraph& G)
-  :d_graph(G), d_rank(G.rank()), d_maxlength(0), d_size(1), d_length(1),
-  d_hasse(1), d_descent(1), d_shift(1), d_star(1), d_subset(1)
 
 /*
   Constructor for the SchubertContext class. The data are initialized for
@@ -154,7 +151,20 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   0, length is 0, descent sets are empty, coatom set is empty, shifts
   are all undefined.
 */
-
+SchubertContext::SchubertContext(const graph::CoxGraph& G)
+  : d_graph(G)
+  , d_rank(G.rank())
+  , d_maxlength(0)
+  , d_size(1)
+  , d_length(1)
+  , d_hasse(1)
+  , d_descent(1)
+  , d_shift(1)
+  , d_star(1)
+  , d_downset(2*d_rank,bitmap::BitMap(1))
+  , d_parity(nullptr)
+  , d_subset(1)
+  , d_history()
 {
   d_length.setSizeValue(1);
   d_hasse.setSizeValue(1);
@@ -169,10 +179,6 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   d_star[0] = new(memory::arena()) coxtypes::CoxNbr[2*nStarOps()];
   for (coxtypes::StarOp j = 0; j < 2*nStarOps(); ++j)
     d_star[0][j] = coxtypes::undef_coxnbr;
-
-  d_downset = new(memory::arena()) bits::BitMap[2*d_rank];
-  for (Ulong j = 0; j < 2*static_cast<Ulong>(d_rank); ++j)
-    new(d_downset+j) bits::BitMap(1);
 
   d_parity = new(memory::arena()) bits::BitMap[2];
   new(d_parity) bits::BitMap(1);
@@ -202,10 +208,6 @@ SchubertContext::~SchubertContext()
 
   while (d_history.size()) {
     delete *d_history.pop();
-  }
-
-  for (Ulong j = 0; j < 2*static_cast<Ulong>(d_rank); ++j) {
-    d_downset[j].~BitMap();
   }
 
   d_parity[0].~BitMap();
@@ -301,7 +303,7 @@ containers::sl_list<coxtypes::Generator>
 bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
 {
   assert(x<size());
-  bitmap::BitMap result(x+1);
+  bitmap::BitMap result(size());
   result.insert(0);
   for (auto s : word(x))
   { const auto copy = result; // making a copy is cleaner, but not essential
@@ -523,12 +525,10 @@ void SchubertContext::extendSubSet
   return;
 }
 
-void SchubertContext::permute(const bits::Permutation& a)
 
 /*
-  This function applies the permutation a to the context. We have explained
-  in kl.cpp how this should be done. The objects to be permuted are the
-  following :
+  Apply the permutation |a| to the context. We have explained in kl.cpp how this
+  should be done. The objects to be permuted are the following :
 
    - d_length : a table with range in the context;
    - d_hasse : each row is a list with values in the context; the table itself
@@ -539,7 +539,7 @@ void SchubertContext::permute(const bits::Permutation& a)
    - d_downset : a table of bitmaps ranging over the context;
    - d_parity : a pair of bitmaps ranging over the context;
 */
-
+void SchubertContext::permute(const bits::Permutation& a)
 {
   static bits::BitMap b(0);
   static CoatomList hasse_buf; /* quick fix; can go when all lists are
@@ -597,12 +597,12 @@ void SchubertContext::permute(const bits::Permutation& a)
       d_descent[x] = descent_buf;
       d_shift[x] = shift_buf;
 
-      /* modify downsets */
-
-      for (coxtypes::Generator s = 0; s < 2*this->rank(); ++s) {
-	bool t = d_downset[s].getBit(y);
-	d_downset[s].setBit(y,d_downset[s].getBit(x));
-	d_downset[s].setBit(x,t);
+      // swap bits at |x| and |y| in all downsets
+      for (coxtypes::Generator s = 0; s < 2*this->rank(); ++s)
+      {
+	bool t = d_downset[s].is_member(y);
+	d_downset[s].set_to(y,d_downset[s].is_member(x));
+	d_downset[s].set_to(x,t);
       }
 
       /* modify parity bitmaps */
@@ -649,7 +649,6 @@ void SchubertContext::revertSize(const Ulong& n)
   return;
 }
 
-void SchubertContext::setSize(const Ulong& n)
 
 /*
   Resizes the various data structures to accomodate a context of size n.
@@ -663,7 +662,7 @@ void SchubertContext::setSize(const Ulong& n)
   Sets the error MEMORY_WARNING in case of overflow, if CATCH_MEMORY_OVERFLOW
   had been set.
 */
-
+void SchubertContext::setSize(const Ulong& n)
 {
   Ulong prev_size = size();
 
@@ -841,9 +840,9 @@ void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x,
   if (d_length[x] == m) { /* descents for s,t on both sides */
     d_descent[x] |=
       constants::eq_mask[t] | constants::eq_mask[s1] | constants::eq_mask[t1];
-    d_downset[t].setBit(x);
-    d_downset[s1].setBit(x);
-    d_downset[t1].setBit(x);
+    d_downset[t].insert(x);
+    d_downset[s1].insert(x);
+    d_downset[t1].insert(x);
     d_shift[x][t] = z;
     d_shift[z][t] = x;
     if (m % 2) { /* xs = tx; xt = sx */
@@ -864,13 +863,13 @@ void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x,
       d_shift[x][s1] = z;
       d_shift[z][s1] = x;
       d_descent[x] |= constants::eq_mask[s1];
-      d_downset[s1].setBit(x);
+      d_downset[s1].insert(x);
     }
     else { /* xs and tx */
       d_shift[x][t1] = z;
       d_shift[z][t1] = x;
       d_descent[x] |= constants::eq_mask[t1];
-      d_downset[t1].setBit(x);
+      d_downset[t1].insert(x);
     }
   }
 
@@ -902,7 +901,7 @@ void SchubertContext::fillShifts(coxtypes::CoxNbr first,
     d_shift[0][t] = x;
     d_shift[x][t] = 0;
     d_descent[x] |= constants::eq_mask[t];
-    d_downset[t].setBit(x);
+    d_downset[t].insert(x);
     ++x;
   }
 
@@ -934,7 +933,7 @@ void SchubertContext::fillShifts(coxtypes::CoxNbr first,
       d_shift[x][t] = z;
       d_shift[z][t] = x;
       d_descent[x] |= constants::eq_mask[t];
-      d_downset[t].setBit(x);
+      d_downset[t].insert(x);
     nextt:
       continue;
     }
@@ -1106,7 +1105,7 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
       d_length[xs] = d_length[x] + 1;
       d_parity[d_length[xs]%2].setBit(xs);
       d_descent[xs] |= constants::eq_mask[s];
-      d_downset[s].setBit(xs);
+      d_downset[s].insert(xs);
       xs++;
     }
   }
@@ -1155,15 +1154,14 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
 namespace schubert {
 
-SchubertContext::ContextExtension::ContextExtension
-  (SchubertContext& p, const Ulong& c)
-  :d_schubert(p),d_size(c)
 
 /*
   This function manages the resizing of the SchubertContext p from its
   current size to size+c.
 */
-
+SchubertContext::ContextExtension::ContextExtension
+  (SchubertContext& p, const Ulong& c)
+  :d_schubert(p),d_size(c)
 {
   if (c == 0)
     return;
@@ -1203,11 +1201,9 @@ SchubertContext::ContextExtension::ContextExtension
   for (Ulong j = p.d_size+1; j < n; ++j)
     p.d_star[j] = p.d_star[j-1] + 2*p.nStarOps();
 
-  for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j) {
-    p.d_downset[j].setSize(n);
-    if (ERRNO)
-      goto revert;
-  }
+  for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j)
+    p.d_downset[j].set_capacity(n);
+
   p.d_parity[0].setSize(n);
   p.d_parity[1].setSize(n);
 
@@ -1225,14 +1221,13 @@ SchubertContext::ContextExtension::ContextExtension
   p.d_descent.setSize(p.d_size);
   p.d_shift.setSize(p.d_size);
   for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j) {
-    p.d_downset[j].setSize(p.d_size);
+    p.d_downset[j].set_capacity(p.d_size);
   }
   p.d_parity[0].setSize(p.d_size);
   p.d_parity[1].setSize(p.d_size);
   return;
 }
 
-SchubertContext::ContextExtension::~ContextExtension()
 
 /*
   Destruction of a context extension.
@@ -1243,7 +1238,7 @@ SchubertContext::ContextExtension::~ContextExtension()
   through the deleted elements.) Also, it could take care of freeing
   the superfluous coatom lists.
 */
-
+SchubertContext::ContextExtension::~ContextExtension()
 {
   SchubertContext& p = d_schubert;
   Ulong prev_size = p.d_size-d_size;
@@ -1254,9 +1249,7 @@ SchubertContext::ContextExtension::~ContextExtension()
   memory::arena().free(d_star,2*p.nStarOps()*d_size*sizeof(coxtypes::CoxNbr));
 
   p.d_size = prev_size;
-
-  return;
-}
+} // |SchubertContext::ContextExtension::~ContextExtension|
 
 };
 
@@ -1289,116 +1282,63 @@ SchubertContext::ContextExtension::~ContextExtension()
 namespace schubert {
 
 ClosureIterator::ClosureIterator(const SchubertContext& p)
-  :d_schubert(p),d_subSet(p.size()),d_g(p.maxlength()),d_subSize(1),
-   d_visited(p.size()),d_current(0),d_valid(true)
-
+  : d_schubert(p)
+  , state()
+  , d_visited(p.size())
 {
-  d_visited.reset();
-  d_visited.setBit(0);
-  d_g.reset();
-  resetOne(d_subSet);
-  d_subSize.append(1);
+  d_visited.insert(0);
+  state.push(node{p.closure(0),coxtypes::CoxNbr(0),p.rascent(0)});
 }
 
-void ClosureIterator::operator++()
 
 /*
   This function increments the iterator. In this case, this means updating
-  the subset to hold the closure of the next element.
+  |d_closure| to hold the closure of the next element.
 
   The important thing here is to choose carefully the order of traversal of
   p. We wish to do this in such a way that the subset can be managed as a
   stack. What we do is traverse in the lexicographical order of normal forms
   (so it will be Lex rather than ShortLex).
 
-  The control structure that manages the traversal is a coxtypes::CoxWord, representing
-  the normal form of the current element. The current element is initially
-  zero. On update, the next element is the first extension of the current
-  element within the context if there is such; otherwise the next extension
-  of the parent of the current element, and so on. In order to facilitate
-  things, we keep track of the number of elements visited.
+  The control structure that manages the traversal is a coxtypes::CoxWord,
+  representing the normal form of the current element. The current element is
+  initially zero. On update, the next element is the first extension of the
+  current element within the context if there is such; otherwise the next
+  extension of the parent of the current element, and so on. In order to
+  facilitate things, we keep track of the number of elements visited.
 */
-
+void ClosureIterator::operator++()
 {
   const SchubertContext& p = d_schubert;
 
-  /* look at extensions of the current word */
-
-  Lflags f = p.S() & ~p.rdescent(d_current);
-
-  for (; f; f &= f-1) {
-    coxtypes::Generator s = constants::firstBit(f);
-    coxtypes::CoxNbr x = p.shift(d_current,s);
-    if (x == coxtypes::undef_coxnbr)
-      continue;
-    if (d_visited.getBit(x))
-      continue;
-    /* if we get here, x is the next element */
-    update(x,s);
-    return;
-  }
-
-  /* if we get here, there are no extensions of the current word */
-
-  while (p.length(d_current)) {
-    coxtypes::Length r = p.length(d_current);
-    coxtypes::Generator s = d_g[r-1]-1;
-    d_current = p.shift(d_current,s);
-    for (coxtypes::Generator t = s+1; t < p.rank(); ++t) {
-      if (p.isDescent(d_current,t))
+  // find right ascents of |d_current|, possible extensions of the current word
+  do
+  {
+    auto& asc = state.top().asc;
+    while (asc!=0) // there are candidates right ascents for |current()| left
+    {
+      coxtypes::Generator s = constants::firstBit(asc);
+      asc &= asc-1; // clear the bit for |s|, whether or not it is productive
+      coxtypes::CoxNbr x = p.shift(current(),s);
+      if (x == coxtypes::undef_coxnbr) // don't leave the current context
 	continue;
-      coxtypes::CoxNbr x = p.shift(d_current,t);
-      if (x == coxtypes::undef_coxnbr)
+      if (d_visited.is_member(x)) // nor visit an element already visited
 	continue;
-      if (d_visited.getBit(x))
-	continue;
-      /* if we get here, x is the next element */
-      update(x,t);
-      return;
-    }
-  }
 
-  /* if we get here, we are done */
+      // now we can extend |current()| on the right by |s|
+      d_visited.insert(x);
+      const auto& prev_closure = closure();
+      state.push(node{closure(),x,p.rascent(x)}); // closure starts as a copy
+      auto& new_closure = state.top().closure;
+      for (coxtypes::CoxNbr y : prev_closure)
+	new_closure.insert(p.rshift(y,s)); // a no-op for descents; we don't care
+      return; // we're done
+    } // |for(s)|
 
-  d_valid = false;
-  return;
-}
-
-/******** private functions *************************************************/
-
-void ClosureIterator::update(coxtypes::CoxNbr x, coxtypes::Generator s)
-
-/*
-  Updates the structure, where the new current element is x, gotten through
-  generator s.  The previous length is stored in d_subSet.size(); the
-  update for the subset is to clear all elements of length <= length(x),
-  then extend the resulting subset through s.
-*/
-
-{
-  const SchubertContext& p = d_schubert;
-
-  d_current = x;
-  d_visited.setBit(x);
-  coxtypes::Length r = p.length(x);
-  d_g.setLength(r);
-  d_g[r-1] = s+1;
-  coxtypes::Length prev_r = d_subSize.size();
-
-  /* erase top of subset */
-
-  for (Ulong j = d_subSize[r-1]; j < d_subSize[prev_r-1]; ++j) {
-    coxtypes::CoxNbr z = d_subSet[j];
-    d_subSet.bitMap().clearBit(z);
-  }
-
-  d_subSet.setListSize(d_subSize[r-1]);
-
-  p.extendSubSet(d_subSet,s);
-  d_subSize.setSize(r+1);
-  d_subSize[r] = d_subSet.size();
-
-  return;
+    // if we get here, there are no extensions of the current word
+    state.pop();
+  } while (not state.empty());
+  // if we get here, our iterator is past the end
 }
 
 };
@@ -1472,10 +1412,13 @@ void select_maxima_for
 
 void select_maxima_for
   (const SchubertContext& p, bitmap::BitMap& b, Lflags f)
-{ // maybe not fastest, unless |b| is quite sparse
-  for (coxtypes::CoxNbr x : b)
-    if ((p.ascent(x)&f)!=0) // then some generator in |f| is an ascent for |x|
-      b.remove(x); // so remove |x| from |b|
+{
+  while(f!=0)
+  {
+    coxtypes::Generator s = constants::firstBit(f); // either on right or left
+    b &= p.down_set(s); // retain elements for which |s| is a descent
+    f &= f-1;
+  }
 }
 
 void minimize(const SchubertContext& p, bits::BitMap& b, const Lflags& f)
