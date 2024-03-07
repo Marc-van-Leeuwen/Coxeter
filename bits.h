@@ -130,13 +130,16 @@ class bits::BitMap::Iterator :
  public:
   Iterator();
   Iterator(const BitMap& b);
-  ~Iterator();
-  Ulong bitPos() const;                                        /* inlined */
-  Ulong operator* () const;                                    /* inlined */
+  ~Iterator() = default;
+  Ulong bitPos() const     { return d_bitAddress&posBits; }
+  Ulong operator* () const { return d_bitAddress; }
   Iterator& operator++ ();
   Iterator& operator-- ();
-  bool operator== (const Iterator& i) const;                     /* inlined */
-  bool operator!= (const Iterator& i) const;                     /* inlined */
+  bool operator== (const Iterator& i) const
+    { return d_bitAddress == i.d_bitAddress; }
+  bool operator!= (const Iterator& i) const
+    { return d_bitAddress != i.d_bitAddress; }
+
   /* friend declaration */
   friend Iterator BitMap::end() const;
 };
@@ -255,15 +258,6 @@ namespace bits {
     {return ReverseIterator(end());}
   inline BitMap::ReverseIterator BitMap::rend() const
     {return ReverseIterator(begin());}
-
-  inline Ulong BitMap::Iterator::bitPos() const
-    {return d_bitAddress&posBits;}
-  inline Ulong BitMap::Iterator::operator* () const
-    {return d_bitAddress;}
-  inline bool BitMap::Iterator::operator== (const BitMap::Iterator& i) const
-    {return d_bitAddress == i.d_bitAddress;}
-  inline bool BitMap::Iterator::operator!= (const BitMap::Iterator& i) const
-    {return d_bitAddress != i.d_bitAddress;}
 
   inline Ulong BitMap::ReverseIterator::operator* () const
     {Iterator tmp(d_i); --tmp; return *tmp;}

@@ -11,6 +11,8 @@
 #include "bitmap.h"
 
 #include <algorithm> // for |lower_bound|, |copy|, |copy_backward|
+#include <stdexcept>
+
 #include "constants.h" // for |firstBit|, |lastBit|
 #include "bits.h" // for |bitCount|
 
@@ -460,10 +462,10 @@ BitMap& BitMap::operator>>= (unsigned long delta) // decrease values by |delta|
     std::vector<unsigned long>::iterator it;
     for (it=d_map.begin(); it+1!=d_map.end(); ++it)
     {
-      *it >>= delta_rem; // shift bits doan
-      *it |= *(it+1) << (constants::longBits-delta_rem);
+      *it >>= delta_rem; // shift bits down (to the right) inside the word
+      *it |= *(it+1) << (constants::longBits-delta_rem); // left part from next
     }
-    *it <<= delta_rem; // shift last bits down
+    *it <<= delta_rem; // shift last bits down internally
   }
   return *this;
 }
@@ -511,7 +513,7 @@ void BitMap::clear(size_t start, size_t stop)
   {
     d_map[begin] &= constants::lt_mask[start&posBits];
     for (size_t i=begin+1; i<end; ++i)
-      d_map[i] = 0ul;
+      d_map[i] = 0;
     if ((stop&posBits)!=0) // protect against out-of-bounds setting of 0 bits
       d_map[end] &= ~constants::lt_mask[stop&posBits];
   }
@@ -612,16 +614,6 @@ void BitMap::swap(BitMap& other)
 
 ******************************************************************************/
 
-BitMap::iterator& BitMap::iterator::operator= (const BitMap::iterator& i)
-
-{
-  d_chunk = i.d_chunk;
-  d_bitAddress = i.d_bitAddress;
-  d_capacity = i.d_capacity;
-
-  return *this;
-}
-
 /*
   The incrementation operator; it has to move the bitAddress to the next
   set bit, and move the chunk if necessary.
@@ -634,35 +626,32 @@ BitMap::iterator& BitMap::iterator::operator= (const BitMap::iterator& i)
 
 BitMap::iterator& BitMap::iterator::operator++ ()
 {
-  // re-fetch current chunk, and shift away any bits we already passed over
-  unsigned long f = *d_chunk >> (d_bitAddress & constants::posBits);
-
-  //  here |(f&1)!=0|, unless we just did |remove(*it)| for our iterator |it|
-
-  // separating the following shift from the previous one avoids an undefined
-  // shift over longBits=posBits+1 when iterator steps into the next chunk
-  f >>= 1; // discard the bit we were placed at; we move on!
+  const auto cur_pos = d_bitAddress & constants::posBits;
+  unsigned long f = // current chunk masked to bits after current bit
+    *d_chunk & ~constants::leq_mask[cur_pos];
 
   if (f!=0) { // if there is still some bit set in this chunk, jump to it
-    d_bitAddress += constants::firstBit(f)+1; // +1 to account for the f>>=1
+    d_bitAddress += constants::firstBit(f)-cur_pos;
     return *this;
   }
 
-  // if not, we're done with this chunk; we must advance d_chunk at least once
+  // if not, we're done with this chunk; we'll advance |d_chunk| at least once
   d_bitAddress &= baseBits;  // prepare to advance by multiples of |longBits|
 
+  const auto old_chunk = d_chunk;
+  const auto limit = d_chunk + // offset to beyond-the-end of vector
+    ((d_capacity+constants::posBits-d_bitAddress) >> baseShift);
+
   do
-    if ((d_bitAddress+=constants::longBits)<d_capacity)
-      f=*++d_chunk;
-    else
-    {
-      d_bitAddress = d_capacity; // so now we we are out-of-bounds
+    if (++d_chunk==limit) // advance, test
+    { // we've run out of chunks, the value of |d_chunk| no longer matters
+      d_bitAddress = d_capacity; // so set beyond-the-end indication
       return *this;
     }
-  while(f==0);
+  while ((f=*d_chunk)==0); // pick up next chunck, repeat if it is entirely 0
 
   // now the bit to advance to is in the current chunk, and not out of bounds
-  d_bitAddress += constants::firstBit(f);
+  d_bitAddress += ((d_chunk-old_chunk) << baseShift) + constants::firstBit(f);
   return *this;
 }
 
@@ -679,11 +668,27 @@ BitMap::iterator BitMap::iterator::operator++ (int)
   return tmp;
 }
 
-void BitMap::iterator::change_owner(const BitMap& b)
+BitMap::iterator& BitMap::iterator::operator-- ()
 {
-  assert (b.capacity()==d_capacity);
-  d_chunk = b.d_map.begin()+(d_bitAddress>>baseShift);
+  unsigned rem = d_bitAddress & constants::posBits;
+  d_bitAddress &= baseBits;
+  auto m = rem==0 ? 0 // avoid dereferencing |d_chunk|
+    : *d_chunk & constants::lt_mask[rem]; // masks out bit |rem| and larger
+
+  if (m==0) // if not we can spare out some work
+  {
+    const auto limit = d_chunk - (d_bitAddress >> baseShift);
+    while (m==0 and d_chunk>limit)
+      m=*--d_chunk;
+
+    if (m==0)
+      throw std::runtime_error("BitMap iterator underflow");
+    d_bitAddress = (d_chunk - limit) << baseShift;
+  }
+  d_bitAddress += constants::lastBit(m);
+  return *this;
 }
+
 
 // Instantiations
 

@@ -457,8 +457,8 @@ void BitMap::andnot(const BitMap& map)
 
   The following functions are defined :
 
-   - Iterator(const BitMap&, bool) : constructs begin() if true, end() if
-     false;
+   - Iterator() construct iterator with null pointer
+   - Iterator(const BitMap& m) : constuct |m.begin()|
    - operator* () : returns the position of the current bit;
    - operator++ () : moves to the next set bit, or past-the-end;
    - operator-- () : moves to the previous set bit (valid if iterator is
@@ -472,64 +472,48 @@ void BitMap::andnot(const BitMap& map)
 namespace bits {
 
 BitMap::Iterator::Iterator()
-
+  : d_b(nullptr)
+  , d_chunk(nullptr)
+  , d_bitAddress(0)
 {}
 
 BitMap::Iterator::Iterator(const BitMap& b)
-  :d_b(&b)
-
-/*
-  Constructs begin().
-*/
-
-{
-  d_chunk = d_b->d_map.ptr();
-  d_bitAddress = 0;
-
-  for (d_bitAddress = 0; d_bitAddress < d_b->size();
-       d_bitAddress += BITS(Lflags)) {
-    if (*d_chunk) {
+  : d_b(&b)
+  , d_chunk(d_b->d_map.ptr())
+  , d_bitAddress(0)
+{ // do essentially |operator++|, but without skipping the initial set bit
+  for ( ; d_bitAddress < d_b->size(); d_bitAddress += BITS(Lflags),++d_chunk)
+    if (*d_chunk)
+    {
       d_bitAddress += constants::firstBit(*d_chunk);
       break;
     }
-    ++d_chunk;
-  }
   if (d_bitAddress > d_b->size()) /* bitmap was empty */
     d_bitAddress = d_b->size();
 }
 
-BitMap::Iterator::~Iterator()
-
-/*
-  Automatic destruction is enough.
-*/
-
-{}
-
-BitMap::Iterator& BitMap::Iterator::operator++ ()
 
 /*
   Increment operator (prefix notation). Valid if the iterator is
   dereferenceable. Result is dereferenceable or past-the-end.
 */
-
+BitMap::Iterator& BitMap::Iterator::operator++ ()
 {
   Lflags f = *d_chunk >> bitPos();
   f >>= 1;
 
-  if (f) {
-    d_bitAddress += constants::firstBit(f)+1;
-  }
+  if (f!=0) // bit found in current chunk
+    d_bitAddress += constants::firstBit(f)+1; //
   else { /* go to next chunk */
-    d_bitAddress &= baseBits;
+    d_bitAddress &= baseBits; // back up to notch, |for| starts advancing notch
     ++d_chunk;
     for (d_bitAddress += BITS(Lflags) ; d_bitAddress < d_b->size();
-	 d_bitAddress += BITS(Lflags)) {
+	 d_bitAddress += BITS(Lflags), ++d_chunk)
+    {
       if (*d_chunk) {
 	d_bitAddress += constants::firstBit(*d_chunk);
 	break;
       }
-      ++d_chunk;
     }
     if (d_bitAddress > d_b->size())
       d_bitAddress = d_b->size();

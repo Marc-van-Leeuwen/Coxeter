@@ -271,32 +271,26 @@ size_t last (const BitMap& set); // final element of non-empty |set|
   iterator. This also allows the |operator()| internal test for exhaustion.
   */
 class BitMap::iterator // is really a const_iterator
+  : public std::iterator<std::forward_iterator_tag, size_t>
 {
-  std::vector<unsigned long>::const_iterator d_chunk; // point to current chunk
+  using chunk_iterator = std::vector<unsigned long>::const_iterator;
+  chunk_iterator d_chunk; // point to current chunk
   size_t d_bitAddress; // value returned if dereferenced
   size_t d_capacity; // beyond-the-end bit-address, normally constant
 
  public:
-
-// associated types
-  typedef std::forward_iterator_tag iterator_category;
-  typedef size_t value_type;
-  typedef ptrdiff_t difference_type;
-  typedef const value_type* pointer;
-  typedef const value_type& reference;
-
 // constructors and destructors
-  iterator() {}
 
-  iterator(const iterator &j):d_chunk(j.d_chunk), d_bitAddress(j.d_bitAddress),
-    d_capacity(j.d_capacity) {}
+  iterator(const iterator &j) = default; // copy constructor
 
-  iterator(const std::vector<unsigned long>::const_iterator& p,
-	   size_t n, size_t c)
-    :d_chunk(p), d_bitAddress(n), d_capacity(c) {}
+  iterator(const chunk_iterator& p, size_t n, size_t c) // from raw data
+    : d_chunk(p)
+    , d_bitAddress(n)
+    , d_capacity(c)
+  {}
 
 // assignment
-  iterator& operator= (const iterator& i);
+  iterator& operator= (const iterator& i) = default;
 
 // accessors
   bool operator== (const iterator& i) const
@@ -309,10 +303,10 @@ class BitMap::iterator // is really a const_iterator
 
 // manipulators
   iterator& operator++ ();
-
   iterator operator++ (int);
 
-  void change_owner(const BitMap& b); // adapt |d_chunk| to point into |b|
+  iterator& operator-- ();
+
 }; // |class BitMap::iterator|
 
 } // |namespace bitmap|
