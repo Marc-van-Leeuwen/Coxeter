@@ -162,7 +162,7 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   , d_shift(1)
   , d_star(1)
   , d_downset(2*d_rank,bitmap::BitMap(1))
-  , d_parity(nullptr)
+  , d_parity{bitmap::BitMap(1),bitmap::BitMap(1)}
   , d_subset(1)
   , d_history()
 {
@@ -180,10 +180,7 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   for (coxtypes::StarOp j = 0; j < 2*nStarOps(); ++j)
     d_star[0][j] = coxtypes::undef_coxnbr;
 
-  d_parity = new(memory::arena()) bits::BitMap[2];
-  new(d_parity) bits::BitMap(1);
-  new(d_parity+1) bits::BitMap(1);
-  d_parity[0].setBit(0);
+  d_parity[0].insert(0);
 }
 
 SchubertContext::~SchubertContext()
@@ -209,9 +206,6 @@ SchubertContext::~SchubertContext()
   while (d_history.size()) {
     delete *d_history.pop();
   }
-
-  d_parity[0].~BitMap();
-  d_parity[1].~BitMap();
 
   memory::arena().free(d_star[0],2*nStarOps()*sizeof(coxtypes::CoxNbr));
   memory::arena().free(d_shift[0],2*rank()*sizeof(coxtypes::CoxNbr));
@@ -559,7 +553,6 @@ void SchubertContext::extendSubSet
 */
 void SchubertContext::permute(const bits::Permutation& a)
 {
-  static bits::BitMap b(0);
   static CoatomList hasse_buf; /* quick fix; can go when all lists are
 				pointer lists */
 
@@ -580,19 +573,18 @@ void SchubertContext::permute(const bits::Permutation& a)
   }
 
   /* permute the ranges */
-
-  b.setSize(a.size());
-  b.reset();
+  bitmap::BitMap seen(a.size());
 
   for (coxtypes::CoxNbr x = 0; x < this->size(); ++x) {
-    if (b.getBit(x))
+    if (seen.is_member(x))
       continue;
     if (a[x] == x) {
-      b.setBit(x);
+      seen.insert(x); // not really useful, we should never come here again
       continue;
     }
 
-    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y]) {
+    for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
+    {
 
       /* back up values for y */
 
@@ -625,18 +617,16 @@ void SchubertContext::permute(const bits::Permutation& a)
 
       /* modify parity bitmaps */
 
-      bool t = d_parity[0].getBit(y);
-      d_parity[0].setBit(y,d_parity[0].getBit(x));
-      d_parity[0].setBit(x,t);
-      t = d_parity[1].getBit(y);
-      d_parity[1].setBit(y,d_parity[1].getBit(x));
-      d_parity[1].setBit(x,t);
+      for (unsigned i : {0,1})
+      {
+	bool t = d_parity[i].is_member(y);
+	d_parity[i].set_to(y,d_parity[i].is_member(x));
+	d_parity[i].set_to(x,t);
+      }
 
-      /* set bit*/
-
-      b.setBit(y);
+      seen.insert(y); // mark |y| as seen|
     }
-    b.setBit(x);
+    seen.insert(x); // mark |x| as seen|
   }
 
 }
@@ -1122,7 +1112,7 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
       d_shift[x][s] = xs;
       d_shift[xs][s] = x;
       d_length[xs] = d_length[x] + 1;
-      d_parity[d_length[xs]%2].setBit(xs);
+      d_parity[d_length[xs]%2].insert(xs);
       d_descent[xs] |= constants::eq_mask[s];
       d_downset[s].insert(xs);
       xs++;
@@ -1223,8 +1213,8 @@ SchubertContext::ContextExtension::ContextExtension
   for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j)
     p.d_downset[j].set_capacity(n);
 
-  p.d_parity[0].setSize(n);
-  p.d_parity[1].setSize(n);
+  p.d_parity[0].set_capacity(n);
+  p.d_parity[1].set_capacity(n);
 
   p.d_subset.setBitMapSize(n);
   if (ERRNO)
@@ -1242,8 +1232,8 @@ SchubertContext::ContextExtension::ContextExtension
   for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j) {
     p.d_downset[j].set_capacity(p.d_size);
   }
-  p.d_parity[0].setSize(p.d_size);
-  p.d_parity[1].setSize(p.d_size);
+  p.d_parity[0].set_capacity(p.d_size);
+  p.d_parity[1].set_capacity(p.d_size);
   return;
 }
 

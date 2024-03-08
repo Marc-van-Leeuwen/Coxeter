@@ -370,13 +370,13 @@ void KLContext::permute(const bits::Permutation& a)
 
   /* permute ranges */
 
-  bits::BitMap b(a.size());
+  bitmap::BitMap seen(a.size());
 
   for (coxtypes::CoxNbr x = 0; x < size(); ++x) {
-    if (b.getBit(x))
+    if (seen.is_member(x))
       continue;
     if (a[x] == x) {
-      b.setBit(x);
+      seen.insert(x);
       continue;
     }
 
@@ -391,10 +391,10 @@ void KLContext::permute(const bits::Permutation& a)
       d_klList[x] = kl_buf;
       d_muList[x] = mu_buf;
       /* set bit*/
-      b.setBit(y);
+      seen.insert(y);
     }
 
-    b.setBit(x);
+    seen.insert(x);
   }
 
   return;
@@ -526,10 +526,6 @@ void KLContext::setSize(const Ulong& n)
 
  ****************************************************************************/
 
-namespace invkl {
-
-void KLContext::KLHelper::addCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-					const coxtypes::Generator& s, KLPol& pol)
 
 /*
   This function adds the correcting terms both for atoms of x and for the
@@ -539,22 +535,23 @@ void KLContext::KLHelper::addCorrection(const coxtypes::CoxNbr& x, const coxtype
   We have to assume that error::CATCH_MEMORY_OVERFLOW may be set. Forwards the
   error error::ERROR_WARNING in case of error.
 */
+namespace invkl {
 
+void KLContext::KLHelper::addCorrection
+  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+   const coxtypes::Generator& s, KLPol& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
   coxtypes::CoxNbr ys = p.shift(y,s);
 
-  bits::BitMap b(0);
-  p.extractClosure(b,ys);
-  b.andnot(p.downset(s)); // extract z s.t. zs > z
+  bitmap::BitMap b = p.closure(ys);
+  b.andnot(p.down_set(s)); // extract z s.t. zs > z
   b.andnot(p.parity(x)); // extract elements with opposite length parity from x
 
-  bits::BitMap::Iterator b_end = b.end();
-
-  for (bits::BitMap::Iterator i = b.begin(); i != b_end; ++i) {
-    coxtypes::CoxNbr z = *i;
-    if (!p.inOrder(x,z))
+  for (coxtypes::CoxNbr z : b)
+  {
+    if (not p.inOrder(x,z))
       continue;
     if (p.length(z)-p.length(x) == 1) { // x is a coatom of z
       const KLPol& p_zys = klPol(z,ys);
@@ -612,7 +609,6 @@ void KLContext::KLHelper::allocKLRow(const coxtypes::CoxNbr& y)
   return;
 }
 
-void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
 /*
   This function allocates one row in the muList. There is one entry for
@@ -621,34 +617,30 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   efficiency; row allocations for big computations should be handled
   differently.
 */
-
+void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
 
-  bits::BitMap b(0);
-  p.extractClosure(b,y);
+  bitmap::BitMap b = p.closure(y);
   schubert::select_maxima_for(p,b,p.descent(y));
   b.andnot(p.parity(y)); // extract elements with opposite parity from y
 
   const schubert::CoatomList& c = p.hasse(y);
 
   for (Ulong j = 0; j < c.size(); ++j) { // remove coatoms
-    b.clearBit(c[j]);
+    b.remove(c[j]);
   }
 
   d_kl->d_muList[y] = new MuRow(0);
 
-  bits::BitMap::Iterator b_end = b.end();
   coxtypes::Length ly = p.length(y);
 
-  for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k) {
-    coxtypes::CoxNbr x = *k;
+  for (coxtypes::CoxNbr x : b)
+  {
     coxtypes::Length h = (ly-p.length(x)-1)/2;
     MuData md(x,klsupport::undef_klcoeff,h);
     muList(y).append(md);
   }
-
-  return;
 }
 
 
@@ -662,13 +654,10 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(0);
-  p.extractClosure(b,y);
+  bits::BitMap b =  p.closure(y);
 
-  bits::BitMap::Iterator b_end = b.end();
-
-  for (bits::BitMap::Iterator i = b.begin(); i != b_end; ++i) {
-    coxtypes::CoxNbr z = *i;
+  for (coxtypes::CoxNbr z : b)
+  {
     if (inverse(z) < z)
       continue;
     if (not isKLAllocated(z)) {
@@ -1112,34 +1101,28 @@ void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
   }
 
   status().munodes += m.size();
-
-  return;
 }
 
-void KLContext::KLHelper::lastTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 
 /*
-  This function subtracts the term .qP_{x,ys} from the term pol[j]
-  corresponding to x. We do this last, so that an alert can be given for
-  negative coefficients.
+  Subtract the term $qP_{x,ys}$ from the term pol[j] corresponding to x. We do
+  this last, so that an alert can be given for negative coefficients.
 */
-
+void KLContext::KLHelper::lastTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
   coxtypes::Generator s = last(y);
   coxtypes::CoxNbr ys = schubert().shift(y,s);
 
-  bits::BitMap b(0);
-  p.extractClosure(b,ys);
+  bitmap::BitMap b =  p.closure(ys);
   schubert::select_maxima_for(p,b,p.descent(y));
 
   const klsupport::ExtrRow& e = extrList(y);
-  bits::BitMap::Iterator b_end = b.end();
   Ulong j = 0;
 
-  for (bits::BitMap::Iterator i = b.begin(); i != b_end; ++i) {
-    coxtypes::CoxNbr x = *i;
+  for (coxtypes::CoxNbr x : b)
+  {
     while (e[j] < x) // move e[j] up to x
       ++j;
     pol[j].subtract(klPol(x,ys),1);
@@ -1168,13 +1151,9 @@ void KLContext::KLHelper::makeKLRow(const coxtypes::CoxNbr& y)
     return;
 
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(0);
-  p.extractClosure(b,y);
-
-  bits::BitMap::Iterator b_end = b.end();
-
-  for (bits::BitMap::Iterator i = b.begin(); i != b_end; ++i) {
-    coxtypes::CoxNbr z = *i;
+  bitmap::BitMap b = p.closure(y);
+  for (coxtypes::CoxNbr z : b)
+  {
     if (inverse(z) < z)
       continue;
     if (!checkKLRow(z)) {
@@ -1359,22 +1338,18 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& x,
     return mu_xy;
   }
 
-  /* add correction terms */
-
-  {
-    bits::BitMap b(0);
-    p.extractClosure(b,ys);
-    b.andnot(p.downset(s)); // extract z s.t. zs > z
+  { // add correction terms
+    bitmap::BitMap b = p.closure(ys);
+    b.andnot(p.down_set(s)); // extract z s.t. zs > z
     b.andnot(p.parity(x));  // extract elements with opposite length parity
                             // from x
 
-    bits::BitMap::Iterator b_end = b.end();
-
-    for (bits::BitMap::Iterator i = b.begin(); i != b_end; ++i) {
-      coxtypes::CoxNbr z = *i;
-      if (!p.inOrder(x,z))
+    for (coxtypes::CoxNbr z : b)
+    {
+      if (not p.inOrder(x,z))
 	continue;
-      if (p.length(z)-p.length(x) == 1) { // x is a coatom of z
+      if (p.length(z)-p.length(x) == 1)
+      { // x is a coatom of z
 	klsupport::KLCoeff mu_zys = d_kl->mu(z,ys);
 	if (error::ERRNO)
 	  goto abort;

@@ -130,7 +130,7 @@ class AbstractSchubertContext {
     (coxtypes::CoxWord& g, coxtypes::CoxNbr x,
      const bits::Permutation& order) const = 0;
   virtual Ulong nStarOps() const = 0;
-  virtual const bits::BitMap& parity(coxtypes::CoxNbr x) const = 0;
+  virtual const bitmap::BitMap& parity(coxtypes::CoxNbr x) const = 0;
   virtual coxtypes::Rank rank() const = 0;
   virtual GenSet rascent(coxtypes::CoxNbr x) const = 0;
   virtual GenSet rdescent(coxtypes::CoxNbr x) const = 0;
@@ -186,7 +186,7 @@ class SchubertContext
   list::List<coxtypes::CoxNbr*> d_shift;
   list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
   containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
-  bits::BitMap* d_parity; // array of TWO parity bitmaps
+  bitmap::BitMap d_parity[2]; // array of TWO parity bitmaps
   bits::SubSet d_subset;
   stack::Stack<ContextExtension*> d_history;
 /* private member functions */
@@ -212,7 +212,7 @@ class SchubertContext
   coxtypes::Rank rank() const { return d_rank; }
   coxtypes::CoxNbr size() const { return d_size; }
   coxtypes::Length length(coxtypes::CoxNbr x) const { return d_length[x]; }
-  const bits::BitMap& parity(coxtypes::CoxNbr x) const
+  const bitmap::BitMap& parity(coxtypes::CoxNbr x) const
     { return d_parity[d_length[x]%2]; }
   coxtypes::Length maxlength() const { return d_maxlength; }
 
