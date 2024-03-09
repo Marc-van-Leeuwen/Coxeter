@@ -29,7 +29,7 @@ namespace schubert {
 
   struct NFCompare;
 
-  typedef list::List<coxtypes::CoxNbr> CoatomList;
+  using CoxNbrList = containers::vector<coxtypes::CoxNbr>;
   typedef list::List<coxtypes::BettiNbr> Homology;
 };
 
@@ -66,7 +66,7 @@ namespace schubert {
      const SchubertContext& p, const interface::Interface& I);
   void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b);
   void read_bitmap
-    (containers::vector<coxtypes::CoxNbr>& c, const bits::BitMap& b);
+    (CoxNbrList& c, const bits::BitMap& b);
   bool shortLexOrder(const SchubertContext& p, coxtypes::CoxNbr x,
 		     coxtypes::CoxNbr y, const bits::Permutation& order);
   void setBitMap(bits::BitMap& b, const list::List<coxtypes::CoxNbr>& c);
@@ -113,7 +113,7 @@ class AbstractSchubertContext {
     (coxtypes::CoxNbr x, const bits::Permutation& order) const = 0;
   virtual coxtypes::Generator firstRDescent
     (coxtypes::CoxNbr x, const bits::Permutation& order) const = 0;
-  virtual const CoatomList& hasse(coxtypes::CoxNbr x) const = 0;
+  virtual const CoxNbrList& hasse(coxtypes::CoxNbr x) const = 0;
   virtual bool inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const = 0;
   virtual bool isDescent(coxtypes::CoxNbr x, coxtypes::Generator s) const = 0;
   virtual GenSet lascent(coxtypes::CoxNbr x) const = 0;
@@ -162,33 +162,20 @@ class SchubertContext
 {
  private:
 /* private class declaration */
-  class ContextExtension {
-  private:
-    SchubertContext& d_schubert;
-    Ulong d_size;
-    coxtypes::CoxNbr* d_shift;
-    coxtypes::CoxNbr* d_star;
-  public:
-    void* operator new(size_t size) {return memory::arena().alloc(size);}
-    void operator delete(void* ptr)
-      {return memory::arena().free(ptr,sizeof(ContextExtension));}
-    ContextExtension(SchubertContext& p, const Ulong& c);
-    ~ContextExtension();
-    Ulong size() {return d_size;}
-  }; // |class ContextExtension|
+  class ContextExtension;
   const graph::CoxGraph& d_graph;
   coxtypes::Rank d_rank;
   coxtypes::Length d_maxlength;
   coxtypes::CoxNbr d_size;
-  list::List<coxtypes::Length> d_length;
-  list::List<CoatomList> d_hasse;
-  list::List<Lflags> d_descent;
+  containers::vector<coxtypes::Length> d_length;
+  containers::vector<CoxNbrList> d_hasse;
+  containers::vector<Lflags> d_descent;
   list::List<coxtypes::CoxNbr*> d_shift;
   list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
   containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
   bitmap::BitMap d_parity[2]; // array of TWO parity bitmaps
   bits::SubSet d_subset;
-  stack::Stack<ContextExtension*> d_history;
+  containers::stack<ContextExtension> d_history;
 /* private member functions */
   void fillCoatoms(const Ulong& first, coxtypes::Generator s);
   void fillDihedralShifts(coxtypes::CoxNbr x, coxtypes::Generator s);
@@ -200,10 +187,6 @@ class SchubertContext
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(SchubertContext));}
-/* friend declaration */
-  friend ContextExtension::ContextExtension(SchubertContext&,
-					    const Ulong& c);
-  friend ContextExtension::~ContextExtension();
 /* constructors and destructors */
   SchubertContext(const graph::CoxGraph& G);
   ~SchubertContext();
@@ -258,7 +241,7 @@ class SchubertContext
     { return d_downset[s]; }
   bits::BitMap downset(coxtypes::Generator s) const
   { return bits::BitMap(down_set(s)); } // convert
-  const CoatomList& hasse(coxtypes::CoxNbr x) const { return d_hasse[x]; }
+  const CoxNbrList& hasse(coxtypes::CoxNbr x) const { return d_hasse[x]; }
   const type::Type& type() const { return d_graph.type(); }
 
   Lflags S() const // mask for simple generators, to then restrict to |GenSet|
@@ -288,7 +271,7 @@ class SchubertContext
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);
-  void setSize(const Ulong& n);
+  void increase_size(const Ulong& n);
 /* i/o */
   std::string& append(std::string&, coxtypes::CoxNbr x) const;
   std::string& append(std::string&, coxtypes::CoxNbr x,
@@ -310,7 +293,7 @@ class ClosureIterator {
   };
   const SchubertContext& d_schubert;
   containers::stack<node> state;
-  containers::vector<coxtypes::CoxNbr> elements; // closure, for fast traversal
+  CoxNbrList elements; // closure, for fast traversal
   bitmap::BitMap d_visited; // everything seen so far
  public:
 /* constructors and destructors */

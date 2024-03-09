@@ -765,7 +765,7 @@ void lGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
   }
 
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    const schubert::CoatomList& c = p.hasse(y);
+    const schubert::CoxNbrList& c = p.hasse(y);
     for (Ulong j = 0; j < c.size(); ++j) {
       if ((p.ldescent(c[j])&p.ldescent(y)) != p.ldescent(c[j]))
 	X.edge(c[j]).append(y);
@@ -797,7 +797,7 @@ void lrGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
   }
 
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    const schubert::CoatomList& c = p.hasse(y);
+    const schubert::CoxNbrList& c = p.hasse(y);
     for (Ulong j = 0; j < c.size(); ++j) {
       if ((p.descent(c[j])&p.descent(y)) != p.descent(c[j]))
 	X.edge(c[j]).append(y);
@@ -829,7 +829,7 @@ void rGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
   }
 
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    const schubert::CoatomList& c = p.hasse(y);
+    const schubert::CoxNbrList& c = p.hasse(y);
     for (Ulong j = 0; j < c.size(); ++j) {
       if ((p.rdescent(c[j])&p.rdescent(y)) != p.rdescent(c[j]))
 	X.edge(c[j]).append(y);

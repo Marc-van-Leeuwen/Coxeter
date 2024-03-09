@@ -874,7 +874,7 @@ void KLContext::KLHelper::coatom_correct_KL_pol
 {
   const schubert::SchubertContext& p = schubert();
   coxtypes::CoxNbr ys = p.shift(y,s);
-  const schubert::CoatomList& c = p.hasse(ys);
+  const schubert::CoxNbrList& c = p.hasse(ys);
 
   for (Ulong j = 0; j < c.size(); ++j) {
 
@@ -1355,7 +1355,7 @@ void KLContext::KLHelper::coatom_correct_row
   const klsupport::ExtrRow& e = extrList(y);
   coxtypes::Generator s = last(y);
   coxtypes::CoxNbr ys = p.rshift(y,s);
-  const schubert::CoatomList& c = p.hasse(ys);
+  const schubert::CoxNbrList& c = p.hasse(ys);
 
   for (Ulong j = 0; j < c.size(); ++j)
   {
@@ -1898,7 +1898,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu
   /* subtract the coatom correction */
 
   {
-    const schubert::CoatomList& c = p.hasse(ys);
+    const schubert::CoxNbrList& c = p.hasse(ys);
 
     for (Ulong j = 0; j < c.size(); ++j) {
       coxtypes::CoxNbr z = c[j];
@@ -2286,7 +2286,7 @@ void showKLPol
 
     /* coatom correction */
 
-    const schubert::CoatomList& c = p.hasse(ys);
+    const schubert::CoxNbrList& c = p.hasse(ys);
     bool coatomcorrection = false;
 
     for (Ulong j = 0; j < c.size(); ++j) {
@@ -2533,7 +2533,7 @@ void showRecursiveMu(FILE* file, KLContext& kl,
 
   // coatom correction
 
-    const schubert::CoatomList& c = p.hasse(ys);
+    const schubert::CoxNbrList& c = p.hasse(ys);
     bool coatomcorrection = false;
 
     for (Ulong j = 0; j < c.size(); ++j) {

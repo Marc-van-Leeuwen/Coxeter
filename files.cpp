@@ -1058,7 +1058,7 @@ void printCoatoms(FILE* file, const coxtypes::CoxNbr& y, const schubert::Schuber
 */
 
 {
-  const schubert::CoatomList& c = p.hasse(y);
+  const schubert::CoxNbrList& c = p.hasse(y);
 
   io::print(file,traits.coatomPrefix);
 

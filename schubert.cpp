@@ -95,6 +95,23 @@ namespace {
 
 };
 
+
+class SchubertContext::ContextExtension
+{
+private:
+  SchubertContext& d_schubert;
+  Ulong d_size;
+  coxtypes::CoxNbr* d_shift;
+  coxtypes::CoxNbr* d_star;
+public:
+  void* operator new(size_t size) {return memory::arena().alloc(size);}
+  void operator delete(void* ptr)
+  {return memory::arena().free(ptr,sizeof(ContextExtension));}
+  ContextExtension(SchubertContext& p, const Ulong& c);
+  ~ContextExtension();
+  Ulong size() {return d_size;}
+}; // |class ContextExtension|
+
 /****************************************************************************
 
         Chapter I -- The SchubertContext class.
@@ -156,9 +173,9 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   , d_rank(G.rank())
   , d_maxlength(0)
   , d_size(1)
-  , d_length(1)
-  , d_hasse(1)
-  , d_descent(1)
+  , d_length(1,0)
+  , d_hasse(1,CoxNbrList())
+  , d_descent(1,Lflags())
   , d_shift(1)
   , d_star(1)
   , d_downset(2*d_rank,bitmap::BitMap(1))
@@ -166,9 +183,6 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   , d_subset(1)
   , d_history()
 {
-  d_length.setSizeValue(1);
-  d_hasse.setSizeValue(1);
-  d_descent.setSizeValue(1);
   d_shift.setSizeValue(1);
   d_star.setSizeValue(1);
 
@@ -183,7 +197,6 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   d_parity[0].insert(0);
 }
 
-SchubertContext::~SchubertContext()
 
 /*
   Destructing a SchubertContext turns out to be a little bit tricky,
@@ -195,17 +208,10 @@ SchubertContext::~SchubertContext()
   go through a private arena; it will then be enough to simply free the
   arena. For now, we introduce a monitoring through a stack of
   ContextExtensions.
-
-  Apart from this, the only thing that has to be deleted directly is
-  downset.
 */
-
+SchubertContext::~SchubertContext()
 {
   /* reverse history */
-
-  while (d_history.size()) {
-    delete *d_history.pop();
-  }
 
   memory::arena().free(d_star[0],2*nStarOps()*sizeof(coxtypes::CoxNbr));
   memory::arena().free(d_shift[0],2*rank()*sizeof(coxtypes::CoxNbr));
@@ -307,7 +313,7 @@ bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
 {
   assert(x<size());
   bitmap::BitMap result(size()); // full size probably needed by callers
-  containers::vector<coxtypes::CoxNbr> elements; // copy for faster iteration
+  CoxNbrList elements; // copy for faster iteration
   elements.reserve(x+1); // ensure, vitally, no reallocation will occur
   result.insert(0);
   elements.push_back(0);
@@ -539,8 +545,9 @@ void SchubertContext::extendSubSet
 
 
 /*
-  Apply the permutation |a| to the context. We have explained in kl.cpp how this
-  should be done. The objects to be permuted are the following :
+  Apply the permutation |a| to the context, meaning that for each |i| the
+  Coxeter element |i| will henceforth have number |a[i]|. We have explained in
+  kl.cpp how this should be done. The objects to be modified are the following :
 
    - d_length : a table with range in the context;
    - d_hasse : each row is a list with values in the context; the table itself
@@ -553,17 +560,12 @@ void SchubertContext::extendSubSet
 */
 void SchubertContext::permute(const bits::Permutation& a)
 {
-  static CoatomList hasse_buf; /* quick fix; can go when all lists are
-				pointer lists */
 
   /* permute values */
 
-  for (coxtypes::CoxNbr x = 0; x < d_size; ++x) {
-    CoatomList& c = d_hasse[x];
-    for (Ulong j = 0; j < c.size(); ++j)
-      c[j] = a[c[j]];
-    c.sort();
-  }
+  for (CoxNbrList& c : d_hasse)
+    for (auto& elt : c)
+      elt = a[elt];
 
   for (coxtypes::CoxNbr x = 0; x < d_size; ++x) {
     for (coxtypes::Generator s = 0; s < 2*d_rank; ++s) {
@@ -575,7 +577,8 @@ void SchubertContext::permute(const bits::Permutation& a)
   /* permute the ranges */
   bitmap::BitMap seen(a.size());
 
-  for (coxtypes::CoxNbr x = 0; x < this->size(); ++x) {
+  for (coxtypes::CoxNbr x = 0; x < this->size(); ++x)
+  {
     if (seen.is_member(x))
       continue;
     if (a[x] == x) {
@@ -585,25 +588,21 @@ void SchubertContext::permute(const bits::Permutation& a)
 
     for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
     {
+      std::swap(d_length[x],d_length[y]);
+      std::swap(d_hasse[x],d_hasse[y]);
 
       /* back up values for y */
 
-      coxtypes::Length length_buf = d_length[y];
-      hasse_buf.shallowCopy(d_hasse[y]);
       Lflags descent_buf = d_descent[y];
       coxtypes::CoxNbr* shift_buf = d_shift[y];
 
       /* put values for x in y */
 
-      d_length[y] = d_length[x];
-      d_hasse[y].shallowCopy(d_hasse[x]);
       d_descent[y] = d_descent[x];
       d_shift[y] = d_shift[x];
 
       /* store backup values in x */
 
-      d_length[x] = length_buf;
-      d_hasse[x].shallowCopy(hasse_buf);
       d_descent[x] = descent_buf;
       d_shift[x] = shift_buf;
 
@@ -631,30 +630,26 @@ void SchubertContext::permute(const bits::Permutation& a)
 
 }
 
-void SchubertContext::revertSize(const Ulong& n)
 
 /*
-  This function reverts the size of the context to some previous value. It
-  is very important that n is indeed a previous value of the context size
-  (i.e. that it can be found through the extension history), and that no
-  permutation has taken place between that previous size and the current size.
-  This function is intended to be used immediately after the extension of
-  the rest of the context failed, so that everything returns to where it
-  was before. Because of the way things are allocated, we are actually able
-  to return most of the allocated memory (only the allocations for the
-  basic lists will remain as they were.)
+  Revert the size of the context to some previous value. It is very important
+  that |n| is indeed a previous value of the context size (i.e. that it can be
+  found through the extension history), and that no permutation has taken place
+  between that previous size and the current size. This function is intended to
+  be used immediately after the extension of the rest of the context failed, so
+  that everything returns to where it was before. Because of the way things are
+  allocated, we are actually able to return most of the allocated memory (only
+  the allocations for the basic lists will remain as they were.)
 */
-
+void SchubertContext::revertSize(const Ulong& n)
 {
   Ulong m = size();
 
-  while (m > n) {
-    ContextExtension* h = *d_history.pop();
-    m -= h->size();
-    delete h;
+  while (m > n)
+  {
+    m -= d_history.top().size();
+    d_history.pop();
   }
-
-  return;
 }
 
 
@@ -670,27 +665,17 @@ void SchubertContext::revertSize(const Ulong& n)
   Sets the error MEMORY_WARNING in case of overflow, if CATCH_MEMORY_OVERFLOW
   had been set.
 */
-void SchubertContext::setSize(const Ulong& n)
+void SchubertContext::increase_size(const Ulong& n)
 {
   Ulong prev_size = size();
 
-  CATCH_MEMORY_OVERFLOW = true;
-
-  ContextExtension* e = new ContextExtension(*this,n-size());
-
-  if (ERRNO) /* extension failed */
-    goto revert;
-
-  d_history.push(e);
-
-  CATCH_MEMORY_OVERFLOW = false;
-
-  return;
-
- revert:
-  CATCH_MEMORY_OVERFLOW = false;
-  revertSize(prev_size);
-  return;
+  try {
+    d_history.emplace(*this,n-size());
+  }
+  catch(...)
+  {
+    revertSize(prev_size);
+  }
 }
 
 /******** input/output ****************************************************/
@@ -766,56 +751,44 @@ void SchubertContext::print(FILE* file, coxtypes::CoxNbr x,
 
 *****************************************************************************/
 
-void SchubertContext::fillCoatoms(const Ulong& first,
-					  coxtypes::Generator s)
 
 /*
-  This auxiliary fills the coatom lists of the new elements in p.
-  It is assumed that p has been resized to the correct size, that
-  first is the first new element, that lengths and shifts by s have
-  been filled in.
+  This auxiliary fills the coatom lists of the new elements after extending for
+  a shift by |s|. It is assumed that the context has been resized appropriately,
+  thatd new elements start at |first|, and that lengths and shifts by |s| have
+  already been filled in.
 */
-
+void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
 {
-  static list::List<coxtypes::CoxNbr> c(1);
 
-  for (coxtypes::CoxNbr x = first; x < d_size; ++x) {
-
-    /* put coatom list in c */
-
+  for (coxtypes::CoxNbr x = first; x < d_size; ++x)
+  {
     coxtypes::CoxNbr xs = d_shift[x][s];
+    assert(xs<x);
 
-    c.setSize(0);
-    c.append(xs);
+    containers::sl_list<coxtypes::CoxNbr> c = {xs}; // start with this singleton
 
-    CoatomList& cs = d_hasse[xs];
-
-    for (Ulong j = 0; j < cs.size(); ++j) {
-      coxtypes::CoxNbr z = cs[j];
+    for (coxtypes::CoxNbr z : d_hasse[xs])
+    {
       coxtypes::CoxNbr zs = d_shift[z][s];
       if (zs > z) /* z moves up */
-	insert(c,zs);
+	c.push_back(zs);
     }
 
-    /* copy to d_hasse[x] */
-
-    d_hasse[x].assign(c);
+    assert(d_hasse.size()==x);
+    d_hasse.push_back(c.to_vector()); // convert list tightly to vector
   }
-
-  return;
 }
 
-void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x,
-					     coxtypes::Generator s)
 
 /*
-  This function fills in the shifts for x in the dihedral case. It is
-  assumed that the shift by s is already filled in, and that length(x)
-  is > 1. We have denoted on the right the action of s, on the left
-  the action on the side different from s. This works even if in fact
-  the action of s is on the left.
+  Fill in the shifts for x in the dihedral case. It is assumed that the shift by
+  s is already filled in, and that length(x) is > 1. We have denoted on the
+  right the action of s, on the left the action on the side different from s.
+  This works even if in fact the action of s is on the left.
 */
 
+void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x, coxtypes::Generator s)
 {
   coxtypes::CoxNbr xs = d_shift[x][s];
 
@@ -837,7 +810,7 @@ void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x,
     m = d_graph.M(s1,t1);
   }
 
-  const CoatomList& c = d_hasse[x];
+  const CoxNbrList& c = d_hasse[x];
   coxtypes::CoxNbr z; /* the other coatom of x */
 
   if (c[0] == xs)
@@ -880,20 +853,17 @@ void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x,
       d_downset[t1].insert(x);
     }
   }
-
-  return;
 }
 
-void SchubertContext::fillShifts(coxtypes::CoxNbr first,
-					 coxtypes::Generator s)
 
 /*
-  This function fills in the shift tables of the new elements in p. It is
-  assumed that first is the first new element, that the coatom tables,
-  lengths and shifts by s have already been filled in. We use the algorithm
-  deduced form Dyer's theorem, alluded to in the introduction.
+  Fill in the shift tables of the new elements in p. It is assumed that first is
+  the first new element, that the coatom tables, lengths and shifts by s have
+  already been filled in. We use the algorithm deduced form Dyer's theorem,
+  alluded to in the introduction.
 */
 
+void SchubertContext::fillShifts(coxtypes::CoxNbr first, coxtypes::Generator s)
 {
   coxtypes::CoxNbr x = first;
 
@@ -914,7 +884,7 @@ void SchubertContext::fillShifts(coxtypes::CoxNbr first,
   }
 
   for (; x < d_size; ++x) {
-    const CoatomList& c = d_hasse[x];
+    const CoxNbrList& c = d_hasse[x];
 
     if (c.size() == 2) { /* dihedral case */
       fillDihedralShifts(x,s);
@@ -1046,7 +1016,6 @@ void SchubertContext::fillStar(coxtypes::CoxNbr first)
   return;
 }
 
-void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
 /*
   Given a context p, a subset q of p holding [e,y], and a generator s s.t.
@@ -1068,7 +1037,7 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
   If an overflow error occurs, it is guaranteed that the context stays in
   its original form (except for sizes of varlists.)
 */
-
+void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 {
   /* check length overflow */
 
@@ -1081,7 +1050,7 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
   /* determine the size of the extension */
 
-  coxtypes::CoxNbr c = 0;
+  coxtypes::CoxNbr c = 0; // counts number of new elements
 
   for (Ulong j = 0; j < q.size(); ++j) { /* run through q */
     if (d_shift[q[j]][s] == coxtypes::undef_coxnbr)
@@ -1090,7 +1059,7 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
   /* check for size overflow */
 
-  if (c > coxtypes::COXNBR_MAX - d_size) { /* overflow */
+  if (c > coxtypes::COXNBR_MAX - d_size) { // overflow predicited
     ERRNO = COXNBR_OVERFLOW;
     return;
   }
@@ -1098,7 +1067,7 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
   /* resize context */
 
   coxtypes::CoxNbr prev_size = d_size;
-  setSize(d_size+c);
+  increase_size(d_size+c);
   if (ERRNO) /* memory overflow */
     goto revert;
 
@@ -1106,37 +1075,38 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
   { coxtypes::CoxNbr xs = prev_size; /* first new element */
 
-  for (Ulong j = 0; j < q.size(); ++j) {
-    coxtypes::CoxNbr x = q[j];
-    if (d_shift[x][s] == coxtypes::undef_coxnbr) {
-      d_shift[x][s] = xs;
-      d_shift[xs][s] = x;
-      d_length[xs] = d_length[x] + 1;
-      d_parity[d_length[xs]%2].insert(xs);
-      d_descent[xs] |= constants::eq_mask[s];
-      d_downset[s].insert(xs);
-      xs++;
+    for (Ulong j = 0; j < q.size(); ++j)
+    { coxtypes::CoxNbr x = q[j];
+      if (d_shift[x][s] == coxtypes::undef_coxnbr)
+      {
+	d_shift[x][s] = xs;
+	d_shift[xs][s] = x;
+	d_length.push_back(d_length[x] + 1);
+	d_parity[d_length[xs]%2].insert(xs);
+	d_descent.push_back(constants::eq_mask[s]);
+	d_downset[s].insert(xs);
+	xs++;
+      }
     }
-  }
 
-  /* fill in the new elements */
+    /* fill in the new elements */
 
-  fillCoatoms(prev_size,s);
-  fillShifts(prev_size,s);
-  fillStar(prev_size);
+    fillCoatoms(prev_size,s);
+    fillShifts(prev_size,s);
+    fillStar(prev_size);
 
-  /* update q */
+    /* update q */
 
-  extendSubSet(q,s);
+    extendSubSet(q,s);
 
-  if (ERRNO)
-    goto revert;
+    if (ERRNO)
+      goto revert;
   }
 
   return;
 
  revert:
-  setSize(prev_size);
+  revertSize(prev_size);
   return;
 }
 
@@ -1165,27 +1135,25 @@ namespace schubert {
 
 
 /*
-  This function manages the resizing of the SchubertContext p from its
-  current size to size+c.
+  This constructor also manages the resizing of the SchubertContext p from its
+  current |size| to |size+c|. It is called through |d_history.emplace| from
+  |SchubertContext::increase_size| (which on its turn is called by
+  |SchubertContext::fullExtension|), so the object constructed ends up at the
+  top of the |d_history| stack.
 */
 SchubertContext::ContextExtension::ContextExtension
   (SchubertContext& p, const Ulong& c)
-  :d_schubert(p),d_size(c)
+  : d_schubert(p)
+  , d_size(c)
 {
   if (c == 0)
     return;
 
-  Ulong n = p.size()+c;
+  Ulong n = p.size()+c; // the new size for the context
 
-  p.d_length.setSize(n);
-  if (ERRNO)
-    goto revert;
-  p.d_hasse.setSize(n);
-  if (ERRNO)
-    goto revert;
-  p.d_descent.setSize(n);
-  if (ERRNO)
-    goto revert;
+  p.d_length.reserve(n);
+  p.d_hasse.reserve(n);
+  p.d_descent.reserve(n);
   p.d_shift.setSize(n);
   if (ERRNO)
     goto revert;
@@ -1210,7 +1178,7 @@ SchubertContext::ContextExtension::ContextExtension
   for (Ulong j = p.d_size+1; j < n; ++j)
     p.d_star[j] = p.d_star[j-1] + 2*p.nStarOps();
 
-  for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j)
+  for (Ulong j = 0; j < 2ul*p.rank(); ++j)
     p.d_downset[j].set_capacity(n);
 
   p.d_parity[0].set_capacity(n);
@@ -1225,9 +1193,6 @@ SchubertContext::ContextExtension::ContextExtension
   return;
 
  revert:
-  p.d_length.setSize(p.d_size);
-  p.d_hasse.setSize(p.d_size);
-  p.d_descent.setSize(p.d_size);
   p.d_shift.setSize(p.d_size);
   for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j) {
     p.d_downset[j].set_capacity(p.d_size);
@@ -1528,7 +1493,7 @@ void print(FILE* file, const SchubertContext& p)
     fprintf(file,";");
 
     fprintf(file,"  {");
-    const CoatomList& c = p.hasse(x);
+    const CoxNbrList& c = p.hasse(x);
     for (Ulong j = 0; j < c.size(); ++j) {
       fprintf(file,"%lu",static_cast<Ulong>(c[j]));
       if (j+1 < c.size()) /* there is more to come */
@@ -1827,7 +1792,7 @@ void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b)
   }
 }
 
-void read_bitmap(containers::vector<coxtypes::CoxNbr>& c, const bits::BitMap& b)
+void read_bitmap(CoxNbrList& c, const bits::BitMap& b)
 {
   c.reserve(b.bitCount());
   c.clear();

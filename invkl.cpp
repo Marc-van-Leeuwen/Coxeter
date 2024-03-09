@@ -625,7 +625,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   schubert::select_maxima_for(p,b,p.descent(y));
   b.andnot(p.parity(y)); // extract elements with opposite parity from y
 
-  const schubert::CoatomList& c = p.hasse(y);
+  const schubert::CoxNbrList& c = p.hasse(y);
 
   for (Ulong j = 0; j < c.size(); ++j) { // remove coatoms
     b.remove(c[j]);
@@ -744,7 +744,7 @@ void KLContext::KLHelper::coatomCorrection
 
   for (coxtypes::CoxNbr z : b)
   {
-    const schubert::CoatomList& c = p.hasse(z);
+    const schubert::CoxNbrList& c = p.hasse(z);
     for (Ulong j = 0; j < c.size(); ++j)
     {
       coxtypes::CoxNbr x = c[j];
