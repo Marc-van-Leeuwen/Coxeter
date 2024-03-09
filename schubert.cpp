@@ -101,7 +101,6 @@ class SchubertContext::ContextExtension
 private:
   SchubertContext& d_schubert;
   Ulong d_size;
-  coxtypes::CoxNbr* d_shift;
   coxtypes::CoxNbr* d_star;
 public:
   void* operator new(size_t size) {return memory::arena().alloc(size);}
@@ -176,19 +175,14 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   , d_length(1,0)
   , d_hasse(1,CoxNbrList())
   , d_descent(1,Lflags())
-  , d_shift(1)
+  , d_shift(1,2*d_rank,coxtypes::undef_coxnbr)
   , d_star(1)
   , d_downset(2*d_rank,bitmap::BitMap(1))
   , d_parity{bitmap::BitMap(1),bitmap::BitMap(1)}
   , d_subset(1)
   , d_history()
 {
-  d_shift.setSizeValue(1);
   d_star.setSizeValue(1);
-
-  d_shift[0] = new(memory::arena()) coxtypes::CoxNbr[2*rank()];
-  for (Ulong j = 0; j < 2*static_cast<Ulong>(d_rank); ++j)
-    d_shift[0][j] = coxtypes::undef_coxnbr;
 
   d_star[0] = new(memory::arena()) coxtypes::CoxNbr[2*nStarOps()];
   for (coxtypes::StarOp j = 0; j < 2*nStarOps(); ++j)
@@ -199,10 +193,10 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
 
 
 /*
-  Destructing a SchubertContext turns out to be a little bit tricky,
-  because of the way memory has been allocated for the various structures,
-  in the successive extensions. In particular, in d_shift and d_star,
-  only *some* pointers have been allocated by new.
+  Destructing a SchubertContext turns out to be a little bit tricky, because of
+  the way memory has been allocated for the various structures, in the
+  successive extensions. In particular, in d_star, only *some* pointers have
+  been allocated by new.
 
   This problem will be much easier to handle once the memory allocations
   go through a private arena; it will then be enough to simply free the
@@ -214,7 +208,6 @@ SchubertContext::~SchubertContext()
   /* reverse history */
 
   memory::arena().free(d_star[0],2*nStarOps()*sizeof(coxtypes::CoxNbr));
-  memory::arena().free(d_shift[0],2*rank()*sizeof(coxtypes::CoxNbr));
 }
 
 /******** accessors ********************************************************/
@@ -279,7 +272,7 @@ void SchubertContext::extractClosure
   for (coxtypes::CoxNbr x1 = x; x1;) {
     coxtypes::Generator s = firstLDescent(x1);
     extendSubSet(q,s);
-    x1 = d_shift[x1][s+d_rank];
+    x1 = lshift(x1,s); // remove leftmost generator
   }
 
   b = q.bitMap();
@@ -333,7 +326,6 @@ bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
   return result;
 }
 
-bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
 
 /*
   Checks if x <= y in the Bruhat ordering, using the well-known recursive
@@ -342,7 +334,7 @@ bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
 
   NOTE : this function is not intended for heavy use!
 */
-
+bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
 {
   if (x == 0)
     return true;
@@ -351,10 +343,10 @@ bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
   if (x > y)
     return false;
 
-  coxtypes::Generator s = firstDescent(y);
+  coxtypes::Generator s = firstDescent(y); // in practice a right descent
 
-  coxtypes::CoxNbr xs = d_shift[x][s];
-  coxtypes::CoxNbr ys = d_shift[y][s];
+  coxtypes::CoxNbr xs = shift(x,s);
+  coxtypes::CoxNbr ys = shift(y,s);
 
   if (xs < x)
     return inOrder(xs,ys);
@@ -377,7 +369,7 @@ coxtypes::CoxNbr SchubertContext::maximize
   while (g!=0)
     {
       coxtypes::Generator s = constants::firstBit(g);
-      x1 = d_shift[x1][s];
+      x1 = shift(x1,s);
       if (x1 == coxtypes::undef_coxnbr)
 	break;
       g = f & ~d_descent[x1];
@@ -401,7 +393,7 @@ coxtypes::CoxNbr SchubertContext::minimize
   while (g!=0)
     {
       coxtypes::Generator s = constants::firstBit(g);
-      x1 = d_shift[x1][s];
+      x1 = shift(x1,s);
       g = f & d_descent[x1];
     }
 
@@ -529,7 +521,7 @@ void SchubertContext::extendSubSet
 
   for (Ulong j = 0; j < a; ++j) { /* run through q */
     coxtypes::CoxNbr x = (coxtypes::CoxNbr)q[j];
-    coxtypes::CoxNbr xs = d_shift[x][s];
+    coxtypes::CoxNbr xs = shift(x,s);
     if (xs < x)
       continue;
     if (q.isMember(xs))
@@ -567,12 +559,12 @@ void SchubertContext::permute(const bits::Permutation& a)
     for (auto& elt : c)
       elt = a[elt];
 
-  for (coxtypes::CoxNbr x = 0; x < d_size; ++x) {
-    for (coxtypes::Generator s = 0; s < 2*d_rank; ++s) {
-      if (d_shift[x][s] != coxtypes::undef_coxnbr)
-	d_shift[x][s] = a[d_shift[x][s]];
+  for (coxtypes::CoxNbr x = 0; x < d_size; ++x)
+    for (coxtypes::Generator s = 0; s < 2*d_rank; ++s)
+    { auto& xs = d_shift.entry(x,s);
+      if (xs != coxtypes::undef_coxnbr)
+	xs = a[xs];
     }
-  }
 
   /* permute the ranges */
   bitmap::BitMap seen(a.size());
@@ -590,21 +582,19 @@ void SchubertContext::permute(const bits::Permutation& a)
     {
       std::swap(d_length[x],d_length[y]);
       std::swap(d_hasse[x],d_hasse[y]);
+      d_shift.swap_rows(x,y);
 
       /* back up values for y */
 
       Lflags descent_buf = d_descent[y];
-      coxtypes::CoxNbr* shift_buf = d_shift[y];
 
       /* put values for x in y */
 
       d_descent[y] = d_descent[x];
-      d_shift[y] = d_shift[x];
 
       /* store backup values in x */
 
       d_descent[x] = descent_buf;
-      d_shift[x] = shift_buf;
 
       // swap bits at |x| and |y| in all downsets
       for (coxtypes::Generator s = 0; s < 2*this->rank(); ++s)
@@ -763,14 +753,14 @@ void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
 
   for (coxtypes::CoxNbr x = first; x < d_size; ++x)
   {
-    coxtypes::CoxNbr xs = d_shift[x][s];
+    coxtypes::CoxNbr xs = shift(x,s);
     assert(xs<x);
 
     containers::sl_list<coxtypes::CoxNbr> c = {xs}; // start with this singleton
 
     for (coxtypes::CoxNbr z : d_hasse[xs])
     {
-      coxtypes::CoxNbr zs = d_shift[z][s];
+      coxtypes::CoxNbr zs = shift(z,s);
       if (zs > z) /* z moves up */
 	c.push_back(zs);
     }
@@ -790,7 +780,7 @@ void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
 
 void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x, coxtypes::Generator s)
 {
-  coxtypes::CoxNbr xs = d_shift[x][s];
+  coxtypes::CoxNbr xs = shift(x,s);
 
   /* find the other generator involved, on the same side as s */
 
@@ -824,31 +814,31 @@ void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x, coxtypes::Generator
     d_downset[t].insert(x);
     d_downset[s1].insert(x);
     d_downset[t1].insert(x);
-    d_shift[x][t] = z;
-    d_shift[z][t] = x;
+    d_shift.entry(x,t) = z;
+    d_shift.entry(z,t) = x;
     if (m % 2) { /* xs = tx; xt = sx */
-      d_shift[x][s1] = z;
-      d_shift[z][s1] = x;
-      d_shift[x][t1] = xs;
-      d_shift[xs][t1] = x;
+      d_shift.entry( x,s1) = z;
+      d_shift.entry( z,s1) = x;
+      d_shift.entry( x,t1) = xs;
+      d_shift.entry(xs,t1) = x;
     }
     else { /* xs = sx; xt = tx */
-      d_shift[x][s1] = xs;
-      d_shift[xs][s1] = x;
-      d_shift[x][t1] = z;
-      d_shift[z][t1] = x;
+      d_shift.entry( x,s1) = xs;
+      d_shift.entry(xs,s1) = x;
+      d_shift.entry( x,t1) = z;
+      d_shift.entry( z,t1) = x;
     }
   }
   else { /* descent on one side only */
     if (d_length[x] % 2) { /* xs and sx */
-      d_shift[x][s1] = z;
-      d_shift[z][s1] = x;
+      d_shift.entry(x,s1) = z;
+      d_shift.entry(z,s1) = x;
       d_descent[x] |= constants::eq_mask[s1];
       d_downset[s1].insert(x);
     }
     else { /* xs and tx */
-      d_shift[x][t1] = z;
-      d_shift[z][t1] = x;
+      d_shift.entry(x,t1) = z;
+      d_shift.entry(z,t1) = x;
       d_descent[x] |= constants::eq_mask[t1];
       d_downset[t1].insert(x);
     }
@@ -876,8 +866,8 @@ void SchubertContext::fillShifts(coxtypes::CoxNbr first, coxtypes::Generator s)
       t = s + d_rank;
     else /* s acts on the left */
       t = s - d_rank;
-    d_shift[0][t] = x;
-    d_shift[x][t] = 0;
+    d_shift.entry(0,t) = x;
+    d_shift.entry(x,t) = 0;
     d_descent[x] |= constants::eq_mask[t];
     d_downset[t].insert(x);
     ++x;
@@ -908,8 +898,8 @@ void SchubertContext::fillShifts(coxtypes::CoxNbr first, coxtypes::Generator s)
 	}
       }
       /* if we reach this point there was exactly one ascent */
-      d_shift[x][t] = z;
-      d_shift[z][t] = x;
+      d_shift.entry(x,t) = z;
+      d_shift.entry(z,t) = x;
       d_descent[x] |= constants::eq_mask[t];
       d_downset[t].insert(x);
     nextt:
@@ -972,7 +962,7 @@ void SchubertContext::fillStar(coxtypes::CoxNbr first)
 	while ((d_length[x1] - d_length[x_min]) > (m - d)) {
 	  GenSet f1 = rdescent(x1) & ops[j];
 	  coxtypes::Generator s1 = constants::firstBit(f1);
-	  x1 = d_shift[x1][s1];
+	  x1 = shift(x1,s1);
 	}
 	d_star[x][j] = x1;
 	d_star[x1][j] = x;
@@ -1005,7 +995,7 @@ void SchubertContext::fillStar(coxtypes::CoxNbr first)
 	while ((d_length[x1] - d_length[x_min]) > (m - d)) {
 	  GenSet f1 = ldescent(x1) & ops[j];
 	  coxtypes::Generator s1 = constants::firstBit(f1);
-	  x1 = d_shift[x1][s1+d_rank];
+	  x1 = lshift(x1,s1);
 	}
 	d_star[x][j+nStarOps()] = x1;
 	d_star[x1][j+nStarOps()] = x;
@@ -1053,7 +1043,7 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
   coxtypes::CoxNbr c = 0; // counts number of new elements
 
   for (Ulong j = 0; j < q.size(); ++j) { /* run through q */
-    if (d_shift[q[j]][s] == coxtypes::undef_coxnbr)
+    if (shift(q[j],s) == coxtypes::undef_coxnbr)
       ++c;
   }
 
@@ -1077,10 +1067,10 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
     for (Ulong j = 0; j < q.size(); ++j)
     { coxtypes::CoxNbr x = q[j];
-      if (d_shift[x][s] == coxtypes::undef_coxnbr)
+      if (shift(x,s) == coxtypes::undef_coxnbr)
       {
-	d_shift[x][s] = xs;
-	d_shift[xs][s] = x;
+	d_shift.entry( x,s) = xs;
+	d_shift.entry(xs,s) = x;
 	d_length.push_back(d_length[x] + 1);
 	d_parity[d_length[xs]%2].insert(xs);
 	d_descent.push_back(constants::eq_mask[s]);
@@ -1154,22 +1144,13 @@ SchubertContext::ContextExtension::ContextExtension
   p.d_length.reserve(n);
   p.d_hasse.reserve(n);
   p.d_descent.reserve(n);
-  p.d_shift.setSize(n);
-  if (ERRNO)
-    goto revert;
+  p.d_shift.grow(n,coxtypes::undef_coxnbr); // extend with entirely undefined rows
   p.d_star.setSize(n);
   if (ERRNO)
     goto revert;
 
   /* make room for shift tables and star tables */
 
-  d_shift = new(memory::arena()) coxtypes::CoxNbr[2*p.rank()*c];
-  if (ERRNO)
-    goto revert;
-  memset(d_shift,0xFF,2*p.rank()*c*sizeof(coxtypes::CoxNbr));
-  p.d_shift[p.d_size] = d_shift;
-  for (Ulong j = p.d_size+1; j < n; ++j)
-    p.d_shift[j] = p.d_shift[j-1] + 2*p.rank();
   d_star = new(memory::arena()) coxtypes::CoxNbr[2*p.nStarOps()*c];
   if (ERRNO)
     goto revert;
@@ -1193,7 +1174,7 @@ SchubertContext::ContextExtension::ContextExtension
   return;
 
  revert:
-  p.d_shift.setSize(p.d_size);
+  p.d_shift.shrink(p.d_size);
   for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j) {
     p.d_downset[j].set_capacity(p.d_size);
   }
@@ -1219,7 +1200,6 @@ SchubertContext::ContextExtension::~ContextExtension()
 
   /* the pointers d_shift  and d_star were allocated previously */
 
-  memory::arena().free(d_shift,2*p.rank()*d_size*sizeof(coxtypes::CoxNbr));
   memory::arena().free(d_star,2*p.nStarOps()*d_size*sizeof(coxtypes::CoxNbr));
 
   p.d_size = prev_size;

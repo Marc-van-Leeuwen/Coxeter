@@ -170,7 +170,7 @@ class SchubertContext
   containers::vector<coxtypes::Length> d_length;
   containers::vector<CoxNbrList> d_hasse;
   containers::vector<Lflags> d_descent;
-  list::List<coxtypes::CoxNbr*> d_shift;
+  containers::matrix<coxtypes::CoxNbr> d_shift;
   list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
   containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
   bitmap::BitMap d_parity[2]; // array of TWO parity bitmaps
@@ -231,11 +231,11 @@ class SchubertContext
     { return (d_descent[x]&constants::eq_mask[s])!=0; } // whether Right descent
 
   coxtypes::CoxNbr shift(coxtypes::CoxNbr x, coxtypes::Generator s) const
-    { return d_shift[x][s]; } // left or right shift
+    { return d_shift.entry(x,s); } // left or right shift
   coxtypes::CoxNbr rshift(coxtypes::CoxNbr x, coxtypes::Generator s) const
-    { return d_shift[x][s]; }
+    { assert(s<d_rank); return d_shift.entry(x,s); }
   coxtypes::CoxNbr lshift(coxtypes::CoxNbr x, coxtypes::Generator s) const
-    { return d_shift[x][d_rank+s]; }
+    { assert(s<d_rank); return d_shift.entry(x,d_rank+s); }
 
   const bitmap::BitMap& down_set(coxtypes::Generator s) const
     { return d_downset[s]; }
