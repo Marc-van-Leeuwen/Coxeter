@@ -211,13 +211,12 @@ SchubertContext::~SchubertContext()
 
 
 /*
-  Appends to |g| the ShortLex normal form of x. The normal form is
+  Append to |g| the ShortLex normal form of x. The normal form is
   easily obtained using the left descent sets.
 
   NOTE : it is the programmer's responsibilty when using this function, to
   guarantee that the result is reduced. Otherwise, use "prod".
 */
-
 coxtypes::CoxWord& SchubertContext::append
   (coxtypes::CoxWord& g, coxtypes::CoxNbr d_x) const
 {
@@ -232,13 +231,12 @@ coxtypes::CoxWord& SchubertContext::append
   return g;
 }
 
-coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) const
 
 /*
   This functions returns the number corresponding to g in the current
   context; returns coxtypes::undef_coxnbr if g is not in the context.
 */
-
+coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) const
 {
   coxtypes::CoxNbr x = 0;
 
@@ -278,19 +276,22 @@ void SchubertContext::extractClosure
   return;
 }
 
+// the following function uses a double representation |q|,|elements| for speed
+// iteration is over (initial) elements, (old) membership is tested though |q|
 void SchubertContext::spread_subset
   (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s) const
 {
-  const auto high_level = elements.end();
-    for (auto it = elements.begin(); it!=high_level; ++it)
+  elements.reserve(q.capacity()); // ensure, vitally, that no reallocation will occur
+  const auto initial_end = elements.end(); // so that this iterator remains valid.
+  for (auto it = elements.begin(); it!=initial_end; ++it) // don't visit new elements
+  {
+    const coxtypes::CoxNbr candidate = rshift(*it,s);
+    if (not q.is_member(candidate)) // actually only excludes old elements
     {
-      const coxtypes::CoxNbr candidate = rshift(*it,s);
-      if (not q.is_member(candidate)) // actually only excludes old elements
-      {
-	q.insert(candidate); // may or may not be new
-	elements.push_back(candidate);
-      }
+      q.insert(candidate); // may or may not be new
+      elements.push_back(candidate);
     }
+  }
 }
 
 containers::sl_list<coxtypes::Generator>
@@ -310,22 +311,11 @@ bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
 {
   assert(x<size());
   bitmap::BitMap result(size()); // full size probably needed by callers
-  CoxNbrList elements; // copy for faster iteration
-  elements.reserve(x+1); // ensure, vitally, no reallocation will occur
   result.insert(0);
-  elements.push_back(0);
+  CoxNbrList elements {0}; // enumeration of |result| for faster iteration
+
   for (auto s : word(x))
-  { const auto high_level = elements.end();
-    for (auto it = elements.begin(); it!=high_level; ++it)
-    {
-      const coxtypes::CoxNbr cand = rshift(*it,s);
-      if (not result.is_member(cand)) // actually only excludes old elements
-      {
-	result.insert(cand); // may or may not be new
-	elements.push_back(cand);
-      }
-    }
-  }
+    spread_subset(result,elements,s);
 
   return result;
 }
@@ -471,9 +461,9 @@ coxtypes::CoxNbr SchubertContext::extendContext
   (const coxtypes::CoxWord& g)
 {
   coxtypes::CoxNbr y = 0;
-  bits::SubSet q(d_size);
-  q.reset();
-  q.add(0);
+  bitmap::BitMap q(d_size);
+  q.insert(0);
+  CoxNbrList elements {0};
 
   Ulong j = 0;
 
@@ -483,7 +473,7 @@ coxtypes::CoxNbr SchubertContext::extendContext
     coxtypes::Generator s = g[j]-1;
     if (rshift(y,s) == coxtypes::undef_coxnbr)
       break;
-    extendSubSet(q,s);
+    spread_subset(q,elements,s);
     if (ERRNO)
       goto error_handling;
     y = rshift(y,s);
@@ -491,7 +481,7 @@ coxtypes::CoxNbr SchubertContext::extendContext
 
   for (; j < g.length(); ++j) {
     coxtypes::Generator s = g[j]-1;
-    fullExtension(q,s);
+    extend_context(q,elements,s);
     if (ERRNO)
       goto error_handling;
     if (j >= d_maxlength)
@@ -740,7 +730,7 @@ void SchubertContext::print(FILE* file, coxtypes::CoxNbr x,
    - fillShifts(first,s) : fills in the shift tables of new elements of
      the extension by s;
    - fillStar(first) : fills in the star tables of new elements;
-   - fullExtension(q,s) : fills in the extension obtained by adding
+   - extend_context(q,elements,s) : fills in the extension obtained by adding
      the elements xs, x in q;
 
 *****************************************************************************/
@@ -1026,18 +1016,19 @@ void SchubertContext::fillStar(coxtypes::CoxNbr first)
       COXNBR_MAX;
 
   A more delicate problem is the handling of memory overflow. It has to be
-  assumed that fullExtension labours under the constraint that
+  assumed that |extend_context| labours under the constraint that
   CATCH_MEMORY_OVERFLOW is set; i.e., we don't want to exit brutally if
   we get a memory overflow, losing all previous computations.
 
   If an overflow error occurs, it is guaranteed that the context stays in
   its original form (except for sizes of varlists.)
 */
-void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
+void SchubertContext::extend_context
+  (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s)
 {
   /* check length overflow */
 
-  coxtypes::CoxNbr y = q[q.size()-1]; /* largest element in q */
+  coxtypes::CoxNbr y = elements.back(); /* most recent element in q */
 
   if (d_length[y] == coxtypes::LENGTH_MAX) { /* overflow */
     ERRNO = LENGTH_OVERFLOW;
@@ -1046,12 +1037,11 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
   /* determine the size of the extension */
 
-  coxtypes::CoxNbr c = 0; // counts number of new elements
-
-  for (Ulong j = 0; j < q.size(); ++j) { /* run through q */
-    if (shift(q[j],s) == coxtypes::undef_coxnbr)
-      ++c;
-  }
+  coxtypes::CoxNbr c =
+    std::count_if
+      (elements.begin(),elements.end(),
+       [s,this](coxtypes::CoxNbr x) { return shift(x,s) == coxtypes::undef_coxnbr; }
+      );
 
   /* check for size overflow */
 
@@ -1064,43 +1054,37 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
   coxtypes::CoxNbr prev_size = d_size;
   increase_size(d_size+c);
-  q.setBitMapSize(d_size+c);
+  q.set_capacity(d_size+c);
 
   if (ERRNO) /* memory overflow */
     goto revert;
 
   /* fill in lengths and shifts by s */
 
-  { coxtypes::CoxNbr xs = prev_size; /* first new element */
-
-    for (Ulong j = 0; j < q.size(); ++j)
-    { coxtypes::CoxNbr x = q[j];
-      if (shift(x,s) == coxtypes::undef_coxnbr)
-      {
-	d_shift.entry( x,s) = xs;
-	d_shift.entry(xs,s) = x;
-	d_length.push_back(d_length[x] + 1);
-	d_parity[d_length[xs]%2].insert(xs);
-	d_descent.push_back(constants::eq_mask[s]);
-	d_downset[s].insert(xs);
-	xs++;
-      }
+  for (coxtypes::CoxNbr x : q)
+    if (shift(x,s) == coxtypes::undef_coxnbr)
+    {
+      const coxtypes::CoxNbr xs = d_length.size();
+      d_length.push_back(d_length[x] + 1);
+      d_descent.push_back(constants::eq_mask[s]);
+      d_shift.entry( x,s) = xs;
+      d_shift.entry(xs,s) = x;
+      d_parity[d_length[xs]%2].insert(xs);
+      d_downset[s].insert(xs);
     }
 
     /* fill in the new elements */
 
-    fillCoatoms(prev_size,s);
-    fillShifts(prev_size,s);
-    fillStar(prev_size);
+  fillCoatoms(prev_size,s);
+  fillShifts(prev_size,s);
+  fillStar(prev_size);
 
     /* update q */
 
-    extendSubSet(q,s);
+  spread_subset(q,elements,s);
 
-    if (ERRNO)
-      goto revert;
-  }
-
+  if (ERRNO)
+    goto revert;
   return;
 
  revert:
@@ -1136,7 +1120,7 @@ namespace schubert {
   This constructor also manages the resizing of the calling SchubertContext |p|
   from its current |size| to |size+c|. It is called through |d_history.emplace|
   from |SchubertContext::increase_size| (which on its turn is called by
-  |SchubertContext::fullExtension|), so the object constructed ends up at the
+  |SchubertContext::extend_context|), so the object constructed ends up at the
   top of the |d_history| stack.
 
   The main reason for this helper class is that its constuctor allocates, and

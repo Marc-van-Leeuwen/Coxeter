@@ -180,7 +180,8 @@ class SchubertContext
   void fillDihedralShifts(coxtypes::CoxNbr x, coxtypes::Generator s);
   void fillShifts(coxtypes::CoxNbr first, coxtypes::Generator s);
   void fillStar(coxtypes::CoxNbr first);
-  void fullExtension(bits::SubSet& q, coxtypes::Generator s);
+  void extend_context
+    (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s);
   void subSetExtension(bits::SubSet& q, coxtypes::Generator s) const;
  public:
   void* operator new(size_t size) {return memory::arena().alloc(size);}

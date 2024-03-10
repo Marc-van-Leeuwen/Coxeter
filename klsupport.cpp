@@ -173,9 +173,9 @@ void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
   // find sequence of shifts
   auto e = standard_path(y);
 
-  schubert::CoxNbrList elements {0}; // serves internally in |spread_subset|
   bitmap::BitMap q(y+1);
   q.insert(0);
+  schubert::CoxNbrList elements{0}; // serves internally in |spread_subset|
 
   const schubert::SchubertContext& p = schubert();
 
