@@ -279,12 +279,18 @@ void SchubertContext::extractClosure
 }
 
 void SchubertContext::spread_subset
-  (bitmap::BitMap& q, coxtypes::Generator s) const
+  (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s) const
 {
-  auto q0 = q; // fix original subset to loop over
-  for (coxtypes::CoxNbr x : q0)
-    if (not isDescent(x,s)) // unnecessary, if |q| is downwards closed
-      q.insert(shift(x,s)); // could be left or right shift (upwards)
+  const auto high_level = elements.end();
+    for (auto it = elements.begin(); it!=high_level; ++it)
+    {
+      const coxtypes::CoxNbr candidate = rshift(*it,s);
+      if (not q.is_member(candidate)) // actually only excludes old elements
+      {
+	q.insert(candidate); // may or may not be new
+	elements.push_back(candidate);
+      }
+    }
 }
 
 containers::sl_list<coxtypes::Generator>
@@ -1127,16 +1133,24 @@ namespace schubert {
 
 
 /*
-  This constructor also manages the resizing of the SchubertContext p from its
-  current |size| to |size+c|. It is called through |d_history.emplace| from
-  |SchubertContext::increase_size| (which on its turn is called by
+  This constructor also manages the resizing of the calling SchubertContext |p|
+  from its current |size| to |size+c|. It is called through |d_history.emplace|
+  from |SchubertContext::increase_size| (which on its turn is called by
   |SchubertContext::fullExtension|), so the object constructed ends up at the
   top of the |d_history| stack.
+
+  The main reason for this helper class is that its constuctor allocates, and
+  its destructor deallocates, a block of memory into which the |d_star| pointers
+  in the parent class point (so elements have this information in the same
+  memory block if and only if they were added in the same sweep (call to
+  |increase_size|) from within |fullExtendion|. This also used to be the case
+  for the |d_shift| table, but that is now a single |matrix| in |SchubertContext|.
 */
 SchubertContext::ContextExtension::ContextExtension
   (SchubertContext& p, const Ulong& c)
   : d_schubert(p)
   , d_size(c)
+  , d_star(nullptr)
 {
   if (c == 0)
     return;

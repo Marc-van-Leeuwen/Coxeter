@@ -173,16 +173,17 @@ void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
   // find sequence of shifts
   auto e = standard_path(y);
 
+  schubert::CoxNbrList elements {0}; // serves internally in |spread_subset|
   bitmap::BitMap q(y+1);
-
   q.insert(0);
+
   const schubert::SchubertContext& p = schubert();
 
   coxtypes::CoxNbr x = 0; // start at the identity
 
   for (coxtypes::Generator s : e)
   {
-    p.spread_subset(q,s);  /* extend the subset */
+    p.spread_subset(q,elements,s);  /* extend the subset */
     x = p.shift(x,s); // left or right shift, as |s| specifies
 
     coxtypes::CoxNbr x1 = s<rank() ? x : inverse(x);
