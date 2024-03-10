@@ -174,7 +174,6 @@ class SchubertContext
   list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
   containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
   bitmap::BitMap d_parity[2]; // array of TWO parity bitmaps
-  bits::SubSet d_subset;
   containers::stack<ContextExtension> d_history;
 /* private member functions */
   void fillCoatoms(const Ulong& first, coxtypes::Generator s);

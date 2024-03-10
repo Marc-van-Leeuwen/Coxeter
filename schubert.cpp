@@ -91,8 +91,6 @@ namespace {
 
   const char* undef_str = "undefined";
 
-  void resetOne(bits::SubSet& q);
-
 };
 
 
@@ -179,7 +177,6 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   , d_star(1)
   , d_downset(2*d_rank,bitmap::BitMap(1))
   , d_parity{bitmap::BitMap(1),bitmap::BitMap(1)}
-  , d_subset(1)
   , d_history()
 {
   d_star.setSizeValue(1);
@@ -267,7 +264,8 @@ void SchubertContext::extractClosure
   (bits::BitMap& b, coxtypes::CoxNbr x) const
 {
   bits::SubSet q(d_size);
-  resetOne(q);
+  q.reset();
+  q.add(0);
 
   for (coxtypes::CoxNbr x1 = x; x1;) {
     coxtypes::Generator s = firstLDescent(x1);
@@ -455,21 +453,21 @@ Lflags SchubertContext::twoDescent(coxtypes::CoxNbr x) const
   becoming defined, this doesn't induce _any_ modification in the data
   for the old context; the numbers of the new elements come in at the top.
 
-  Sets the error ... in case of failure.
+  Sets the error |EXTENSION_FAIL| in case of failure.
 
-  The outline of the function is as follows. First, we determine the
-  largest subword h of g which is alreaady in the context, and construct
-  the interval [e,h] as a subset of the context. Then, for each remaining
-  generator s in g, we add the elements in [e,hs] not already in the
-  context, and we update everything.
+  The outline of the function is as follows. First, we determine the largest
+  initial subword h of g which is alreaady in the context, and construct the
+  interval [e,h] as a subset of the context. Then, for each remaining generator
+  s in g, we add the elements in [e,hs] not already in the context, and we
+  update everything.
 */
 coxtypes::CoxNbr SchubertContext::extendContext
   (const coxtypes::CoxWord& g)
 {
   coxtypes::CoxNbr y = 0;
-  bits::SubSet& q = d_subset;
-
-  resetOne(q);
+  bits::SubSet q(d_size);
+  q.reset();
+  q.add(0);
 
   Ulong j = 0;
 
@@ -491,7 +489,7 @@ coxtypes::CoxNbr SchubertContext::extendContext
     if (ERRNO)
       goto error_handling;
     if (j >= d_maxlength)
-      d_maxlength = j+1;
+      d_maxlength = j+1; // keep the high water mark
     y = rshift(y,s);
   }
 
@@ -761,6 +759,7 @@ void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
     for (coxtypes::CoxNbr z : d_hasse[xs])
     {
       coxtypes::CoxNbr zs = shift(z,s);
+      assert(zs!=coxtypes::undef_coxnbr);
       if (zs > z) /* z moves up */
 	c.push_back(zs);
     }
@@ -778,7 +777,8 @@ void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
   This works even if in fact the action of s is on the left.
 */
 
-void SchubertContext::fillDihedralShifts(coxtypes::CoxNbr x, coxtypes::Generator s)
+void SchubertContext::fillDihedralShifts
+  (coxtypes::CoxNbr x, coxtypes::Generator s)
 {
   coxtypes::CoxNbr xs = shift(x,s);
 
@@ -1058,6 +1058,8 @@ void SchubertContext::fullExtension(bits::SubSet& q, coxtypes::Generator s)
 
   coxtypes::CoxNbr prev_size = d_size;
   increase_size(d_size+c);
+  q.setBitMapSize(d_size+c);
+
   if (ERRNO) /* memory overflow */
     goto revert;
 
@@ -1165,7 +1167,6 @@ SchubertContext::ContextExtension::ContextExtension
   p.d_parity[0].set_capacity(n);
   p.d_parity[1].set_capacity(n);
 
-  p.d_subset.setBitMapSize(n);
   if (ERRNO)
     goto revert;
 
@@ -1617,7 +1618,6 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
    - extractMaximals(p,c) : extracts from c the list of its maximal elements;
    - minDescent(f,order) : finds the smallest element in f w.r.t. order;
    - readBitMap(c,b) : reads b into c;
-   - resetOne(SubSet& q) : resets q to hold the one-elements subset {0};
    - setBitMap(b,c) : reads c into b;
    - sum(h) : returns the sum of the terms in h;
 
@@ -1784,27 +1784,6 @@ void read_bitmap(CoxNbrList& c, const bits::BitMap& b)
     c.push_back(*i);
     ++i;
   }
-}
-
-};
-
-namespace {
-
-void resetOne(bits::SubSet& q)
-
-/*
-  Resets q to hold the one-element subset {0}.
-
-  Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set.
-*/
-
-{
-  q.reset();
-  q.add(0);
-
-  /* an error may have been set here */
-
-  return;
 }
 
 };
