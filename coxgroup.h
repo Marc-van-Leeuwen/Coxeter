@@ -115,6 +115,7 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   const uneqkl::KLContext& uneqkl() const { return *d_uneqkl; }
   const schubert::SchubertContext& schubert() const
     { return d_klsupport.schubert(); }
+  schubert::SchubertContext& schubert() { return d_klsupport.schubert(); }
 
   virtual const files::OutputTraits& outputTraits() const
     { return d_outputTraits; }

@@ -99,6 +99,7 @@ class KLSupport {
   containers::vector<coxtypes::Generator> standard_path (coxtypes::CoxNbr x)
     const;
 /* manipulators */
+  schubert::SchubertContext& schubert() { return *d_schubert; }
   void ensure_extr_rows_for(coxtypes::CoxNbr y);
   void move_extr_list_from_inverse(coxtypes::CoxNbr y);
   void applyIPermutation(coxtypes::CoxNbr y, const bits::Permutation& a)

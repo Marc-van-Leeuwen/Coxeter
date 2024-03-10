@@ -258,6 +258,7 @@ KLContext::KLContext(klsupport::KLSupport* kls)
 
 const klsupport::KLSupport& KLContext::klsupport() const
   { return d_help->d_klsupport; }
+klsupport::KLSupport& KLContext::klsupport() { return d_help->d_klsupport; }
 const KLStats& KLContext::stats() const { return d_help->stats(); }
 Ulong KLContext::size() const { return d_help->size(); }
 const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const

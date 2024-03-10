@@ -124,6 +124,10 @@ class KLContext {
   const schubert::SchubertContext& schubert() const
   { return klsupport().schubert(); }
 
+  // sometime we need non-const access to the |SchubertContext|
+  klsupport::KLSupport& klsupport(); // uses reference in helper
+  schubert::SchubertContext& schubert() { return klsupport().schubert(); }
+
   void print
     (FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I)
     const

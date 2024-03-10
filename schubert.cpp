@@ -1441,12 +1441,11 @@ bool shortLexOrder(const SchubertContext& p, coxtypes::CoxNbr d_x,
 
 namespace schubert {
 
-void print(FILE* file, const SchubertContext& p)
 
 /*
   This function prints out the contents of the Schubert context.
 */
-
+void print(FILE* file, SchubertContext& p)
 {
   fprintf(file,"size : %lu  maxlength : %lu",static_cast<Ulong>(p.size()),
 	  static_cast<Ulong>(p.maxlength()));

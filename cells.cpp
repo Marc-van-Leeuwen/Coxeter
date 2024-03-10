@@ -74,7 +74,6 @@ namespace {
 
 namespace cells {
 
-void lCells(bits::Partition& pi, kl::KLContext& kl)
 
 /*
   This function puts in pi the partition of p into left cells --- in the case
@@ -87,6 +86,7 @@ void lCells(bits::Partition& pi, kl::KLContext& kl)
   of each into cells; we propagate the cells using star-operations.
 */
 
+void lCells(bits::Partition& pi, kl::KLContext& kl)
 {
   static bits::SubSet q(0);
   static bits::SubSet a(0);
@@ -97,7 +97,7 @@ void lCells(bits::Partition& pi, kl::KLContext& kl)
   static wgraph::OrientedGraph P(0);
   static Fifo<Ulong> orbit;
 
-  const schubert::SchubertContext& p = kl.schubert();
+  schubert::SchubertContext& p = kl.schubert();
   q.setBitMapSize(p.size());
   a.setBitMapSize(p.size());
   a.reset();
@@ -192,12 +192,11 @@ void lCells(bits::Partition& pi, kl::KLContext& kl)
   return;
 }
 
-void rCells(bits::Partition& pi, kl::KLContext& kl)
 
 /*
   Same as lCells, but does the partition into right cells.
 */
-
+void rCells(bits::Partition& pi, kl::KLContext& kl)
 {
   static bits::SubSet q(0);
   static bits::SubSet a(0);
@@ -209,7 +208,7 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
   static Fifo<Ulong> orbit;
   static bits::Permutation v(0);
 
-  const schubert::SchubertContext& p = kl.schubert();
+  schubert::SchubertContext& p = kl.schubert();
   q.setBitMapSize(p.size());
   a.setBitMapSize(p.size());
   a.reset();
@@ -563,12 +562,93 @@ void rStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::Sc
   return;
 }
 
-void lGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
-  Like rGeneralizedTau, but on the left.
-*/
+  This is the most delicate of the partition functions. It is the maximal
+  refinement of the right descent partition under right star operations.
+  In other words, two elements x and y are in the same class for this
+  partition, if for each right star-word a (i.e. a sequence of right
+  star-operations), x*a and y*a have the same right descent set.
 
+  The algorithm is very much like the minimization algorithm for a finite
+  state automaton.
+
+  NOTE : this could probably be simplified with a PartitionIterator; be
+  wary though of modifications in pi during the loop.
+*/
+void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
+{
+  static bits::Permutation v(0);
+  static list::List<Ulong> b(0);
+  static list::List<Ulong> cc(0);
+  static list::List<Ulong> a(0);
+
+  /* initialize pi with partition into right descent sets */
+
+  Ulong prev;
+  rDescentPartition(pi,p);
+  v.setSize(pi.size());
+
+  do {
+    prev = pi.classCount();
+
+    /* refine */
+
+    for (Ulong r = 0; r < p.nStarOps(); ++r) {
+
+      pi.sortI(v);   /* sort partition */
+      Ulong count = pi.classCount();
+      cc.setSize(count);
+      cc.setZero();
+
+      for (Ulong j = 0; j < pi.size(); ++j)
+	cc[pi[j]]++;
+
+      Ulong i = 0;
+
+      for (Ulong c = 0; c < pi.classCount(); ++c) {
+
+	coxtypes::CoxNbr x = v[i]; /* first element in class */
+
+	if (p.star(x,r) == coxtypes::undef_coxnbr)
+	  goto next_class;
+
+	/* find possibilities for v[.]*r */
+
+	b.setSize(0);
+
+	for (Ulong j = 0; j < cc[c]; ++j) {
+	  Ulong cr = pi[p.star(v[i+j],r)];
+	  insert(b,cr);
+	}
+
+	if (b.size() > 1) { /* there is a refinement */
+	  a.setSize(cc[c]);
+	  for (Ulong j = 0; j < a.size(); ++j)
+	    a[j] = find(b,pi[p.star(v[i+j],r)]);
+	  for (Ulong j = 0; j < cc[c]; ++j) {
+	    if (a[j] > 0)
+	      pi[v[i+j]] = count+a[j]-1;
+	  }
+	  count += b.size()-1;
+	}
+
+      next_class:
+	i += cc[c];
+	continue;
+      }
+
+      pi.setClassCount(count);
+
+    }
+
+  } while (prev < pi.classCount());
+
+  return;
+} // |rGeneralizedTau|
+
+// Like |rGeneralizedTau|, but on the left.
+void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 {
   static bits::Permutation v(0);
   static list::List<Ulong> b(0);
@@ -639,91 +719,6 @@ void lGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p)
   return;
 }
 
-void rGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p)
-
-/*
-  This is the most delicate of the partition functions. It is the maximal
-  refinement of the right descent partition under right star operations.
-  In other words, two elements x and y are in the same class for this
-  partition, if for each right star-word a (i.e. a sequence of right
-  star-operations), x*a and y*a have the same right descent set.
-
-  The algorithm is very much like the minimization algorithm for a finite
-  state automaton.
-
-  NOTE : this could probably be simplified with a PartitionIterator; be
-  wary though of modifications in pi during the loop.
-*/
-
-{
-  static bits::Permutation v(0);
-  static list::List<Ulong> b(0);
-  static list::List<Ulong> cc(0);
-  static list::List<Ulong> a(0);
-
-  /* initialize pi with partition into right descent sets */
-
-  Ulong prev;
-  rDescentPartition(pi,p);
-  v.setSize(pi.size());
-
-  do {
-    prev = pi.classCount();
-
-    /* refine */
-
-    for (Ulong r = 0; r < p.nStarOps(); ++r) {
-
-      pi.sortI(v);   /* sort partition */
-      Ulong count = pi.classCount();
-      cc.setSize(count);
-      cc.setZero();
-
-      for (Ulong j = 0; j < pi.size(); ++j)
-	cc[pi[j]]++;
-
-      Ulong i = 0;
-
-      for (Ulong c = 0; c < pi.classCount(); ++c) {
-
-	coxtypes::CoxNbr x = v[i]; /* first element in class */
-
-	if (p.star(x,r) == coxtypes::undef_coxnbr)
-	  goto next_class;
-
-	/* find possibilities for v[.]*r */
-
-	b.setSize(0);
-
-	for (Ulong j = 0; j < cc[c]; ++j) {
-	  Ulong cr = pi[p.star(v[i+j],r)];
-	  insert(b,cr);
-	}
-
-	if (b.size() > 1) { /* there is a refinement */
-	  a.setSize(cc[c]);
-	  for (Ulong j = 0; j < a.size(); ++j)
-	    a[j] = find(b,pi[p.star(v[i+j],r)]);
-	  for (Ulong j = 0; j < cc[c]; ++j) {
-	    if (a[j] > 0)
-	      pi[v[i+j]] = count+a[j]-1;
-	  }
-	  count += b.size()-1;
-	}
-
-      next_class:
-	i += cc[c];
-	continue;
-      }
-
-      pi.setClassCount(count);
-
-    }
-
-  } while (prev < pi.classCount());
-
-  return;
-}
 
 };
 

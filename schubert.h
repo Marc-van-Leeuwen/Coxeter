@@ -52,7 +52,7 @@ namespace schubert {
   Ulong minDescent(const GenSet& f, const bits::Permutation& order);
   void minimize
     (const SchubertContext& p, bits::BitMap& b, const Lflags& f);
-  void print(FILE* file, const SchubertContext& p);
+  void print(FILE* file, SchubertContext& p);
   void printBitMap(FILE* file, const bits::BitMap& pi, const SchubertContext& p,
 		   const interface::Interface& I);
   void printList
@@ -182,7 +182,6 @@ class SchubertContext
   void fillStar(coxtypes::CoxNbr first);
   void extend_context
     (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s);
-  void subSetExtension(bits::SubSet& q, coxtypes::Generator s) const;
  public:
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
@@ -266,7 +265,7 @@ class SchubertContext
     (coxtypes::CoxWord& g, coxtypes::CoxNbr x, const bits::Permutation& order)
     const;
   Ulong nStarOps() const { return d_graph.finite_edges().size(); }
-  coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r) const
+  coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r)
     { return d_star[x][r]; }
 /* manipulators */
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);

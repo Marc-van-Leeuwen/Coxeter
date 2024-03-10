@@ -890,12 +890,11 @@ const bits::Partition& FiniteCoxGroup::lTau()
   return d_ltau;
 }
 
-const bits::Partition& FiniteCoxGroup::rTau()
 
 /*
   Like lTau, but on the right. Coarser than the partition by left cells.
 */
-
+const bits::Partition& FiniteCoxGroup::rTau()
 {
   if (d_rtau.classCount()) /* partition was already computed */
     return d_rtau;

@@ -30,8 +30,8 @@ namespace cells {
   void rStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p);
   void lrStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p);
   void lrStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p);
-  void lGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p);
-  void rGeneralizedTau(bits::Partition& pi, const schubert::SchubertContext& p);
+  void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p);
+  void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p);
   void lGraph(wgraph::OrientedGraph& X, kl::KLContext& kl);
   void lrGraph(wgraph::OrientedGraph& X, kl::KLContext& kl);
   void rGraph(wgraph::OrientedGraph& X, kl::KLContext& kl);
