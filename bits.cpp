@@ -691,16 +691,16 @@ void Partition::sort(Permutation& a) const
   }
 }
 
-void Partition::sortI(Permutation& a) const
 
 /*
-  Like sort, but returns the inverse permutation directly. This is in fact
-  used more frequently then sort, because the permutation returned by shortI
-  is the one we need for the traversal of the classes.
+  Like sort, but returns the inverse standardization permutation directly. This
+  is in fact used more frequently then sort, because the inverse standardization
+  permutation permits easy traversal of all values in weakly increasing order,
+  for instance finding the classes of indices with equal values in a partition
 
   Here we have new[j] = old[a[j]].
 */
-
+void Partition::sortI(Permutation& a) const
 {
   if (size() == 0)
     return;

@@ -580,7 +580,7 @@ void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 {
   static bits::Permutation v(0);
   static list::List<Ulong> b(0);
-  static list::List<Ulong> cc(0);
+  static list::List<Ulong> cc(0); // sizes of parts of the partition |pi|
   static list::List<Ulong> a(0);
 
   /* initialize pi with partition into right descent sets */
@@ -596,13 +596,13 @@ void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 
     for (Ulong r = 0; r < p.nStarOps(); ++r) {
 
-      pi.sortI(v);   /* sort partition */
+      pi.sortI(v);   // set |v| to inverse standardization of partition values
       Ulong count = pi.classCount();
       cc.setSize(count);
       cc.setZero();
 
       for (Ulong j = 0; j < pi.size(); ++j)
-	cc[pi[j]]++;
+	cc[pi[j]]++; // count each class of |pi|
 
       Ulong i = 0;
 
@@ -618,8 +618,11 @@ void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 	b.setSize(0);
 
 	for (Ulong j = 0; j < cc[c]; ++j) {
-	  Ulong cr = pi[p.star(v[i+j],r)];
-	  insert(b,cr);
+	  assert(pi[v[i]]==pi[v[i+j]]); // we traverse a class of |pi|
+	  auto star = p.star(v[i+j],r);
+	  assert(star != coxtypes::undef_coxnbr); // same descent set, same stars
+	  Ulong cr = pi[star];
+	  insert(b,cr); // add |cr| to list of class values if new
 	}
 
 	if (b.size() > 1) { /* there is a refinement */
@@ -628,7 +631,7 @@ void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 	    a[j] = find(b,pi[p.star(v[i+j],r)]);
 	  for (Ulong j = 0; j < cc[c]; ++j) {
 	    if (a[j] > 0)
-	      pi[v[i+j]] = count+a[j]-1;
+	      pi[v[i+j]] = count+a[j]-1; // make all but one into a new class
 	  }
 	  count += b.size()-1;
 	}
@@ -666,7 +669,8 @@ void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 
     /* refine */
 
-    for (Ulong r = p.nStarOps(); r < 2*p.nStarOps(); ++r) {
+    for (Ulong r = p.nStarOps(); r < 2*p.nStarOps(); ++r)
+    {
 
       pi.sortI(v);   /* sort partition */
       Ulong count = pi.classCount();
@@ -674,7 +678,7 @@ void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
       cc.setZero();
 
       for (Ulong j = 0; j < pi.size(); ++j)
-	cc[pi[j]]++;
+	cc[pi[j]]++; // count each class of |pi|
 
       Ulong i = 0;
 
@@ -690,8 +694,11 @@ void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 	b.setSize(0);
 
 	for (Ulong j = 0; j < cc[c]; ++j) {
-	  Ulong cr = pi[p.star(v[i+j],r)];
-	  insert(b,cr);
+	  assert(pi[v[i]]==pi[v[i+j]]); // we traverse a class of |pi|
+	  auto star = p.star(v[i+j],r);
+	  assert(star != coxtypes::undef_coxnbr); // same descent set, same stars
+	  Ulong cr = pi[star];
+	  insert(b,cr); // add |cr| to list of class values if new
 	}
 
 	if (b.size() > 1) { /* there is a refinement */
@@ -700,7 +707,7 @@ void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 	    a[j] = find(b,pi[p.star(v[i+j],r)]);
 	  for (Ulong j = 0; j < cc[c]; ++j) {
 	    if (a[j] > 0)
-	      pi[v[i+j]] = count+a[j]-1;
+	      pi[v[i+j]] = count+a[j]-1; // make all but one into a new class
 	  }
 	  count += b.size()-1;
 	}

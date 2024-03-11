@@ -162,7 +162,6 @@ class SchubertContext
 {
  private:
 /* private class declaration */
-  class ContextExtension;
   const graph::CoxGraph& d_graph;
   coxtypes::Rank d_rank;
   coxtypes::Length d_maxlength;
@@ -171,7 +170,7 @@ class SchubertContext
   containers::vector<CoxNbrList> d_hasse;
   containers::vector<Lflags> d_descent;
   containers::matrix<coxtypes::CoxNbr> d_shift;
-  list::List<coxtypes::CoxNbr*> d_star; // indexed by |CoxNbr|, then |Ulong|
+  containers::matrix<coxtypes::CoxNbr> d_star; // indexed by |CoxNbr,edge_nr|
   containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
   bitmap::BitMap d_parity[2]; // array of TWO parity bitmaps
   containers::stack<ContextExtension> d_history;
@@ -265,13 +264,17 @@ class SchubertContext
     (coxtypes::CoxWord& g, coxtypes::CoxNbr x, const bits::Permutation& order)
     const;
   Ulong nStarOps() const { return d_graph.finite_edges().size(); }
-  coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r)
-    { return d_star[x][r]; }
-/* manipulators */
+
+  // manipulators
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
+  coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r)
+  { assert(x<size());
+    if (d_star.nr_rows()<size())
+      fill_star_table();
+    return d_star.entry(x,r);
+  }
+  void revertSize(Ulong n);
   void permute(const bits::Permutation& a);
-  void revertSize(const Ulong& n);
-  void increase_size(const Ulong& n);
 /* i/o */
   std::string& append(std::string&, coxtypes::CoxNbr x) const;
   std::string& append(std::string&, coxtypes::CoxNbr x,
@@ -279,6 +282,16 @@ class SchubertContext
   void print(FILE* file, coxtypes::CoxNbr x) const;
   void print(FILE* file, coxtypes::CoxNbr x, const interface::Interface& I)
     const;
+
+private:
+  void increase_size(Ulong n);
+  void fill_star_table();
+  coxtypes::CoxNbr* right_star_row(coxtypes::CoxNbr x)
+    { return d_star.row(x); }
+  coxtypes::CoxNbr* left_star_row(coxtypes::CoxNbr x)
+    { return d_star.row(x)+nStarOps(); }
+  template<bool left> // get decreasing "star" image, or undefined
+    coxtypes::CoxNbr falling_star(coxtypes::CoxNbr x, GenSet st) const;
 
 }; // |class SchubertContext|
 
