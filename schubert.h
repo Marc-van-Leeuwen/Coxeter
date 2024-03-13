@@ -173,21 +173,14 @@ class SchubertContext
   containers::matrix<coxtypes::CoxNbr> d_star; // indexed by |CoxNbr,edge_nr|
   containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
   bitmap::BitMap d_parity[2]; // array of TWO parity bitmaps
-  containers::stack<ContextExtension> d_history;
-/* private member functions */
-  void fillCoatoms(const Ulong& first, coxtypes::Generator s);
-  void fillDihedralShifts(coxtypes::CoxNbr x, coxtypes::Generator s);
-  void fillShifts(coxtypes::CoxNbr first, coxtypes::Generator s);
-  void fillStar(coxtypes::CoxNbr first);
-  void extend_context
-    (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s);
- public:
+
+public:
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(SchubertContext));}
 /* constructors and destructors */
   SchubertContext(const graph::CoxGraph& G);
-  ~SchubertContext();
+  ~SchubertContext() = default;
 
   // inlined accessor methods
   coxtypes::Rank rank() const { return d_rank; }
@@ -196,6 +189,8 @@ class SchubertContext
   const bitmap::BitMap& parity(coxtypes::CoxNbr x) const
     { return d_parity[d_length[x]%2]; }
   coxtypes::Length maxlength() const { return d_maxlength; }
+
+  bool in_context(coxtypes::CoxNbr x) const { return x<size(); }
 
   Lflags descent(coxtypes::CoxNbr x) const
      {return d_descent[x];}
@@ -227,6 +222,8 @@ class SchubertContext
 
   bool isDescent(coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return (d_descent[x]&constants::eq_mask[s])!=0; } // whether Right descent
+  bool is_ascent(coxtypes::CoxNbr x, coxtypes::Generator s) const
+    {  return (d_descent[x]&constants::eq_mask[s])==0; } // whether (right) ascent
 
   coxtypes::CoxNbr shift(coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return d_shift.entry(x,s); } // left or right shift
@@ -284,7 +281,12 @@ class SchubertContext
     const;
 
 private:
+  void extend_context
+    (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s);
   void increase_size(Ulong n);
+  void fill_Hasse(const Ulong& first, coxtypes::Generator s);
+  void fill_shifts_and_descents(coxtypes::CoxNbr first, coxtypes::Generator s);
+
   void fill_star_table();
   coxtypes::CoxNbr* right_star_row(coxtypes::CoxNbr x)
     { return d_star.row(x); }

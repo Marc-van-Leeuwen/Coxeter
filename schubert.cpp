@@ -158,25 +158,10 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
   , d_star(0,2*nStarOps()) // rows are filled on demand
   , d_downset(2*d_rank,bitmap::BitMap(1))
   , d_parity{bitmap::BitMap(1),bitmap::BitMap(1)}
-  , d_history()
 {
   d_parity[0].insert(0);
 }
 
-
-/*
-  Destructing a SchubertContext turns out to be a little bit tricky, because of
-  the way memory has been allocated for the various structures, in the
-  successive extensions. In particular, in d_star, only *some* pointers have
-  been allocated by new.
-
-  This problem will be much easier to handle once the memory allocations
-  go through a private arena; it will then be enough to simply free the
-  arena. For now, we introduce a monitoring through a stack of
-  ContextExtensions.
-*/
-SchubertContext::~SchubertContext()
-{}
 
 /******** accessors ********************************************************/
 
@@ -211,11 +196,12 @@ coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) cons
 {
   coxtypes::CoxNbr x = 0;
 
-  for (Ulong j = 0; j < g.length(); ++j) {
+  for (Ulong j = 0; j < g.length(); ++j)
+  {
     coxtypes::Generator s = g[j]-1;
     x = rshift(x,s);
-    if (x == coxtypes::undef_coxnbr)
-      break;
+    if (not in_context(x))
+      return coxtypes::undef_coxnbr;
   }
 
   return x;
@@ -332,13 +318,13 @@ coxtypes::CoxNbr SchubertContext::maximize
   Lflags g = f & ~d_descent[x1];
 
   while (g!=0)
-    {
-      coxtypes::Generator s = constants::firstBit(g);
-      x1 = shift(x1,s);
-      if (x1 == coxtypes::undef_coxnbr)
-	break;
-      g = f & ~d_descent[x1];
-    }
+  {
+    coxtypes::Generator s = constants::firstBit(g);
+    x1 = shift(x1,s);
+    if (not in_context(x1))
+      return coxtypes::undef_coxnbr;
+    g = f & ~d_descent[x1];
+  }
 
   return x1;
 }
@@ -442,17 +428,18 @@ coxtypes::CoxNbr SchubertContext::extendContext
 
   for (; j < g.length(); ++j) {
     coxtypes::Generator s = g[j]-1;
-    if (rshift(y,s) == coxtypes::undef_coxnbr)
+    auto ys = rshift(y,s);
+    if (not in_context(ys))
       break;
     spread_subset(q,elements,s);
     if (ERRNO)
       goto error_handling;
-    y = rshift(y,s);
+    y = ys;
   }
 
   for (; j < g.length(); ++j) {
     coxtypes::Generator s = g[j]-1;
-    extend_context(q,elements,s);
+    extend_context(q,elements,s); // adapts tables and enlarges |q|, |elements|
     if (ERRNO)
       goto error_handling;
     if (j >= d_maxlength)
@@ -598,15 +585,18 @@ void SchubertContext::permute(const bits::Permutation& a)
 */
 void SchubertContext::revertSize(Ulong n)
 {
-  Ulong m = size();
+  d_length.resize(n);
+  d_hasse.resize(n);
+  d_descent.resize(n);
 
-  while (m > n)
-  {
-    m -= d_history.top().size();
-    d_history.pop();
-  }
+  d_shift.shrink(n);
+  for (Ulong j = 0; j < 2ul*rank(); ++j)
+    d_downset[j].set_capacity(n);
+
+  d_parity[0].set_capacity(n);
+  d_parity[1].set_capacity(n);
+
 }
-
 
 /*
   Resizes the various data structures to accomodate a context of size n.
@@ -625,11 +615,27 @@ void SchubertContext::increase_size(Ulong n)
   Ulong prev_size = size();
 
   try {
-    d_history.emplace(*this,n-size());
+    d_length.reserve(n);
+    d_hasse.reserve(n);
+    d_descent.reserve(n);
+    d_shift.grow(n,coxtypes::undef_coxnbr); // extend with entirely undefined row
+    for (Ulong j = 0; j < 2ul*rank(); ++j)
+      d_downset[j].set_capacity(n);
+
+    d_parity[0].set_capacity(n);
+    d_parity[1].set_capacity(n);
+
+    d_size = n;
   }
   catch(...)
   {
-    revertSize(prev_size);
+    d_shift.shrink(prev_size);
+    for (Ulong j = 0; j < 2ul*rank(); ++j)
+      d_downset[j].set_capacity(prev_size);
+
+    d_parity[0].set_capacity(prev_size);
+    d_parity[1].set_capacity(prev_size);
+    throw;
   }
 }
 
@@ -694,26 +700,32 @@ void SchubertContext::print(FILE* file, coxtypes::CoxNbr x,
   so that we can inline the access (to the shift table for instance) that
   would otherwise go to a virtual function call.
 
-   - fillCoatoms(first,s) : fills in the coatom lists of new elements of
-     the extension by s;
-   - fillDihedralShifts(x,s) : fills in the shifts in the case where
-     x is dihedral;
-   - fillShifts(first,s) : fills in the shift tables of new elements of
-     the extension by s;
-   - fillStar(first) : fills in the star tables of new elements;
    - extend_context(q,elements,s) : fills in the extension obtained by adding
-     the elements xs, x in q;
+     the elements xs, x in q; the other methods do part of its work:
+   - fill_Hasse(first,s) : fills in the coatom lists of new elements (from
+     |first| to the end) added in the extension by |s|;
+   - fill_shifts_and_descents(first,s) : fills in the shift tables of elements
+     from |first| to end, which were added through a shift by |s|, and also
+     complete the setting of their |d_descent| and |d_downset| entries
+   - set_shifts_dihedral(x,s) : fills in the shifts in the case where
+     x is dihedral;
 
 *****************************************************************************/
 
 
 /*
-  This auxiliary fills the coatom lists of the new elements after extending for
-  a shift by |s|. It is assumed that the context has been resized appropriately,
-  thatd new elements start at |first|, and that lengths and shifts by |s| have
-  already been filled in.
+  When extending a |SchubertContext| by a shift |s| (which could be at the left
+  or the right, althoug in practice it will be on the right), the shift by |s|
+  for the new elements has been defined, but no other shifts. The next thing to
+  define are their sets of coatoms, which can be computed in terms of shifts by
+  |s| only; we do this for all new elements |x|, which start at |first|. Indeed
+  the coatoms of the Bruhat interval $[e,x]$ are its elements of length one less
+  than that of $x$, which are either |xs|, or (if new) obtained from an element
+  of $[e,xs]$ by a shift $s$. In the latter case that element is for length
+  reasons necessarily a coatom of |xs| for which |s| is an ascent, and all such
+  coatoms give rise to a coatom of $[e,x]$, all distinct.
 */
-void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
+void SchubertContext::fill_Hasse(const Ulong& first, coxtypes::Generator s)
 {
 
   for (coxtypes::CoxNbr x = first; x < d_size; ++x)
@@ -726,8 +738,8 @@ void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
     for (coxtypes::CoxNbr z : d_hasse[xs])
     {
       coxtypes::CoxNbr zs = shift(z,s);
-      assert(zs!=coxtypes::undef_coxnbr);
-      if (zs > z) /* z moves up */
+      assert(in_context(zs));
+      if (is_ascent(z,s))
 	c.push_back(zs);
     }
 
@@ -738,144 +750,103 @@ void SchubertContext::fillCoatoms(const Ulong& first,  coxtypes::Generator s)
 
 
 /*
-  Fill in the shifts for x in the dihedral case. It is assumed that the shift by
-  s is already filled in, and that length(x) is > 1. We have denoted on the
-  right the action of s, on the left the action on the side different from s.
-  This works even if in fact the action of s is on the left.
+  Fill in the shift tables of the new elements that were added to the context
+  using a shift by |s|, where |first| is the first new element. Although our
+  program uses right shifts (because |extend_context| is called with |s| equal
+  to a letter of the Coxeter word that we are enlarging the context for), this
+  function was written in a way that it works equally well for left shifts (this
+  only occasionally make the code a bit larger or more intricate). When we come
+  here, the tables have been filled for new elements only as far as coatoms,
+  lengths and shifts by |s| are concerned; our task is to do the remainder. We
+  use the algorithm deduced form Dyer's theorem referenced (in the form of
+  corollary 3.7) in the paper by Fokko mentioned in the introduction.
 */
-
-void SchubertContext::fillDihedralShifts
-  (coxtypes::CoxNbr x, coxtypes::Generator s)
+void SchubertContext::fill_shifts_and_descents
+  (coxtypes::CoxNbr first, coxtypes::Generator s)
 {
-  coxtypes::CoxNbr xs = shift(x,s);
+  const coxtypes::Rank two_r = 2*rank();
 
-  /* find the other generator involved, on the same side as s */
-
-  coxtypes::Generator s1, t, t1;
-  graph::CoxEntry m;
-
-  if (s < d_rank) { /* action is on the right */
-    t = firstRDescent(xs);
-    s1 = s + d_rank;
-    t1 = t + d_rank;
-    m = d_graph.M(s,t);
-  }
-  else { /* action is on the left */
-    s1 = s - d_rank;
-    t1 = firstLDescent(xs);
-    t = t1 + d_rank;
-    m = d_graph.M(s1,t1);
-  }
-
-  const CoxNbrList& c = d_hasse[x];
-  coxtypes::CoxNbr z; /* the other coatom of x */
-
-  if (c[0] == xs)
-    z = c[1];
-  else
-    z = c[0];
-
-  if (d_length[x] == m) { /* descents for s,t on both sides */
-    d_descent[x] |=
-      constants::eq_mask[t] | constants::eq_mask[s1] | constants::eq_mask[t1];
-    d_downset[t].insert(x);
-    d_downset[s1].insert(x);
-    d_downset[t1].insert(x);
-    d_shift.entry(x,t) = z;
-    d_shift.entry(z,t) = x;
-    if (m % 2) { /* xs = tx; xt = sx */
-      d_shift.entry( x,s1) = z;
-      d_shift.entry( z,s1) = x;
-      d_shift.entry( x,t1) = xs;
-      d_shift.entry(xs,t1) = x;
-    }
-    else { /* xs = sx; xt = tx */
-      d_shift.entry( x,s1) = xs;
-      d_shift.entry(xs,s1) = x;
-      d_shift.entry( x,t1) = z;
-      d_shift.entry( z,t1) = x;
-    }
-  }
-  else { /* descent on one side only */
-    if (d_length[x] % 2) { /* xs and sx */
-      d_shift.entry(x,s1) = z;
-      d_shift.entry(z,s1) = x;
-      d_descent[x] |= constants::eq_mask[s1];
-      d_downset[s1].insert(x);
-    }
-    else { /* xs and tx */
-      d_shift.entry(x,t1) = z;
-      d_shift.entry(z,t1) = x;
-      d_descent[x] |= constants::eq_mask[t1];
-      d_downset[t1].insert(x);
-    }
-  }
-}
-
-
-/*
-  Fill in the shift tables of the new elements in p. It is assumed that first is
-  the first new element, that the coatom tables, lengths and shifts by s have
-  already been filled in. We use the algorithm deduced form Dyer's theorem,
-  alluded to in the introduction.
-*/
-
-void SchubertContext::fillShifts(coxtypes::CoxNbr first, coxtypes::Generator s)
-{
   coxtypes::CoxNbr x = first;
 
-  /* check if something happens in length one; if there is a new element
-   of length one, it is unique and equal to s */
-
-  if (d_length[x] == 1) { /* x = s */
-    coxtypes::Generator t;
-    if (s < d_rank) /* s acts on the right */
-      t = s + d_rank;
-    else /* s acts on the left */
-      t = s - d_rank;
+  // only the initial new element |first| might have length 1; check this case
+  if (length(x) == 1)
+  { assert(x==shift(0,s)); // we allow it to be on the left or right
+    coxtypes::Generator t = (s + d_rank) % two_r; // |s| from opposite side
     d_shift.entry(0,t) = x;
     d_shift.entry(x,t) = 0;
     d_descent[x] |= constants::eq_mask[t];
     d_downset[t].insert(x);
-    ++x;
+    ++x; // don't treat this case in next loop
   }
 
-  for (; x < d_size; ++x) {
-    const CoxNbrList& c = d_hasse[x];
+  for (; x < d_size; ++x)
+  {
+    const CoxNbrList& coatoms = d_hasse[x]; // this was already computed
 
-    if (c.size() == 2) { /* dihedral case */
-      fillDihedralShifts(x,s);
-      continue;
-    }
+    if (coatoms.size() == 2) // treat the "dihedral case" separately
+    {
+      const coxtypes::CoxNbr xs = shift(x,s);
 
-    for (coxtypes::Generator t = 0; t < 2*d_rank; ++t) { /* examine shift by t */
-      if (t == s)
-	continue;
-      bool firstplus = true;
-      coxtypes::CoxNbr z = coxtypes::undef_coxnbr;
-      for (Ulong j = 0; j < c.size(); ++j) {
-	if (!(constants::eq_mask[t] & d_descent[c[j]])) { /* coatom has ascent */
-	  if (firstplus) { /* it's the first time */
-	    firstplus = false;
-	    z = c[j]; // z is the coatom that goes up
-	  }
-	  else {
-	    goto nextt;
-	  }
-	}
+      coxtypes::Generator t = // the other dihedral group generator, same side
+	s < d_rank ? firstRDescent(xs) : firstLDescent(xs) + d_rank;
+
+      coxtypes::CoxNbr z = // the coatom of |x| that is not |xs|
+	 coatoms[0]+coatoms[1]-xs;
+      coxtypes::Generator s_op = // on opposite side such that |z=shift(x,s_op)|
+	((length(x)%2==0 ? t : s) + rank()) % two_r;
+
+      d_shift.entry(x,s_op) = z;
+      d_shift.entry(z,s_op) = x;
+      d_descent[x] |= constants::eq_mask[s_op];
+      d_downset[s_op].insert(x);
+
+      if (length(x)==d_graph.M(s%rank(),t%rank())) // |x| tops dihedral group?
+      { // if so, |z| is also a descent of |x| (on the same side as |s|) by |t|
+	d_shift.entry(x,t) = z;
+	d_shift.entry(z,t) = x;
+	d_descent[x] |= constants::eq_mask[t];
+	d_downset[t].insert(x);
+	// and |xs| is also opposite side descent of |x|, by complement of |s_op|
+	coxtypes::Generator t_op = // same side as |s_op| and different from it
+	  (two_r + s + t - s_op)%two_r; // uses of |two_r| to avoid underflow
+	d_shift.entry(x ,t_op) = xs;
+	d_shift.entry(xs,t_op) = x ;
+	d_descent[x] |= constants::eq_mask[t_op];
+	d_downset[t_op].insert(x);
       }
-      /* if we reach this point there was exactly one ascent */
-      d_shift.entry(x,t) = z;
-      d_shift.entry(z,t) = x;
-      d_descent[x] |= constants::eq_mask[t];
-      d_downset[t].insert(x);
-    nextt:
-      continue;
     }
-  }
 
-  return;
-}
+    else
+      for (coxtypes::Generator t = 0; t < two_r; ++t)
+	if (t != s)
+	{ // examine shift by t
+	  coxtypes::CoxNbr z = coxtypes::undef_coxnbr;
+	  for (auto coatom : coatoms)
+	    // |coatom<x|, so we inductively know |d_descent[coatom]| is complete
+	    if (is_ascent(coatom,t)) // so this condition can be tested
+	    { // now |coatom| has an ascent for |t|
+	      if (z == coxtypes::undef_coxnbr) // this is the first occurence
+		z = coatom; // so record that coatom in |z|
+	      else // more than one coatom has an ascent for |t|
+		goto next_t; // then this |t| needs no action here, forget |z|
+	    } // |for(coatom)|
+
+	  /* if we arrive here, |z| is the unique coatom with ascent for |t|; by
+	    the corollary, this implies |shift(x,t)=z|: it ascends to |x| (if
+	    |t| is a descent for |y| then the element it descends to is the
+	    unique coatom with an ascent for |t|; the corollary says that, after
+	    excluding the dihedral case, this does not happen for other |t|).
+	  */
+	  d_shift.entry(x,t) = z;
+	  d_shift.entry(z,t) = x;
+	  d_descent[x] |= constants::eq_mask[t];
+	  d_downset[t].insert(x);
+	next_t:
+	  continue; // (an empty statement would do the same)
+	} // |for(t)|
+  } // |for(x)|
+
+} // |fill_shifts_and_descents|
 
 template<bool left> coxtypes::CoxNbr SchubertContext::falling_star
   (coxtypes::CoxNbr x, GenSet st) const
@@ -981,7 +952,6 @@ void SchubertContext::extend_context
   (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s)
 {
   /* check length overflow */
-
   coxtypes::CoxNbr y = elements.back(); /* most recent element in q */
 
   if (d_length[y] == coxtypes::LENGTH_MAX) { /* overflow */
@@ -990,15 +960,13 @@ void SchubertContext::extend_context
   }
 
   /* determine the size of the extension */
-
-  coxtypes::CoxNbr c =
+  coxtypes::CoxNbr c = // number of currently undefined shifts by |s|
     std::count_if
       (elements.begin(),elements.end(),
-       [s,this](coxtypes::CoxNbr x) { return shift(x,s) == coxtypes::undef_coxnbr; }
+       [s,this](coxtypes::CoxNbr x) { return not in_context(shift(x,s)); }
       );
 
   /* check for size overflow */
-
   if (c > coxtypes::COXNBR_MAX - d_size) { // overflow predicited
     ERRNO = COXNBR_OVERFLOW;
     return;
@@ -1007,17 +975,13 @@ void SchubertContext::extend_context
   /* resize context */
 
   coxtypes::CoxNbr prev_size = d_size;
-  increase_size(d_size+c);
+  increase_size(d_size+c); // enlarge capacity of internal tables; do not fill
   q.set_capacity(d_size+c);
 
-  if (ERRNO) /* memory overflow */
-    goto revert;
-
-  /* fill in lengths and shifts by s */
-
-  for (coxtypes::CoxNbr x : q)
+  // fill in lengths, and shifts by |s|
+  for (coxtypes::CoxNbr x : elements)
     if (shift(x,s) == coxtypes::undef_coxnbr)
-    {
+    { // create new entry and fill in only very basic attributes
       const coxtypes::CoxNbr xs = d_length.size();
       d_length.push_back(d_length[x] + 1);
       d_descent.push_back(constants::eq_mask[s]);
@@ -1027,14 +991,11 @@ void SchubertContext::extend_context
       d_downset[s].insert(xs);
     }
 
-    /* fill in the new elements */
+  // complete information for the new elements
+  fill_Hasse(prev_size,s); // now coatoms for closures are defined
+  fill_shifts_and_descents(prev_size,s);
 
-  fillCoatoms(prev_size,s);
-  fillShifts(prev_size,s);
-
-    /* update q */
-
-  spread_subset(q,elements,s);
+  spread_subset(q,elements,s);  // update |q| and |elements| for next round
 
   if (ERRNO)
     goto revert;
@@ -1044,103 +1005,6 @@ void SchubertContext::extend_context
   revertSize(prev_size);
   return;
 }
-
-};
-
-/****************************************************************************
-
-        Chapter II -- The ContextExtension class.
-
-  The ContextExtension class is provided to manage the resizings of the
-  context, so that we can keep track of the pointers that are allocated
-  to new memory.
-
-  The following functions are provided :
-
-    - ContextExtension(p,c) : builds the extension;
-    - ~ContextExtension();
-
-  NOTE : with reasonably managed arenas, this could probably be dropped;
-  memory allocation in small chunks could be almost as fast and efficient
-  as in big ones.
-
- ****************************************************************************/
-
-namespace schubert {
-
-
-/*
-  This constructor also manages the resizing of the calling SchubertContext |p|
-  from its current |size| to |size+c|. It is called through |d_history.emplace|
-  from |SchubertContext::increase_size| (which on its turn is called by
-  |SchubertContext::extend_context|), so the object constructed ends up at the
-  top of the |d_history| stack.
-
-  The main reason for this helper class is that its constuctor allocates, and
-  its destructor deallocates, a block of memory into which the |d_star| pointers
-  in the parent class point (so elements have this information in the same
-  memory block if and only if they were added in the same sweep (call to
-  |increase_size|) from within |fullExtendion|. This also used to be the case
-  for the |d_shift| table, but that is now a single |matrix| in |SchubertContext|.
-*/
-SchubertContext::ContextExtension::ContextExtension
-  (SchubertContext& p, const Ulong& c)
-  : d_schubert(p)
-  , d_size(c)
-  , d_star()
-{
-  if (c == 0)
-    return;
-
-  Ulong n = p.size()+c; // the new size for the context
-
-  p.d_length.reserve(n);
-  p.d_hasse.reserve(n);
-  p.d_descent.reserve(n);
-  p.d_shift.grow(n,coxtypes::undef_coxnbr); // extend with entirely undefined rows
-  if (ERRNO)
-    goto revert;
-
-  /* make room for shift tables and star tables */
-
-  for (Ulong j = 0; j < 2ul*p.rank(); ++j)
-    p.d_downset[j].set_capacity(n);
-
-  p.d_parity[0].set_capacity(n);
-  p.d_parity[1].set_capacity(n);
-
-  if (ERRNO)
-    goto revert;
-
-  p.d_size = n;
-
-  return;
-
- revert:
-  p.d_shift.shrink(p.d_size);
-  for (Ulong j = 0; j < 2*static_cast<Ulong>(p.rank()); ++j) {
-    p.d_downset[j].set_capacity(p.d_size);
-  }
-  p.d_parity[0].set_capacity(p.d_size);
-  p.d_parity[1].set_capacity(p.d_size);
-  return;
-}
-
-
-/*
-  Destruction of a context extension.
-
-  NOTE : this is currently unfinished, and usable only for the destruction
-  of a whole context. It should resize the lists downwards, and put
-  coxtypes::undef_coxnbr values where appropriate (this can be determined by running
-  through the deleted elements.) Also, it could take care of freeing
-  the superfluous coatom lists.
-*/
-SchubertContext::ContextExtension::~ContextExtension()
-{
-  SchubertContext& p = d_schubert;
-  p.d_size -= d_size;
-} // |SchubertContext::ContextExtension::~ContextExtension|
 
 };
 
