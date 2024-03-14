@@ -244,8 +244,7 @@ void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
 
   coxtypes::CoxNbr y = h[h.size()-1].x();
 
-  bits::Permutation a(0);
-  bits::sortI(h,nfc,a);
+  bits::Permutation a = bits::inverse_standardization(h,nfc);
 
   io::print(file,traits.prefix[basisH]);
   printHeckeElt(file,h,a,p,I,hTraits,pTraits,p.length(y));
@@ -334,28 +333,28 @@ void printCoefficient(FILE* file, const C& c, PolynomialTraits& traits)
   return;
 }
 
-template <class KL>
-  void printDuflo(FILE* file, const list::List<coxtypes::CoxNbr>& dl, const bits::Partition& pi,
-		  KL& kl, const interface::Interface& I, OutputTraits& traits)
 
 /*
-  This function prints out the Duflo involutions on the file. The list
-  d is the list of Duflo involutions; the partition pi is the partition
-  of the group into left cells. We print out the Duflo involutions in
-  the usual ordering in which we print out the left cells, viz. order
-  the cells by shortlex ordering of their shortlex-smallest elements.
+  Print out the Duflo involutions on the file. The list |d| is the list of Duflo
+  involutions; the partition |pi| is the partition of the group into left cells.
+  We print out the Duflo involutions in the usual ordering in which we print out
+  the left cells, viz. order the cells by shortlex ordering of their
+  shortlex-smallest elements.
 */
 
+template <class KL>
+  void printDuflo
+    (FILE* file,
+     const list::List<coxtypes::CoxNbr>& dl, const bits::Partition& pi,
+     KL& kl, const interface::Interface& I, OutputTraits& traits)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
   // print duflo involutions
 
-  list::List<coxtypes::CoxNbr> min(0);
   schubert::NFCompare nfc(p,I.order());
-  minReps(min,pi,nfc);
-  bits::Permutation a(0);
-  bits::sortI(min,nfc,a);
+  schubert::CoxNbrList min = minimal_class_reps(pi,nfc);
+  bits::Permutation a = bits::inverse_standardization(min,nfc);
 
   int d = io::digits(dl.size()-1,10);
 
@@ -431,17 +430,11 @@ void printExtremals(FILE* file, const coxtypes::CoxNbr& y, KL& kl, const interfa
 template <class H>
   void printHeckeElt(FILE* file, const H& h, const schubert::SchubertContext& p,
 		     const interface::Interface& I, OutputTraits& traits, const coxtypes::Length& l)
-
-/*
-  Does the printing of the sorted Hecke algebra element.
-*/
-
 {
   typedef typename H::value_type::PolType P;
   hecke::NFCompare<P> nfc(p,I.order());
 
-  bits::Permutation a(0);
-  bits::sortI(h,nfc,a);
+  bits::Permutation a = bits::inverse_standardization(h,nfc);
 
   printHeckeElt(file,h,a,p,I,traits.heckeTraits,traits.polTraits,l);
 

@@ -1297,11 +1297,6 @@ void interface_f()
 }
 
 void interval_f()
-
-/*
-  Response to the interval command.
-*/
-
 {
   coxtypes::CoxWord g(0);
   coxtypes::CoxWord h(0);
@@ -1331,27 +1326,21 @@ void interval_f()
 
   interactive::OutputFile file;
 
-  bits::BitMap b(W->contextSize());
-  W->extractClosure(b,y);
+  bitmap::BitMap b = W->closure(y);
 
-  bits::BitMap::ReverseIterator b_rend = b.rend();
-  list::List<coxtypes::CoxNbr> res(0);
+  schubert::CoxNbrList res;
 
-  for (bits::BitMap::ReverseIterator i = b.rbegin(); i != b_rend; ++i)
-    if (not W->inOrder(x,*i)) {
-      bits::BitMap bi(W->contextSize());
-      W->extractClosure(bi,*i);
-      coxtypes::CoxNbr z = *i; // andnot will invalidate iterator
-      b.andnot(bi);
-      b.setBit(z);   // otherwise the decrement will not be correct
-    } else
-      res.append(*i);
+  for (size_t z = y+1; b.back_up(z); ) // |b| pruned in reverse iteration
+    if (W->inOrder(x,z))
+      res.push_back(z);
+    else
+      b.andnot(W->closure(z));
 
   schubert::NFCompare nfc(W->schubert(),W->ordering());
-  bits::Permutation a(res.size());
-  sortI(res,nfc,a);
+  bits::Permutation a = bits::inverse_standardization(res,nfc);
 
-  for (size_t j = 0; j < res.size(); ++j) {
+  for (size_t j = 0; j < res.size(); ++j)
+  {
     W->print(file.f(),res[a[j]]);
     fprintf(file.f(),"\n");
   }
@@ -3201,8 +3190,7 @@ void main_entry()
 */
 void interf::in_entry()
 {
-  bits::Permutation a(W->interface().order());
-  a.inverse();
+  bits::Permutation a = W->interface().order().inverse();
 
   printf("current input symbols are the following :\n\n");
   interactive::printInterface(stdout,W->interface().inInterface(),a);
@@ -3225,8 +3213,7 @@ void interf::in_exit()
   if (in_buf == nullptr) // hack to prevent execution in special cases
     return;
 
-  bits::Permutation a(W->interface().order());
-  a.inverse();
+  bits::Permutation a = W->interface().order().inverse();
 
   /* at this point in_buf holds the full putative new interface; we
    need to check for reserved or repeated non-empty symbols */
@@ -3274,8 +3261,7 @@ void interf::out_entry()
   in_buf.reset
     (new interface::GroupEltInterface(W->interface().outInterface()));
 
-  bits::Permutation a(W->interface().order());
-  a.inverse();
+  bits::Permutation a = W->interface().order().inverse();
 
   printf("current output symbols are the following :\n\n");
   interactive::printInterface(stdout,*in_buf,W->interface().inInterface(),a);
@@ -3292,8 +3278,7 @@ void interf::out_exit()
   if (in_buf == nullptr) // hack to prevent execution in special cases
     return;
 
-  bits::Permutation a(W->interface().order());
-  a.inverse();
+  bits::Permutation a = W->interface().order().inverse();
 
   printf("new output symbols:\n\n");
   interactive::printInterface(stdout,*in_buf,W->interface().inInterface(),a);

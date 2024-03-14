@@ -953,8 +953,7 @@ void printOrdering(FILE* file, const coxgroup::CoxGroup* W)
 */
 
 {
-  bits::Permutation a(W->interface().order());
-  a.inverse();
+  bits::Permutation a = W->interface().order().inverse();
 
   for (Ulong j = 0; j < a.size(); ++j) {
     coxtypes::Generator s = a[j];

@@ -569,17 +569,16 @@ void CoxGroup::activateUEKL()
   return;
 }
 
-void CoxGroup::cBasis(kl::HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
-  Puts in h the data of the full row for y in the K-L context corresponding
+  Put in h the data of the full row for y in the K-L context corresponding
   to y, sorted in the order of the current normal forms. Activates the
   context if necessary.
 */
-
+void CoxGroup::cBasis(kl::HeckeElt& h, const coxtypes::CoxNbr& y)
 {
   activateKL();
-  kl::cBasis(h,y,*d_kl);
+  h = kl::cBasis(y,*d_kl);
   return;
 }
 
@@ -838,17 +837,16 @@ void CoxGroup::permute(const bits::Permutation& a)
   return;
 }
 
-void CoxGroup::uneqcBasis(uneqkl::HeckeElt& h, const coxtypes::CoxNbr& y)
 
 /*
-  Puts in h the data of the full row for y in the K-L context corresponding
+  Put into h the data of the full row for y in the K-L context corresponding
   to y, sorted in the order of the current normal forms. Activates the
   context if necessary.
 */
-
+void CoxGroup::uneqcBasis(uneqkl::HeckeElt& h, const coxtypes::CoxNbr& y)
 {
   activateUEKL();
-  uneqkl::cBasis(h,y,*d_uneqkl);
+  h = uneqkl::cBasis(y,*d_uneqkl);
   return;
 }
 

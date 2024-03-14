@@ -39,7 +39,7 @@ namespace uneqkl {
 /******** function declarations **********************************************/
 
 namespace uneqkl {
-  void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl);
+  HeckeElt cBasis(const coxtypes::CoxNbr& y, KLContext& kl);
   const MuPol& errorMuPol();
   const KLPol& errorPol();
   const KLPol& one();

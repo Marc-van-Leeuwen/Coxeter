@@ -161,7 +161,7 @@ class KLContext {
 
 /******** function declarations *********************************************/
 
-  void cBasis(HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl);
+  HeckeElt cBasis(coxtypes::CoxNbr y, KLContext& kl);
   void extractDufloInvolutions(const KLContext& kl, const bits::Partition& pi,
 			       bits::BitMap& b);
   void genericSingularities

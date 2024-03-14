@@ -88,7 +88,7 @@ template<class P> struct NFCompare {
     :p(q),order(generator_ordering) {};
   ~NFCompare() {};
   bool operator()(const HeckeMonomial<P>& a, const HeckeMonomial<P>& b) const
-    {return shortLexOrder(p,a.x(),b.x(),order);}
+    {return shortlex_leq(p,order,a.x(),b.x());}
 }; // |template<class P> struct NFCompare|
 
 }; // |namespace hecke|

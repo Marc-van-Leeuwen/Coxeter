@@ -1352,7 +1352,6 @@ void KLContext::KLHelper::coatom_correct_row
   (containers::vector<KLPol>& pol,coxtypes::CoxNbr y)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b;
   const klsupport::ExtrRow& e = extrList(y);
   coxtypes::Generator s = last(y);
   coxtypes::CoxNbr ys = p.rshift(y,s);
@@ -1364,7 +1363,7 @@ void KLContext::KLHelper::coatom_correct_row
     if (p.shift(z,s) > z)
       continue;
 
-    b = p.closure(z);
+    bitmap::BitMap b = p.closure(z);
     schubert::select_maxima_for(p,b,p.descent(y));
 
     Ulong i = 0;
@@ -2889,20 +2888,17 @@ schubert::Homology ihBetti(coxtypes::CoxNbr y, KLContext& kl)
   but is now usually denoted c. The C-basis from the K-L paper doesn't seem
   worth implementing.
 */
-void cBasis(HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl)
+HeckeElt cBasis(coxtypes::CoxNbr y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
-  bits::BitMap b(0);
-  p.extractClosure(b,y);
+  bitmap::BitMap b = p.closure(y);
 
-  bits::BitMap::Iterator b_end = b.end();
-  h.clear();
+  HeckeElt result(b.size());
 
-  for (bits::BitMap::Iterator x = b.begin(); x != b_end; ++x) {
-    const KLPol& pol = kl.klPol(*x,y);
-    h.emplace_back(*x,&pol);
-  }
+  for (coxtypes::CoxNbr x : b)
+    result.emplace_back(x,&kl.klPol(x,y));
+  return result;
 }
 
 

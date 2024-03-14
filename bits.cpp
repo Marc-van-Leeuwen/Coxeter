@@ -46,9 +46,12 @@
       - Permutation(n);
       - ~Permutation();
 
+    - accessors
+
+      - inverse() : inverse of the permutation;
+
     - manipulators :
 
-      - inverse() : inverts the permutation;
       - compose(a) : increment by a under right composition;
       - leftCompose(a) : same on the left;
 
@@ -60,13 +63,11 @@ Permutation::Permutation():List<Ulong>()
 
 {}
 
-Permutation::Permutation(const Ulong& n):List<Ulong>(n)
+Permutation::Permutation(const Ulong& n)
+  : List<Ulong>()
+{ identity(n);
+}
 
-{}
-
-Permutation::~Permutation()
-
-{}
 
 Permutation& Permutation::identity(const Ulong& n)
 
@@ -85,25 +86,17 @@ Permutation& Permutation::identity(const Ulong& n)
 }
 
 
-/*
-  Invert the current permutation : new(old(x)) = x. This is a little
-  bit more tricky than our usual inversions, because it involves the
-  permutation itselves; we've opted for safety and used a buffer for the
-  whole permutation.
-*/
-Permutation& Permutation::inverse()
+// Inverse of |*this| : new(old(x)) = x.
+Permutation Permutation::inverse() const
 {
-  static Permutation i(0);
+  Permutation result(size());
 
-  i.setSize(size());
-  Permutation& t = *this;
+  const Permutation& t = *this; // for more readable subscription
 
   for (SetElt x = 0; x < size(); ++x)
-    i[t[x]] = x;
+    result[t[x]] = x;
 
-  t.assign(i);
-
-  return t;
+  return result;
 }
 
 Permutation& Permutation::rightCompose(const Permutation& a)

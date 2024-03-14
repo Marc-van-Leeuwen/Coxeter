@@ -42,13 +42,12 @@ namespace schubert {
   containers::sl_list<Ulong> indices_of_maxima
   (const SchubertContext& p, containers::vector<coxtypes::CoxNbr>& c);
   void select_maxima_for
-    (const SchubertContext& p, bits::BitMap& b, const Lflags& f);
-  void select_maxima_for
     (const SchubertContext& p, bitmap::BitMap& b, Lflags f);
-  Ulong min(const bits::Set& c, NFCompare& nfc);
-  Ulong minDescent(const GenSet& f, const bits::Permutation& order);
-  void minimize
-    (const SchubertContext& p, bits::BitMap& b, const Lflags& f);
+  coxtypes::Generator first_flagged(GenSet f, const bits::Permutation& order);
+  bool shortlex_leq(const SchubertContext& p, const bits::Permutation& order,
+		    coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+  Ulong sum(const Homology& h);
+
   void print(FILE* file, SchubertContext& p);
   void printBitMap(FILE* file, const bits::BitMap& pi, const SchubertContext& p,
 		   const interface::Interface& I);
@@ -61,13 +60,7 @@ namespace schubert {
   void printPartition
     (FILE* file, const bits::Partition& pi, const bits::BitMap& b,
      const SchubertContext& p, const interface::Interface& I);
-  void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b);
-  void read_bitmap
-    (CoxNbrList& c, const bits::BitMap& b);
-  bool shortLexOrder(const SchubertContext& p, coxtypes::CoxNbr x,
-		     coxtypes::CoxNbr y, const bits::Permutation& order);
-  void setBitMap(bits::BitMap& b, const list::List<coxtypes::CoxNbr>& c);
-  Ulong sum(const Homology& h);
+
 };
 
 /******** type definitions *************************************************/
@@ -82,7 +75,7 @@ struct NFCompare {
     :p(q),order(generator_ordering) {};
   ~NFCompare() {};
   bool operator()(coxtypes::CoxNbr x, coxtypes::CoxNbr y)
-  {return shortLexOrder(p,x,y,order);}
+  { return shortlex_leq(p,order,x,y); }
 };
 
 class AbstractSchubertContext {
@@ -98,9 +91,8 @@ class AbstractSchubertContext {
   virtual Lflags ascent(coxtypes::CoxNbr x) const = 0;
   virtual coxtypes::CoxNbr contextNumber(const coxtypes::CoxWord& g) const = 0;
   virtual Lflags descent(coxtypes::CoxNbr x) const = 0;
-  virtual const bits::BitMap& downset(coxtypes::Generator s) const = 0;
+  virtual const bitmap::BitMap& down_set(coxtypes::Generator s) const = 0;
   virtual void extendSubSet(bits::SubSet& q, coxtypes::Generator s) const = 0;
-  virtual void extractClosure(bits::BitMap& b, coxtypes::CoxNbr x) const = 0;
   virtual coxtypes::Generator firstDescent(coxtypes::CoxNbr x) const = 0;
   virtual coxtypes::Generator firstLDescent(coxtypes::CoxNbr x) const = 0;
   virtual coxtypes::Generator firstRDescent(coxtypes::CoxNbr x) const = 0;
@@ -212,10 +204,10 @@ public:
     { return firstRDescent(x,order); }
   coxtypes::Generator firstLDescent
     (coxtypes::CoxNbr x, const bits::Permutation& order) const
-    { return minDescent(ldescent(x),order); }
+    { return first_flagged(ldescent(x),order); }
   coxtypes::Generator firstRDescent
     (coxtypes::CoxNbr x, const bits::Permutation& order) const
-    { return minDescent(rdescent(x),order); }
+    { return first_flagged(rdescent(x),order); }
 
   bool isDescent(coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return (d_descent[x]&constants::eq_mask[s])!=0; } // whether Right descent
@@ -231,8 +223,6 @@ public:
 
   const bitmap::BitMap& down_set(coxtypes::Generator s) const
     { return d_downset[s]; }
-  bits::BitMap downset(coxtypes::Generator s) const
-  { return bits::BitMap(down_set(s)); } // convert
   const CoxNbrList& hasse(coxtypes::CoxNbr x) const { return d_hasse[x]; }
   const type::Type& type() const { return d_graph.type(); }
 

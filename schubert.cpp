@@ -207,7 +207,7 @@ coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) cons
   return x;
 }
 
-
+#if 0
 /*
   Put into |b| the subset $[e,x]$ of |p|. It is assumed that |b|
   is capable of holding a subset of |p|.
@@ -232,6 +232,7 @@ void SchubertContext::extractClosure
 
   return;
 }
+#endif
 
 // the following function uses a double representation |q|,|elements| for speed
 // iteration is over (initial) elements, (old) membership is tested though |q|
@@ -361,14 +362,12 @@ coxtypes::CoxNbr SchubertContext::minimize
   is for use in i/o functions.
 */
 coxtypes::CoxWord& SchubertContext::normalForm
-  (coxtypes::CoxWord& g, coxtypes::CoxNbr d_x,
-   const bits::Permutation& order) const
+  (coxtypes::CoxWord& g, coxtypes::CoxNbr x, const bits::Permutation& order) const
 {
   g.reset();
-  coxtypes::CoxNbr x = d_x;
 
   while (x>0) {
-    coxtypes::Generator s = minDescent(ldescent(x),order);
+    coxtypes::Generator s = firstLDescent(x,order);
     g.append(s+1);
     x = lshift(x,s);
   }
@@ -1118,7 +1117,7 @@ void ClosureIterator::operator++()
   Bruhat order and descent sets:
 
     - extractInvolutions(p,b) : extracts involutions;
-    - shortLexOrder(p,x,y) : checks if x <= y in ShortLex order;
+    - shortlex_leq(p,order,x,y) : whether $x\leq y$ in (|order| collated) ShortLex;
 
  ****************************************************************************/
 
@@ -1147,22 +1146,6 @@ bool is_involution(const SchubertContext& p,coxtypes::CoxNbr x)
 }
 
 
-/*
-  This function extracts from b the maximal elements w.r.t. f, by
-  intersecting with the appropriate downsets.
-*/
-void select_maxima_for
-  (const SchubertContext& p, bits::BitMap& b, const Lflags& f)
-{
-  Lflags f1 = f;
-
-  while(f1) {
-    coxtypes::Generator s = constants::firstBit(f1);
-    b &= p.downset(s); // retain elements for which |s| is a right descent
-    f1 &= f1-1;
-  }
-}
-
 void select_maxima_for
   (const SchubertContext& p, bitmap::BitMap& b, Lflags f)
 {
@@ -1175,44 +1158,33 @@ void select_maxima_for
 }
 
 
-bool shortLexOrder(const SchubertContext& p, coxtypes::CoxNbr d_x,
-		   coxtypes::CoxNbr d_y, const bits::Permutation& order)
 
 /*
-  This function checks if x <= y in the ShortLex order of the normal forms
-  w.r.t. the given order (as usual, this means that we compare order[] to
+  Test whether $x \leq y$ in the ShortLex order of the normal forms  w.r.t. the given order (as usual, this means that we compare order[] to
   compare generators.) In other words, the result is true iff either length(x)
   < length(y), or lengths are equal and firstterm(x) < firstterm(y), or
   firstterms are equal (to s), and sx <= sy in ShortLex order.
 */
-
+bool shortlex_leq(const SchubertContext& p, const bits::Permutation& order,
+		  coxtypes::CoxNbr x, coxtypes::CoxNbr y)
 {
-  if (d_x == d_y)
+  if (x == y) // since this test is fast, get the equality case out of the way
     return true;
-  if (p.length(d_x) < p.length(d_y))
-    return true;
-  if (p.length(d_x) > p.length(d_y))
-    return false;
+  if (p.length(x) != p.length(y))
+    return p.length(x) < p.length(y);
 
-  coxtypes::CoxNbr x = d_x;
-  coxtypes::CoxNbr y = d_y;
+  coxtypes::Generator s_x = p.firstLDescent(x,order); // runs over letters of |x|
+  coxtypes::Generator s_y = p.firstLDescent(y,order); // runs over letters of |y|
 
-  coxtypes::Generator s_x = p.firstLDescent(x,order);
-  coxtypes::Generator s_y = p.firstLDescent(y,order);
-
-  while (s_x == s_y) {
-    x = p.lshift(x,s_x);
-    y = p.lshift(y,s_y);
-    s_x = p.firstLDescent(x,order);
-    s_y = p.firstLDescent(y,order);
+  while (s_x == s_y)
+  {
+    assert(x>0 and y>0); // since equality and unequal length cases are handled
+    s_x = p.firstLDescent(x = p.lshift(x,s_x),order);
+    s_y = p.firstLDescent(y = p.lshift(y,s_y),order);
   }
 
-  if (order[s_x] < order[s_y])
-    return true;
-  if (order[s_x] > order[s_y])
-    return false;
-
-  return false; // unreachable
+  // now we are at the fisrt difference of letters
+  return order[s_x] < order[s_y];
 }
 
 };
@@ -1404,7 +1376,7 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
    - h = betti(y,p) : puts in h the betti numbers of [e,y];
    - min(c,nfc) : extracts the minimal element from c;
    - extractMaximals(p,c) : extracts from c the list of its maximal elements;
-   - minDescent(f,order) : finds the smallest element in f w.r.t. order;
+   - first_flagged(f,order) : finds the smallest element in f w.r.t. order;
    - readBitMap(c,b) : reads b into c;
    - setBitMap(b,c) : reads c into b;
    - sum(h) : returns the sum of the terms in h;
@@ -1431,27 +1403,6 @@ Homology betti(coxtypes::CoxNbr y, const SchubertContext& p)
   return result;
 }
 
-
-/*
-  This function extracts the minimal element form c. It is defined for
-  Set instead of list::List<coxtypes::CoxNbr> so as to be able to apply it directly to
-  partition classes.
-*/
-Ulong min(const Set& c, NFCompare& nfc)
-{
-  if (c.size() == 0)
-    return coxtypes::undef_coxnbr;
-
-  Ulong m = c[0];
-
-  for (Ulong j = 1; j < c.size(); ++j) {
-    if (!nfc(m,c[j]))
-      m = c[j];
-  }
-
-  return m;
-}
-
 containers::sl_list<Ulong> indices_of_maxima
 (const SchubertContext& p, containers::vector<coxtypes::CoxNbr>& c)
 {
@@ -1476,36 +1427,15 @@ containers::sl_list<Ulong> indices_of_maxima
 
   NOTE : the return value is BITS(Ulong) if f is empty.
 */
-Ulong minDescent(const GenSet& d_f, const bits::Permutation& order)
+coxtypes::Generator first_flagged(GenSet f, const bits::Permutation& order)
 {
-  GenSet f = d_f;
-  Ulong m = constants::firstBit(f);
-  f &= f-1;
-
-  for (; f; f &= f-1) {
-    Ulong m1 = constants::firstBit(f);
-    if (order[m1] < order[m])
-      m = m1;
-  }
-
-  return m;
+  Permutation inv = order.inverse();
+  for (coxtypes::Generator s : inv)
+    if ((f&constants::eq_mask[s])!=0)
+      return s;
+  return BITS(Ulong); // better assert(false) or throw an error
 }
 
-
-/*
-  This function reads in c from b (analogous to readBitMap in bits::SubSet).
-*/
-void readBitMap(list::List<coxtypes::CoxNbr>& c, const bits::BitMap& b)
-{
-  c.setSize(b.bitCount());
-
-  bits::BitMap::Iterator i =  b.begin();
-
-  for (Ulong j = 0; j < c.size(); ++j) {
-    c[j] = *i;
-    ++i;
-  }
-}
 
 void read_bitmap(CoxNbrList& c, const bits::BitMap& b)
 {
@@ -1521,24 +1451,6 @@ void read_bitmap(CoxNbrList& c, const bits::BitMap& b)
   }
 }
 
-};
-
-namespace schubert {
-
-void setBitMap(bits::BitMap& b, const list::List<coxtypes::CoxNbr>& c)
-
-/*
-  Reads c into b. It is assumed that b has already been set to the current
-  context size.
-*/
-
-{
-  b.reset();
-
-  for (Ulong j = 0; j < c.size(); j++)
-    b.setBit(c[j]);
-}
-
 Ulong sum(const Homology& h)
 {
   Ulong s = 0;
@@ -1549,4 +1461,4 @@ Ulong sum(const Homology& h)
   return s;
 }
 
-};
+}; // |namespace schubert|

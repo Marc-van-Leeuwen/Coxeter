@@ -7,6 +7,8 @@
 
 #include "files.h"
 
+#include <algorithm>
+
 #include "cells.h"
 #include "directories.h"
 #include "posets.h"
@@ -994,16 +996,15 @@ void printBetti(FILE* file, const coxtypes::CoxNbr& y,
   return;
 }
 
-void printCellOrder(FILE* file, const OrientedGraph& X,
-		    const schubert::SchubertContext& p, const interface::Interface& I,
-		    PosetTraits& traits)
 
 /*
-  This function prints out the poset of cells defined by the graph X. The
-  interface parameter is needed to determine the shortLex ordering of the
-  elements.
+  Print to |file| the poset of cells defined by the graph |X|. The interface
+  argument is needed to determine the shortlex ordering of the elements.
 */
-
+void printCellOrder(FILE* file, const OrientedGraph& X,
+		    const schubert::SchubertContext& p,
+		    const interface::Interface& I,
+		    PosetTraits& traits)
 {
   OrientedGraph P(0);
   bits::Partition pi(0);
@@ -1018,8 +1019,7 @@ void printCellOrder(FILE* file, const OrientedGraph& X,
   schubert::NFCompare nfc(p,I.order());
   bits::Permutation a(0);
   sortLists(lc,nfc,a);
-  a.inverse();
-  H.permute(a);
+  H.permute(a.inverse());
 
   io::print(file,traits.prefix);
 
@@ -1043,8 +1043,6 @@ void printCellOrder(FILE* file, const OrientedGraph& X,
   }
 
   io::print(file,traits.postfix);
-
-  return;
 }
 
 void printCoatoms(FILE* file, const coxtypes::CoxNbr& y, const schubert::SchubertContext& p,
@@ -1274,8 +1272,7 @@ void printWGraph(FILE* file, const WGraph& X, const Lflags& f,
 
     - appendModifier(str,d,m,traits) : does the printing of the modifier;
     - appendSeparator(str,n,traits) : does the printing of the separator;
-    - minReps(min,pi,c) : extracts minimal representatives of the classes in
-      pi;
+    - minimal_class_reps(pi,c) : minimal representatives of the classes in |pi|;
     - printModifier(str,d,m,traits) : does the printing of the modifier;
     - printSeparator(file,n,traits) : does the printing of the separator;
     - setTwoSided(traits,f) : sets *traits.twoSided to f;
@@ -1324,20 +1321,23 @@ void appendSeparator(std::string& str, const Ulong& n, HeckeTraits& traits)
   return;
 }
 
-void minReps(list::List<coxtypes::CoxNbr>& min, const bits::Partition& pi, schubert::NFCompare& c)
 
 /*
-  Extracts the minimal representative from each class in pi, for the comparison
+  Extract the minimal representative from each class in pi, for the comparison
   functor c, and writes it in min, in the order of the partition numbers.
 */
-
+schubert::CoxNbrList minimal_class_reps
+  (const bits::Partition& pi, schubert::NFCompare& c)
 {
-  for (bits::PartitionIterator i(pi); i; ++i) {
-    coxtypes::CoxNbr x = schubert::min(i(),c);
-    min.append(x);
+  schubert::CoxNbrList result;
+  result.reserve(pi.classCount());
+  for (bits::PartitionIterator pit(pi); pit; ++pit)
+  {
+    const bits::Set& pi_class = pit();
+    coxtypes::CoxNbr x = *std::min_element(pi_class.begin(),pi_class.end(),c);
+    result.push_back(x);
   }
-
-  return;
+  return result;
 }
 
 void pad(std::string& str, const Ulong& n, HeckeTraits& traits)
@@ -1425,18 +1425,17 @@ void sortLists(list::List<list::List<coxtypes::CoxNbr> >& lc, schubert::NFCompar
   return;
 }
 
-void writeClasses(list::List<list::List<coxtypes::CoxNbr> >& lc, const bits::Partition& pi)
 
 /*
-  This function writes out in lc the various classes of the partition pi.
+  Write out in lc the various classes of the partition pi.
 */
-
+void writeClasses(list::List<list::List<coxtypes::CoxNbr> >& lc, const bits::Partition& pi)
 {
   lc.setSize(pi.classCount());
   Ulong j = 0;
 
-  for (bits::PartitionIterator i(pi); i; ++i) {
-    new(&lc[j]) list::List<coxtypes::CoxNbr>(i().begin(),i().end());
+  for (bits::PartitionIterator pit(pi); pit; ++pit) {
+    new(&lc[j]) list::List<coxtypes::CoxNbr>(pit().begin(),pit().end());
     ++j;
   }
 

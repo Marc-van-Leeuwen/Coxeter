@@ -50,8 +50,8 @@ namespace bits {
   template <class T, class F> void sortI_f(const list::List<T>& r, F& f,
 					   Permutation& a);
   template <class T> void sortI(const containers::vector<T>& r, Permutation& a);
-  template <class T, class C> void sortI
-    (const containers::vector<T>& r, C& inOrder, Permutation& a);
+  template <class T, class C> Permutation inverse_standardization
+    (const containers::vector<T>& r, C& less);
   template <class T, class F> void sortI_f
     (const containers::vector<T>& r, F& f, Permutation& a);
 };
@@ -60,15 +60,15 @@ namespace bits {
 
 #include "constants.h"
 
-class bits::Permutation:public Set {
+class bits::Permutation:public Set
+{
  public:
 /* constructors and destructors */
   Permutation();
-  Permutation(const Ulong& n);
-  ~Permutation();
+  Permutation(const Ulong& n); // identity of size |n|
 /* manipulators */
-  Permutation& identity(const Ulong& n);
-  Permutation& inverse();
+  Permutation& identity(const Ulong& n); // assign identity to |*this| (returned)
+  Permutation inverse() const;
   Permutation& compose(const Permutation& a);
   Permutation& rightCompose(const Permutation& a);
 };
@@ -477,8 +477,6 @@ template <class T> void sortI(const containers::vector<T>& r, Permutation& a)
   }
 } // |sortI(r,a)|
 
-template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
-				      Permutation& a)
 
 /*
   General sort function taking a comparison functor as a parameter.
@@ -489,7 +487,8 @@ template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
   Doesn't actually modify r; it only writes down in a the permutation
   s.t. new[j] = old[a[j]].
 */
-
+template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
+				      Permutation& a)
 {
   a.identity(r.size());
 
@@ -515,20 +514,16 @@ template <class T, class C> void sortI(const list::List<T>& r, C& inOrder,
   return;
 }
 
-
-/*
-  General sort function taking a comparison functor as a parameter.
-  It is assumed that inOrder takes two arguments of type T, and returns
-  a boolean value, so that the corresponding relation is a total preorder
-  relation.
-
-  Doesn't actually modify r; it only writes to |a| the permutation
-  s.t. new[j] = old[a[j]].
+/* The permutation computed by |sortI| is called the inverse standardization in
+   combinatorics, because it is the inverse of the "standardization"
+   permutation, the one that assigns to each position the rank of the
+   corresponding entry in the ordering (so any permutation is its own
+   standardization).
 */
-template <class T, class C> void sortI
-  (const containers::vector<T>& r, C& inOrder, Permutation& a)
+template <class T, class C> Permutation inverse_standardization
+  (const containers::vector<T>& r, C& less)
 {
-  a.identity(r.size());
+  Permutation pi(r.size());
 
   /* set the starting value of h */
   Ulong h = 1;
@@ -537,23 +532,24 @@ template <class T, class C> void sortI
 
   for (; h > 0; h /= 3)
   { // sort classes modulo |h| of indices in |a|
-    for (Ulong j = h; j < a.size(); ++j)
+    for (Ulong j = h; j < pi.size(); ++j)
     {
-      const Ulong key = a[j]; // an index into |r|
+      const Ulong key = pi[j]; // an index into |r|
       const T& val = r[key];
       // insertion sort |key| into subarray of |a| at |h|-class of |j| upto |j|
       Ulong i = j; // the index into |a| where a value was last moved from
       for ( ; i>=h; i-=h)
       {
-	if (inOrder(r[a[i-h]],val))
+	if (less(r[pi[i-h]],val))
 	  break; // don't use |i-h|, the place is |i|
-	a[i] = a[i-h]; // move index |h| places up, leaving |a[i-h]| moved from
+	pi[i] = pi[i-h]; // move index |h| places up, leaving |a[i-h]| moved from
       }
       // now |i| is the index into |a| to move |key| to
-      a[i] = key;
+      pi[i] = key;
     }
   }
-} // |sortI(r,inOrder,a)|
+  return pi;
+} // |inverse_standardization(r,inOrder)|
 
 template <class T, class F> void sortI_f(const list::List<T>& r, F& f,
 					 Permutation& a)

@@ -894,10 +894,9 @@ void lWGraph(wgraph::WGraph& X, kl::KLContext& kl)
   return;
 }
 
-void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 /*
-  This function constructs the left W-graph for the subset q. It is
+  Construct the left W-graph for the subset q. It is
   assumed that q is a union of left cells (typically, q might be a right
   descent class, or one of the classes provided by GeneralizedTau).
 
@@ -907,18 +906,18 @@ void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
   It is assumed that q is sorted in increasing order.
 */
-
+void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 {
   static list::List<Ulong> qr(0);
 
   X.setSize(q.size());
   const schubert::SchubertContext& p = kl.schubert();
   wgraph::OrientedGraph& Y = X.graph();
-  bits::BitMap b(p.size());
 
   Y.reset();
 
-  for (Ulong j = 0; j < q.size(); ++j) {
+  for (Ulong j = 0; j < q.size(); ++j)
+  {
 
     coxtypes::CoxNbr y = q[j];
     coxtypes::Length ly = p.length(y);
@@ -927,7 +926,7 @@ void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
     X.descent(j) = p.ldescent(y);
 
-    p.extractClosure(b,y);
+    bits::BitMap b = p.closure(y); // convert
     b &= q.bitMap();
     qr.setSize(0);
 
@@ -1011,10 +1010,9 @@ void lrWGraph(wgraph::WGraph& X, kl::KLContext& kl)
   return;
 }
 
-void lrWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 /*
-  This function constructs the left W-graph for the subset q. It is
+  Construct the left W-graph for the subset q. It is
   assumed that q is a union of left cells (typically, q might be a right
   descent class, or one of the classes provided by GeneralizedTau).
 
@@ -1024,18 +1022,18 @@ void lrWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
   It is assumed that q is sorted in increasing order.
 */
-
+void lrWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 {
   static list::List<Ulong> qr(0);
 
   X.setSize(q.size());
   const schubert::SchubertContext& p = kl.schubert();
   wgraph::OrientedGraph& Y = X.graph();
-  bits::BitMap b(p.size());
 
   Y.reset();
 
-  for (Ulong j = 0; j < q.size(); ++j) {
+  for (Ulong j = 0; j < q.size(); ++j)
+  {
 
     coxtypes::CoxNbr y = q[j];
     coxtypes::Length ly = p.length(y);
@@ -1044,7 +1042,7 @@ void lrWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
     X.descent(j) = p.descent(y);
 
-    p.extractClosure(b,y);
+    bits::BitMap b = p.closure(y); // convert
     b &= q.bitMap();
     qr.setSize(0);
 
@@ -1128,30 +1126,28 @@ void rWGraph(wgraph::WGraph& X, kl::KLContext& kl)
   return;
 }
 
-void rWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 /*
   Like lWGraph, but for right W-graphs.
 */
-
+void rWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 {
   static list::List<Ulong> qr(0);
 
   X.setSize(q.size());
   const schubert::SchubertContext& p = kl.schubert();
   wgraph::OrientedGraph& Y = X.graph();
-  bits::BitMap b(p.size());
 
   Y.reset();
 
-  for (Ulong j = 0; j < q.size(); ++j) {
-
+  for (Ulong j = 0; j < q.size(); ++j)
+  {
     coxtypes::CoxNbr y = q[j];
     coxtypes::Length ly = p.length(y);
 
     X.descent(j) = p.rdescent(y);
 
-    p.extractClosure(b,y);
+    bits::BitMap b = p.closure(y); // convert
     b &= q.bitMap();
     qr.setSize(0);
 

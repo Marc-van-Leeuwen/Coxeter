@@ -179,7 +179,8 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   virtual void coatoms(list::List<coxtypes::CoxWord>& c, const coxtypes::CoxWord& g) const;
   virtual const schubert::CoxNbrList& coatoms(const coxtypes::CoxNbr& x) const
     { return schubert().hasse(x); }
-  virtual void extractClosure(bits::BitMap& b, const coxtypes::CoxNbr& x) const;  /* inlined */
+  virtual bitmap::BitMap closure(const coxtypes::CoxNbr& x) const
+    { return schubert().closure(x); }
   virtual bool inOrder(const coxtypes::CoxWord& h, const coxtypes::CoxWord& g) const; /* inlined */
   virtual bool inOrder(list::List<coxtypes::Length>& a, const coxtypes::CoxWord& h, const coxtypes::CoxWord& g)
     const;                                                        /* inlined */
@@ -315,8 +316,6 @@ inline int CoxGroup::lprod(coxtypes::CoxNbr& x, const coxtypes::Generator& s) co
 
 /* Chapter III */
 
-inline void CoxGroup::extractClosure(bits::BitMap& b, const coxtypes::CoxNbr& x) const
- {return schubert().extractClosure(b,x);}
 inline bool CoxGroup::inOrder(const coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const
  {return mintable().inOrder(g,h);}
 inline bool CoxGroup::inOrder(list::List<coxtypes::Length>& a,

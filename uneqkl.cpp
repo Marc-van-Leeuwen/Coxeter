@@ -1228,16 +1228,13 @@ void KLContext::KLHelper::mu_correct_row
       continue;
 
     coxtypes::CoxNbr z = row[j].x;
-    bits::BitMap b(size());
-    p.extractClosure(b,z);
+    bitmap::BitMap b = p.closure(z);
     schubert::select_maxima_for(p,b,p.descent(y));
 
     Ulong i = 0;
-    bits::BitMap::Iterator b_end = b.end();
 
-    for (bits::BitMap::Iterator k = b.begin(); k != b_end; ++k)
+    for (coxtypes::CoxNbr x : b)
     {
-      coxtypes::CoxNbr x = *k;
       while (e[i] < x)
 	++i;
       Ulong h = length(y)-length(z);
@@ -1248,7 +1245,7 @@ void KLContext::KLHelper::mu_correct_row
 	error::ERRNO = error::ERROR_WARNING;
 	return;
       }
-    } // |for(k)|
+    } // |for(x)|
   } // |for(j)|
 } // |mu_correct_row|
 
@@ -1374,10 +1371,9 @@ void KLContext::KLHelper::add_second_terms
   (containers::vector<KLPol>& pol, coxtypes::CoxNbr y, coxtypes::Generator s)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b(size());
   coxtypes::CoxNbr ys = p.rshift(y,s);
 
-  p.extractClosure(b,ys);
+  bitmap::BitMap b = p.closure(ys);
   schubert::select_maxima_for(p,b,p.descent(y));
 
   Ulong i = 0;
@@ -1568,20 +1564,18 @@ KLPol& KLPol::subtract(const KLPol& p, const MuPol& mp, const Ulong& n)
  ****************************************************************************/
 
 
-void cBasis(HeckeElt& h, const coxtypes::CoxNbr& y, KLContext& kl)
+HeckeElt cBasis(const coxtypes::CoxNbr& y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
-  bits::BitMap b(0);
-  p.extractClosure(b,y);
+  bitmap::BitMap b = p.closure(y);
 
-  bits::BitMap::Iterator b_end = b.end();
-  h.clear();
+  HeckeElt result(b.size());
 
-  for (bits::BitMap::Iterator x = b.begin(); x != b_end; ++x) {
-    const KLPol& pol = kl.klPol(*x,y);
-    h.emplace_back(*x,&pol); // add a |HeckeMonomial<KLPol>|
-  }
+
+  for (coxtypes::CoxNbr x : b)
+    result.emplace_back(x,&kl.klPol(x,y));
+  return result;
 }
 
 /*****************************************************************************

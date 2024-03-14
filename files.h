@@ -70,9 +70,9 @@ template <class KL>
   void makeWGraph
     (wgraph::WGraph& X, const list::List<coxtypes::CoxNbr>& c,
      const Lflags& f, KL& kl);
-void minReps
-  (list::List<coxtypes::CoxNbr>& min, const bits::Partition& pi,
-   schubert::NFCompare& c);
+schubert::CoxNbrList minimal_class_reps
+  (const bits::Partition& pi, schubert::NFCompare& c);
+
 void pad(std::string& str, const Ulong& n, HeckeTraits& traits);
 template<class H>
   void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
