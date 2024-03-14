@@ -489,8 +489,7 @@ template <class KL>
   void printIHBetti(FILE* file, const coxtypes::CoxNbr& y, KL& kl, OutputTraits& traits)
 
 {
-  schubert::Homology h(0);
-  ihBetti(h,y,kl);
+  schubert::Homology h = ihBetti(y,kl);
 
   io::print(file,traits.prefix[ihBettiH]);
   printHomology(file,h,traits);
@@ -916,9 +915,9 @@ template <class KL>
 }
 
 template <class KL>
-  void printSingularStratification(FILE* file, const coxtypes::CoxNbr& y, KL& kl,
-				   const interface::Interface& I, OutputTraits& traits)
-
+  void printSingularStratification
+   (FILE* file, const coxtypes::CoxNbr& y, KL& kl,
+    const interface::Interface& I, OutputTraits& traits)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
@@ -928,8 +927,7 @@ template <class KL>
     error::Error(error::ERRNO);
     return;
   }
-  kl::HeckeElt hs(0);
-  hecke::singularStratification(hs,h,p);
+  kl::HeckeElt hs = hecke::singular_stratification(p,h);
 
   if (hs.size() == 0) { // singular locus is empty
     io::print(file,traits.emptySingularStratification);

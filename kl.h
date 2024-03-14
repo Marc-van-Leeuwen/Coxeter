@@ -166,7 +166,7 @@ class KLContext {
 			       bits::BitMap& b);
   void genericSingularities
     (HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl);
-  void ihBetti(schubert::Homology& h, coxtypes::CoxNbr y, KLContext& kl);
+  schubert::Homology ihBetti(coxtypes::CoxNbr y, KLContext& kl);
   const KLPol& one();
   bool isSingular(const HeckeElt& h);
   bool isSingular(const KLRow& row);

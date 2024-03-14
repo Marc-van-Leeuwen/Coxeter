@@ -203,9 +203,9 @@ class bits::PartitionIterator {
   PartitionIterator(const Partition& pi);
   ~PartitionIterator();
 /* iterator operations */
-  operator bool() const;                                         /* inlined */
+  operator bool() const { return d_valid; }
   void operator++();
-  const Set& operator()() const;                        /* inlined */
+  const Set& operator()() const { return d_class; }
 };
 
 class bits::SubSet {
@@ -280,10 +280,6 @@ namespace bits {
   inline void Partition::setSize(const Ulong& n) {d_list.setSize(n);}
   inline Ulong Partition::size() const {return d_list.size();}
 
-  inline PartitionIterator::operator bool() const
-    {return d_valid;}
-  inline const Set& PartitionIterator::operator()() const
-    {return d_class;}
 
   inline Ulong& SubSet::operator[] (const Ulong& j) {return d_list[j];}
   inline const Ulong& SubSet::operator[] (const Ulong& j) const

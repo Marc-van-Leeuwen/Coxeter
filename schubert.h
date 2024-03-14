@@ -30,20 +30,17 @@ namespace schubert {
   struct NFCompare;
 
   using CoxNbrList = containers::vector<coxtypes::CoxNbr>;
-  typedef list::List<coxtypes::BettiNbr> Homology;
+  using Homology   = containers::vector<coxtypes::BettiNbr>;
 };
 
 /******** function declarations *********************************************/
 
 
 namespace schubert {
-  void betti(Homology& h, coxtypes::CoxNbr y, const SchubertContext& p);
-  void extractInvolutions(const SchubertContext& p, bits::BitMap& b);
-  void extractMaximals
-    (const SchubertContext& p, list::List<coxtypes::CoxNbr>& c);
-  void extractMaximals
-    (const SchubertContext& p, list::List<coxtypes::CoxNbr>& c,
-     list::List<Ulong>& a);
+  Homology betti(coxtypes::CoxNbr y, const SchubertContext& p);
+  bool is_involution(const SchubertContext& p,coxtypes::CoxNbr x);
+  containers::sl_list<Ulong> indices_of_maxima
+  (const SchubertContext& p, containers::vector<coxtypes::CoxNbr>& c);
   void select_maxima_for
     (const SchubertContext& p, bits::BitMap& b, const Lflags& f);
   void select_maxima_for

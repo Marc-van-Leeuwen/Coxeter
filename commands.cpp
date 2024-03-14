@@ -2149,13 +2149,12 @@ void slocus_f ()
   printSingularLocus(file.f(),y,W->kl(),W->interface(),traits);
 }
 
-void sstratification_f ()
 
 /*
-  Response to the slocus command. Prints out the singular locus of the
+  Response to the 'slocus' command. Prints out the singular locus of the
   Schubert variety cl(X_y).
 */
-
+void sstratification_f ()
 {
   static coxtypes::CoxWord g(0);
 

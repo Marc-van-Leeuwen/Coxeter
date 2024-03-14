@@ -2832,7 +2832,7 @@ bool isSingular(const KLRow& row)
 
   The following functions are defined :
 
-   - ihBetti(h,kl,row) : puts the IH betti numbers of row in h;
+   - h = ihBetti(kl,row) : puts the IH betti numbers of row in h;
 
  *****************************************************************************/
 
@@ -2842,27 +2842,26 @@ bool isSingular(const KLRow& row)
   the value to undef_coxsize in case of overflow; this should be improved of
   course if it happens too often, using long integers for instance.
 */
-void ihBetti(schubert::Homology& h, coxtypes::CoxNbr y, KLContext& kl)
+schubert::Homology ihBetti(coxtypes::CoxNbr y, KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
-  bits::BitMap b(0);
-  p.extractClosure(b,y);
+  auto cl = p.closure(y);
 
-  h.setSize(p.length(y)+1);
-  h.setZero();
-  bits::BitMap::Iterator b_end = b.end();
+  schubert::Homology result(p.length(y)+1,0);
 
-  for (bits::BitMap::Iterator x = b.begin(); x != b_end; ++x) {
-    const KLPol& pol = kl.klPol(*x,y);
-    coxtypes::Length d = p.length(*x);
+  for (auto it = cl.begin(); it(); ++it)
+  {
+    const KLPol& pol = kl.klPol(*it,y);
+    coxtypes::Length d = p.length(*it);
     for (Ulong i = 0; i <= pol.deg(); ++i) {
-      if (h[d+i] > coxtypes::COXSIZE_MAX - pol[i])
-	h[d+i] = coxtypes::undef_coxnbr;
+      if (result[d+i] > coxtypes::COXSIZE_MAX - pol[i])
+	result[d+i] = coxtypes::undef_coxnbr;
       else
-	h[d+i] += pol[i];
+	result[d+i] += pol[i];
     }
   }
+  return result;
 }
 
 

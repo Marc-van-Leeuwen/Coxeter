@@ -40,9 +40,9 @@ namespace hecke {
   void printBasis(FILE* f, const list::List<HeckeMonomial<P> >& h,
 		  const interface::Interface& I);
   template<class P>
-  void singularStratification(containers::vector<HeckeMonomial<P> >& hs,
-			      const containers::vector<HeckeMonomial<P> >& h,
-			      const schubert::SchubertContext& p);
+  containers::vector<HeckeMonomial<P> > singular_stratification
+    (const schubert::SchubertContext& p,
+     const containers::vector<HeckeMonomial<P> >& h);
 };
 
 /******** type definitions **************************************************/

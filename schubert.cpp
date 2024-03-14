@@ -1129,32 +1129,21 @@ namespace schubert {
   This function extracts from b the involutions contained in it. First
   we check if L(x) = R(x); if yes, we check if x.x = e.
 */
-void extractInvolutions(const SchubertContext& p, bits::BitMap& b)
+bool is_involution(const SchubertContext& p,coxtypes::CoxNbr x)
 {
-  bits::BitMap::Iterator last = b.end();
+  if (p.rdescent(x) != p.ldescent(x))
+    return false;
 
-  for (bits::BitMap::Iterator i = b.begin(); i != last; ++i) {
-    coxtypes::CoxNbr x = *i;
-    if (p.rdescent(x) != p.ldescent(x))
-      goto not_involution;
-    /* check if x.x = e */
-    {
-      coxtypes::CoxNbr xl = x;
-      coxtypes::CoxNbr xr = x;
-      while (xl) {
-	coxtypes::Generator s = p.firstRDescent(xl);
-	xl = p.rshift(xl,s);
-	xr = p.lshift(xr,s);
-	if (p.rdescent(xl) != p.ldescent(xr))
-	  goto not_involution;
-      }
-    }
-    /* if we get here, we have an involution */
-    continue;
-  not_involution:
-    b.clearBit(x);
-    continue;
+  coxtypes::CoxNbr y = x;
+  while (x!=0)
+  { // we know |p.rdescent(x) == p.ldescent(y)|, so descent through an |s| in it
+    coxtypes::Generator s = p.firstRDescent(x);
+    x = p.rshift(x,s);
+    y = p.lshift(y,s);
+    if (p.rdescent(x) != p.ldescent(y) or p.ldescent(x)!=p.rdescent(y))
+      return false;
   }
+  return true;
 }
 
 
@@ -1412,7 +1401,7 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
 
   This section defines some utility functions :
 
-   - betti(h,y,p) : puts in h the betti numbers of [e,y];
+   - h = betti(y,p) : puts in h the betti numbers of [e,y];
    - min(c,nfc) : extracts the minimal element from c;
    - extractMaximals(p,c) : extracts from c the list of its maximal elements;
    - minDescent(f,order) : finds the smallest element in f w.r.t. order;
@@ -1424,39 +1413,31 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
 
 namespace schubert {
 
-void betti(Homology& h, coxtypes::CoxNbr y, const SchubertContext& p)
 
 /*
-  This function puts the ordinary betti numbers of the row in h, in a
-  simple-minded approach. No overflow is possible here.
-
-  It is assumed that row is a row in kllist.
+  Return the list of ordinary Betti numbers for |y|, by a simple-minded counting.
+  No overflow is possible here.
 */
 
+Homology betti(coxtypes::CoxNbr y, const SchubertContext& p)
 {
-  bits::BitMap b(0);
-  p.extractClosure(b,y);
+  auto cl = p.closure(y);
 
-  h.setSize(p.length(y)+1);
-  h.setZero();
+  Homology result(p.length(y)+1,0);
 
-  bits::BitMap::Iterator b_end = b.end();
+  for (auto it = cl.begin(); it(); ++it)
+    ++result[p.length(*it)]; // make length generating polynomial on closere set
 
-  for (bits::BitMap::Iterator x = b.begin(); x != b_end; ++x) {
-    h[p.length(*x)]++;
-  }
-
-  return;
+  return result;
 }
 
-Ulong min(const Set& c, NFCompare& nfc)
 
 /*
   This function extracts the minimal element form c. It is defined for
   Set instead of list::List<coxtypes::CoxNbr> so as to be able to apply it directly to
   partition classes.
 */
-
+Ulong min(const Set& c, NFCompare& nfc)
 {
   if (c.size() == 0)
     return coxtypes::undef_coxnbr;
@@ -1471,70 +1452,25 @@ Ulong min(const Set& c, NFCompare& nfc)
   return m;
 }
 
-void extractMaximals(const SchubertContext& p, list::List<coxtypes::CoxNbr>& c)
-
-/*
-  This function erases from c all elements that are not maximal elements for
-  the Bruhat order among the entries in c.
-
-  It is assumed that c is sorted in an ordering compatible with the Bruhat
-  order; so if we start from the top, we will always encounter a maximal
-  element before any lower one.
-*/
-
+containers::sl_list<Ulong> indices_of_maxima
+(const SchubertContext& p, containers::vector<coxtypes::CoxNbr>& c)
 {
-  Ulong extr_count = 0;
+  bitmap::BitMap seen(p.size());
+  containers::sl_list<Ulong> result(p. size());
 
-  for (Ulong j = c.size(); j;) {
-    --j;
-    for (Ulong i = c.size()-extr_count; i < c.size(); ++i) {
-      if (p.inOrder(c[j],c[i])) /* forget j */
-	goto nextj;
+  for (auto it=c.rbegin(); it!=c.rend(); ++it)
+  { coxtypes::CoxNbr x = *it;
+    if (not seen.is_member(x))
+    { result.push_front(&*it-&c[0]);
+      seen |= p.closure(x);
     }
-    extr_count++;
-    c[c.size()-extr_count] = c[j];
-  nextj:
-    continue;
   }
 
-  c.setData(c.ptr()+c.size()-extr_count,0,extr_count);
-  c.setSize(extr_count);
-
-  return;
+  return result;
 }
 
-void extractMaximals(const SchubertContext& p, list::List<coxtypes::CoxNbr>& c,
-		     list::List<Ulong>& a)
-
 /*
-  Like the previous one, but puts the indices in c of the maximal elements
-  in the list a.
-*/
-
-{
-  list::List<coxtypes::CoxNbr> e(0);
-  a.setSize(0);
-
-  for (Ulong j = c.size(); j;) {
-    --j;
-    for (Ulong i = 0; i < e.size(); ++i) {
-      if (p.inOrder(c[j],e[i])) /* forget j */
-	goto nextj;
-    }
-    a.append(j);
-    e.append(c[j]);
-  nextj:
-    continue;
-  }
-
-  a.reverse();
-
-  return;
-}
-
-
-/*
-  Returns the set bit position in f for which order is smallest. In practice,
+  Return the set bit position in f for which order is smallest. In practice,
   order is the external numbering of the generators; so this gives the
   internal number of the descent generator with smallest external number.
 
@@ -1604,15 +1540,13 @@ void setBitMap(bits::BitMap& b, const list::List<coxtypes::CoxNbr>& c)
 }
 
 Ulong sum(const Homology& h)
-
 {
-  Ulong a = 0;
+  Ulong s = 0;
 
-  for (Ulong j = 0; j < h.size(); ++j) {
-    a += h[j];
-  }
+  for (auto coef : h)
+    s += coef;
 
-  return a;
+  return s;
 }
 
 };

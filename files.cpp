@@ -951,12 +951,10 @@ WgraphTraits::~WgraphTraits()
 
 namespace files {
 
-void appendHomology(std::string& str, const schubert::Homology& h, OutputTraits& traits)
 
-/*
-  Appends the homology vector to str.
-*/
-
+// Append the homology vector to str.
+void appendHomology
+  (std::string& str, const schubert::Homology& h, OutputTraits& traits)
 {
   Ulong initLength = str.length();
   Ulong maxWidth = maxLength(h); // maximum width of output
@@ -986,8 +984,7 @@ void printBetti(FILE* file, const coxtypes::CoxNbr& y,
 		OutputTraits& traits)
 
 {
-  schubert::Homology h(0);
-  betti(h,y,p);
+  schubert::Homology h = betti(y,p);
 
   io::print(file,traits.prefix[bettiH]);
   printHomology(file,h,traits);
@@ -1486,11 +1483,12 @@ namespace {
 // Return the maximal length of an entry in h.
 Ulong maxLength(const schubert::Homology& h)
 {
-  static std::string buf;
+  std::string buf;
 
   Ulong maxl = 0;
 
-  for (Ulong j = 0; j < h.size(); ++j) {
+  for (Ulong j = 0; j < h.size(); ++j)
+  {
     buf.clear();
     buf.append("h[");
     io::append(buf,j);

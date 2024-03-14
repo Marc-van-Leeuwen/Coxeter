@@ -91,7 +91,7 @@ template<class P> HeckeMonomial<P>::~HeckeMonomial()
    - maxLength(h,p,I,l) : computes the maximal length of an output line;
    - oneColumnPrint(h,p,I,l,ls) : does one-column output;
    - prettyPrint(f,h,I,l) : pretty-prints h on f, using I;
-   - singularStratification(hs,h,p) : puts in hs the singular stratification
+   - singular_stratification(hs,h,p) : puts in hs the singular stratification
      of h;
    - singularLocus(hs,h,p) : puts in hs the rational singular locus of h;
    - twoColumnPrint(h,p,I,l,ls) : does two-column output;
@@ -244,33 +244,30 @@ void prettyPrint(FILE* file,
   returned sorted in ShortLex order.
 */
 template<class P>
-void singularStratification(containers::vector<HeckeMonomial<P> >& hs,
-			    const containers::vector<HeckeMonomial<P> >& h,
-			    const schubert::SchubertContext& p)
+containers::vector<HeckeMonomial<P> > singular_stratification
+  (const schubert::SchubertContext& p,
+   const containers::vector<HeckeMonomial<P> >& h)
 {
-  /* sort row by kl-polynomial */
-
+  // sort row by kl-polynomial
   PPtrF<P> f;
   bits::Partition pi(h.begin(),h.end(),f);
 
-  /* find maximal elements in each class */
-
-  hs.clear();
-
-  for (bits::PartitionIterator i(pi); i; ++i) {
-    Ulong m = i()[0];
+  // find maximal elements in each class
+  containers::vector<HeckeMonomial<P> > result; // final size cannot be predicted
+  for (bits::PartitionIterator pit(pi); pit; ++pit)
+  {
+    const bits::Set& pi_class = pit();
+    Ulong m = pi_class[0];
     if (h[m].pol().deg() == 0) // polynomial is one
       continue;
-    ToCoxNbr<P> f(&h);
-    list::List<coxtypes::CoxNbr> c(i().begin(),i().end(),f);
-    list::List<Ulong> a(0);
-    extractMaximals(p,c,a);
-    hs.reserve(hs.size()+a.size()); // this may save a few reallocations
-    for (Ulong j = 0; j < a.size(); ++j)
-      hs.push_back(h[i()[a[j]]]);
+    containers::vector<coxtypes::CoxNbr> c;
+    c.reserve(pi_class.size());
+    for (auto elt : pi_class)
+      c.push_back(h[elt].x());
+    for (auto i : indices_of_maxima(p,c))
+      result.push_back(h[pi_class[i]]);
   }
-
-  return;
+  return result;
 }
 
 namespace {
