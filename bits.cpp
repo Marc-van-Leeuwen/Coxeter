@@ -6,6 +6,7 @@
 */
 
 #include "bits.h"
+#include "bitmap.h"
 #include "io.h"
 
 #include <limits.h>
@@ -729,22 +730,19 @@ void Partition::sortI(Permutation& a) const
   }
 }
 
-void Partition::writeClass(BitMap& b, const Ulong& n) const
 
 /*
   This function sets the bitmap to the bitmap of class #n. It is assumed
   that b.size() is equal to size().
 */
-
+void Partition::writeClass(bitmap::BitMap& b, const Ulong& n) const
 {
   b.reset();
 
   for (Ulong j = 0; j < size(); ++j) {
     if (d_list[j] == n)
-      b.setBit(j);
+      b.insert(j);
   }
-
-  return;
 }
 
 /******* modifiers **********************************************************/
@@ -1017,34 +1015,24 @@ void PartitionIterator::operator++ ()
 
 namespace bits {
 
-SubSet::~SubSet()
 
 /*
-  No memory is directly allocated by a SubSet constructor.
-*/
-
-{}
-
-void SubSet::add(const Ulong& n)
-
-/*
-  Adds a new element to the subset. It is assumed that n is a legal value
+  Add a new element to the subset. It is assumed that n is a legal value
   w.r.t. the bitmap. We do not sort the elements in order; some special
   function should take care of that if required.
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
 */
 
+void SubSet::add(const Ulong& n)
 {
-  if (d_bitmap.getBit(n)) /* n is already in there */
+  if (d_bitmap.is_member(n)) /* n is already in there */
     return;
 
-  d_bitmap.setBit(n);
+  d_bitmap.insert(n);
   d_list.append(n);
 
   /* the error OUT_OF_MEMORY may have been set here */
-
-  return;
 }
 
 
@@ -1054,24 +1042,14 @@ void SubSet::add(const Ulong& n)
 
 void SubSet::readBitMap()
 {
-  d_list.setSize(d_bitmap.bitCount());
+  d_list.setSize(d_bitmap.size());
 
-  BitMap::Iterator i = d_bitmap.begin();
-
-  for (Ulong j = 0; j < d_list.size(); ++j) {
-    d_list[j] = *i;
-    ++i;
-  }
-
-  return;
+  Ulong i = 0;
+  for (auto e : d_bitmap)
+    d_list[i++] = e;
 }
 
 void SubSet::reset()
-
-/*
-  Resets the SubSet to represent the empty set.
-*/
-
 {
   d_bitmap.reset();
   d_list.setSize(0);

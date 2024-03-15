@@ -617,8 +617,7 @@ const bits::Partition& FiniteCoxGroup::lrUneqCell()
   }
 
   {
-    wgraph::OrientedGraph X(0);
-    lrGraph(X,uneqkl());
+    wgraph::OrientedGraph X = cells::graph<'b'>(uneqkl());
     X.cells(d_lruneqcell);
   }
 
@@ -723,8 +722,7 @@ const bits::Partition& FiniteCoxGroup::rUneqCell()
     goto abort;
 
   {
-    wgraph::OrientedGraph Y(0);
-    rGraph(Y,uneqkl());
+    wgraph::OrientedGraph Y = cells::graph<'r'>(uneqkl());
     Y.cells(d_runeqcell);
     d_runeqcell.normalize();
   }

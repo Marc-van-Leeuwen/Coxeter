@@ -211,11 +211,11 @@ template <class KL>
     q.add(c[j]);
 
   if (!(f&1)) // left descents
-    cells::lWGraph(X,q,kl);
+    X = cells::W_graph<'l'>(q,kl);
   else if (!(f >> kl.rank())) // right descents
-    cells::rWGraph(X,q,kl);
+    X = cells::W_graph<'r'>(q,kl);
   else // two-sided descents
-    cells::lrWGraph(X,q,kl);
+    X = cells::W_graph<'b'>(q,kl);
 
   return;
 }
@@ -498,8 +498,7 @@ void printLCOrder(FILE* file, KL& kl, const interface::Interface& I, OutputTrait
 {
   // make graph
 
-  wgraph::OrientedGraph X(0);
-  cells::lGraph(X,kl);
+  wgraph::OrientedGraph X = cells::graph<'l'>(kl);
 
   // printout data
 
@@ -546,12 +545,10 @@ void printLCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
 template <class KL>
 void printLRCOrder(FILE* file, KL& kl, const interface::Interface& I,
 		   OutputTraits& traits)
-
 {
   // make graph
 
-  wgraph::OrientedGraph X(0);
-  cells::lrGraph(X,kl);
+  wgraph::OrientedGraph X = cells::graph<'b'>(kl);
 
   // printout data
 
@@ -593,16 +590,16 @@ void printLRCellWGraphs(FILE* file, const bits::Partition& lp, KL& kl,
   fprintf(file,"\n");
 }
 
+
+/*
+  Print out the W-graph data for the full context; the output contains only the
+  edges of the graph which lie within the current context, but it is guaranteed
+  to contain all those edges.
+*/
+
 template <class KL>
   void printLRWGraph(FILE* file, KL& kl, const interface::Interface& I,
 		     OutputTraits& traits)
-
-/*
-  This function prints out the W-graph data for the full context; the
-  output contains only the edges of the graph which lie within the
-  current context, but it is guaranteed to contain all those edges.
-*/
-
 {
   // print element list
 
@@ -630,8 +627,7 @@ template <class KL>
 
   io::print(file,traits.prefix[lrWGraphH]);
 
-  wgraph::WGraph X(0);
-  cells::lrWGraph(X,kl);
+  wgraph::WGraph X = cells::W_graph<'b'>(kl);
   Lflags f = constants::lt_mask[2*kl.rank()];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
@@ -679,8 +675,7 @@ template <class KL>
 
   io::print(file,traits.prefix[lWGraphH]);
 
-  wgraph::WGraph X(0);
-  cells::lWGraph(X,kl);
+  wgraph::WGraph X = cells::W_graph<'l'>(kl);
   Lflags f = constants::lt_mask[kl.rank()] << kl.rank();
   printWGraph(file,X,f,I,traits.wgraphTraits);
 
@@ -782,8 +777,7 @@ void printRCOrder
 {
   // make graph
 
-  wgraph::OrientedGraph X(0);
-  cells::rGraph(X,kl);
+  wgraph::OrientedGraph X = cells::graph<'r'>(kl);
 
   // printout data
 
@@ -862,8 +856,7 @@ template <class KL>
 
   io::print(file,traits.prefix[rWGraphH]);
 
-  wgraph::WGraph X(0);
-  cells::rWGraph(X,kl);
+  wgraph::WGraph X = cells::W_graph<'r'>(kl);
   Lflags f = constants::lt_mask[kl.rank()];
   printWGraph(file,X,f,I,traits.wgraphTraits);
 

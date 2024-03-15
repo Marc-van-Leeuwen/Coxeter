@@ -6,6 +6,7 @@
 */
 
 #include "cells.h"
+#include "wgraph.h"
 
 #include "stack.h"
 
@@ -80,7 +81,7 @@ namespace cells {
   of an incomplete context, they will be the cells defined by the links in
   the graph.
 
-  The idea will be to minimize k-l computations. We proceed as follows. First,
+  The idea will be to minimize K-L computations. We proceed as follows. First,
   we determine the generalized-tau partition of the context. Then, we look
   at the star-orbits among the tau-classes, and decompose one representative
   of each into cells; we propagate the cells using star-operations.
@@ -90,7 +91,6 @@ void lCells(bits::Partition& pi, kl::KLContext& kl)
 {
   static bits::SubSet q(0);
   static bits::SubSet a(0);
-  static wgraph::WGraph X(0);
   static bits::Partition qcells(0);
   static list::List<Ulong> cell_count(0);
   static list::List<Ulong> qcell_count(0);
@@ -120,8 +120,7 @@ void lCells(bits::Partition& pi, kl::KLContext& kl)
 
     /* put cell-partition of q in qcells */
 
-    X.reset();
-    lWGraph(X,q,kl);
+    wgraph::WGraph X = W_graph<'l'>(q,kl);
     X.graph().cells(qcells,&P);
 
     /* the fifo-list orbit is used to traverse the *-orbit of the first
@@ -200,7 +199,6 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
 {
   static bits::SubSet q(0);
   static bits::SubSet a(0);
-  static wgraph::WGraph X(0);
   static bits::Partition qcells(0);
   static list::List<Ulong> cell_count(0);
   static list::List<Ulong> qcell_count(0);
@@ -229,8 +227,7 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
 
     /* find cells in class */
 
-    X.reset();
-    rWGraph(X,q,kl);
+    wgraph::WGraph X = W_graph<'r'>(q,kl);
     X.graph().cells(qcells,&P);
 
     /* the fifo-list orbit is used to traverse the *-orbit of the first
@@ -299,22 +296,18 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
   return;
 }
 
-void lrCells(bits::Partition& pi, kl::KLContext& kl)
 
 /*
   This function computes the two-sided cells in the context. There are
   certainly better ways to do this, but I'm afraid I don't know enough
   to do it other than by filling in all the mu's ...
 */
-
+void lrCells(bits::Partition& pi, kl::KLContext& kl)
 {
   kl.fillMu();
 
-  wgraph::WGraph X(0);
-  lrWGraph(X,kl);
+  wgraph::WGraph X = cells::W_graph<'b'>(kl);
   X.graph().cells(pi);
-
-  return;
 }
 
 
@@ -735,32 +728,30 @@ void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 
   This section defines functions for the construction of W-graphs :
 
-   - lGraph(X,kl) : the graph part only, no descent sets;
-   - lrGraph(X,kl) : the graph part only, no descent sets;
-   - rGraph(X,kl) : the graph part only, no descent sets;
-   - lWGraph(X,kl) : constructs a W-graph directly from the k-l data;
-   - lWGraph(X,q,kl) : the same, restricted to a subset;
-   - rWGraph(X,kl) : constructs a W-graph directly from the k-l data;
-   - rWGraph(X,q,kl) : the same, restricted to a subset;
+   - graph<l/r/b>(kl) : the graph part only, no descent sets;
+   - W_graph<l/r/b>(kl) : constructs a W-graph directly from the K-L data;
+   - W_graph<l/r/b>(q,kl) : the same, restricted to a subset;
 
  *****************************************************************************/
 
 namespace cells {
 
-void lGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
-
+template<char side>
+  wgraph::OrientedGraph graph(kl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
-  X.setSize(kl.size());
-  X.reset();
+  auto desc =  [&p](coxtypes::CoxNbr x)
+    { return side=='r' ? p.rdescent(x) : side=='l' ? p.ldescent(x) : p.descent(x); };
+
+  wgraph::OrientedGraph X(kl.size());
 
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
     const kl::MuRow& mu = kl.muList(y);
     for (Ulong j = 0; j < mu.size(); ++j) {
       if (mu[j].mu != 0) {
 	coxtypes::CoxNbr x = mu[j].x;
-	if (p.ldescent(x) != p.ldescent(y)) /* make an edge from x to y */
+	if (desc(x) != desc(y)) /* make an edge from x to y */
 	  X.edge(x).append(y);
       }
     }
@@ -769,84 +760,22 @@ void lGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
     const schubert::CoxNbrList& c = p.hasse(y);
     for (Ulong j = 0; j < c.size(); ++j) {
-      if ((p.ldescent(c[j])&p.ldescent(y)) != p.ldescent(c[j]))
+      if ((desc(c[j])&desc(y)) != desc(c[j]))
 	X.edge(c[j]).append(y);
-      if ((p.ldescent(c[j])&p.ldescent(y)) != p.ldescent(y))
+      if ((desc(c[j])&desc(y)) != desc(y))
 	X.edge(y).append(c[j]);
     }
   }
 
-  return;
+  return X;
 }
 
-void lrGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
-
-{
-  const schubert::SchubertContext& p = kl.schubert();
-
-  X.setSize(kl.size());
-  X.reset();
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    const kl::MuRow& mu = kl.muList(y);
-    for (Ulong j = 0; j < mu.size(); ++j) {
-      if (mu[j].mu != 0) {
-	coxtypes::CoxNbr x = mu[j].x;
-	if (p.descent(x) != p.descent(y)) /* make an edge from x to y */
-	  X.edge(x).append(y);
-      }
-    }
-  }
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    const schubert::CoxNbrList& c = p.hasse(y);
-    for (Ulong j = 0; j < c.size(); ++j) {
-      if ((p.descent(c[j])&p.descent(y)) != p.descent(c[j]))
-	X.edge(c[j]).append(y);
-      if ((p.descent(c[j])&p.descent(y)) != p.descent(y))
-	X.edge(y).append(c[j]);
-    }
-  }
-
-  return;
-}
-
-void rGraph(wgraph::OrientedGraph& X, kl::KLContext& kl)
-
-{
-  const schubert::SchubertContext& p = kl.schubert();
-
-  X.setSize(kl.size());
-  X.reset();
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    const kl::MuRow& mu = kl.muList(y);
-    for (Ulong j = 0; j < mu.size(); ++j) {
-      if (mu[j].mu != 0) {
-	coxtypes::CoxNbr x = mu[j].x;
-	if (p.rdescent(x) != p.rdescent(y)) /* make an edge from x to y */
-	  X.edge(x).append(y);
-      }
-    }
-  }
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    const schubert::CoxNbrList& c = p.hasse(y);
-    for (Ulong j = 0; j < c.size(); ++j) {
-      if ((p.rdescent(c[j])&p.rdescent(y)) != p.rdescent(c[j]))
-	X.edge(c[j]).append(y);
-      if ((p.rdescent(c[j])&p.rdescent(y)) != p.rdescent(y))
-	X.edge(y).append(c[j]);
-    }
-  }
-
-  return;
-}
-
-void lWGraph(wgraph::WGraph& X, kl::KLContext& kl)
+template wgraph::OrientedGraph graph<'l'>(kl::KLContext& kl);
+template wgraph::OrientedGraph graph<'r'>(kl::KLContext& kl);
+template wgraph::OrientedGraph graph<'b'>(kl::KLContext& kl);
 
 /*
-  This function constructs a W-graph directly from the k-l data. In other
+  Construct a W-graph directly from the K-L data. In other
   words, we construct a graph with vertex set the elements of p; for each
   x < y s.t. mu(x,y) != 0, and L(x) != L(y), we set an edge from x to y
   if L(y) \subset L(x), from y to x if L(x) \subset L(y); the coefficient
@@ -859,44 +788,49 @@ void lWGraph(wgraph::WGraph& X, kl::KLContext& kl)
   NOTE : this should be changed when there will no longer be a mu-table
   in the current sense.
 */
-
+template<char side> // one of 'l', 'r', 'b'
+    wgraph::WGraph W_graph(kl::KLContext& kl)
 {
-  X.setSize(kl.size());
   const schubert::SchubertContext& p = kl.schubert();
-  wgraph::OrientedGraph& Y = X.graph();
 
-  // fill in Y
-
-  lGraph(Y,kl);
+  wgraph::WGraph X(kl.size());
+  X.graph() = cells::graph<'l'>(kl);
 
   // fill in coefficients
 
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
+  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y)
+  {
+    coxtypes::Length ly = p.length(y);
     wgraph::CoeffList& c = X.coeffList(y);
     const wgraph::EdgeList& e = X.edge(y);
     c.setSize(e.size());
-    coxtypes::Length ly = p.length(y);
-    for (Ulong j = 0; j < c.size(); ++j) {
-      coxtypes::CoxNbr x = e[j];
+    for (Ulong i = 0; i < c.size(); ++i) // traverse both |e| and |c|
+    {
+      coxtypes::CoxNbr x = e[i];
       coxtypes::Length lx = p.length(x);
-      if ((lx < ly) || (lx-ly) == 1)
-	c[j] = 1;
+      if (lx < ly or lx == ly+1)
+	c[i] = 1;
       else
-	c[j] = kl.mu(y,x);
+	c[i] = kl.mu(y,x);
     }
   }
 
   // fill in descent sets
 
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y)
-    X.descent(y) = p.ldescent(y);
+    X.descent(y) =
+      side=='l' ? p.ldescent(y) : side=='r'? p.rdescent(y) : p.descent(y);
 
-  return;
+  return X;
 }
+
+template wgraph::WGraph W_graph<'l'>(kl::KLContext& kl);
+template wgraph::WGraph W_graph<'r'>(kl::KLContext& kl);
+template wgraph::WGraph W_graph<'b'>(kl::KLContext& kl);
 
 
 /*
-  Construct the left W-graph for the subset q. It is
+  Construct the right/left/two-sided W-graph for the subset q. It is
   assumed that q is a union of left cells (typically, q might be a right
   descent class, or one of the classes provided by GeneralizedTau).
 
@@ -906,14 +840,16 @@ void lWGraph(wgraph::WGraph& X, kl::KLContext& kl)
 
   It is assumed that q is sorted in increasing order.
 */
-void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
+template<char side>
+  wgraph::WGraph W_graph(const bits::SubSet& q, kl::KLContext& kl)
 {
-  static list::List<Ulong> qr(0);
-
-  X.setSize(q.size());
   const schubert::SchubertContext& p = kl.schubert();
-  wgraph::OrientedGraph& Y = X.graph();
+  auto desc =  [&p](coxtypes::CoxNbr x)
+    { return side=='r' ? p.rdescent(x) : side=='l' ? p.ldescent(x) : p.descent(x); };
 
+  wgraph::WGraph X(q.size());
+
+  wgraph::OrientedGraph& Y = X.graph();
   Y.reset();
 
   for (Ulong j = 0; j < q.size(); ++j)
@@ -924,271 +860,51 @@ void lWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
     // set descent set
 
-    X.descent(j) = p.ldescent(y);
+    X.descent(j) = desc(y);
 
-    bits::BitMap b = p.closure(y); // convert
-    b &= q.bitMap();
-    qr.setSize(0);
+    bitmap::BitMap b = p.closure(y);
 
-    // qr holds the relative positions within q of the elements <= y
+    for (Ulong pos = 0; pos < q.size(); ++pos)
+      if (b.is_member(q[pos]))
+      {
+	coxtypes::CoxNbr x = q[pos];
+	coxtypes::Length dl = ly-p.length(x);
 
-    for (Ulong i = 0; i < q.size(); ++i) {
-      if (b.getBit(q[i]))
-	qr.append(i);
-    }
-
-    for (Ulong i = 0; i < qr.size(); ++i) {
-
-      coxtypes::CoxNbr x = q[qr[i]];
-      coxtypes::Length lx = p.length(x);
-
-      if ((ly-lx)%2 == 0)
-	continue;
-      if ((ly-lx) == 1) { /* found a hasse edge */
-	if ((p.ldescent(x)&p.ldescent(y)) != p.ldescent(x)) {
-	  Y.edge(qr[i]).append(j);
-	  X.coeffList(qr[i]).append(1);
+	if (dl%2 == 0)
+	  continue;
+	if (dl == 1)
+	{ /* found a hasse edge */
+	  if ((desc(x)&desc(y)) != desc(x))
+	  {
+	    Y.edge(pos).append(j);
+	    X.coeffList(pos).append(1);
+	  }
+	  if ((desc(x)&desc(y)) != desc(y))
+	  {
+	    Y.edge(j).append(pos);
+	    X.coeffList(j).append(1);
+	  }
+	  continue;
 	}
-	if ((p.ldescent(x)&p.ldescent(y)) != p.ldescent(y)) {
-	  Y.edge(j).append(qr[i]);
-	  X.coeffList(j).append(1);
+
+	klsupport::KLCoeff mu = kl.mu(x,y);
+
+	if (mu != 0 and desc(x) != desc(y))
+	{
+	  Y.edge(pos).append(j);
+	  X.coeffList(pos).append(mu);
 	}
-	continue;
-      }
-
-      klsupport::KLCoeff mu = kl.mu(x,y);
-
-      if (mu != 0) {
-	if (p.ldescent(x) != p.ldescent(y)) {
-	  Y.edge(qr[i]).append(j);
-	  X.coeffList(qr[i]).append(mu);
-	}
-      }
-    }
-  }
-
-  return;
+      } // |for(pos)|
+  } // |for(j)|
+  return X;
 }
 
-void lrWGraph(wgraph::WGraph& X, kl::KLContext& kl)
-
-/*
-  Like lWGraph, but for two-sided W-graphs.
-*/
-
-{
-  X.setSize(kl.size());
-  const schubert::SchubertContext& p = kl.schubert();
-  wgraph::OrientedGraph& Y = X.graph();
-
-  // fill in Y
-
-  lrGraph(Y,kl);
-
-  // fill in coefficients
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    wgraph::CoeffList& c = X.coeffList(y);
-    const wgraph::EdgeList& e = X.edge(y);
-    c.setSize(e.size());
-    coxtypes::Length ly = p.length(y);
-    for (Ulong j = 0; j < c.size(); ++j) {
-      coxtypes::CoxNbr x = e[j];
-      coxtypes::Length lx = p.length(x);
-      if ((lx < ly) || (lx-ly) == 1)
-	c[j] = 1;
-      else
-	c[j] = kl.mu(y,x);
-    }
-  }
-
-  // fill in descent sets
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y)
-    X.descent(y) = p.descent(y);
-
-  return;
-}
+template wgraph::WGraph W_graph<'l'>(const bits::SubSet& q, kl::KLContext& kl);
+template wgraph::WGraph W_graph<'r'>(const bits::SubSet& q, kl::KLContext& kl);
+template wgraph::WGraph W_graph<'b'>(const bits::SubSet& q, kl::KLContext& kl);
 
 
-/*
-  Construct the left W-graph for the subset q. It is
-  assumed that q is a union of left cells (typically, q might be a right
-  descent class, or one of the classes provided by GeneralizedTau).
 
-  The difference with the full lWGraph, is that we do _not_ assume that
-  the mu-coefficients have already been computed; we compute them as
-  needed.
-
-  It is assumed that q is sorted in increasing order.
-*/
-void lrWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
-{
-  static list::List<Ulong> qr(0);
-
-  X.setSize(q.size());
-  const schubert::SchubertContext& p = kl.schubert();
-  wgraph::OrientedGraph& Y = X.graph();
-
-  Y.reset();
-
-  for (Ulong j = 0; j < q.size(); ++j)
-  {
-
-    coxtypes::CoxNbr y = q[j];
-    coxtypes::Length ly = p.length(y);
-
-    // set descent set
-
-    X.descent(j) = p.descent(y);
-
-    bits::BitMap b = p.closure(y); // convert
-    b &= q.bitMap();
-    qr.setSize(0);
-
-    // qr holds the relative positions within q of the elements <= y
-
-    for (Ulong i = 0; i < q.size(); ++i) {
-      if (b.getBit(q[i]))
-	qr.append(i);
-    }
-
-    for (Ulong i = 0; i < qr.size(); ++i) {
-
-      coxtypes::CoxNbr x = q[qr[i]];
-      coxtypes::Length lx = p.length(x);
-
-      if ((ly-lx)%2 == 0)
-	continue;
-      if ((ly-lx) == 1) { /* found a hasse edge */
-	if ((p.descent(x)&p.descent(y)) != p.descent(x)) {
-	  Y.edge(qr[i]).append(j);
-	  X.coeffList(qr[i]).append(1);
-	}
-	if ((p.descent(x)&p.descent(y)) != p.descent(y)) {
-	  Y.edge(j).append(qr[i]);
-	  X.coeffList(j).append(1);
-	}
-	continue;
-      }
-
-      klsupport::KLCoeff mu = kl.mu(x,y);
-
-      if (mu != 0) {
-	if (p.descent(x) != p.descent(y)) {
-	  Y.edge(qr[i]).append(j);
-	  X.coeffList(qr[i]).append(mu);
-	}
-      }
-    }
-  }
-
-  return;
-}
-
-void rWGraph(wgraph::WGraph& X, kl::KLContext& kl)
-
-/*
-  Like lWGraph, but for right W-graphs.
-*/
-
-{
-  X.setSize(kl.size());
-  const schubert::SchubertContext& p = kl.schubert();
-  wgraph::OrientedGraph& Y = X.graph();
-
-  // fill in Y
-
-  rGraph(Y,kl);
-
-  // fill in coefficients
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
-    wgraph::CoeffList& c = X.coeffList(y);
-    const wgraph::EdgeList& e = X.edge(y);
-    c.setSize(e.size());
-    coxtypes::Length ly = p.length(y);
-    for (Ulong j = 0; j < c.size(); ++j) {
-      coxtypes::CoxNbr x = e[j];
-      coxtypes::Length lx = p.length(x);
-      if ((lx < ly) || (lx-ly) == 1)
-	c[j] = 1;
-      else
-	c[j] = kl.mu(y,x);
-    }
-  }
-
-  // fill in descent sets
-
-  for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y)
-    X.descent(y) = p.rdescent(y);
-
-  return;
-}
-
-
-/*
-  Like lWGraph, but for right W-graphs.
-*/
-void rWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
-{
-  static list::List<Ulong> qr(0);
-
-  X.setSize(q.size());
-  const schubert::SchubertContext& p = kl.schubert();
-  wgraph::OrientedGraph& Y = X.graph();
-
-  Y.reset();
-
-  for (Ulong j = 0; j < q.size(); ++j)
-  {
-    coxtypes::CoxNbr y = q[j];
-    coxtypes::Length ly = p.length(y);
-
-    X.descent(j) = p.rdescent(y);
-
-    bits::BitMap b = p.closure(y); // convert
-    b &= q.bitMap();
-    qr.setSize(0);
-
-    for (Ulong i = 0; i < q.size(); ++i) {
-      if (b.getBit(q[i]))
-	qr.append(i);
-    }
-
-    for (Ulong i = 0; i < qr.size(); ++i) {
-
-      coxtypes::CoxNbr x = q[qr[i]];
-      coxtypes::Length lx = p.length(x);
-
-      if ((ly-lx)%2 == 0)
-	continue;
-      if ((ly-lx) == 1) { /* found a hasse edge */
-	if ((p.rdescent(x)&p.rdescent(y)) != p.rdescent(x)) {
-	  Y.edge(qr[i]).append(j);
-	  X.coeffList(qr[i]).append(1);
-	}
-	if ((p.rdescent(x)&p.rdescent(y)) != p.rdescent(y)) {
-	  Y.edge(j).append(qr[i]);
-	  X.coeffList(j).append(1);
-	}
-	continue;
-      }
-
-      klsupport::KLCoeff mu = kl.mu(x,y);
-
-      if (mu != 0) {
-	if (p.rdescent(x) != p.rdescent(y)) {
-	  Y.edge(qr[i]).append(j);
-	  X.coeffList(qr[i]).append(mu);
-	}
-      }
-
-    }
-  }
-
-  return;
-}
 
 };
 
@@ -1208,130 +924,61 @@ void rWGraph(wgraph::WGraph& X, const bits::SubSet& q, kl::KLContext& kl)
 
 namespace cells {
 
-
 /*
-  Puts in X the graph corresponding to the left edges in the context. It
-  assumes that the (right) mu-table has been filled.
+  Return the left/right/two-sided graph corresponding to the edges in the context.
+  It is assumed that the mu-table has been filled.
 */
-void lGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
+template<char side>
+  wgraph::OrientedGraph graph(uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
-  X.setSize(kl.size());
-  Lflags S = constants::lt_mask[kl.rank()];
+  wgraph::OrientedGraph X(kl.size());
+  const Lflags S = constants::lt_mask[kl.rank()];
 
-  /* reset X */
+  if (side=='b')
+    X = graph<'r'>(kl); // start with right edges
+  else // reset X
+    for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+      wgraph::EdgeList& e = X.edge(y);
+      e.setSize(0);
+    }
 
+  // make edges (on the left when two-sided)
   for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    wgraph::EdgeList& e = X.edge(y);
-    e.setSize(0);
-  }
-
-  /* fill edgelists */
-
-  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    coxtypes::CoxNbr yi = kl.inverse(y);
+    coxtypes::CoxNbr yi = side=='r' ? y : kl.inverse(y);
     for (GenSet f = ~p.rdescent(y) & S; f; f &= (f-1)) {
       coxtypes::Generator s = constants::firstBit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
       for (Ulong j = 0; j < muRow.size(); ++j) {
-	wgraph::Vertex x = kl.inverse(muRow[j].x);
-	wgraph::EdgeList& e = X.edge(x);
+	wgraph::EdgeList& e =
+	  X.edge(side=='r' ? muRow[j].x : kl.inverse(muRow[j].x));
+	if (side=='b')
+	  insert(e,wgraph::Edge(yi));
+	else
+	  e.append(yi);
+      }
+      wgraph::Vertex sy  = kl.inverse(p.shift(y,s));
+      wgraph::EdgeList& e = X.edge(sy);
+      if (side=='b')
+	insert(e,wgraph::Edge(yi));
+      else
 	e.append(yi);
-      }
-      wgraph::Vertex sy  = kl.inverse(p.shift(y,s));
-      wgraph::EdgeList& e = X.edge(sy);
-      e.append(yi);
     }
    }
 
-  /* sort edgelists */
-
-  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    wgraph::EdgeList& e = X.edge(y);
-    e.sort();
-  }
-
-  return;
-}
-
-
-/*
-  Puts in X the graph corresponding to the edges in the context. It assumes
-  that the mu-table has been filled. We also assume that the context is stable
-  under inverses.
-*/
-void lrGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
-{
-  const schubert::SchubertContext& p = kl.schubert();
-  X.setSize(kl.size());
-  Lflags S = constants::lt_mask[kl.rank()];
-
-  /* write down right edges */
-
-  rGraph(X,kl);
-
-  /* add left edges */
-
-  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    wgraph::Vertex yi = kl.inverse(y);
-    for (GenSet f = ~p.rdescent(y) & S; f; f &= (f-1)) {
-      coxtypes::Generator s = constants::firstBit(f);
-      const uneqkl::MuRow& muRow = kl.muList(s,y);
-      for (Ulong j = 0; j < muRow.size(); ++j) {
-	wgraph::Vertex x = kl.inverse(muRow[j].x);
-	wgraph::EdgeList& e = X.edge(x);
-	insert(e,yi);
-      }
-      wgraph::Vertex sy  = kl.inverse(p.shift(y,s));
-      wgraph::EdgeList& e = X.edge(sy);
-      insert(e,yi);
+  if (side=='l') // then we must sort edgelists
+    for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+      wgraph::EdgeList& e = X.edge(y);
+      e.sort();
     }
-   }
 
-  return;
+  return X;
 }
 
+template wgraph::OrientedGraph graph<'l'>(uneqkl::KLContext& kl);
+template wgraph::OrientedGraph graph<'r'>(uneqkl::KLContext& kl);
+template wgraph::OrientedGraph graph<'b'>(uneqkl::KLContext& kl);
 
-/*
-  Puts in X the graph corresponding to the edges in the context. It assumes
-  that the mu-table has been filled.
-*/
-void rGraph(wgraph::OrientedGraph& X, uneqkl::KLContext& kl)
-{
-  const schubert::SchubertContext& p = kl.schubert();
-  X.setSize(kl.size());
-  Lflags S = constants::lt_mask[kl.rank()];
-
-  // reset X
-  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    wgraph::EdgeList& e = X.edge(y);
-    e.setSize(0);
-  }
-
-  // make edges
-  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    for (GenSet f = ~p.rdescent(y) & S; f; f &= (f-1)) {
-      coxtypes::Generator s = constants::firstBit(f);
-      const uneqkl::MuRow& muRow = kl.muList(s,y);
-      for (Ulong j = 0; j < muRow.size(); ++j) {
-	wgraph::EdgeList& e = X.edge(muRow[j].x);
-	e.append(y);
-      }
-      coxtypes::CoxNbr ys = p.shift(y,s);
-      wgraph::EdgeList& e = X.edge(ys);
-      e.append(y);
-    }
-  }
-
-  /* sort lists */
-
-  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-    wgraph::EdgeList& e = X.edge(y);
-    e.sort();
-  }
-
-  return;
-}
 
 };
 /*****************************************************************************

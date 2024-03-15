@@ -178,7 +178,7 @@ class bits::Partition {
   Ulong size() const;                                          /* inlined */
   void sort(Permutation& a) const;
   void sortI(Permutation& a) const;
-  void writeClass(BitMap& b, const Ulong& n) const;
+  void writeClass(bitmap::BitMap& b, const Ulong& n) const;
 /* modifiers */
   Ulong& operator[] (const Ulong& j);                        /* inlined */
   void normalize();
@@ -210,28 +210,27 @@ class bits::PartitionIterator {
 
 class bits::SubSet {
  private:
-  BitMap d_bitmap;
+  bitmap::BitMap d_bitmap;
   list::List<Ulong> d_list;
  public:
 /* constructors and destructors */
   SubSet() {};
   SubSet(const Ulong& n):d_bitmap(n), d_list(0) {};
   SubSet(const SubSet& q):d_bitmap(q.d_bitmap), d_list(q.d_list) {};
-  ~SubSet(); /* standard destructor */
 /* accessors */
   const Ulong& operator[] (const Ulong& j) const;            /* inlined */
-  const BitMap& bitMap() const;                                  /* inlined */
+  const bitmap::BitMap& bitMap() const { return d_bitmap; }
   Ulong find(const SetElt& x) const;                           /* inlined */
-  bool isMember(const Ulong& n) const;                         /* inlined */
+  bool isMember(const Ulong& n) const { return d_bitmap.is_member(n); }
   Ulong size() const;                                          /* inlined */
 /* modifiers */
   Ulong& operator[] (const Ulong& j);                        /* inlined */
   void add(const Ulong& n);
   SubSet& assign(const SubSet& q);                               /* inlined */
-  BitMap& bitMap();                                              /* inlined */
+  bitmap::BitMap& bitMap() { return d_bitmap; }
   void readBitMap();
   void reset();
-  void setBitMapSize(const Ulong& n);                          /* inlined */
+  void setBitMapSize(const Ulong& n) { d_bitmap.set_capacity(n); }
   void setListSize(const Ulong& n);                            /* inlined */
   void sortList();                                               /* inlined */
 };
@@ -286,15 +285,10 @@ namespace bits {
     {return d_list[j];}
   inline SubSet& SubSet::assign(const SubSet& q)
     {new(this) SubSet(q); return *this;}
-  inline const BitMap& SubSet::bitMap() const {return d_bitmap;}
-  inline BitMap& SubSet::bitMap() {return d_bitmap;}
   inline Ulong SubSet::find(const SetElt& x) const
     {return list::find(d_list,x);}
-  inline bool SubSet::isMember(const Ulong& n) const
-    {return d_bitmap.getBit(n);}
-  inline void SubSet::setBitMapSize(const Ulong& n) {d_bitmap.setSize(n);}
   inline void SubSet::setListSize(const Ulong& n) {d_list.setSize(n);}
-  inline Ulong SubSet::size() const {return d_list.size();}
+  inline Ulong SubSet::size() const { return d_list.size(); }
   inline void SubSet::sortList() {return d_list.sort();}
 };
 
