@@ -682,7 +682,7 @@ const bits::Partition& FiniteCoxGroup::rCell()
   if (error::ERRNO)
     goto abort;
 
-  cells::rCells(d_rcell,kl());
+  d_rcell=cells::cells<'r'>(kl());
   d_rcell.normalize();
 
   return d_rcell;
@@ -827,7 +827,7 @@ const bits::Partition& FiniteCoxGroup::lString()
       goto abort;
   }
 
-  lStringEquiv(d_lstring,schubert());
+  d_lstring = cells::string_equiv<'l'>(schubert());
 
   return d_lstring;
 
@@ -853,7 +853,7 @@ const bits::Partition& FiniteCoxGroup::rString()
       goto abort;
   }
 
-  rStringEquiv(d_rstring,schubert());
+  d_rstring = cells::string_equiv<'r'>(schubert());
 
   return d_rstring;
 
@@ -903,7 +903,7 @@ const bits::Partition& FiniteCoxGroup::rTau()
       goto abort;
   }
 
-  rGeneralizedTau(d_rtau,schubert());
+  d_rtau = cells::generalized_tau<'r'>(schubert());
   d_rtau.normalize();
 
   return d_rtau;

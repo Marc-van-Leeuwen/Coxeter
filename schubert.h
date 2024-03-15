@@ -136,8 +136,8 @@ class AbstractSchubertContext {
 /* modifiers */
   virtual coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g) = 0;
   virtual void permute(const bits::Permutation& a) = 0;
-  virtual void revertSize(const Ulong& n) = 0;
-  virtual void setSize(const Ulong& n) = 0;
+  virtual void revertSize(Ulong n) = 0;
+  virtual void setSize(Ulong n) = 0;
 /* input-output */
   virtual std::string& append(std::string&, coxtypes::CoxNbr x) const = 0;
   virtual std::string& append
@@ -251,12 +251,20 @@ public:
 
   // manipulators
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
-  coxtypes::CoxNbr star(coxtypes::CoxNbr x, const Ulong& r)
+  coxtypes::CoxNbr star(coxtypes::CoxNbr x, Ulong r)
   { assert(x<size());
     if (d_star.nr_rows()<size())
       fill_star_table();
     return d_star.entry(x,r);
   }
+  template<char side> // either 'l' or 'r'
+    const coxtypes::CoxNbr* star_base(coxtypes::CoxNbr x)
+  { assert(x<size());
+    if (d_star.nr_rows()<size())
+      fill_star_table();
+    return d_star.row(x) + (side=='l' ? nStarOps() : 0);
+  }
+
   void revertSize(Ulong n);
   void permute(const bits::Permutation& a);
 /* i/o */
@@ -271,7 +279,7 @@ private:
   void extend_context
     (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s);
   void increase_size(Ulong n);
-  void fill_Hasse(const Ulong& first, coxtypes::Generator s);
+  void fill_Hasse(Ulong first, coxtypes::Generator s);
   void fill_shifts_and_descents(coxtypes::CoxNbr first, coxtypes::Generator s);
 
   void fill_star_table();

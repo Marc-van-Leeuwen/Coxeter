@@ -10,11 +10,6 @@
 
 #include "stack.h"
 
-namespace cells {
-  using namespace klsupport;
-  using namespace stack;
-};
-
 /****************************************************************************
 
   This module contains code for the computation of Kazhdan-Lustig cells for
@@ -75,19 +70,135 @@ namespace {
 
 namespace cells {
 
+template<char side> // one of 'l', 'r'
+  bits::Partition descent_partition(const schubert::SchubertContext& p)
+{
+  auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
+    { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
+
+  static list::List<GenSet> d(0); /* holds the appearing descent sets */
+  d.setSize(0);
+
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
+    insert(d,desc(x));
+
+  bits::Partition pi(p.size());
+
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
+    pi[x] = find(d,desc(x));
+
+  pi.setClassCount(d.size());
+
+  return pi;
+} // |descent_partition|
+
+template bits::Partition descent_partition<'l'>
+  (const schubert::SchubertContext& p);
+template bits::Partition descent_partition<'r'>
+  (const schubert::SchubertContext& p);
 
 /*
-  This function puts in pi the partition of p into left cells --- in the case
-  of an incomplete context, they will be the cells defined by the links in
-  the graph.
+  This is the most delicate of the partition functions. It is the maximal
+  refinement of the right descent partition under right star operations.
+  In other words, two elements x and y are in the same class for this
+  partition, if for each right star-word a (i.e. a sequence of right
+  star-operations), x*a and y*a have the same right descent set.
+
+  The algorithm is very much like the minimization algorithm for a finite
+  state automaton.
+
+  NOTE : this could probably be simplified with a PartitionIterator; be
+  wary though of modifications in pi during the loop.
+*/
+template<char side> // one of 'l', 'r'
+  bits::Partition generalized_tau(schubert::SchubertContext& p)
+{
+  static bits::Permutation v(0);
+  static list::List<Ulong> b(0);
+  static list::List<Ulong> cc(0); // sizes of parts of the partition |pi|
+  static list::List<Ulong> a(0);
+
+  /* initialize pi with partition into right descent sets */
+
+  Ulong prev;
+  bits::Partition pi = descent_partition<side>(p);
+  v.setSize(pi.size());
+
+  do {
+    prev = pi.classCount();
+
+    /* refine */
+
+    for (Ulong r = 0; r < p.nStarOps(); ++r) {
+
+      pi.sortI(v);   // set |v| to inverse standardization of partition values
+      Ulong count = pi.classCount();
+      cc.setSize(count);
+      cc.setZero();
+
+      for (Ulong j = 0; j < pi.size(); ++j)
+	cc[pi[j]]++; // count each class of |pi|
+
+      Ulong i = 0;
+
+      for (Ulong c = 0; c < pi.classCount(); ++c) {
+
+	coxtypes::CoxNbr x = v[i]; /* first element in class */
+
+	if (p.star_base<side>(x)[r] == coxtypes::undef_coxnbr)
+	  goto next_class;
+
+	/* find possibilities for v[.]*r */
+
+	b.setSize(0);
+
+	for (Ulong j = 0; j < cc[c]; ++j) {
+	  assert(pi[v[i]]==pi[v[i+j]]); // we traverse a class of |pi|
+	  auto star = p.star_base<side>(v[i+j])[r];
+	  assert(star != coxtypes::undef_coxnbr); // same descent set, same stars
+	  Ulong cr = pi[star];
+	  insert(b,cr); // add |cr| to list of class values if new
+	}
+
+	if (b.size() > 1) { /* there is a refinement */
+	  a.setSize(cc[c]);
+	  for (Ulong j = 0; j < a.size(); ++j)
+	    a[j] = find(b,pi[p.star_base<side>(v[i+j])[r]]);
+	  for (Ulong j = 0; j < cc[c]; ++j) {
+	    if (a[j] > 0)
+	      pi[v[i+j]] = count+a[j]-1; // make all but one into a new class
+	  }
+	  count += b.size()-1;
+	}
+
+      next_class:
+	i += cc[c];
+	continue;
+      }
+
+      pi.setClassCount(count);
+
+    }
+
+  } while (prev < pi.classCount());
+
+  return pi;
+} // |generalized_tau|
+
+template bits::Partition generalized_tau<'l'> (schubert::SchubertContext& p);
+template bits::Partition generalized_tau<'r'> (schubert::SchubertContext& p);
+
+/*
+  Return the partition of |p| into left cells --- in the case of an incomplete
+  context, they will be the cells defined by the links in the graph.
 
   The idea will be to minimize K-L computations. We proceed as follows. First,
   we determine the generalized-tau partition of the context. Then, we look
   at the star-orbits among the tau-classes, and decompose one representative
   of each into cells; we propagate the cells using star-operations.
 */
-
-void lCells(bits::Partition& pi, kl::KLContext& kl)
+template<char side> // one of 'l', 'r'
+  bits::Partition cells(kl::KLContext& kl)
 {
   static bits::SubSet q(0);
   static bits::SubSet a(0);
@@ -95,7 +206,7 @@ void lCells(bits::Partition& pi, kl::KLContext& kl)
   static list::List<Ulong> cell_count(0);
   static list::List<Ulong> qcell_count(0);
   static wgraph::OrientedGraph P(0);
-  static Fifo<Ulong> orbit;
+  static stack::Fifo<Ulong> orbit;
 
   schubert::SchubertContext& p = kl.schubert();
   q.setBitMapSize(p.size());
@@ -103,118 +214,12 @@ void lCells(bits::Partition& pi, kl::KLContext& kl)
   a.reset();
   cell_count.setSize(0);
 
-  rGeneralizedTau(pi,p);
+  constexpr char opposite_side = 'l' + 'r' - side;
+  bits::Partition pi = generalized_tau<opposite_side>(p);
 
   for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
 
     /* a holds the elements already processed */
-
-    if (a.isMember(x))
-      continue;
-
-    /* put the next generalized-tau class in q */
-
-    q.reset();
-    pi.writeClass(q.bitMap(),pi(x));
-    q.readBitMap();
-
-    /* put cell-partition of q in qcells */
-
-    wgraph::WGraph X = W_graph<'l'>(q,kl);
-    X.graph().cells(qcells,&P);
-
-    /* the fifo-list orbit is used to traverse the *-orbit of the first
-       element of the current generalized-tau class */
-
-    orbit.push(a.size());
-    qcell_count.setSize(0);
-
-    /* get class counts and mark off cells in q */
-
-    for (bits::PartitionIterator i(qcells); i; ++i) {
-      const bits::Set& c = i();
-      qcell_count.append(c.size());
-      cell_count.append(c.size());
-      for (Ulong j = 0; j < c.size(); ++j)
-	a.add(q[c[j]]);
-    }
-
-    /* propagate cells with star-operations; the idea is that star operations
-       act on the level of generalized-tau classes, so each element in a given
-       generalized-tau class accepts the same language. */
-
-    while (orbit.size()) {
-
-      Ulong c = orbit.pop();
-      coxtypes::CoxNbr z = a[c];
-
-      for (coxtypes::StarOp j = 0; j < p.nStarOps(); ++j) {
-
-	coxtypes::CoxNbr zj = p.star(z,j);
-
-	if (zj == coxtypes::undef_coxnbr)
-	  continue;
-	if (a.isMember(zj))
-	  continue;
-
-	/* mark off orbit */
-
-	orbit.push(a.size());
-
-	for (Ulong i = 0; i < q.size(); ++i) {
-	  coxtypes::CoxNbr y = a[c+i];
-	  coxtypes::CoxNbr yj = p.star(y,j);
-	  a.add(yj);
-	}
-
-	for (Ulong i = 0; i < qcell_count.size(); ++i) {
-	  cell_count.append(qcell_count[i]);
-	}
-
-      }
-    }
-  }
-
-  /* write down the partition */
-
-  Ulong c = 0;
-
-  for (Ulong j = 0; j < cell_count.size(); ++j) {
-    for (Ulong i = 0; i < cell_count[j]; ++i) {
-      pi[a[c+i]] = j;
-    }
-    c += cell_count[j];
-  }
-
-  pi.setClassCount(cell_count.size());
-
-  return;
-}
-
-
-/*
-  Same as lCells, but does the partition into right cells.
-*/
-void rCells(bits::Partition& pi, kl::KLContext& kl)
-{
-  static bits::SubSet q(0);
-  static bits::SubSet a(0);
-  static bits::Partition qcells(0);
-  static list::List<Ulong> cell_count(0);
-  static list::List<Ulong> qcell_count(0);
-  static wgraph::OrientedGraph P(0);
-  static Fifo<Ulong> orbit;
-  static bits::Permutation v(0);
-
-  schubert::SchubertContext& p = kl.schubert();
-  q.setBitMapSize(p.size());
-  a.setBitMapSize(p.size());
-  a.reset();
-  cell_count.setSize(0);
-
-  lGeneralizedTau(pi,p);
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
 
     if (a.isMember(x))
       continue;
@@ -227,7 +232,7 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
 
     /* find cells in class */
 
-    wgraph::WGraph X = W_graph<'r'>(q,kl);
+    wgraph::WGraph X = W_graph<side>(q,kl);
     X.graph().cells(qcells,&P);
 
     /* the fifo-list orbit is used to traverse the *-orbit of the first
@@ -253,9 +258,9 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
       Ulong c = orbit.pop();
       coxtypes::CoxNbr z = a[c];
 
-      for (coxtypes::StarOp j = p.nStarOps(); j < 2*p.nStarOps(); ++j) {
-
-	coxtypes::CoxNbr zj = p.star(z,j);
+      for (coxtypes::StarOp j = 0; j < p.nStarOps(); ++j)
+      {
+	coxtypes::CoxNbr zj = p.star_base<opposite_side>(z)[j];
 
 	if (zj == coxtypes::undef_coxnbr)
 	  continue;
@@ -268,7 +273,7 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
 
 	for (Ulong i = 0; i < q.size(); ++i) {
 	  coxtypes::CoxNbr y = a[c+i];
-	  coxtypes::CoxNbr yj = p.star(y,j);
+	  coxtypes::CoxNbr yj = p.star_base<opposite_side>(y)[j];
 	  a.add(yj);
 	}
 
@@ -293,14 +298,18 @@ void rCells(bits::Partition& pi, kl::KLContext& kl)
 
   pi.setClassCount(cell_count.size());
 
-  return;
-}
+  return pi;
+} // |cells|
+
+template bits::Partition cells<'l'> (kl::KLContext& kl);
+template bits::Partition cells<'r'> (kl::KLContext& kl);
+
 
 
 /*
   This function computes the two-sided cells in the context. There are
   certainly better ways to do this, but I'm afraid I don't know enough
-  to do it other than by filling in all the mu's ...
+  to do it other than by filling in all the mu's ... [Fokko]
 */
 void lrCells(bits::Partition& pi, kl::KLContext& kl)
 {
@@ -310,48 +319,27 @@ void lrCells(bits::Partition& pi, kl::KLContext& kl)
   X.graph().cells(pi);
 }
 
-
 /*
-  This function writes in pi the partition of p according to the left
-  descent sets.
-*/
-void lDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p)
-{
-  static list::List<GenSet> d(0); /* holds the appearing descent sets */
-
-  pi.setSize(p.size());
-  d.setSize(0);
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
-    insert(d,p.ldescent(x));
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
-    pi[x] = find(d,p.ldescent(x));
-
-  pi.setClassCount(d.size());
-
-  return;
-}
-
-void lStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
-
-/*
-  This function writes in pi the partition of p according to the (left)
-  weak Bruhat links which are equivalences for the W-graph. In other words,
+  Return the partition of p according to the left/right weak Bruhat links
+  which are equivalences for the W-graph. In other words,
   x is equivalent to sx if sx > x and the left descent set of x is not
   contained in the left descent set of sx; this means that there is a t,
   not commuting with s, in the left descent set of x s.t. x and sx are
   in the same left chain for {s,t}.
 */
-
+template<char side> // one of 'l', 'r'
+  bits::Partition string_equiv(const schubert::SchubertContext& p)
 {
+  auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
+    { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
+
   static bits::BitMap b(0);
-  static Fifo<coxtypes::CoxNbr> orbit;
+  static stack::Fifo<coxtypes::CoxNbr> orbit;
 
   b.setSize(p.size());
   b.reset();
 
-  pi.setSize(p.size());
+  bits::Partition pi(p.size());
   Ulong count = 0;
 
   for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
@@ -363,11 +351,11 @@ void lStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
     while (orbit.size()) {
       coxtypes::CoxNbr z = orbit.pop();
       for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
-	coxtypes::CoxNbr sz = p.lshift(z,s);
+	coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
 	if (b.getBit(sz))
 	  continue;
-	GenSet fz = p.ldescent(z);
-	GenSet fsz = p.ldescent(sz);
+	GenSet fz = desc(z);
+	GenSet fsz = desc(sz);
 	GenSet f = fz & fsz;
 	if ((f == fz) || (f == fsz)) /* inclusion */
 	  continue;
@@ -381,24 +369,30 @@ void lStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
 
   pi.setClassCount(count);
 
-  return;
-}
+  return pi;
+} // |string_equiv|
 
-void lStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p)
+template bits::Partition string_equiv<'l'>(const schubert::SchubertContext& p);
+template bits::Partition string_equiv<'r'>(const schubert::SchubertContext& p);
 
 /*
-  Does the partition of the subset q into left string classes. It is assumed
+  Do the partition of the subset q into left string classes. It is assumed
   that q is stable under the equivalence relation.
 */
-
+template<char side> // one of 'l', 'r'
+  bits::Partition string_equiv
+    (const bits::SubSet& q, const schubert::SchubertContext& p)
 {
+  auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
+    { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
+
   static bits::BitMap b(0);
-  static Fifo<coxtypes::CoxNbr> orbit;
+  static stack::Fifo<coxtypes::CoxNbr> orbit;
 
   b.setSize(p.size());
   b.reset();
 
-  pi.setSize(q.size());
+  bits::Partition pi(q.size());
   Ulong count = 0;
 
   for (Ulong j = 0; j < q.size(); ++j) {
@@ -411,17 +405,17 @@ void lStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::Sc
     while (orbit.size()) {
       coxtypes::CoxNbr z = orbit.pop();
       for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
-	coxtypes::CoxNbr sz = p.lshift(z,s);
+	coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
 	if (b.getBit(sz))
 	  continue;
-	GenSet fz = p.ldescent(z);
-	GenSet fsz = p.ldescent(sz);
+	GenSet fz = desc(z);
+	GenSet fsz = desc(sz);
 	GenSet f = fz & fsz;
 	if ((f == fz) || (f == fsz)) /* inclusion */
 	  continue;
 	if (!q.isMember(sz)) { // q is not stable! this shouldn't happen
 	  error::ERRNO = error::ERROR_WARNING;
-	  return;
+	  return pi;
 	}
 	b.setBit(sz);
 	orbit.push(sz);
@@ -432,295 +426,14 @@ void lStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::Sc
 
   pi.setClassCount(count);
 
-  return;
-}
+  return pi;
+} // |string_equiv|
 
-void rDescentPartition(bits::Partition& pi, const schubert::SchubertContext& p)
+template bits::Partition string_equiv<'l'>
+  (const bits::SubSet& q, const schubert::SchubertContext& p);
+template bits::Partition string_equiv<'r'>
+  (const bits::SubSet& q, const schubert::SchubertContext& p);
 
-/*
-  This function writes in pi the partition of p according to the right
-  descent sets.
-*/
-
-{
-  static list::List<GenSet> d(0); /* holds the appearing descent sets */
-
-  pi.setSize(p.size());
-  d.setSize(0);
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
-    insert(d,p.rdescent(x));
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
-    pi[x] = find(d,p.rdescent(x));
-
-  pi.setClassCount(d.size());
-
-  return;
-}
-
-void rStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p)
-
-/*
-  Same as lStringEquiv, but on the other side.
-*/
-
-{
-  static bits::BitMap b(0);
-  static Fifo<coxtypes::CoxNbr> orbit;
-
-  b.setSize(p.size());
-  b.reset();
-
-  pi.setSize(p.size());
-  Ulong count = 0;
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
-    if (b.getBit(x))
-      continue;
-    b.setBit(x);
-    pi[x] = count;
-    orbit.push(x);
-    while (orbit.size()) {
-      coxtypes::CoxNbr z = orbit.pop();
-      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
-	coxtypes::CoxNbr zs = p.rshift(z,s);
-	if (b.getBit(zs))
-	  continue;
-	GenSet fz = p.rdescent(z);
-	GenSet fzs = p.rdescent(zs);
-	GenSet f = fz & fzs;
-	if ((f == fz) || (f == fzs)) /* inclusion */
-	  continue;
-	b.setBit(zs);
-	pi[zs] = count;
-	orbit.push(zs);
-      }
-    }
-    count++;
-  }
-
-  pi.setClassCount(count);
-
-  return;
-}
-
-void rStringEquiv(bits::Partition& pi, const bits::SubSet& q, const schubert::SchubertContext& p)
-
-/*
-  Same as lStringEquiv, but on the other side.
-*/
-
-{
-  static bits::BitMap b(0);
-  static Fifo<coxtypes::CoxNbr> orbit;
-
-  b.setSize(p.size());
-  b.reset();
-
-  pi.setSize(q.size());
-  Ulong count = 0;
-
-  for (Ulong j = 0; j < q.size(); ++j) {
-    const coxtypes::CoxNbr x = q[j];
-    if (b.getBit(x))
-      continue;
-    b.setBit(x);
-    pi[j] = count;
-    orbit.push(x);
-    while (orbit.size()) {
-      coxtypes::CoxNbr z = orbit.pop();
-      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
-	coxtypes::CoxNbr zs = p.rshift(z,s);
-	if (b.getBit(zs))
-	  continue;
-	GenSet fz = p.rdescent(z);
-	GenSet fzs = p.rdescent(zs);
-	GenSet f = fz & fzs;
-	if ((f == fz) || (f == fzs)) /* inclusion */
-	  continue;
-	if (!q.isMember(zs)) { // q is not stable! this shouldn't happen
-	  error::ERRNO = error::ERROR_WARNING;
-	  return;
-	}
-	b.setBit(zs);
-	orbit.push(zs);
-      }
-    }
-    count++;
-  }
-
-  pi.setClassCount(count);
-
-  return;
-}
-
-
-/*
-  This is the most delicate of the partition functions. It is the maximal
-  refinement of the right descent partition under right star operations.
-  In other words, two elements x and y are in the same class for this
-  partition, if for each right star-word a (i.e. a sequence of right
-  star-operations), x*a and y*a have the same right descent set.
-
-  The algorithm is very much like the minimization algorithm for a finite
-  state automaton.
-
-  NOTE : this could probably be simplified with a PartitionIterator; be
-  wary though of modifications in pi during the loop.
-*/
-void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
-{
-  static bits::Permutation v(0);
-  static list::List<Ulong> b(0);
-  static list::List<Ulong> cc(0); // sizes of parts of the partition |pi|
-  static list::List<Ulong> a(0);
-
-  /* initialize pi with partition into right descent sets */
-
-  Ulong prev;
-  rDescentPartition(pi,p);
-  v.setSize(pi.size());
-
-  do {
-    prev = pi.classCount();
-
-    /* refine */
-
-    for (Ulong r = 0; r < p.nStarOps(); ++r) {
-
-      pi.sortI(v);   // set |v| to inverse standardization of partition values
-      Ulong count = pi.classCount();
-      cc.setSize(count);
-      cc.setZero();
-
-      for (Ulong j = 0; j < pi.size(); ++j)
-	cc[pi[j]]++; // count each class of |pi|
-
-      Ulong i = 0;
-
-      for (Ulong c = 0; c < pi.classCount(); ++c) {
-
-	coxtypes::CoxNbr x = v[i]; /* first element in class */
-
-	if (p.star(x,r) == coxtypes::undef_coxnbr)
-	  goto next_class;
-
-	/* find possibilities for v[.]*r */
-
-	b.setSize(0);
-
-	for (Ulong j = 0; j < cc[c]; ++j) {
-	  assert(pi[v[i]]==pi[v[i+j]]); // we traverse a class of |pi|
-	  auto star = p.star(v[i+j],r);
-	  assert(star != coxtypes::undef_coxnbr); // same descent set, same stars
-	  Ulong cr = pi[star];
-	  insert(b,cr); // add |cr| to list of class values if new
-	}
-
-	if (b.size() > 1) { /* there is a refinement */
-	  a.setSize(cc[c]);
-	  for (Ulong j = 0; j < a.size(); ++j)
-	    a[j] = find(b,pi[p.star(v[i+j],r)]);
-	  for (Ulong j = 0; j < cc[c]; ++j) {
-	    if (a[j] > 0)
-	      pi[v[i+j]] = count+a[j]-1; // make all but one into a new class
-	  }
-	  count += b.size()-1;
-	}
-
-      next_class:
-	i += cc[c];
-	continue;
-      }
-
-      pi.setClassCount(count);
-
-    }
-
-  } while (prev < pi.classCount());
-
-  return;
-} // |rGeneralizedTau|
-
-// Like |rGeneralizedTau|, but on the left.
-void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
-{
-  static bits::Permutation v(0);
-  static list::List<Ulong> b(0);
-  static list::List<Ulong> cc(0);
-  static list::List<Ulong> a(0);
-
-  /* initialize pi with partition into right descent sets */
-
-  Ulong prev;
-  lDescentPartition(pi,p);
-  v.setSize(pi.size());
-
-  do {
-    prev = pi.classCount();
-
-    /* refine */
-
-    for (Ulong r = p.nStarOps(); r < 2*p.nStarOps(); ++r)
-    {
-
-      pi.sortI(v);   /* sort partition */
-      Ulong count = pi.classCount();
-      cc.setSize(count);
-      cc.setZero();
-
-      for (Ulong j = 0; j < pi.size(); ++j)
-	cc[pi[j]]++; // count each class of |pi|
-
-      Ulong i = 0;
-
-      for (Ulong c = 0; c < pi.classCount(); ++c) {
-
-	coxtypes::CoxNbr x = v[i]; /* first element in class */
-
-	if (p.star(x,r) == coxtypes::undef_coxnbr)
-	  goto next_class;
-
-	/* find possibilities for v[.]*r */
-
-	b.setSize(0);
-
-	for (Ulong j = 0; j < cc[c]; ++j) {
-	  assert(pi[v[i]]==pi[v[i+j]]); // we traverse a class of |pi|
-	  auto star = p.star(v[i+j],r);
-	  assert(star != coxtypes::undef_coxnbr); // same descent set, same stars
-	  Ulong cr = pi[star];
-	  insert(b,cr); // add |cr| to list of class values if new
-	}
-
-	if (b.size() > 1) { /* there is a refinement */
-	  a.setSize(cc[c]);
-	  for (Ulong j = 0; j < a.size(); ++j)
-	    a[j] = find(b,pi[p.star(v[i+j],r)]);
-	  for (Ulong j = 0; j < cc[c]; ++j) {
-	    if (a[j] > 0)
-	      pi[v[i+j]] = count+a[j]-1; // make all but one into a new class
-	  }
-	  count += b.size()-1;
-	}
-
-      next_class:
-	i += cc[c];
-	continue;
-      }
-
-      pi.setClassCount(count);
-
-    }
-
-  } while (prev < pi.classCount());
-
-  return;
-}
-
-
-};
 
 /*****************************************************************************
 
@@ -734,15 +447,14 @@ void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p)
 
  *****************************************************************************/
 
-namespace cells {
-
 template<char side>
   wgraph::OrientedGraph graph(kl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
 
   auto desc =  [&p](coxtypes::CoxNbr x)
-    { return side=='r' ? p.rdescent(x) : side=='l' ? p.ldescent(x) : p.descent(x); };
+    { return side=='r' ? p.rdescent(x) : side=='l' ? p.ldescent(x)
+      : p.descent(x); };
 
   wgraph::OrientedGraph X(kl.size());
 
@@ -906,9 +618,6 @@ template wgraph::WGraph W_graph<'b'>(const bits::SubSet& q, kl::KLContext& kl);
 
 
 
-
-};
-
 /*****************************************************************************
 
         Chapter III -- Graph construction for unequal parameters.
@@ -923,11 +632,9 @@ template wgraph::WGraph W_graph<'b'>(const bits::SubSet& q, kl::KLContext& kl);
 
  *****************************************************************************/
 
-namespace cells {
-
 /*
-  Return the left/right/two-sided graph corresponding to the edges in the context.
-  It is assumed that the mu-table has been filled.
+  Return the left/right/two-sided graph corresponding to the edges in the
+  context. It is assumed that the mu-table has been filled.
 */
 template<char side>
   wgraph::OrientedGraph graph(uneqkl::KLContext& kl)
@@ -980,8 +687,6 @@ template wgraph::OrientedGraph graph<'l'>(uneqkl::KLContext& kl);
 template wgraph::OrientedGraph graph<'r'>(uneqkl::KLContext& kl);
 template wgraph::OrientedGraph graph<'b'>(uneqkl::KLContext& kl);
 
-
-};
 /*****************************************************************************
 
         Chapter IV -- Utilities
@@ -992,16 +697,13 @@ template wgraph::OrientedGraph graph<'b'>(uneqkl::KLContext& kl);
 
  *****************************************************************************/
 
-namespace cells {
-
-coxtypes::CoxNbr checkClasses
-  (const bits::Partition& pi, const schubert::SchubertContext& p)
 
 /*
-  This function checks if the classes of a refined partition are stable
+  Check if the classes of a refined partition are stable
   under weak equivalence, as they should.
 */
-
+coxtypes::CoxNbr checkClasses
+  (const bits::Partition& pi, const schubert::SchubertContext& p)
 {
   static bits::Permutation v(0);
   static bits::Partition pi_q(0);
@@ -1019,7 +721,7 @@ coxtypes::CoxNbr checkClasses
     for (; pi(v[i]) == j; ++i) {
       q.add(v[i]);
     }
-    lStringEquiv(pi_q,q,p);
+    pi_q=string_equiv<'l'>(q,p);
     if (error::ERRNO) {
       printf("error in class #%lu\n",j);
       return q[0];

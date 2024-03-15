@@ -18,26 +18,20 @@
 /******** function declarations **********************************************/
 
 namespace cells {
-  coxtypes::CoxNbr checkClasses(const bits::Partition& pi,
-				const schubert::SchubertContext& p);
-  void lCells(bits::Partition& pi, kl::KLContext& kl);
-  void rCells(bits::Partition& pi, kl::KLContext& kl);
+  template<char> // one of 'l', 'r'
+    bits::Partition descent_partition(const schubert::SchubertContext& p);
+  template<char> // one of 'l', 'r'
+    bits::Partition generalized_tau(schubert::SchubertContext& p);
+
+  template<char> // one of 'l', 'r'
+    bits::Partition cells(kl::KLContext& kl);
   void lrCells(bits::Partition& pi, kl::KLContext& kl);
-  void lDescentPartition(bits::Partition& pi,
-			 const schubert::SchubertContext& p);
-  void rDescentPartition(bits::Partition& pi,
-			 const schubert::SchubertContext& p);
-  void lStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p);
-  void lStringEquiv(bits::Partition& pi,
-		    const bits::SubSet& q, const schubert::SchubertContext& p);
-  void rStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p);
-  void rStringEquiv(bits::Partition& pi,
-		    const bits::SubSet& q, const schubert::SchubertContext& p);
-  void lrStringEquiv(bits::Partition& pi, const schubert::SchubertContext& p);
-  void lrStringEquiv(bits::Partition& pi,
-		     const bits::SubSet& q, const schubert::SchubertContext& p);
-  void lGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p);
-  void rGeneralizedTau(bits::Partition& pi, schubert::SchubertContext& p);
+
+  template<char> // one of 'l', 'r'
+    bits::Partition string_equiv(const schubert::SchubertContext& p);
+  template<char> // one of 'l', 'r'
+    bits::Partition string_equiv
+      (const bits::SubSet& q, const schubert::SchubertContext& p);
 
   template<char> // one of 'l', 'r', 'b'
     wgraph::OrientedGraph graph(kl::KLContext& kl);
@@ -48,6 +42,8 @@ namespace cells {
   template<char> // one of 'l', 'r', 'b'
     wgraph::WGraph W_graph(const bits::SubSet& q, kl::KLContext& kl);
 
+  coxtypes::CoxNbr checkClasses(const bits::Partition& pi,
+				const schubert::SchubertContext& p);
   void printCellPartition(FILE* file, const kl::KLContext& kl);
 
 }; // |namespace cells|

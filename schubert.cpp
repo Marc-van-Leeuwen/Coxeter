@@ -724,7 +724,7 @@ void SchubertContext::print(FILE* file, coxtypes::CoxNbr x,
   reasons necessarily a coatom of |xs| for which |s| is an ascent, and all such
   coatoms give rise to a coatom of $[e,x]$, all distinct.
 */
-void SchubertContext::fill_Hasse(const Ulong& first, coxtypes::Generator s)
+void SchubertContext::fill_Hasse(Ulong first, coxtypes::Generator s)
 {
 
   for (coxtypes::CoxNbr x = first; x < d_size; ++x)
