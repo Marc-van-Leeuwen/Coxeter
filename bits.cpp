@@ -64,13 +64,13 @@ Permutation::Permutation():List<Ulong>()
 
 {}
 
-Permutation::Permutation(const Ulong& n)
+Permutation::Permutation(Ulong n)
   : List<Ulong>()
 { identity(n);
 }
 
 
-Permutation& Permutation::identity(const Ulong& n)
+Permutation& Permutation::identity(Ulong n)
 
 /*
   Sets the permutation to the identity permutation of [0,n[.
@@ -184,7 +184,7 @@ namespace bits {
   Constructor for the BitMap class; constructs a bitmap capable of
   holding n bits.
 */
-BitMap::BitMap(const Ulong& n)
+BitMap::BitMap(Ulong n)
   :d_map(n/BITS(Lflags)+(bool)(n%BITS(Lflags))), d_size(n)
 {
   d_map.setSize(n/BITS(Lflags)+(bool)(n%BITS(Lflags)));
@@ -249,7 +249,7 @@ Ulong BitMap::firstBit() const
   return first + constants::firstBit(f);
 }
 
-bool BitMap::isEmpty(const Ulong& m) const
+bool BitMap::isEmpty(Ulong m) const
 
 /*
   This function checks whether the intersection of the bitmap with the
@@ -349,7 +349,7 @@ void BitMap::permute(Permutation& q)
 }
 
 
-void BitMap::setSize(const Ulong& n)
+void BitMap::setSize(Ulong n)
 
 /*
   Resizes the bitmap to hold n bits. If the size grows, it is guaranteed
@@ -623,7 +623,7 @@ Partition::Partition()
 
 {}
 
-Partition::Partition(const Ulong &n):d_list(n),d_classCount(0)
+Partition::Partition(Ulong n):d_list(n),d_classCount(0)
 
 {
   d_list.setSize(n);
@@ -639,17 +639,18 @@ Partition::~Partition()
 
 /******* accessors **********************************************************/
 
-void Partition::sort(Permutation& a) const
 
 /*
-  Puts in a the permutation vector for which the classes are contiguous,
+  Put in |a| the permutation vector for which the classes are contiguous,
   in increasing order, and each class is in the enumeration order of the
-  original set. In other words, we have new[a[j]] = old[j].
+  original set. In other words, |new| is the weakly increasing sorting of
+  the |old| elements, and |a| is such that new[a[j]] = old[j] for all j.
 
   We do this by counting each class, then putting each element directly
   in its right place in a.
 */
 
+void Partition::sort(Permutation& a) const
 {
   if (size() == 0)
     return;
@@ -667,12 +668,13 @@ void Partition::sort(Permutation& a) const
 
   /* put class offsets in count */
 
-  count.setData(count.ptr(),1,count.size()-1);
+  count.setData(count.ptr(),1,count.size()-1); // shift entries upwards one place
+  count[0] = 0;
 
+  // cumulate left-to-right
   for (Ulong j = 2; j < count.size(); ++j)
     count[j] += count[j-1];
 
-  count[0] = 0;
 
   /* fill permutation */
 
@@ -735,7 +737,7 @@ void Partition::sortI(Permutation& a) const
   This function sets the bitmap to the bitmap of class #n. It is assumed
   that b.size() is equal to size().
 */
-void Partition::writeClass(bitmap::BitMap& b, const Ulong& n) const
+void Partition::writeClass(bitmap::BitMap& b, Ulong n) const
 {
   b.reset();
 
@@ -1024,7 +1026,7 @@ namespace bits {
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
 */
 
-void SubSet::add(const Ulong& n)
+void SubSet::add(Ulong n)
 {
   if (d_bitmap.is_member(n)) /* n is already in there */
     return;
@@ -1039,7 +1041,6 @@ void SubSet::add(const Ulong& n)
 /*
   Puts the content of the bitmap in the list in a simple-minded way.
 */
-
 void SubSet::readBitMap()
 {
   d_list.setSize(d_bitmap.size());
