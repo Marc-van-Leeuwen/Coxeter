@@ -164,8 +164,9 @@ class bits::BitMap {
 
 
 
-class bits::Partition {
- private:
+class bits::Partition
+{
+private:
   list::List<Ulong> d_list;
   Ulong d_classCount;
  public:
@@ -183,8 +184,8 @@ class bits::Partition {
   Ulong classCount() const {return d_classCount;}
   Ulong size() const { return d_list.size(); }
 
-  void sort(Permutation& a) const;
-  void sortI(Permutation& a) const;
+  Permutation standardization() const; // standardization of |d_list|
+  Permutation inverse_standardization() const; // its inverse
   void writeClass(bitmap::BitMap& b, Ulong n) const;
 /* modifiers */
   Ulong& operator[] (Ulong j)     { return d_list[j]; }
@@ -208,7 +209,6 @@ class bits::PartitionIterator {
  public:
 /* constructors and destructors */
   PartitionIterator(const Partition& pi);
-  ~PartitionIterator();
 /* iterator operations */
   operator bool() const { return d_valid; }
   void operator++();

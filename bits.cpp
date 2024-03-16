@@ -641,96 +641,72 @@ Partition::~Partition()
 
 
 /*
-  Put in |a| the permutation vector for which the classes are contiguous,
-  in increasing order, and each class is in the enumeration order of the
-  original set. In other words, |new| is the weakly increasing sorting of
-  the |old| elements, and |a| is such that new[a[j]] = old[j] for all j.
+  Return the permutation vector to a partition with the same class sizes, but
+  for which the classes are contiguous, in increasing order, and each class is
+  kept in the enumeration order of the original set. In other words, |new| is
+  the weakly increasing stable sorting of the |old| elements, the |a| is such
+  that $new[a[j]] = old[j]$ for all $j$ and $a$ is increasing on the positions
+  of each equivalence class. This is called the standardization of the
+  classifying vector.
 
   We do this by counting each class, then putting each element directly
   in its right place in a.
 */
 
-void Partition::sort(Permutation& a) const
+Permutation Partition::standardization() const
 {
-  if (size() == 0)
-    return;
+  containers::vector<Ulong> class_counter(d_classCount,0);
 
-  static list::List<Ulong> count(0);
-
-  /* count class cardinalities */
-
-  count.setSize(d_classCount);
-  count.setZero();
-
-  for (Ulong j = 0; j < size(); ++j) {
-    count[d_list[j]]++;
-  }
-
-  /* put class offsets in count */
-
-  count.setData(count.ptr(),1,count.size()-1); // shift entries upwards one place
-  count[0] = 0;
+  for (Ulong class_nr : d_list)
+    ++class_counter[class_nr];
 
   // cumulate left-to-right
-  for (Ulong j = 2; j < count.size(); ++j)
-    count[j] += count[j-1];
-
-
-  /* fill permutation */
-
-  a.setSize(size());
-
-  for (Ulong j = 0; j < size(); ++j) {
-    Ulong k = d_list[j];
-    a[j] = count[k];
-    count[k]++;
+  Ulong sum=0;
+  for (Ulong& count : class_counter)
+  { std::swap(count,sum); // current sum replaces count
+    sum += count; // which get added to sum
   }
+
+  Permutation result(size());
+
+  for (Ulong j = 0; j < size(); ++j)
+    result[j] = class_counter[d_list[j]]++;
+
+  return result;
 }
 
 
 /*
-  Like sort, but returns the inverse standardization permutation directly. This
-  is in fact used more frequently then sort, because the inverse standardization
+  Return the inverse standardization permutation directly. This is in fact more
+  often useful then the standardization, because the inverse standardization
   permutation permits easy traversal of all values in weakly increasing order,
-  for instance finding the classes of indices with equal values in a partition
+  for instance finding the classes of indices with equal values in a partition.
 
-  Here we have new[j] = old[a[j]].
+  Now $new[j] = old[a[j]]$ for the same |old| and |new| as in |standardization|.
+  The implementation is the same as for |standardization|, except for the body
+  of the final loop, where we interchange index to |result| and assigned value.
 */
-void Partition::sortI(Permutation& a) const
+Permutation Partition::inverse_standardization() const
 {
-  if (size() == 0)
-    return;
+  containers::vector<Ulong> class_counter(d_classCount,0);
 
-  static list::List<Ulong> count(0);
+  for (Ulong class_nr : d_list)
+    ++class_counter[class_nr];
 
-  /* count class cardinalities */
-
-  count.setSize(d_classCount);
-  count.setZero();
-
-  for (Ulong j = 0; j < size(); ++j) {
-    count[d_list[j]]++;
+  // cumulate left-to-right
+  Ulong sum=0;
+  for (Ulong& count : class_counter)
+  { std::swap(count,sum); // current sum replaces count
+    sum += count; // which get added to sum
   }
 
-  /* put class offsets in count */
+  Permutation result(size());
 
-  count.setData(count.ptr(),1,count.size()-1);
+  for (Ulong j = 0; j < size(); ++j)
+    result[class_counter[d_list[j]]++] = j;
 
-  for (Ulong j = 2; j < count.size(); ++j)
-    count[j] += count[j-1];
-
-  count[0] = 0;
-
-  /* fill permutation */
-
-  a.setSize(size());
-
-  for (Ulong j = 0; j < size(); ++j) {
-    Ulong k = d_list[j];
-    a[count[k]] = j;
-    count[k]++;
-  }
-}
+  return result;
+} // |inverse_standardization|
 
 
 /*
@@ -922,21 +898,15 @@ void Partition::printClassSizes(FILE* file) const
 namespace bits {
 
 PartitionIterator::PartitionIterator(const Partition& pi)
-  :d_pi(pi),d_a(pi.size()),d_class(0),d_base(0),d_valid(true)
-
-/*
-
-*/
-
+  : d_pi(pi)
+  , d_a(pi.size())
+  , d_class(0)
+  , d_base(0)
+  , d_valid(pi.size()!=0)
 {
-  if (pi.size() == 0) {
-    d_valid = false;
-    goto done;
-  }
-
+  if (d_valid)
   {
-    d_a.setSize(pi.size());
-    pi.sortI(d_a);
+    d_a = pi.inverse_standardization();
 
     /* load first class */
 
@@ -946,18 +916,8 @@ PartitionIterator::PartitionIterator(const Partition& pi)
       d_class.append(d_a[j]);
     }
   }
+} // |PartitionIterator::PartitionIterator|
 
- done:
-  ;
-}
-
-PartitionIterator::~PartitionIterator()
-
-/*
-  Automatic destruction suffices.
-*/
-
-{}
 
 void PartitionIterator::operator++ ()
 

@@ -113,7 +113,6 @@ template bits::Partition descent_partition<'r'>
 template<char side> // one of 'l', 'r'
   bits::Partition generalized_tau(schubert::SchubertContext& p)
 {
-  static bits::Permutation v(0);
   static list::List<Ulong> b(0);
   static list::List<Ulong> cc(0); // sizes of parts of the partition |pi|
   static list::List<Ulong> a(0);
@@ -122,16 +121,15 @@ template<char side> // one of 'l', 'r'
 
   Ulong prev;
   bits::Partition pi = descent_partition<side>(p);
-  v.setSize(pi.size());
 
   do {
     prev = pi.classCount();
 
     /* refine */
 
-    for (Ulong r = 0; r < p.nStarOps(); ++r) {
-
-      pi.sortI(v);   // set |v| to inverse standardization of partition values
+    for (Ulong r = 0; r < p.nStarOps(); ++r)
+    {
+      bits::Permutation v = pi.inverse_standardization();
       Ulong count = pi.classCount();
       cc.setSize(count);
       cc.setZero();
@@ -710,14 +708,12 @@ template wgraph::OrientedGraph graph<'b'>(uneqkl::KLContext& kl);
 coxtypes::CoxNbr checkClasses
   (const bits::Partition& pi, const schubert::SchubertContext& p)
 {
-  static bits::Permutation v(0);
   static bits::Partition pi_q(0);
   static bits::SubSet q(0);
 
   q.setBitMapSize(p.size());
 
-  v.setSize(pi.size());
-  pi.sortI(v);
+  bits::Permutation v = pi.inverse_standardization();
 
   Ulong i = 0;
 
