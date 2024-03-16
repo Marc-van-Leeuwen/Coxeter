@@ -848,6 +848,7 @@ template<char side>
     { return side=='r' ? p.rdescent(x) : side=='l' ? p.ldescent(x) : p.descent(x); };
 
   wgraph::WGraph X(q.size());
+  X.setSize(q.size()); // this is still necessary
 
   wgraph::OrientedGraph& Y = X.graph();
   Y.reset();
