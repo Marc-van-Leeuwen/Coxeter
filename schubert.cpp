@@ -865,10 +865,10 @@ template<bool left> coxtypes::CoxNbr SchubertContext::falling_star
   if (left)
     s += rank(), t+=rank(); // so shifts below will be left shifts
 
-  if (2*dl<m)
+  if (2*dl<m) // whether star operation will increase length
     return coxtypes::undef_coxnbr;
 
-  unsigned count = 2*dl-m; // number of steps
+  unsigned count = 2*dl-m; // number of steps to take
 
   while (count-->0)
   {

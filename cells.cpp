@@ -197,113 +197,118 @@ template bits::Partition generalized_tau<'r'> (schubert::SchubertContext& p);
   at the star-orbits among the tau-classes, and decompose one representative
   of each into cells; we propagate the cells using star-operations.
 */
-template<char side> // one of 'l', 'r'
+template<char side> // one of 'l', 'r',
   bits::Partition cells(kl::KLContext& kl)
 {
-  static bits::SubSet q(0);
-  static bits::SubSet a(0);
-  static bits::Partition qcells(0);
-  static list::List<Ulong> cell_count(0);
-  static list::List<Ulong> qcell_count(0);
-  static wgraph::OrientedGraph P(0);
-  static stack::Fifo<Ulong> orbit;
-
   schubert::SchubertContext& p = kl.schubert();
-  q.setBitMapSize(p.size());
-  a.setBitMapSize(p.size());
-  a.reset();
-  cell_count.setSize(0);
+
+  bits::SubSet seen(p.size());
+  containers::vector<Ulong> cell_sizes; // sizes of cells on |seen| list
 
   constexpr char opposite_side = 'l' + 'r' - side;
   bits::Partition pi = generalized_tau<opposite_side>(p);
 
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
+  auto op_desc = [&p](unsigned x) -> GenSet
+    { return side=='l' ? p.rdescent(x) : p.ldescent(x) ; };
 
-    /* a holds the elements already processed */
-
-    if (a.isMember(x))
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
+  {
+    if (seen.isMember(x))
       continue;
 
-    /* get the next generalized-tau class */
+    bits::SubSet gen_tau_class(p.size()); // generalized-tau class of |x|
+    pi.writeClass(gen_tau_class.bitMap(),pi(x));
+    gen_tau_class.readBitMap(); // gen_tau_class is constant hereafter
 
-    q.reset();
-    pi.writeClass(q.bitMap(),pi(x));
-    q.readBitMap();
-
-    /* find cells in class */
-
-    wgraph::WGraph X = W_graph<side>(q,kl);
-    X.graph().cells(qcells,&P);
+    // compute Wgraph for the class, then find its strong components (cells)
+    bits::Partition qcells(0); // will represent the strong components
+    wgraph::WGraph X = W_graph<side>(gen_tau_class,kl);
+    X.graph().cells(qcells,nullptr); // get classes |qcells|, no induced graph
 
     /* the fifo-list orbit is used to traverse the *-orbit of the first
        element of the current generalized-tau class */
+    containers::queue<Ulong> orbit { seen.size() }; // start with next-to-add
+    containers::vector<Ulong> comp_sizes;
+    comp_sizes.reserve(qcells.classCount());
 
-    orbit.push(a.size());
-    qcell_count.setSize(0);
-
-    /* get class counts and mark off cells in q */
-
-    for (bits::PartitionIterator i(qcells); i; ++i) {
-      const bits::Set& c = i();
-      qcell_count.append(c.size());
-      cell_count.append(c.size());
-      for (Ulong j = 0; j < c.size(); ++j)
-	a.add(q[c[j]]);
+    // get cell sizes and record their members; they fill |x|'s |gen_tau_class|
+    for (bits::PartitionIterator pit(qcells); pit; ++pit)
+    {
+      const bits::Set& comp = pit(); // a strongly connected component (cell)
+      comp_sizes.push_back(comp.size());
+      // mark all elements of these cells as seen
+      for (coxtypes::CoxNbr y : comp)
+	seen.add(gen_tau_class[y]);
     }
 
-    /* propagate cells with star-operations */
+    // record cell structure by copying sizes-list |comp_sizes| to |cell_sizes|
+    cell_sizes.insert(cell_sizes.end(), comp_sizes.begin(),comp_sizes.end());
 
-    while (orbit.size()) {
+    /* from the genealized tau class of |x|, partitioned into cells, we can
+       cheaply deduce other, isomorphic, packets of cells by repeatedly applying
+       opposite-side star operations
+     */
+    while (not orbit.empty())
+    {
+      Ulong c = orbit.front(); // index of start of cell packet on |seen|
+      // the packet runs from |seen[c]| up to |seen[c+gen_tau_class.size()]|
+      // and is partitioned into consecutive cells of sizes |comp_sizes|
+      orbit.pop();
 
-      Ulong c = orbit.pop();
-      coxtypes::CoxNbr z = a[c];
+      coxtypes::CoxNbr z = seen[c]; // the head of the packet
+      const auto* z_star = p.star_base<opposite_side>(z);
 
       for (coxtypes::StarOp j = 0; j < p.nStarOps(); ++j)
       {
-	coxtypes::CoxNbr zj = p.star_base<opposite_side>(z)[j];
+	coxtypes::CoxNbr zj = z_star[j];
 
 	if (zj == coxtypes::undef_coxnbr)
 	  continue;
-	if (a.isMember(zj))
+	if (seen.isMember(zj))
 	  continue;
 
-	/* mark off orbit */
+	GenSet d = op_desc(zj);
 
-	orbit.push(a.size());
+	// mark start of new cell packet that will be added to |seen| below
+	orbit.push(seen.size()); // index of next-to-add packet leader
 
-	for (Ulong i = 0; i < q.size(); ++i) {
-	  coxtypes::CoxNbr y = a[c+i];
+	// add image of |gen_tau_class| obtained by applying star operation |j|
+	for (Ulong i = 0; i < gen_tau_class.size(); ++i)
+	{
+	  coxtypes::CoxNbr y = seen[c+i];
 	  coxtypes::CoxNbr yj = p.star_base<opposite_side>(y)[j];
-	  a.add(yj);
+	  assert(op_desc(yj)==d);
+	  seen.add(yj);
 	}
 
-	for (Ulong i = 0; i < qcell_count.size(); ++i) {
-	  cell_count.append(qcell_count[i]);
-	}
+	// record new cells by copying sizes-list |comp_sizes| to |cell_sizes|
+	cell_sizes.insert(cell_sizes.end(),
+			  comp_sizes.begin(),comp_sizes.end());
+      } // |for(j)|, different star operations
 
-      }
-    }
-  }
+    } // |while(not orbit.empty())|
+  } // |for(x)||
 
   /* write down the partition */
 
-  Ulong c = 0;
+  Ulong c = 0; // offset into |seen|
+  Ulong class_nr = 0;
+  for (auto cell_size: cell_sizes)
+  {
+    for (Ulong i = 0; i < cell_size; ++i)
+      pi[seen[c+i]] = class_nr;
 
-  for (Ulong j = 0; j < cell_count.size(); ++j) {
-    for (Ulong i = 0; i < cell_count[j]; ++i) {
-      pi[a[c+i]] = j;
-    }
-    c += cell_count[j];
+    c += cell_size;
+    ++class_nr;
   }
 
-  pi.setClassCount(cell_count.size());
+  pi.setClassCount(cell_sizes.size());
 
   return pi;
 } // |cells|
 
 template bits::Partition cells<'l'> (kl::KLContext& kl);
 template bits::Partition cells<'r'> (kl::KLContext& kl);
-
 
 
 /*
@@ -316,16 +321,16 @@ void lrCells(bits::Partition& pi, kl::KLContext& kl)
   kl.fillMu();
 
   wgraph::WGraph X = cells::W_graph<'b'>(kl);
-  X.graph().cells(pi);
+  X.graph().cells(pi); // partition graph into strong components
 }
 
 /*
-  Return the partition of p according to the left/right weak Bruhat links
-  which are equivalences for the W-graph. In other words,
-  x is equivalent to sx if sx > x and the left descent set of x is not
-  contained in the left descent set of sx; this means that there is a t,
-  not commuting with s, in the left descent set of x s.t. x and sx are
-  in the same left chain for {s,t}.
+  Return the partition of |p| according to the left/right weak Bruhat links
+  which are equivalences for the W-graph. In other words, $x$ is equivalent to
+  $sx$ if $sx > x$ and the left descent set of $x$ is not contained in the left
+  descent set of $sx$; this means that there is a $t$, not commuting with $s$,
+  in the left descent set of $x$ such that $x$ and $sx$ are in the same left
+  chain for $\{s,t\}$.
 */
 template<char side> // one of 'l', 'r'
   bits::Partition string_equiv(const schubert::SchubertContext& p)
@@ -447,7 +452,7 @@ template bits::Partition string_equiv<'r'>
 
  *****************************************************************************/
 
-template<char side>
+template<char side> // one of 'l', 'r', 'b'
   wgraph::OrientedGraph graph(kl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
@@ -506,7 +511,7 @@ template<char side> // one of 'l', 'r', 'b'
   const schubert::SchubertContext& p = kl.schubert();
 
   wgraph::WGraph X(kl.size());
-  X.graph() = cells::graph<'l'>(kl);
+  X.graph() = cells::graph<side>(kl);
 
   // fill in coefficients
 
@@ -729,6 +734,6 @@ coxtypes::CoxNbr checkClasses
   }
 
   return 0;
-}
+} // |checkClasses|
 
 };

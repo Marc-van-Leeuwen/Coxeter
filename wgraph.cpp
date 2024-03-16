@@ -225,7 +225,6 @@ OrientedGraph::~OrientedGraph()
 
 {}
 
-void OrientedGraph::cells(bits::Partition& pi, OrientedGraph* P) const
 
 /*
   Define a preorder relation on the vertices by setting x <= y iff there is an
@@ -263,7 +262,7 @@ void OrientedGraph::cells(bits::Partition& pi, OrientedGraph* P) const
   of x not already dealt with. We then move to the parent of x and continue
   the process there.
 */
-
+void OrientedGraph::cells(bits::Partition& pi, OrientedGraph* P) const
 {
   static bits::Permutation a(0);
   static bits::BitMap b(0);
@@ -490,16 +489,15 @@ void OrientedGraph::reset()
 
 namespace {
 
-void getClass(const OrientedGraph& X, const Vertex& y, bits::BitMap& b,
-	      bits::Partition& pi, OrientedGraph* P)
 
 /*
   After the element y has been identified as minimal among the elements not
   already marked in b, this function marks off the equivalence class of y;
   these are just the elements visible from y and not already marked in b.
-  The class is also written as a new class in pi.
+  The class is also written as a new class in pi, and in |P| if non-null.
 */
-
+void getClass(const OrientedGraph& X, const Vertex& y, bits::BitMap& b,
+	      bits::Partition& pi, OrientedGraph* P)
 {
   static stack::Fifo<Vertex> c;
 
@@ -507,7 +505,7 @@ void getClass(const OrientedGraph& X, const Vertex& y, bits::BitMap& b,
   c.push(y);
   b.setBit(y);
   pi[y] = a;
-  if (P)
+  if (P!=nullptr)
     P->setSize(a+1);
 
   while (c.size()) {
@@ -516,7 +514,8 @@ void getClass(const OrientedGraph& X, const Vertex& y, bits::BitMap& b,
     for (Ulong j = 0; j < e.size(); ++j) {
       Vertex z = e[j];
       if (b.getBit(z)) {
-	if (P && (pi[z] < a)) { /* add a new edge to P */
+	if (P!=nullptr and pi[z] < a)
+	{ /* add a new edge to P */
 	  EdgeList& f = P->edge(a);
 	  if (find(f,pi[z]) == list::not_found) { /* edge is new */
 	    insert(f,pi[z]);

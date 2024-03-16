@@ -412,10 +412,9 @@ template<class T> template<class C> void List<T>::sort(C& c)
 
 namespace list {
 
-template <class T> Ulong insert(List<T>& l, const T& d_m)
 
 /*
-  Inserts a new element in the (ordered) list, using binary search to find
+  Insert a new element in the (ordered) list, using binary search to find
   the insertion point.
 
   Forwards the error MEMORY_WARNING if CATCH_MEMORY_ERROR is set. Return
@@ -423,7 +422,7 @@ template <class T> Ulong insert(List<T>& l, const T& d_m)
 
   NOTE :It is assumed that operator<= is defined for the class T.
 */
-
+template <class T> Ulong insert(List<T>& l, const T& d_m)
 {
   // this is necessary in the case where |d_m| points into the array being
   // resized. It could be avoided by doing the appendage after the allocation
