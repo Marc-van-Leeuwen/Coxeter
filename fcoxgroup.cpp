@@ -7,6 +7,8 @@
 
 #include "fcoxgroup.h"
 
+#include <functional>
+
 #include "cells.h"
 
 #define undefined (coxtypes::ParNbr)(coxtypes::PARNBR_MAX + 1)
@@ -545,134 +547,29 @@ const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
   return d_duflo;
 }
 
-const bits::Partition& FiniteCoxGroup::lCell()
+
 
 /*
-  Returns the partition into left cells, making it from the right cell
-  partitition.
-*/
+  Return the partition of the group in right cells.
 
-{
-  if (d_lcell.classCount()) /* partition was already computed */
-    return d_lcell;
-
-  const bits::Partition& r = rCell();
-  d_lcell.setSize(r.size());
-  d_lcell.setClassCount(r.classCount());
-
-  for (coxtypes::CoxNbr x = 0; x < r.size(); ++x) {
-    d_lcell[x] = r(CoxGroup::inverse(x));
-  }
-
-  d_lcell.normalize();
-  return d_lcell;
-}
-
-const bits::Partition& FiniteCoxGroup::lrCell()
-
-/*
-  Similar to rCell, but for two-sided cells.
-*/
-
-{
-  if (d_lrcell.classCount()) /* partition was already computed */
-    return d_lrcell;
-
-  if (!isFullContext()) {
-    fullContext();
-    if (error::ERRNO)
-      goto abort;
-    kl().fillMu();
-    if (error::ERRNO)
-      goto abort;
-  }
-
-  if (d_lrcell.size() == 0) /* size is either zero or group order */
-    cells::lrCells(d_lrcell,kl());
-
-  return d_lrcell;
-
- abort:
-  error::Error(error::ERRNO);
-  return d_lrcell;
-}
-
-const bits::Partition& FiniteCoxGroup::lrUneqCell()
-
-/*
-  Similar to lCell, but for two-sided cells.
-*/
-
-{
-  if (d_lruneqcell.classCount()) /* partition was already computed */
-    return d_lruneqcell;
-
-  if (!isFullContext()) {
-    fullContext();
-    if (error::ERRNO)
-      goto abort;
-    uneqkl().fillMu();
-    if (error::ERRNO)
-      goto abort;
-  }
-
-  {
-    wgraph::OrientedGraph X = cells::graph<'b'>(uneqkl());
-    X.cells(d_lruneqcell);
-  }
-
-  return d_lruneqcell;
-
- abort:
-  error::Error(error::ERRNO);
-  return d_lruneqcell;
-}
-
-const bits::Partition& FiniteCoxGroup::lUneqCell()
-
-/*
-  Returns the partition in left cells for unequal parameters. The partition
-  is gotten from the right one, by inversing.
-*/
-
-{
-  if (d_luneqcell.classCount()) /* partition was already computed */
-    return d_luneqcell;
-
-  const bits::Partition& r = rUneqCell();
-  d_luneqcell.setSize(r.size());
-  d_luneqcell.setClassCount(r.classCount());
-
-  for (coxtypes::CoxNbr x = 0; x < r.size(); ++x) {
-    d_luneqcell[x] = r(CoxGroup::inverse(x));
-  }
-
-  d_luneqcell.normalize();
-  return d_luneqcell;
-}
-
-const bits::Partition& FiniteCoxGroup::rCell()
-
-/*
-  This function returns the partition of the group in right cells.
-
-  NOTE : to be on the safe side, we allow this function to respond only
+  NOTE: to be on the safe side, we allow this function to respond only
   for the full group context. If the context is not full, it extends it
   first to the full group.
 
-  NOTE : because this is a potentially very expensive operation, the
-  partition is computed on request.
+  NOTE: because this is a potentially very expensive operation, the
+  partition is lazily computed (only on request, but then stored for later).
 
-  NOTE : since it is not clear that the ordering in which rCells constructs
+  NOTE: since it is not clear that the ordering in which rCells constructs
   the cells is meaningful, we normalize the partition, so that it can be
   guaranteed to always have the same meaning.
 */
 
+const bits::Partition& FiniteCoxGroup::rCell()
 {
-  if (d_rcell.classCount()) /* partition was already computed */
+  if (d_rcell.classCount()>0) /* partition was already computed */
     return d_rcell;
 
-  if (!isFullContext()) {
+  if (not isFullContext()) {
     fullContext();
     if (error::ERRNO)
       goto abort;
@@ -682,22 +579,55 @@ const bits::Partition& FiniteCoxGroup::rCell()
   if (error::ERRNO)
     goto abort;
 
-  d_rcell=cells::cells<'r'>(kl());
-  d_rcell.normalize();
-
-  return d_rcell;
+  return d_rcell = cells::cells<'r'>(kl()).normalize();
 
  abort:
   error::Error(error::ERRNO);
   return d_rcell;
-
 }
 
-const bits::Partition& FiniteCoxGroup::rUneqCell()
+// Return the partition into left cells (made from the right cell partitition).
+const bits::Partition& FiniteCoxGroup::lCell()
+{
+  if (d_lcell.classCount()>0) // partition was already computed
+    return d_lcell;
+
+  const bits::Partition& r = rCell();
+  auto f = [this,&r](coxtypes::CoxNbr x)-> Ulong
+    { return r(CoxGroup::inverse(x)); };
+  return d_lcell = bits::Partition(r.size(),f); // normalizes order of the |f(x)|
+}
 
 /*
-  This function returns the partition of the group in right cells for unequal
-  parameters.
+  Similar to rCell, but for two-sided cells.
+*/
+const bits::Partition& FiniteCoxGroup::lrCell()
+{
+  if (d_lrcell.classCount()>0) /* partition was already computed */
+    return d_lrcell;
+
+  if (not isFullContext()) {
+    fullContext();
+    if (error::ERRNO)
+      goto abort;
+    kl().fillMu();
+    if (error::ERRNO)
+      goto abort;
+  }
+
+  if (d_lrcell.size() == 0) /* size is either zero or group order */
+    d_lrcell = cells::cells<'b'>(kl());
+
+  return d_lrcell;
+
+ abort:
+  error::Error(error::ERRNO);
+  return d_lrcell;
+}
+
+
+/*
+  Return the partition of the group in right cells for unequal parameters.
 
   NOTE : to be on the safe side, we allow this function to respond only
   for the full group context. If the context is not full, it extends it
@@ -706,7 +636,7 @@ const bits::Partition& FiniteCoxGroup::rUneqCell()
   NOTE : because this is a potentially very expensive operation, the
   partition is computed on request.
 */
-
+const bits::Partition& FiniteCoxGroup::rUneqCell()
 {
   if (d_runeqcell.classCount()) /* partition was already computed */
     return d_runeqcell;
@@ -732,7 +662,53 @@ const bits::Partition& FiniteCoxGroup::rUneqCell()
  abort:
   error::Error(error::ERRNO);
   return d_runeqcell;
-}
+} // |rUneqCell|
+
+/*
+  Return the partition in left cells for unequal parameters. The partition
+  is gotten from the right one, by inversing.
+*/
+const bits::Partition& FiniteCoxGroup::lUneqCell()
+{
+  if (d_luneqcell.classCount()>0) // partition was already computed
+    return d_luneqcell;
+
+  const bits::Partition& r = rUneqCell();
+  auto f = [this,&r](coxtypes::CoxNbr x)-> Ulong
+    { return r(CoxGroup::inverse(x)); };
+  return d_luneqcell = bits::Partition(r.size(),f); // normalizes order |f(x)|'s
+} // |lUneqCell|
+
+// Similar to |lUneqCell|, but for two-sided cells.
+const bits::Partition& FiniteCoxGroup::lrUneqCell()
+{
+  if (d_lruneqcell.classCount()>0) // partition was already computed
+    return d_lruneqcell;
+
+  if (!isFullContext()) {
+    fullContext();
+    if (error::ERRNO)
+      goto abort;
+    uneqkl().fillMu();
+    if (error::ERRNO)
+      goto abort;
+  }
+
+  {
+    wgraph::OrientedGraph X = cells::graph<'b'>(uneqkl());
+    X.cells(d_lruneqcell);
+  }
+
+  return d_lruneqcell;
+
+ abort:
+  error::Error(error::ERRNO);
+  return d_lruneqcell;
+} // |lrUneqCell|
+
+
+
+
 
 const bits::Partition& FiniteCoxGroup::lDescent()
 

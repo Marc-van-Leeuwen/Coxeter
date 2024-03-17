@@ -619,23 +619,6 @@ BitMap::Iterator BitMap::end() const
 
 namespace bits {
 
-Partition::Partition()
-
-{}
-
-Partition::Partition(Ulong n):d_list(n),d_classCount(0)
-
-{
-  d_list.setSize(n);
-}
-
-Partition::~Partition()
-
-/*
-  No memory is directly allocated by the Partition constructors.
-*/
-
-{}
 
 /******* accessors **********************************************************/
 
@@ -657,7 +640,7 @@ Permutation Partition::standardization() const
 {
   containers::vector<Ulong> class_counter(d_classCount,0);
 
-  for (Ulong class_nr : d_list)
+  for (Ulong class_nr : classifier)
     ++class_counter[class_nr];
 
   // cumulate left-to-right
@@ -670,7 +653,7 @@ Permutation Partition::standardization() const
   Permutation result(size());
 
   for (Ulong j = 0; j < size(); ++j)
-    result[j] = class_counter[d_list[j]]++;
+    result[j] = class_counter[classifier[j]]++;
 
   return result;
 }
@@ -690,7 +673,7 @@ Permutation Partition::inverse_standardization() const
 {
   containers::vector<Ulong> class_counter(d_classCount,0);
 
-  for (Ulong class_nr : d_list)
+  for (Ulong class_nr : classifier)
     ++class_counter[class_nr];
 
   // cumulate left-to-right
@@ -703,94 +686,24 @@ Permutation Partition::inverse_standardization() const
   Permutation result(size());
 
   for (Ulong j = 0; j < size(); ++j)
-    result[class_counter[d_list[j]]++] = j;
+    result[class_counter[classifier[j]]++] = j;
 
   return result;
 } // |inverse_standardization|
 
-
-/*
-  This function sets the bitmap to the bitmap of class #n. It is assumed
-  that b.size() is equal to size().
-*/
-void Partition::writeClass(bitmap::BitMap& b, Ulong n) const
+SubSet Partition::class_nr(Ulong n) const
 {
-  b.reset();
+  SubSet result(size());
+  for (Ulong j = 0; j < size(); ++j)
+    if (classifier[j] == n)
+      result.add(j);
 
-  for (Ulong j = 0; j < size(); ++j) {
-    if (d_list[j] == n)
-      b.insert(j);
-  }
+  return result;
 }
+
 
 /******* modifiers **********************************************************/
 
-void Partition::normalize()
-
-/*
-  Normalizes the partition by reordering the classes in the order of their
-  first elements. Hence, two normalized partitions are equal as partitions
-  iff they are equal as functions.
-*/
-
-{
-  static list::List<Ulong> a(0);
-  static BitMap b(0);
-
-  a.setSize(d_classCount);
-  b.setSize(d_classCount);
-  b.reset();
-
-  Ulong count = 0;
-
-  for (Ulong j = 0; j < size(); ++j) {
-    if (!b.getBit(d_list[j])) { /* new value */
-      b.setBit(d_list[j]);
-      a[d_list[j]] = count;
-      count++;
-    }
-  }
-
-  /* now a[k] is the order of appearance of value #k */
-
-  for (Ulong j = 0; j < size(); ++j) {
-    d_list[j] = a[d_list[j]];
-  }
-
-  return;
-}
-
-void Partition::normalize(Permutation& a)
-
-/*
-  Same as normalize(), but records the permutation in a.
-*/
-
-{
-  static BitMap b(0);
-
-  a.setSize(d_classCount);
-  b.setSize(d_classCount);
-  b.reset();
-
-  Ulong count = 0;
-
-  for (Ulong j = 0; j < size(); ++j) {
-    if (!b.getBit(d_list[j])) { /* new value */
-      b.setBit(d_list[j]);
-      a[d_list[j]] = count;
-      count++;
-    }
-  }
-
-  /* now a[k] is the order of appearance of value #k */
-
-  for (Ulong j = 0; j < size(); ++j) {
-    d_list[j] = a[d_list[j]];
-  }
-
-  return;
-}
 
 void Partition::permute(const Permutation& a)
 
@@ -809,9 +722,9 @@ void Partition::permute(const Permutation& a)
     if (b.getBit(x))
       continue;
     for (SetElt y = a[x]; y != x; y = a[y]) {
-      Ulong buf = d_list[y];
-      d_list[y] = d_list[x];
-      d_list[x] = buf;
+      Ulong buf = classifier[y];
+      classifier[y] = classifier[x];
+      classifier[x] = buf;
       b.setBit(y);
     }
     b.setBit(x);
@@ -828,7 +741,7 @@ void Partition::permuteRange(const Permutation& a)
 
 {
   for (SetElt x = 0; x < size(); ++x)
-    d_list[x] = a[d_list[x]];
+    classifier[x] = a[classifier[x]];
 
   return;
 }
@@ -843,8 +756,8 @@ void Partition::setClassCount()
   Ulong count = 0;
 
   for (Ulong j = 0; j < size(); ++j) {
-    if (d_list[j] >= count)
-      count = d_list[j]+1;
+    if (classifier[j] >= count)
+      count = classifier[j]+1;
   }
 
   d_classCount = count;
@@ -854,12 +767,11 @@ void Partition::setClassCount()
 
 /******** input/output ******************************************************/
 
-void Partition::printClassSizes(FILE* file) const
 
 /*
   This function prints out the sizes of the classes in the partition.
 */
-
+void Partition::printClassSizes(FILE* file) const
 {
   static list::List<Ulong> count(0);
 
@@ -867,7 +779,7 @@ void Partition::printClassSizes(FILE* file) const
   count.setZero();
 
   for (Ulong j = 0; j < size(); ++j) {
-    count[d_list[j]]++;
+    count[classifier[j]]++;
   }
 
   for (Ulong j = 0; j < d_classCount; ++j) {
@@ -992,7 +904,7 @@ void SubSet::add(Ulong n)
     return;
 
   d_bitmap.insert(n);
-  d_list.append(n);
+  d_list.push_back(n);
 
   /* the error OUT_OF_MEMORY may have been set here */
 }
@@ -1003,7 +915,7 @@ void SubSet::add(Ulong n)
 */
 void SubSet::readBitMap()
 {
-  d_list.setSize(d_bitmap.size());
+  d_list.resize(d_bitmap.size());
 
   Ulong i = 0;
   for (auto e : d_bitmap)
@@ -1013,9 +925,7 @@ void SubSet::readBitMap()
 void SubSet::reset()
 {
   d_bitmap.reset();
-  d_list.setSize(0);
-
-  return;
+  d_list.resize(0);
 }
 
 };

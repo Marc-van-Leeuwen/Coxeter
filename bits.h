@@ -12,8 +12,10 @@
 
 #include <limits.h>
 #include <iterator>
+#include <algorithm>
 #include <new>
 #include <string>
+#include <map>
 
 #include "containers.h"
 #include "list.h"
@@ -162,43 +164,70 @@ class bits::BitMap {
   }; // |class ReverseIterator|
 }; // |class BitMap|
 
+class bits::SubSet {
+ private:
+  bitmap::BitMap d_bitmap;
+  containers::vector<Ulong> d_list;
+ public:
+/* constructors and destructors */
+  SubSet() {};
+  SubSet(Ulong n) : d_bitmap(n), d_list() {}
+  SubSet(const SubSet& q):d_bitmap(q.d_bitmap), d_list(q.d_list) {}
+/* accessors */
+  const Ulong operator[] (Ulong j) const { return d_list[j]; }
+  const bitmap::BitMap& bitMap() const { return d_bitmap; }
+  Ulong find(const SetElt& x) const
+  { return std::lower_bound(d_list.begin(),d_list.end(),x)-d_list.begin(); }
+  bool is_member(Ulong n) const { return d_bitmap.is_member(n); }
+  Ulong size() const { return d_list.size(); }
+/* modifiers */
+  Ulong& operator[] (Ulong j) { return d_list[j]; }
+  void add(Ulong n); // add |n| to bitmap and list, unless present
+  SubSet& assign(const SubSet& q) { new (this) SubSet(q); return *this; }
+  bitmap::BitMap& bitMap() { return d_bitmap; }
+  void readBitMap(); // set |d_list| from |d_bitmap| contents
+  void reset();
+  void setBitMapSize(Ulong n) { d_bitmap.set_capacity(n); }
+  void setListSize(Ulong n) { d_list.resize(n); }
+  void sortList() { return std::sort(d_list.begin(),d_list.end()); }
+}; // |bits::SubSet|
 
 
 class bits::Partition
 {
 private:
-  list::List<Ulong> d_list;
+  containers::vector<Ulong> classifier;
   Ulong d_classCount;
  public:
 /* class definitions */
-  typedef Ulong valueType;
+  typedef Ulong result_type;
 /* constructors and destructors */
-  Partition();
-  Partition(Ulong n);
-  Partition(const Partition& a, const BitMap& b);
-  template <class T, class F> Partition(const list::List<T>& r, F& f);
-  template <class I, class F> Partition(const I& first, const I& last, F& f);
-  ~Partition();
+  Partition() : Partition(0) {}
+  Partition(Ulong n) : classifier(n,0), d_classCount(0) {}
+  // Partition(const Partition& a, const BitMap& b); // partition of subset
+  template <class F> Partition(Ulong n, const F& property);
+  template <class I, class F> Partition
+    (const I& first, const I& last, const F& f);
 /* accessors */
-  Ulong operator() (Ulong j) const { return d_list[j]; }
+  Ulong operator() (Ulong j) const { return classifier[j]; }
   Ulong classCount() const {return d_classCount;}
-  Ulong size() const { return d_list.size(); }
+  Ulong size() const { return classifier.size(); }
 
-  Permutation standardization() const; // standardization of |d_list|
+  Permutation standardization() const; // standardization of |classifier|
   Permutation inverse_standardization() const; // its inverse
-  void writeClass(bitmap::BitMap& b, Ulong n) const;
+  SubSet class_nr(Ulong n) const; // equivalence class with label |n|
+  SubSet class_of(Ulong x) const { return class_nr(classifier[x]); }
 /* modifiers */
-  Ulong& operator[] (Ulong j)     { return d_list[j]; }
-  void normalize();
-  void normalize(Permutation& a);
+  Ulong& operator[] (Ulong j)     { return classifier[j]; }
+  Partition& normalize() { return *this = Partition(size(),*this); }
   void permute(const Permutation& a);
   void permuteRange(const Permutation& a);
   void setClassCount();
   void setClassCount(Ulong count) { d_classCount = count; }
-  void setSize(Ulong n) { d_list.setSize(n); }
+  void setSize(Ulong n) { classifier.resize(n); }
 /* input/output */
   void printClassSizes(FILE* file) const;
-};
+}; // |bits::Partition|
 
 class bits::PartitionIterator {
   const Partition& d_pi;
@@ -213,40 +242,9 @@ class bits::PartitionIterator {
   operator bool() const { return d_valid; }
   void operator++();
   const Set& operator()() const { return d_class; }
-};
-
-class bits::SubSet {
- private:
-  bitmap::BitMap d_bitmap;
-  list::List<Ulong> d_list;
- public:
-/* constructors and destructors */
-  SubSet() {};
-  SubSet(Ulong n) : d_bitmap(n), d_list(0) {}
-  SubSet(const SubSet& q):d_bitmap(q.d_bitmap), d_list(q.d_list) {}
-/* accessors */
-  const Ulong operator[] (Ulong j) const { return d_list[j]; }
-  const bitmap::BitMap& bitMap() const { return d_bitmap; }
-  Ulong find(const SetElt& x) const { return list::find(d_list,x); }
-  bool isMember(Ulong n) const { return d_bitmap.is_member(n); }
-  Ulong size() const { return d_list.size(); }
-/* modifiers */
-  Ulong& operator[] (Ulong j) { return d_list[j]; }
-  void add(Ulong n); // add |n| to bitmap and list, unless present
-  SubSet& assign(const SubSet& q) { new (this) SubSet(q); return *this; }
-  bitmap::BitMap& bitMap() { return d_bitmap; }
-  void readBitMap(); // set |d_list| from |d_bitmap| contents
-  void reset();
-  void setBitMapSize(Ulong n) { d_bitmap.set_capacity(n); }
-  void setListSize(Ulong n) { d_list.setSize(n); }
-  void sortList() { return d_list.sort(); }
-};
+}; // |bits::PartitionIterator|
 
 /**** Inline implementations **********************************************/
-
-namespace bits {
-
-};
 
 /******** template definitions ***********************************************/
 
@@ -259,59 +257,49 @@ namespace bits {
   assumed that operator<= is defined for the value type of f (so that
   the function insert may be applied.)
 */
-template <class T, class F> Partition::Partition
-  (const list::List<T>& r, F& f) : d_list(0)
+template <class F> Partition::Partition
+  (Ulong n, const F& property) : classifier(), d_classCount(0)
 {
-  list::List<typename F::valueType> c(0);
+  std::map<decltype(property(0)),Ulong> renumber;
 
-  for (Ulong j = 0; j < r.size(); ++j) {
-    insert(c,f(r[j]));
-  }
+  for (Ulong i=0; i<n; ++i)
+    if (renumber.insert(std::make_pair(property(i),d_classCount)).second)
+      ++d_classCount; // |property(i)| was inserted (new key); consolidate value
 
-  d_list.setSize(r.size());
-  d_classCount = c.size();
-
-  for (Ulong j = 0; j < r.size(); ++j) {
-    d_list[j] = find(c,f(r[j]));
-  }
+  classifier.reserve(n);
+  for (Ulong i=0; i<n; ++i)
+    classifier.push_back(renumber[property(i)]);
 }
 
 
 /*
   A rather general partition constructor. It is assumed that I is an Input
   Iterator (in an informal sense). It is assumed that f is a functor taking
-  one argument of type the value type of I, and that operator<= is defined
+  one argument of type the value type of I, and that operator< is defined
   for the value type of f. A partition is constructed on the range [0,N[,
   where N is the number of iterations from first to last; the class numbers
   are attributed in the order of the values of f on the range.
 */
 template <class I, class F> Partition::Partition
-  (const I& first, const I& last, F& f) : d_list(0)
+(const I& first, const I& last, const F& f) : classifier(), d_classCount(0)
 {
-  list::List<typename F::valueType> c(0);
+  std::map<decltype(f(*first)),Ulong> renumber;
 
-  Ulong count = 0;
+  Ulong size=0;
+  for (auto it=first; it!=last; ++it,++size)
+    renumber.insert(std::make_pair(f(*it),0)); // form |renumber| as a mere set
 
-  for (I i = first; i != last; ++i) {
-    insert(c,f(*i));
-    count++;
-  }
+  for (auto& p : renumber)
+    p.second = d_classCount++; // fill in values increasingly
 
-  d_list.setSize(count);
-  d_classCount = c.size();
-
-  count = 0;
-
-  for (I i = first; i != last; ++i) {
-    d_list[count] = find(c,f(*i));
-    count++;
-  }
-
+  classifier.reserve(size);
+  for (auto it=first; it!=last; ++it)
+    classifier.push_back(renumber[f(*it)]);
 }
 
 
 /*
-  Applies the permutation |a| to the range of the list, on the right (this
+  Apply the permutation |a| to the range of the list, on the right (this
   amounts to applying the inverse permutation in the usual sense). In
   other words, we have new[j] = old[a[j]].
 

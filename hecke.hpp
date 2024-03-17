@@ -29,7 +29,7 @@ namespace {
 
   template<class P> struct PPtrF {
     typedef const P* valueType;
-    valueType operator() (const HeckeMonomial<P>& m) {return &m.pol();}
+    valueType operator() (const HeckeMonomial<P>& m) const {return &m.pol();}
   };
 
   template<class P>

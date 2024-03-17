@@ -262,7 +262,7 @@ OrientedGraph::~OrientedGraph()
   of x not already dealt with. We then move to the parent of x and continue
   the process there.
 */
-void OrientedGraph::cells(bits::Partition& pi, OrientedGraph* P) const
+void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
 {
   static bits::Permutation a(0);
   static bits::BitMap b(0);
@@ -271,8 +271,7 @@ void OrientedGraph::cells(bits::Partition& pi, OrientedGraph* P) const
   static list::List<Ulong> ecount(1);
   static list::List<Ulong> min(0);
 
-  pi.setSize(size());
-  pi.setClassCount(0);
+  bits::Partition pi(size());
 
   b.setSize(size());
   b.reset();
@@ -330,10 +329,10 @@ void OrientedGraph::cells(bits::Partition& pi, OrientedGraph* P) const
 
   }
 
+  dest = pi;
   return;
 }
 
-void OrientedGraph::levelPartition(bits::Partition& pi) const
 
 /*
   Assuming the graph has no oriented cycles, this function writes in pi the
@@ -343,7 +342,7 @@ void OrientedGraph::levelPartition(bits::Partition& pi) const
   NOTE : the implementation is simple-minded : we traverse the graph as many
   times as there are levels.
 */
-
+void OrientedGraph::levelPartition(bits::Partition& dest) const
 {
   static bits::BitMap b(0);
   static bits::BitMap b1(0);
@@ -352,7 +351,8 @@ void OrientedGraph::levelPartition(bits::Partition& pi) const
   b.reset();
   b1.setSize(size());
   b1.reset();
-  pi.setSize(size());
+
+  bits::Partition pi(size());
   Ulong count = 0;
   Ulong current_level = 0;
 
@@ -377,6 +377,7 @@ void OrientedGraph::levelPartition(bits::Partition& pi) const
   }
 
   pi.setClassCount(current_level);
+  dest = pi;
   return;
 }
 

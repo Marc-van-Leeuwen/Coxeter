@@ -23,9 +23,8 @@ namespace cells {
   template<char> // one of 'l', 'r'
     bits::Partition generalized_tau(schubert::SchubertContext& p);
 
-  template<char> // one of 'l', 'r'
+  template<char> // one of 'l', 'r', 'b'
     bits::Partition cells(kl::KLContext& kl);
-  void lrCells(bits::Partition& pi, kl::KLContext& kl);
 
   template<char> // one of 'l', 'r'
     bits::Partition string_equiv(const schubert::SchubertContext& p);

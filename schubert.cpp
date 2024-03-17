@@ -475,7 +475,7 @@ void SchubertContext::extendSubSet
     coxtypes::CoxNbr xs = shift(x,s);
     if (xs < x)
       continue;
-    if (q.isMember(xs))
+    if (q.is_member(xs))
       continue;
     /* if we get here a new element is found */
     q.add(xs);
@@ -1335,13 +1335,12 @@ void printPartition(FILE* file, const bits::Partition& pi, const SchubertContext
   return;
 }
 
-void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b,
-		    const SchubertContext& p, const interface::Interface& I)
 
 /*
   Prints the partition pi restricted to the subset flagged by b.
 */
-
+void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b,
+		    const SchubertContext& p, const interface::Interface& I)
 {
   list::List<Ulong> q(b.begin(),b.end()); // replaces readBitMap
   bits::Partition pi_b(b.begin(),b.end(),pi);

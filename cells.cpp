@@ -211,12 +211,10 @@ template<char side> // one of 'l', 'r',
 
   for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
   {
-    if (seen.isMember(x))
+    if (seen.is_member(x))
       continue;
 
-    bits::SubSet gen_tau_class(p.size()); // generalized-tau class of |x|
-    pi.writeClass(gen_tau_class.bitMap(),pi(x));
-    gen_tau_class.readBitMap(); // gen_tau_class is constant hereafter
+    bits::SubSet gen_tau_class = pi.class_of(x);
 
     // compute Wgraph for the class, then find its strong components (cells)
     bits::Partition qcells(0); // will represent the strong components
@@ -262,7 +260,7 @@ template<char side> // one of 'l', 'r',
 
 	if (zj == coxtypes::undef_coxnbr)
 	  continue;
-	if (seen.isMember(zj))
+	if (seen.is_member(zj))
 	  continue;
 
 	GenSet d = op_desc(zj);
@@ -314,12 +312,14 @@ template bits::Partition cells<'r'> (kl::KLContext& kl);
   certainly better ways to do this, but I'm afraid I don't know enough
   to do it other than by filling in all the mu's ... [Fokko]
 */
-void lrCells(bits::Partition& pi, kl::KLContext& kl)
+template<> bits::Partition cells<'b'>(kl::KLContext& kl)
 {
   kl.fillMu();
 
+  bits::Partition pi;
   wgraph::WGraph X = cells::W_graph<'b'>(kl);
   X.graph().cells(pi); // partition graph into strong components
+  return pi;
 }
 
 /*
@@ -416,7 +416,7 @@ template<char side> // one of 'l', 'r'
 	GenSet f = fz & fsz;
 	if ((f == fz) || (f == fsz)) /* inclusion */
 	  continue;
-	if (!q.isMember(sz)) { // q is not stable! this shouldn't happen
+	if (!q.is_member(sz)) { // q is not stable! this shouldn't happen
 	  error::ERRNO = error::ERROR_WARNING;
 	  return pi;
 	}
