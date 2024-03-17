@@ -705,40 +705,28 @@ SubSet Partition::class_nr(Ulong n) const
 /******* modifiers **********************************************************/
 
 
-void Partition::permute(const Permutation& a)
-
 /*
-  Permutes the partition according to a (i.e., apply a to the domain of
-  the partition function.)
+  Permute set underlying the partition according to |a| (i.e., apply |a| to the
+  elements of each part of the partition)
 */
-
+void Partition::permute(const Permutation& a)
 {
-  static BitMap b(0);
+  bitmap::BitMap seen(size());
 
-  b.setSize(size());
-  b.reset();
-
-  for (SetElt x = 0; x < size(); ++x) {
-    if (b.getBit(x))
-      continue;
-    for (SetElt y = a[x]; y != x; y = a[y]) {
-      Ulong buf = classifier[y];
-      classifier[y] = classifier[x];
-      classifier[x] = buf;
-      b.setBit(y);
-    }
-    b.setBit(x);
+  for (SetElt x = 0; x < size(); ++x)
+  {
+    if (not seen.is_member(x))
+      for (SetElt y = a[x]; y != x; y = a[y])
+      { std::swap(classifier[x],classifier[x]);
+	seen.insert(y);
+      }
+    // we can do without |seen.insert(x)|: we cannot come here again
   }
-
-  return;
 }
 
+
+// Apply the permutation |a| to the values of the classifying function.
 void Partition::permuteRange(const Permutation& a)
-
-/*
-  Applies the permutation a to the range of the partition function.
-*/
-
 {
   for (SetElt x = 0; x < size(); ++x)
     classifier[x] = a[classifier[x]];
@@ -747,11 +735,6 @@ void Partition::permuteRange(const Permutation& a)
 }
 
 void Partition::setClassCount()
-
-/*
-  Finds the number of classes.
-*/
-
 {
   Ulong count = 0;
 
@@ -904,7 +887,7 @@ void SubSet::add(Ulong n)
     return;
 
   d_bitmap.insert(n);
-  d_list.push_back(n);
+  row.push_back(n);
 
   /* the error OUT_OF_MEMORY may have been set here */
 }
@@ -915,17 +898,17 @@ void SubSet::add(Ulong n)
 */
 void SubSet::readBitMap()
 {
-  d_list.resize(d_bitmap.size());
+  row.resize(d_bitmap.size());
 
   Ulong i = 0;
   for (auto e : d_bitmap)
-    d_list[i++] = e;
+    row[i++] = e;
 }
 
 void SubSet::reset()
 {
   d_bitmap.reset();
-  d_list.resize(0);
+  row.resize(0);
 }
 
 };

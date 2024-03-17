@@ -285,22 +285,7 @@ template<char side> // one of 'l', 'r',
     } // |while(not orbit.empty())|
   } // |for(x)||
 
-  /* write down the partition */
-
-  Ulong c = 0; // offset into |seen|
-  Ulong class_nr = 0;
-  for (auto cell_size: cell_sizes)
-  {
-    for (Ulong i = 0; i < cell_size; ++i)
-      pi[seen[c+i]] = class_nr;
-
-    c += cell_size;
-    ++class_nr;
-  }
-
-  pi.setClassCount(cell_sizes.size());
-
-  return pi;
+  return bits::Partition(&seen[0],seen.size(),cell_sizes);
 } // |cells|
 
 template bits::Partition cells<'l'> (kl::KLContext& kl);

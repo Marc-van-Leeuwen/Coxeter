@@ -167,29 +167,30 @@ class bits::BitMap {
 class bits::SubSet {
  private:
   bitmap::BitMap d_bitmap;
-  containers::vector<Ulong> d_list;
+  containers::vector<Ulong> row;
  public:
 /* constructors and destructors */
   SubSet() {};
-  SubSet(Ulong n) : d_bitmap(n), d_list() {}
-  SubSet(const SubSet& q):d_bitmap(q.d_bitmap), d_list(q.d_list) {}
+  SubSet(Ulong n) : d_bitmap(n), row() {}
+  SubSet(const SubSet& q):d_bitmap(q.d_bitmap), row(q.row) {}
 /* accessors */
-  const Ulong operator[] (Ulong j) const { return d_list[j]; }
+  const containers::vector<Ulong>& elements() const { return row; }
+  const Ulong operator[] (Ulong j) const { return row[j]; }
   const bitmap::BitMap& bitMap() const { return d_bitmap; }
   Ulong find(const SetElt& x) const
-  { return std::lower_bound(d_list.begin(),d_list.end(),x)-d_list.begin(); }
+  { return std::lower_bound(row.begin(),row.end(),x)-row.begin(); }
   bool is_member(Ulong n) const { return d_bitmap.is_member(n); }
-  Ulong size() const { return d_list.size(); }
+  Ulong size() const { return row.size(); }
 /* modifiers */
-  Ulong& operator[] (Ulong j) { return d_list[j]; }
+  Ulong& operator[] (Ulong j) { return row[j]; }
   void add(Ulong n); // add |n| to bitmap and list, unless present
   SubSet& assign(const SubSet& q) { new (this) SubSet(q); return *this; }
   bitmap::BitMap& bitMap() { return d_bitmap; }
-  void readBitMap(); // set |d_list| from |d_bitmap| contents
+  void readBitMap(); // set |row| from |d_bitmap| contents
   void reset();
   void setBitMapSize(Ulong n) { d_bitmap.set_capacity(n); }
-  void setListSize(Ulong n) { d_list.resize(n); }
-  void sortList() { return std::sort(d_list.begin(),d_list.end()); }
+  void setListSize(Ulong n) { row.resize(n); }
+  void sortList() { return std::sort(row.begin(),row.end()); }
 }; // |bits::SubSet|
 
 
@@ -208,7 +209,10 @@ private:
   template <class F> Partition(Ulong n, const F& property);
   template <class I, class F> Partition
     (const I& first, const I& last, const F& f);
+  template <class I> Partition
+    (I first, Ulong count, const containers::vector<Ulong>& class_sizes);
 /* accessors */
+  // the next method allows treating the Partition as a (classifying) function
   Ulong operator() (Ulong j) const { return classifier[j]; }
   Ulong classCount() const {return d_classCount;}
   Ulong size() const { return classifier.size(); }
@@ -281,7 +285,7 @@ template <class F> Partition::Partition
   are attributed in the order of the values of f on the range.
 */
 template <class I, class F> Partition::Partition
-(const I& first, const I& last, const F& f) : classifier(), d_classCount(0)
+  (const I& first, const I& last, const F& f) : classifier(), d_classCount(0)
 {
   std::map<decltype(f(*first)),Ulong> renumber;
 
@@ -297,6 +301,17 @@ template <class I, class F> Partition::Partition
     classifier.push_back(renumber[f(*it)]);
 }
 
+template <class I> Partition::Partition
+  (I first, Ulong count, const containers::vector<Ulong>& class_sizes)
+    : classifier(count,-1)
+  , d_classCount(class_sizes.size())
+{
+  classifier.reserve(count);
+  for (Ulong class_nr = 0; class_nr<d_classCount; ++class_nr)
+    for (Ulong i = 0; i<class_sizes[class_nr]; ++i)
+      classifier[*first++]=class_nr;
+  assert(classifier.size()==count); // check that |count| is sum of class sizes
+}
 
 /*
   Apply the permutation |a| to the range of the list, on the right (this
