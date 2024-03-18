@@ -76,20 +76,7 @@ template<char side> // one of 'l', 'r'
   auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
     { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
 
-  static list::List<GenSet> d(0); /* holds the appearing descent sets */
-  d.setSize(0);
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
-    insert(d,desc(x));
-
-  bits::Partition pi(p.size());
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
-    pi[x] = find(d,desc(x));
-
-  pi.setClassCount(d.size());
-
-  return pi;
+  return bits::Partition(p.size(),desc);
 } // |descent_partition|
 
 template bits::Partition descent_partition<'l'>
@@ -99,13 +86,19 @@ template bits::Partition descent_partition<'r'>
 
 /*
   This is the most delicate of the partition functions. It is the maximal
-  refinement of the right descent partition under right star operations.
-  In other words, two elements x and y are in the same class for this
-  partition, if for each right star-word a (i.e. a sequence of right
-  star-operations), x*a and y*a have the same right descent set.
+  refinement of the right or left descent partition under right respectivelu
+  left star operations. In other words, two elements $x$ and $y$ are in the same
+  class for this partition, if for each composition $f$ of right
+  star-operations, the lements $f(x)$ and $f(y)$ have the same right descent set.
 
-  The algorithm is very much like the minimization algorithm for a finite
-  state automaton.
+  The algorithm is very much like the construction of a finite state automaton
+  for a regular language, where a coarse partition of the set of words is
+  successively refined as applying the extension by certain letters detects that
+  equivalence classes need to be split up, and this is repeated up to the point
+  where no further refinement is obtained. A similar algorithm also occurs when
+  in the presence of a collcetion of possibly recursive type definitions one
+  wants to decide (structural) equivalence of type expressions: by definition
+  they are equivalent if no sequence of type operations can detect a difference.
 
   NOTE : this could probably be simplified with a PartitionIterator; be
   wary though of modifications in pi during the loop.
@@ -113,72 +106,56 @@ template bits::Partition descent_partition<'r'>
 template<char side> // one of 'l', 'r'
   bits::Partition generalized_tau(schubert::SchubertContext& p)
 {
-  static list::List<Ulong> b(0);
-  static list::List<Ulong> cc(0); // sizes of parts of the partition |pi|
-  static list::List<Ulong> a(0);
-
   /* initialize pi with partition into right descent sets */
 
-  Ulong prev;
   bits::Partition pi = descent_partition<side>(p);
 
-  do {
-    prev = pi.classCount();
+  Ulong prev_count; // hold previous count to measure progress; must be outside loop
+  do
+  {
+    prev_count = pi.classCount(); // base value for |do...while(...)| loop body
 
-    /* refine */
-
-    for (Ulong r = 0; r < p.nStarOps(); ++r)
+    for (Ulong r = 0; r < p.nStarOps(); ++r) // try to refine |pi| by *-op |r|
     {
       bits::Permutation v = pi.inverse_standardization();
-      Ulong count = pi.classCount();
-      cc.setSize(count);
-      cc.setZero();
+      containers::vector<unsigned> class_size(pi.classCount(),0);
 
       for (Ulong j = 0; j < pi.size(); ++j)
-	cc[pi[j]]++; // count each class of |pi|
+	++class_size[pi[j]]; // count each class of |pi|
 
       Ulong i = 0;
+      const auto n_classes = pi.classCount(); // fix this since loop increases it
+      for (Ulong c=0; c<n_classes; i += class_size[c], ++c) // handle class |c|
+      {
+	const coxtypes::CoxNbr x = v[i]; // first element in class
+	const coxtypes::CoxNbr x_star = p.star_base<side>(x)[r];
+	if (x_star == coxtypes::undef_coxnbr)
+	  continue; // if this one fails, the whold class will (?)
 
-      for (Ulong c = 0; c < pi.classCount(); ++c) {
+	containers::multimap<Ulong,Ulong> star_values
+	  { std::make_pair(pi[x_star],x) };
 
-	coxtypes::CoxNbr x = v[i]; /* first element in class */
-
-	if (p.star_base<side>(x)[r] == coxtypes::undef_coxnbr)
-	  goto next_class;
-
-	/* find possibilities for v[.]*r */
-
-	b.setSize(0);
-
-	for (Ulong j = 0; j < cc[c]; ++j) {
-	  assert(pi[v[i]]==pi[v[i+j]]); // we traverse a class of |pi|
-	  auto star = p.star_base<side>(v[i+j])[r];
-	  assert(star != coxtypes::undef_coxnbr); // same descent set, same stars
-	  Ulong cr = pi[star];
-	  insert(b,cr); // add |cr| to list of class values if new
+	for (Ulong j = 1; j < class_size[c]; ++j)
+	{
+	  const coxtypes::CoxNbr xx = v[i+j];
+	  assert(pi[x]==pi[xx]); // we traverse the |pi|-class of |x|
+	  const coxtypes::CoxNbr xx_star = p.star_base<side>(xx)[r];
+	  assert(p.in_context(xx_star)); // same descent set, same stars
+	  star_values.insert(std::make_pair(pi[xx_star],xx));
 	}
 
-	if (b.size() > 1) { /* there is a refinement */
-	  a.setSize(cc[c]);
-	  for (Ulong j = 0; j < a.size(); ++j)
-	    a[j] = find(b,pi[p.star_base<side>(v[i+j])[r]]);
-	  for (Ulong j = 0; j < cc[c]; ++j) {
-	    if (a[j] > 0)
-	      pi[v[i+j]] = count+a[j]-1; // make all but one into a new class
-	  }
-	  count += b.size()-1;
-	}
+	for (auto it = star_values.upper_bound(star_values.begin()->first);
+	     it != star_values.end(); // increasing |it| happens in loop body
+	     pi.incr_class_count() ) // traverse any new subclasses to split off
+	  for (auto key = it->first;
+	       it != star_values.end() and it->first==key;
+	       ++it)
+	    pi[it->second] = pi.classCount(); // give new classifier value to |xx|
 
-      next_class:
-	i += cc[c];
-	continue;
-      }
+      } // |for(c)| (class for |pi| before loop)
 
-      pi.setClassCount(count);
-
-    }
-
-  } while (prev < pi.classCount());
+    } // |for(r)| (star operation)
+  } while(pi.classCount() > prev_count); // whether to do another iteration
 
   return pi;
 } // |generalized_tau|
@@ -240,7 +217,7 @@ template<char side> // one of 'l', 'r',
     // record cell structure by copying sizes-list |comp_sizes| to |cell_sizes|
     cell_sizes.insert(cell_sizes.end(), comp_sizes.begin(),comp_sizes.end());
 
-    /* from the genealized tau class of |x|, partitioned into cells, we can
+    /* from the generalized tau class of |x|, partitioned into cells, we can
        cheaply deduce other, isomorphic, packets of cells by repeatedly applying
        opposite-side star operations
      */
@@ -321,41 +298,40 @@ template<char side> // one of 'l', 'r'
   auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
     { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
 
-  static bits::BitMap b(0);
-  static stack::Fifo<coxtypes::CoxNbr> orbit;
-
-  b.setSize(p.size());
-  b.reset();
+  bitmap::BitMap seen(p.size());
 
   bits::Partition pi(p.size());
   Ulong count = 0;
 
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {
-    if (b.getBit(x))
-      continue;
-    b.setBit(x);
-    pi[x] = count;
-    orbit.push(x);
-    while (orbit.size()) {
-      coxtypes::CoxNbr z = orbit.pop();
-      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
-	coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
-	if (b.getBit(sz))
-	  continue;
-	GenSet fz = desc(z);
-	GenSet fsz = desc(sz);
-	GenSet f = fz & fsz;
-	if ((f == fz) || (f == fsz)) /* inclusion */
-	  continue;
-	b.setBit(sz);
-	pi[sz] = count;
-	orbit.push(sz);
-      }
-    }
-    count++;
-  }
+  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
+    if (not seen.is_member(x))
+    {
+      seen.insert(x);
+      pi[x] = count;
+      containers::queue<coxtypes::CoxNbr> orbit { x };
+      do
+      {
+	coxtypes::CoxNbr z = orbit.front();
+	orbit.pop();
 
-  pi.setClassCount(count);
+	for (coxtypes::Generator s = 0; s < p.rank(); ++s)
+	{
+	  coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
+	  if (seen.is_member(sz))
+	    continue;
+	  GenSet fz = desc(z);
+	  GenSet fsz = desc(sz);
+	  GenSet f = fz & fsz;
+	  if (f != fz and f != fsz) // inclusion neither way
+          {
+	    seen.insert(sz);
+	    pi[sz] = pi.classCount();
+	    orbit.push(sz);
+	  }
+	} // |for(s)||
+      } while (not orbit.empty());
+      pi.incr_class_count();
+    } // |for(x) if (not seen.is_member(x))|
 
   return pi;
 } // |string_equiv|
@@ -365,7 +341,7 @@ template bits::Partition string_equiv<'r'>(const schubert::SchubertContext& p);
 
 /*
   Do the partition of the subset q into left string classes. It is assumed
-  that q is stable under the equivalence relation.
+  that q is stable under the equivalence relation. (This function is unused.)
 */
 template<char side> // one of 'l', 'r'
   bits::Partition string_equiv
@@ -374,45 +350,48 @@ template<char side> // one of 'l', 'r'
   auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
     { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
 
-  static bits::BitMap b(0);
-  static stack::Fifo<coxtypes::CoxNbr> orbit;
-
-  b.setSize(p.size());
-  b.reset();
+  bitmap::BitMap seen(p.size());
 
   bits::Partition pi(q.size());
   Ulong count = 0;
 
-  for (Ulong j = 0; j < q.size(); ++j) {
+  for (Ulong j = 0; j < q.size(); ++j)
+  {
     const coxtypes::CoxNbr x = q[j];
-    if (b.getBit(x))
-      continue;
-    b.setBit(x);
-    pi[j] = count;
-    orbit.push(x);
-    while (orbit.size()) {
-      coxtypes::CoxNbr z = orbit.pop();
-      for (coxtypes::Generator s = 0; s < p.rank(); ++s) {
-	coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
-	if (b.getBit(sz))
-	  continue;
-	GenSet fz = desc(z);
-	GenSet fsz = desc(sz);
-	GenSet f = fz & fsz;
-	if ((f == fz) || (f == fsz)) /* inclusion */
-	  continue;
-	if (!q.is_member(sz)) { // q is not stable! this shouldn't happen
-	  error::ERRNO = error::ERROR_WARNING;
-	  return pi;
-	}
-	b.setBit(sz);
-	orbit.push(sz);
-      }
-    }
-    count++;
-  }
-
-  pi.setClassCount(count);
+    if (not seen.is_member(x))
+    {
+      seen.insert(x);
+      pi[j] = count;
+      containers::queue<coxtypes::CoxNbr> orbit { x };
+      do
+      {
+	coxtypes::CoxNbr z = orbit.front();
+	orbit.pop();
+	for (coxtypes::Generator s = 0; s < p.rank(); ++s)
+	{
+	  coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
+	  if (seen.is_member(sz))
+	    continue;
+	  GenSet fz = desc(z);
+	  GenSet fsz = desc(sz);
+	  GenSet f = fz & fsz;
+	  if (f != fz and f != fsz) // inclusion neither way
+          {
+	    if (not q.is_member(sz))
+	    { // q is not stable! this shouldn't happen
+	      error::ERRNO = error::ERROR_WARNING;
+	      return pi;
+	    }
+	    seen.insert(sz);
+	    pi[sz] = pi.classCount();
+	    orbit.push(sz);
+	  }
+	} // |for(s)||
+      } while (not orbit.empty());
+      pi.incr_class_count();
+      count++;
+    } // |if(not seen)|
+  } // |for(x)|
 
   return pi;
 } // |string_equiv|

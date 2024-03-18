@@ -221,16 +221,16 @@ private:
   Permutation inverse_standardization() const; // its inverse
   SubSet class_nr(Ulong n) const; // equivalence class with label |n|
   SubSet class_of(Ulong x) const { return class_nr(classifier[x]); }
+  containers::vector<Ulong> class_sizes() const;
 /* modifiers */
+  void incr_class_count() { ++d_classCount; }
   Ulong& operator[] (Ulong j)     { return classifier[j]; }
   Partition& normalize() { return *this = Partition(size(),*this); }
   void permute(const Permutation& a);
   void permuteRange(const Permutation& a);
-  void setClassCount();
+  // void setClassCount(); // compute the number of classes from |classifier|
   void setClassCount(Ulong count) { d_classCount = count; }
   void setSize(Ulong n) { classifier.resize(n); }
-/* input/output */
-  void printClassSizes(FILE* file) const;
 }; // |bits::Partition|
 
 class bits::PartitionIterator {

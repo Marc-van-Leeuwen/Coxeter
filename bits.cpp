@@ -734,46 +734,27 @@ void Partition::permuteRange(const Permutation& a)
   return;
 }
 
+#if 0 // this only works if |classifier| values are without gaps
 void Partition::setClassCount()
 {
   Ulong count = 0;
 
-  for (Ulong j = 0; j < size(); ++j) {
+  for (Ulong j = 0; j < size(); ++j)
     if (classifier[j] >= count)
       count = classifier[j]+1;
-  }
 
   d_classCount = count;
-
-  return;
 }
+#endif
 
 /******** input/output ******************************************************/
 
-
-/*
-  This function prints out the sizes of the classes in the partition.
-*/
-void Partition::printClassSizes(FILE* file) const
+containers::vector<Ulong> Partition::class_sizes() const
 {
-  static list::List<Ulong> count(0);
-
-  count.setSize(d_classCount);
-  count.setZero();
-
-  for (Ulong j = 0; j < size(); ++j) {
-    count[classifier[j]]++;
-  }
-
-  for (Ulong j = 0; j < d_classCount; ++j) {
-    fprintf(file,"%lu",count[j]);
-    if (j < d_classCount-1)
-      fprintf(file,",");
-  }
-
-  fprintf(file,"\n");
-
-  return;
+  containers::vector<Ulong> result(classCount(),0);
+  for (Ulong nr : classifier)
+    ++result[nr];
+  return result;
 }
 
 };

@@ -13,6 +13,7 @@
 #include <cstdint> // for |std::uint32_t|
 #include <vector> // for |std::vector|
 #include <set>    // for |std::set|
+#include <map>    // for |std::map|
 #include <algorithm> // for |std::copy|, |std::all|
 #include <cassert>
 
@@ -23,9 +24,18 @@ namespace containers {
 template <typename T>
   using vector = std::vector<T,containers::allocator<T> >;
 
+template<typename T, typename Compare = std::less<T> >
+  using set = std::set<T,Compare,containers::allocator<T> >;
 
+template<typename Key, typename T, typename Compare = std::less<T> >
+  using map = std::map<Key,T,Compare,containers::allocator<T> >;
 
-template <typename Alloc>
+template<typename Key, typename T, typename Compare = std::less<T> >
+  using multimap =
+    std::multimap<Key,T,Compare,
+		  containers::allocator<std::pair<const Key,T> > >;
+
+  template <typename Alloc>
   class allocator_deleter;
 template<typename T,typename Alloc = containers::allocator<T> >
   struct sl_node;
@@ -140,9 +150,9 @@ public:
 
 
 template<typename T, typename Compare = std::less<T> >
-  struct bag : public std::set<T,Compare,containers::allocator<T> >
+  struct bag : public set<T,Compare>
   {
-    using Base = std::set<T,Compare,containers::allocator<T> >;
+    using Base = set<T,Compare>;
     using Base::Base; // inherit all constructors
     const T* find(const T& x)
     {
