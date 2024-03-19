@@ -228,9 +228,6 @@ private:
   Partition& normalize() { return *this = Partition(size(),*this); }
   void permute(const Permutation& a);
   void permuteRange(const Permutation& a);
-  // void setClassCount(); // compute the number of classes from |classifier|
-  void setClassCount(Ulong count) { d_classCount = count; }
-  void setSize(Ulong n) { classifier.resize(n); }
 }; // |bits::Partition|
 
 class bits::PartitionIterator {

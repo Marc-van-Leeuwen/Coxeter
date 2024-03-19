@@ -100,18 +100,21 @@ class FiniteCoxGroup : public coxgroup::CoxGroup
 
 /* array operations */
 
-  const coxtypes::CoxArr& assign(coxtypes::CoxArr& a, const coxtypes::CoxArr& b) const;        /* inlined */
+  const coxtypes::CoxArr& assign
+    (coxtypes::CoxArr& a, const coxtypes::CoxArr& b) const;        /* inlined */
   virtual const coxtypes::CoxArr& inverseArr(coxtypes::CoxArr& a) const;
   coxtypes::Length length(const coxtypes::CoxArr& a) const;
   const coxtypes::CoxArr& powerArr(coxtypes::CoxArr& a, const Ulong& m) const;
   int prodArr(coxtypes::CoxArr& a, const coxtypes::CoxArr& b) const;
   GenSet rDescent(const coxtypes::CoxArr& a) const;
-  const coxtypes::CoxWord& reducedArr(coxtypes::CoxWord& g, const coxtypes::CoxArr& a) const;
-  const coxtypes::CoxArr& setZero(coxtypes::CoxArr& a) const;                        /* inlined */
+  const coxtypes::CoxWord& reducedArr
+    (coxtypes::CoxWord& g, const coxtypes::CoxArr& a) const;
+  const coxtypes::CoxArr& setZero(coxtypes::CoxArr& a) const;     /* inlined */
 
 /* mixed operations */
 
-  const coxtypes::CoxArr& assign(coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const;
+  const coxtypes::CoxArr& assign
+    (coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const;
   int prodArr(coxtypes::CoxArr& a, coxtypes::Generator s) const;
   int prodArr(coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const;
 
@@ -121,19 +124,18 @@ class FiniteCoxGroup : public coxgroup::CoxGroup
 
 /* kazhdan-lusztig cells and realted partitions */
 
-  const bits::Partition& lCell();
-  const bits::Partition& lrCell();
-  const bits::Partition& rCell();
+  template<char side> // 'l' or 'r' or 'b'
+    const bits::Partition& cell();
   const list::List<coxtypes::CoxNbr>& duflo();
   const bits::Partition& lUneqCell();
   const bits::Partition& lrUneqCell();
   const bits::Partition& rUneqCell();
-  const bits::Partition& lDescent();
-  const bits::Partition& rDescent();
+  template<char side> // 'l' or 'r'
+    const bits::Partition& descent();
   const bits::Partition& lString();
   const bits::Partition& rString();
-  const bits::Partition& lTau();
-  const bits::Partition& rTau();
+  template<char side> // 'l' or 'r'
+    const bits::Partition& tau();
 
 };
 

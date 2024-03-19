@@ -6,7 +6,8 @@
 */
 
 #include "wgraph.h"
-#include "stack.h"
+
+#include "sl_list.h" // to complete |containers::queue|
 
 /****************************************************************************
 
@@ -35,8 +36,9 @@ namespace wgraph {
 
   namespace {
 
-    void getClass(const OrientedGraph& X, const Vertex& y, bits::BitMap& b,
-		  bits::Partition& pi, OrientedGraph* P = 0);
+    void getClass(const OrientedGraph& X, const Vertex& y,
+		  bitmap::BitMap& b,  bits::Partition& pi,
+		  OrientedGraph* P);
 
   }; // |namespace|
 
@@ -105,41 +107,34 @@ WGraph::~WGraph()
   delete d_graph;
 }
 
-void WGraph::reset()
 
 /*
   This function resets the structure to an empty graph of the same size.
 */
-
+void WGraph::reset()
 {
   d_graph->reset();
   d_coeff.setZero();
   d_descent.setZero();
-
-  return;
 }
 
-void WGraph::setSize(const Ulong& n)
 
 /*
   Sets the sizes of the data structures so that the graph can accomodate
   n vertices.
 */
-
+void WGraph::setSize(const Ulong& n)
 {
   d_graph->setSize(n);
   d_coeff.setSize(n);
   d_descent.setSize(n);
-
-  return;
 }
 
-void WGraph::print(FILE* file, const interface::Interface& I) const
 
 /*
   Prints the graph on a file in ascii format.
 */
-
+void WGraph::print(FILE* file, const interface::Interface& I) const
 {
   const OrientedGraph& Y = *d_graph;
 
@@ -265,7 +260,6 @@ OrientedGraph::~OrientedGraph()
 void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
 {
   static bits::Permutation a(0);
-  static bits::BitMap b(0);
   static list::List<Vertex> v(1);
   static list::List<const EdgeList*> elist(1);
   static list::List<Ulong> ecount(1);
@@ -273,8 +267,8 @@ void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
 
   bits::Partition pi(size());
 
-  b.setSize(size());
-  b.reset();
+  bitmap::BitMap seen(size());
+
   min.setSize(size());
   min.setZero();
 
@@ -283,7 +277,7 @@ void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
 
   for (Vertex x = 0; x < size(); ++x) {
 
-    if (b.getBit(x)) /* x is dealt with */
+    if (seen.is_member(x)) /* x is dealt with */
       continue;
 
     v[0] = x;
@@ -301,7 +295,7 @@ void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
       const EdgeList& e = *elist[t-1];
       for (; ecount[t-1] < e.size(); ++ecount[t-1]) {
 	z = e[ecount[t-1]];
-	if (b.getBit(z))
+	if (seen.is_member(z))
 	  continue;
 	if (min[z] == size()) /* z is new */
 	  goto add_path;
@@ -310,7 +304,7 @@ void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
       }
     /* at this point we have exhausted the edges of y */
       if (min[y] == t-1) { /* take off class */
-	getClass(*this,y,b,pi,P);
+	getClass(*this,y,seen,pi,P);
       }
       else if (min[y] < min[v[t-2]]) /* if t=1, previous case holds */
 	min[v[t-2]] = min[y];
@@ -344,39 +338,35 @@ void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
 */
 void OrientedGraph::levelPartition(bits::Partition& dest) const
 {
-  static bits::BitMap b(0);
-  static bits::BitMap b1(0);
 
-  b.setSize(size());
-  b.reset();
-  b1.setSize(size());
-  b1.reset();
+  bitmap::BitMap removed(size()), cur_sinks(size());
 
   bits::Partition pi(size());
   Ulong count = 0;
-  Ulong current_level = 0;
 
-  while (count < size()) {
-    for (bits::SetElt x = 0; x < size(); ++x) {
-      if (b.getBit(x))
+  do // since |size()>0|
+  {
+    cur_sinks.reset(); // actually, not doing this would make no difference
+    for (bits::SetElt x = 0; x < size(); ++x)
+    {
+      if (removed.is_member (x))
 	continue;
       const EdgeList e = d_edge[x];
-      for (Ulong j = 0; j < e.size(); ++j) {
-	if (!b.getBit(e[j])) /* next x */
-	  goto nextx;
-      }
-      /* i we get here, x is the next element in the permutation */
-      pi[x] = current_level;
-      b1.setBit(x);
-      ++count;
-    nextx:
-      continue;
-    }
-    b.assign(b1);
-    current_level++;
-  }
+      for (Ulong j = 0; j < e.size(); ++j)
+	if (not removed.is_member(e[j]))
+	  goto next_x;
 
-  pi.setClassCount(current_level);
+      // if we get here, |x| is at the current level
+      pi[x] = pi.classCount();
+      cur_sinks.insert(x);
+      ++count; // keep track of number of elements marked, for termination
+    next_x:
+      continue;
+    } // |for(x)|
+    removed |= cur_sinks;
+    pi.incr_class_count();
+  } while (count < size());
+
   dest = pi;
   return;
 }
@@ -497,42 +487,44 @@ namespace {
   these are just the elements visible from y and not already marked in b.
   The class is also written as a new class in pi, and in |P| if non-null.
 */
-void getClass(const OrientedGraph& X, const Vertex& y, bits::BitMap& b,
+void getClass(const OrientedGraph& X, const Vertex& y, bitmap::BitMap& seen,
 	      bits::Partition& pi, OrientedGraph* P)
 {
-  static stack::Fifo<Vertex> c;
 
-  Ulong a = pi.classCount();
-  c.push(y);
-  b.setBit(y);
-  pi[y] = a;
+  const Ulong cc = pi.classCount();
+  pi[y] = cc;
   if (P!=nullptr)
-    P->setSize(a+1);
+    P->setSize(cc+1);
 
-  while (c.size()) {
-    Vertex x = c.pop();
+  containers::queue<Ulong> q { y };
+  seen.insert(y);
+  do
+  {
+    Vertex x = q.front();
+    q.pop();
     const EdgeList& e = X.edge(x);
-    for (Ulong j = 0; j < e.size(); ++j) {
+    for (Ulong j = 0; j < e.size(); ++j)
+    {
       Vertex z = e[j];
-      if (b.getBit(z)) {
-	if (P!=nullptr and pi[z] < a)
+      if (seen.is_member(z))
+      {
+	if (P!=nullptr and pi[z] < cc)
 	{ /* add a new edge to P */
-	  EdgeList& f = P->edge(a);
-	  if (find(f,pi[z]) == list::not_found) { /* edge is new */
+	  EdgeList& f = P->edge(cc);
+	  if (find(f,pi[z]) == list::not_found) // whether edge is new
 	    insert(f,pi[z]);
-	  }
 	}
-	continue;
       }
-      else {
-	c.push(z);
-	b.setBit(z);
-	pi[z] = a;
+      else // |z| not in |seen|
+      {
+	q.push(z);
+	seen.insert(z);
+	pi[z] = cc;
       }
-    }
-  }
+    } // |for(j)|
+  } while (not q.empty());
 
-  pi.setClassCount(a+1);
+  pi.incr_class_count();
 
   return;
 }

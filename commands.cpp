@@ -1199,7 +1199,8 @@ void duflo_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::dufloH,traits);
-  printDuflo(file.f(),Wf->duflo(),Wf->lCell(),Wf->kl(),W->interface(),traits);
+  printDuflo(file.f(),Wf->duflo(),Wf->cell<'l'>(),Wf->kl(),
+	     W->interface(),traits);
 }
 
 void extremals_f()
@@ -1531,7 +1532,7 @@ void lcells_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::lCellsH,traits);
-  printLCells(file.f(),Wf->lCell(),Wf->kl(),Wf->interface(),traits);
+  printLCells(file.f(),Wf->cell<'l'>(),Wf->kl(),Wf->interface(),traits);
 }
 
 void lcwgraphs_f()
@@ -1553,7 +1554,7 @@ void lcwgraphs_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::lCellWGraphsH,traits);
-  printLCellWGraphs(file.f(),Wf->lCell(),Wf->kl(),W->interface(),traits);
+  printLCellWGraphs(file.f(),Wf->cell<'l'>(),Wf->kl(),W->interface(),traits);
 }
 
 void lrcorder_f()
@@ -1621,7 +1622,7 @@ void lrcells_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::lrCellsH,traits);
-  printLRCells(file.f(),Wf->lrCell(),Wf->kl(),Wf->interface(),traits);
+  printLRCells(file.f(),Wf->cell<'b'>(),Wf->kl(),Wf->interface(),traits);
 }
 
 void lrcwgraphs_f()
@@ -1643,7 +1644,7 @@ void lrcwgraphs_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::lrCellWGraphsH,traits);
-  printLRCellWGraphs(file.f(),Wf->lrCell(),Wf->kl(),W->interface(),traits);
+  printLRCellWGraphs(file.f(),Wf->cell<'b'>(),Wf->kl(),W->interface(),traits);
 }
 
 void lrwgraph_f()
@@ -1923,7 +1924,7 @@ void rcells_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::rCellsH,traits);
-  printRCells(file.f(),Wf->rCell(),Wf->kl(),Wf->interface(),traits);
+  printRCells(file.f(),Wf->cell<'r'>(),Wf->kl(),Wf->interface(),traits);
 }
 
 void rcwgraphs_f()
@@ -1945,7 +1946,7 @@ void rcwgraphs_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::rCellWGraphsH,traits);
-  printRCellWGraphs(file.f(),Wf->rCell(),Wf->kl(),W->interface(),traits);
+  printRCellWGraphs(file.f(),Wf->cell<'r'>(),Wf->kl(),W->interface(),traits);
 }
 
 void rwgraph_f()

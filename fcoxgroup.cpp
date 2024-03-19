@@ -114,7 +114,7 @@ inline Workspace& workspace()
    - duflo() : returns the list of Duflo involutions;
    - inverse(a) : inverses a;
    - isFullContext() : tells if longest_elt is in context;
-   - l(r,lr)Cell() : returns the partition in left (right,two-sided) cells;
+   - cell<r/l/b>() : returns the partition in right/left/two-sided cells;
    - l(r,lr)UneqCell() : returns the partition in left (right,two-sided) cells
      for unequal parameters;
    - l(r)Descent() : returns the partition in left (right) descent classes;
@@ -498,43 +498,38 @@ bool FiniteCoxGroup::parseModifier(interface::ParseInterface& P) const
 */
 const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
 {
-  if (d_duflo.size() == 0) { /* find duflo involutions */
+  if (d_duflo.size() == 0)
+  { /* find duflo involutions */
 
     kl::KLContext& kl = *d_kl;
     const schubert::SchubertContext& p = kl.schubert();
 
+    cell<'l'>(); // make sure left cell partition is available
 
-    /* make sure left cell partition is available */
-
-    lCell();
-
-    /* load involutions in q */
-
-    containers::vector<coxtypes::CoxNbr>
-      q(kl.involution().begin(),kl.involution().end()); // list of involutions
+    containers::vector<coxtypes::CoxNbr> q
+      (kl.involution().begin(),kl.involution().end()); // list of involutions
 
     // partition involutions by left cells
-    bits::Partition pi(q.size());
-    for (Ulong i = 0; i < q.size(); ++i) {
-      pi[i] = d_lcell[q[i]];
-    }
-    pi.setClassCount(d_lcell.classCount());
+    bits::Partition pi(q.size(),[this,&q](Ulong i){ return d_lcell(q[i]); });
 
     /* find Duflo involution in each cell */
 
-    for (bits::PartitionIterator i(pi); i; ++i) {
-      const list::List<Ulong>& c = i();
+    for (bits::PartitionIterator i(pi); i; ++i)
+    {
+      const auto& c = i();
       if (c.size() == 1) { /* cell has single involution */
 	d_duflo.append(q[c[0]]);
 	continue;
       }
       coxtypes::Length m = d_maxlength;
       coxtypes::CoxNbr d = c[0];
-      for (Ulong j = 0; j < c.size(); ++j) {
+      for (Ulong j = 0; j < c.size(); ++j)
+      { // find involution $x$ that minimizes $l(x)-2\deg(P_{0,x})$
 	coxtypes::CoxNbr x = q[c[j]]; /* current involution */
 	const kl::KLPol& pol = kl.klPol(0,x);
 	coxtypes::Length m1 = p.length(x) - 2*pol.deg();
-	if (m1 < m) {
+	if (m1 < m)
+	{
 	  m = m1;
 	  d = x;
 	}
@@ -563,13 +558,22 @@ const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
   the cells is meaningful, we normalize the partition, so that it can be
   guaranteed to always have the same meaning.
 */
-
-const bits::Partition& FiniteCoxGroup::rCell()
+template<char side> // 'l' or 'r' or 'b'
+  const bits::Partition& FiniteCoxGroup::cell()
 {
-  if (d_rcell.classCount()>0) /* partition was already computed */
-    return d_rcell;
+  auto& our_cell   = side=='l' ? d_lcell : side=='r' ? d_rcell : d_lrcell;
+  auto& their_cell = side=='l' ? d_rcell : side=='r' ? d_lcell : d_lrcell;
 
-  if (not isFullContext()) {
+  if (our_cell.classCount()>0) // partition was already computed
+    return our_cell;
+  else if (their_cell.classCount()>0) // we can use the opposite side
+  { auto f = [this,&their_cell](coxtypes::CoxNbr x)-> Ulong
+             { return their_cell(CoxGroup::inverse(x)); };
+    return our_cell = bits::Partition(their_cell.size(),f); // normalizes order
+  }
+
+  if (not isFullContext())
+  {
     fullContext();
     if (error::ERRNO)
       goto abort;
@@ -579,52 +583,16 @@ const bits::Partition& FiniteCoxGroup::rCell()
   if (error::ERRNO)
     goto abort;
 
-  return d_rcell = cells::cells<'r'>(kl()).normalize();
+  return our_cell = cells::cells<side>(kl()).normalize();
 
  abort:
   error::Error(error::ERRNO);
-  return d_rcell;
+  return our_cell;
 }
 
-// Return the partition into left cells (made from the right cell partitition).
-const bits::Partition& FiniteCoxGroup::lCell()
-{
-  if (d_lcell.classCount()>0) // partition was already computed
-    return d_lcell;
-
-  const bits::Partition& r = rCell();
-  auto f = [this,&r](coxtypes::CoxNbr x)-> Ulong
-    { return r(CoxGroup::inverse(x)); };
-  return d_lcell = bits::Partition(r.size(),f); // normalizes order of the |f(x)|
-}
-
-/*
-  Similar to rCell, but for two-sided cells.
-*/
-const bits::Partition& FiniteCoxGroup::lrCell()
-{
-  if (d_lrcell.classCount()>0) /* partition was already computed */
-    return d_lrcell;
-
-  if (not isFullContext()) {
-    fullContext();
-    if (error::ERRNO)
-      goto abort;
-    kl().fillMu();
-    if (error::ERRNO)
-      goto abort;
-  }
-
-  if (d_lrcell.size() == 0) /* size is either zero or group order */
-    d_lrcell = cells::cells<'b'>(kl());
-
-  return d_lrcell;
-
- abort:
-  error::Error(error::ERRNO);
-  return d_lrcell;
-}
-
+template const bits::Partition& FiniteCoxGroup::cell<'l'>();
+template const bits::Partition& FiniteCoxGroup::cell<'r'>();
+template const bits::Partition& FiniteCoxGroup::cell<'b'>();
 
 /*
   Return the partition of the group in right cells for unequal parameters.
@@ -710,7 +678,6 @@ const bits::Partition& FiniteCoxGroup::lrUneqCell()
 
 
 
-const bits::Partition& FiniteCoxGroup::lDescent()
 
 /*
   Returns the partition of the group in left descent classes, where two
@@ -719,64 +686,28 @@ const bits::Partition& FiniteCoxGroup::lDescent()
 
   It is known that this partition is coarser than the one by right cells.
 */
-
+template<char side> const bits::Partition& FiniteCoxGroup::descent()
 {
-  if (d_ldescent.classCount()) /* partition was already computed */
-    return d_ldescent;
+  auto& desc = side=='l' ? d_ldescent : d_rdescent;
+  if (desc.classCount()>0) /* partition was already computed */
+    return desc;
 
-  if (!isFullContext()) {
+  if (not isFullContext())
+  {
     fullContext();
     if (error::ERRNO)
       goto abort;
   }
 
-  d_ldescent.setSize(order());
-
-  for (coxtypes::CoxNbr x = 0; x < order(); ++x)
-    d_ldescent[x] = ldescent(x);
-
-  d_ldescent.setClassCount(1<<rank());
-
-  return d_ldescent;
+  return desc = cells::descent_partition<side>(schubert());
 
  abort:
   error::Error(error::ERRNO);
-  return d_ldescent;
+  return desc;
 }
 
-const bits::Partition& FiniteCoxGroup::rDescent()
-
-/*
-  Returns the partition of the group in right descent classes, where two
-  elements are equivalent iff they have the same right descent set (this is
-  the non-generalized tau-invariant of Vogan.)
-
-  it is known that this partition is coarser than the one by left cells.
-*/
-
-{
-  if (d_rdescent.classCount()) /* partition was already computed */
-    return d_rdescent;
-
-  if (!isFullContext()) {
-    fullContext();
-    if (error::ERRNO)
-      goto abort;
-  }
-
-  d_rdescent.setSize(order());
-
-  for (coxtypes::CoxNbr x = 0; x < order(); ++x)
-    d_rdescent[x] = rdescent(x);
-
-  d_rdescent.setClassCount(1<<rank());
-
-  return d_rdescent;
-
- abort:
-  error::Error(error::ERRNO);
-  return d_rdescent;
-}
+template const bits::Partition& FiniteCoxGroup::descent<'l'>();
+template const bits::Partition& FiniteCoxGroup::descent<'r'>();
 
 const bits::Partition& FiniteCoxGroup::lString()
 
@@ -837,57 +768,37 @@ const bits::Partition& FiniteCoxGroup::rString()
   error::Error(error::ERRNO);
   return d_rstring;
 }
-
-const bits::Partition& FiniteCoxGroup::lTau()
-
-/*
-  This is the left generalized-tau partition; in brief, the left-descent
-  partition "stabilized" under left *-operations (see the INTRO file for
-  more details.) It is known to be coarser than the partition by right cells.
-
-  Is gotten from the corresponding right tau partition.
-*/
-
+template<char side> // 'l' or 'r'
+  const bits::Partition& FiniteCoxGroup::tau()
 {
-  if (d_ltau.classCount()) /* partition was already computed */
-    return d_ltau;
+  auto& our_tau   = side=='l' ? d_ltau : d_rtau;
+  auto& their_tau = side=='l' ? d_rtau : d_ltau;
 
-  const bits::Partition& r = rTau();
-  d_ltau.setSize(r.size());
-  d_ltau.setClassCount(r.classCount());
-
-  for (coxtypes::CoxNbr x = 0; x < r.size(); ++x) {
-    d_ltau[x] = r(CoxGroup::inverse(x));
+  if (our_tau.classCount()>0)
+    return our_tau;
+  else if (their_tau.classCount()>0)
+  {
+    auto f = [this,&their_tau](coxtypes::CoxNbr x)-> Ulong
+             { return their_tau(CoxGroup::inverse(x)); };
+    return our_tau = bits::Partition(their_tau.size(),f);
   }
 
-  d_ltau.normalize();
-  return d_ltau;
-}
-
-
-/*
-  Like lTau, but on the right. Coarser than the partition by left cells.
-*/
-const bits::Partition& FiniteCoxGroup::rTau()
-{
-  if (d_rtau.classCount()) /* partition was already computed */
-    return d_rtau;
-
-  if (!isFullContext()) { /* x is not the longest element */
+  if (not isFullContext())
+  {
     fullContext();
     if (error::ERRNO)
       goto abort;
   }
 
-  d_rtau = cells::generalized_tau<'r'>(schubert());
-  d_rtau.normalize();
-
-  return d_rtau;
+  return our_tau = cells::generalized_tau<side>(schubert()).normalize();
 
  abort:
   error::Error(error::ERRNO);
-  return d_rtau;
+  return our_tau;
 }
+
+template const bits::Partition& FiniteCoxGroup::tau<'l'>();
+template const bits::Partition& FiniteCoxGroup::tau<'r'>();
 
 };
 
