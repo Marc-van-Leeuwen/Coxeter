@@ -6,10 +6,13 @@
 */
 
 #include "bits.h"
+
+#include <limits.h>
+#include <algorithm>
+
 #include "bitmap.h"
 #include "io.h"
 
-#include <limits.h>
 
 /*****************************************************************************
 
@@ -304,12 +307,11 @@ Ulong BitMap::lastBit() const
 
 /********** modifiers ********************************************************/
 
-BitMap& BitMap::assign(const BitMap& map)
 
 /*
   Copies the content of map into the current map.
 */
-
+BitMap& BitMap::assign(const BitMap& map)
 {
   d_map.assign(map.d_map);
   d_size = map.d_size;
@@ -372,13 +374,12 @@ void BitMap::setSize(Ulong n)
 
 /********** operators ********************************************************/
 
-void BitMap::operator~ ()
 
 /*
-  Transforms the bitmap into its complement. One has to be careful not to
+  Transform the bitmap into its complement. Below we are careful not to
   exceed the size of the bitmap!
 */
-
+void BitMap::operator~ ()
 {
   for (Ulong j = 0; j < d_map.size(); ++j)
     d_map[j] = ~d_map[j];
@@ -516,13 +517,12 @@ BitMap::Iterator& BitMap::Iterator::operator++ ()
   return *this;
 }
 
-BitMap::Iterator& BitMap::Iterator::operator-- ()
 
 /*
   Decrement operator (prefix notation). Valid if the iterator is past-the-end,
   or is dereferenceable and not equal to begin().
 */
-
+BitMap::Iterator& BitMap::Iterator::operator-- ()
 {
   Lflags f = 0;
 
@@ -658,6 +658,34 @@ Permutation Partition::standardization() const
   return result;
 }
 
+void Partition::refine(const containers::vector<Partition>& L)
+{
+  assert(L.size()==classCount());
+  containers::vector<Ulong> class_counter(d_classCount,0);
+  for (Ulong class_nr=0; class_nr<L.size(); ++class_nr)
+    for (auto sub_class : L[class_nr].classifier)
+      if (sub_class>0) // count elements in new classes
+	++class_counter[class_nr];
+  // now cumulate those values starting from |classCount()|
+  Ulong sum=classCount();
+  for (auto& entry : class_counter)
+  { std::swap(sum,entry); // store value of |sum| before addition
+    sum += entry;
+  }
+  d_classCount = sum; // prepare for new classes to be created
+
+  containers::vector<Ulong> class_index(d_classCount,0); // class-relative pos
+  for (Ulong& class_nr : classifier)
+  { const auto i = class_index[class_nr]++;
+    auto sub_class = L[class_nr].classifier[i];
+    if (sub_class>0)
+      class_nr = class_counter[class_nr]++; // assigne new class (using old)
+  }
+  assert(class_counter.back()==classCount());
+  assert(std::all_of(class_index.begin(),class_index.end(),
+		     [&L,&class_index](const Ulong& index)
+		     { return L[&index-&class_index[0]].size()==index; }));
+}
 
 /*
   Return the inverse standardization permutation directly. This is in fact more

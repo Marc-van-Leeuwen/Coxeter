@@ -6,6 +6,8 @@
 */
 
 #include "cells.h"
+
+#include <algorithm>
 #include "wgraph.h"
 
 #include "stack.h"
@@ -96,12 +98,9 @@ template bits::Partition descent_partition<'r'>
   successively refined as applying the extension by certain letters detects that
   equivalence classes need to be split up, and this is repeated up to the point
   where no further refinement is obtained. A similar algorithm also occurs when
-  in the presence of a collcetion of possibly recursive type definitions one
+  in the presence of a collection of possibly recursive type definitions one
   wants to decide (structural) equivalence of type expressions: by definition
   they are equivalent if no sequence of type operations can detect a difference.
-
-  NOTE : this could probably be simplified with a PartitionIterator; be
-  wary though of modifications in pi during the loop.
 */
 template<char side> // one of 'l', 'r'
   bits::Partition generalized_tau(schubert::SchubertContext& p)
@@ -110,51 +109,55 @@ template<char side> // one of 'l', 'r'
 
   bits::Partition pi = descent_partition<side>(p);
 
-  Ulong prev_count; // hold previous count to measure progress; must be outside loop
+  Ulong prev_count; // high water mark to measure progress; must be outside loop
   do
   {
     prev_count = pi.classCount(); // base value for |do...while(...)| loop body
 
-    for (Ulong r = 0; r < p.nStarOps(); ++r) // try to refine |pi| by *-op |r|
+    bits::Permutation v = pi.inverse_standardization();
+    containers::vector<unsigned> class_size(pi.classCount(),0);
+    for (Ulong j = 0; j < pi.size(); ++j)
+      ++class_size[pi[j]]; // count each class of |pi|
+
+    Ulong i = 0;
+    const auto n_classes = pi.classCount(); // fix this since loop increases it
+    for (Ulong c=0; c<n_classes; i += class_size[c], ++c) // handle class |c|
     {
-      bits::Permutation v = pi.inverse_standardization();
-      containers::vector<unsigned> class_size(pi.classCount(),0);
+      const coxtypes::CoxNbr x = v[i]; // first element in class
 
-      for (Ulong j = 0; j < pi.size(); ++j)
-	++class_size[pi[j]]; // count each class of |pi|
+      bitmap::BitMap star_set(p.nStarOps());
+      for (Ulong r = 0; r < p.nStarOps(); ++r)
+	star_set.set_to(r,p.in_context(p.star_base<side>(x)[r]));
 
-      Ulong i = 0;
-      const auto n_classes = pi.classCount(); // fix this since loop increases it
-      for (Ulong c=0; c<n_classes; i += class_size[c], ++c) // handle class |c|
+      containers::vector<Ulong> pi_x_stars;
+      pi_x_stars.reserve(star_set.size());
+      for (Ulong r : star_set)
+	pi_x_stars.push_back(pi(p.star_base<side>(x)[r]));
+
+      containers::multimap<containers::vector<Ulong>,Ulong> star_values
+	{ std::make_pair(pi_x_stars,x) };
+      for (Ulong j = 1; j < class_size[c]; ++j)
       {
-	const coxtypes::CoxNbr x = v[i]; // first element in class
-	const coxtypes::CoxNbr x_star = p.star_base<side>(x)[r];
-	if (x_star == coxtypes::undef_coxnbr)
-	  continue; // if this one fails, the whold class will (?)
+	const coxtypes::CoxNbr xx = v[i+j];
+	assert(pi[x]==pi[xx]); // we traverse the |pi|-class of |x|
+	const auto* xx_star_base = p.star_base<side>(xx);
 
-	containers::multimap<Ulong,Ulong> star_values
-	  { std::make_pair(pi[x_star],x) };
+	pi_x_stars.clear(); // we can reuse this vector
+	for (Ulong r : star_set)
+	  pi_x_stars.push_back(pi(xx_star_base[r]));
+	star_values.insert(std::make_pair(pi_x_stars,xx));
+      }
 
-	for (Ulong j = 1; j < class_size[c]; ++j)
-	{
-	  const coxtypes::CoxNbr xx = v[i+j];
-	  assert(pi[x]==pi[xx]); // we traverse the |pi|-class of |x|
-	  const coxtypes::CoxNbr xx_star = p.star_base<side>(xx)[r];
-	  assert(p.in_context(xx_star)); // same descent set, same stars
-	  star_values.insert(std::make_pair(pi[xx_star],xx));
-	}
+      // loop over pairs for class members |xx| not having minimal |pi[xx*]|s
+      for (auto it = star_values.upper_bound(star_values.begin()->first);
+	   it != star_values.end(); // increasing |it| happens in loop body
+	   pi.incr_class_count() ) // traverse any new subclasses to split off
+	for (auto key = it->first;
+	     it != star_values.end() and it->first==key;
+	     ++it)
+	  pi[it->second] = pi.classCount(); // give |xx| new classifier value
+    } // |for(c)| (loop over classes for |pi| as at entry)
 
-	for (auto it = star_values.upper_bound(star_values.begin()->first);
-	     it != star_values.end(); // increasing |it| happens in loop body
-	     pi.incr_class_count() ) // traverse any new subclasses to split off
-	  for (auto key = it->first;
-	       it != star_values.end() and it->first==key;
-	       ++it)
-	    pi[it->second] = pi.classCount(); // give new classifier value to |xx|
-
-      } // |for(c)| (class for |pi| before loop)
-
-    } // |for(r)| (star operation)
   } while(pi.classCount() > prev_count); // whether to do another iteration
 
   return pi;
@@ -298,42 +301,40 @@ template<char side> // one of 'l', 'r'
   auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
     { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
 
-  bitmap::BitMap seen(p.size());
+  containers::vector<Ulong> classify(p.size(),Ulong(-1));
+  Ulong count = 0; // value that will caracterize next orbit
 
-  bits::Partition pi(p.size());
-  Ulong count = 0;
-
-  for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
-    if (not seen.is_member(x))
-    {
-      seen.insert(x);
-      pi[x] = count;
-      containers::queue<coxtypes::CoxNbr> orbit { x };
+  for (coxtypes::CoxNbr start = 0; start<p.size(); ++start)
+    if (classify[start]>=count)
+    { // now |start| will start a new orbit
+      containers::queue<coxtypes::CoxNbr> orbit { start };
+      classify[start] = count;
       do
       {
-	coxtypes::CoxNbr z = orbit.front();
+	coxtypes::CoxNbr x = orbit.front();
 	orbit.pop();
+	assert(classify[x]==count); // older orbits should not be encountered
 
-	for (coxtypes::Generator s = 0; s < p.rank(); ++s)
+	for (coxtypes::Generator s = 0; s < p.rank(); ++s) // visit neighbours
 	{
-	  coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
-	  if (seen.is_member(sz))
-	    continue;
-	  GenSet fz = desc(z);
-	  GenSet fsz = desc(sz);
-	  GenSet f = fz & fsz;
-	  if (f != fz and f != fsz) // inclusion neither way
-          {
-	    seen.insert(sz);
-	    pi[sz] = pi.classCount();
-	    orbit.push(sz);
+	  coxtypes::CoxNbr y = side=='l' ? p.lshift(x,s) : p.rshift(x,s);
+	  if (classify[y]<=count) // either an old element or already in orbit
+	    continue; // don't even try to see if this is in same orbit
+	  const GenSet dx =  desc(x), ay = ~desc(y);
+	  if ((dx & ay)!=0 and ~(dx | ay)!=0) // inclusion neither way
+	  {
+	    classify[y] = count; // we flag |y| as part of the current orbit
+	    orbit.push(y); // and record it for inspection of its neighbours
 	  }
 	} // |for(s)||
       } while (not orbit.empty());
-      pi.incr_class_count();
-    } // |for(x) if (not seen.is_member(x))|
+      ++count;
+    } // |for(x) if (classify[start]>=count)|
+  assert(std::all_of(classify.begin(),classify.end(),
+		     [count,&classify]
+		     (coxtypes::CoxNbr x){ return classify[x]<count;}));
 
-  return pi;
+  return bits::Partition(std::move(classify),count);
 } // |string_equiv|
 
 template bits::Partition string_equiv<'l'>(const schubert::SchubertContext& p);
@@ -639,7 +640,7 @@ template<char side>
       else
 	e.append(yi);
     }
-   }
+  }
 
   if (side=='l') // then we must sort edgelists
     for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {

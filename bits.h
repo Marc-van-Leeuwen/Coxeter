@@ -205,6 +205,8 @@ private:
 /* constructors and destructors */
   Partition() : Partition(0) {}
   Partition(Ulong n) : classifier(n,0), d_classCount(0) {}
+  Partition(containers::vector<Ulong>&& v, Ulong cc) // trust the caller
+    : classifier(std::move(v)), d_classCount(cc) {}
   // Partition(const Partition& a, const BitMap& b); // partition of subset
   template <class F> Partition(Ulong n, const F& property);
   template <class I, class F> Partition
@@ -223,6 +225,7 @@ private:
   SubSet class_of(Ulong x) const { return class_nr(classifier[x]); }
   containers::vector<Ulong> class_sizes() const;
 /* modifiers */
+  void refine(const containers::vector<Partition>& L);
   void incr_class_count() { ++d_classCount; }
   Ulong& operator[] (Ulong j)     { return classifier[j]; }
   Partition& normalize() { return *this = Partition(size(),*this); }
