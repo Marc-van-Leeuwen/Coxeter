@@ -36,9 +36,8 @@ namespace wgraph {
 
   namespace {
 
-    void getClass(const OrientedGraph& X, const Vertex& y,
-		  bitmap::BitMap& b,  bits::Partition& pi,
-		  OrientedGraph* P);
+    void get_class(const OrientedGraph& X, const Vertex& y, bitmap::BitMap& b,
+		   bits::Partition& pi, OrientedGraph* P);
 
   }; // |namespace|
 
@@ -304,7 +303,7 @@ bits::Partition OrientedGraph::cells(OrientedGraph* P) const // by Tarjan
       }
     /* at this point we have exhausted the edges of y */
       if (min[y] == t-1) { /* take off class */
-	getClass(*this,y,seen,pi,P);
+	get_class(*this,y,seen,pi,P);
       }
       else if (min[y] < min[v[t-2]]) /* if t=1, previous case holds */
 	min[v[t-2]] = min[y];
@@ -333,40 +332,35 @@ bits::Partition OrientedGraph::cells(OrientedGraph* P) const // by Tarjan
   0, then sinks in the remaining poset have level one, etc.
 
   NOTE : the implementation is simple-minded : we traverse the graph as many
-  times as there are levels.
+  times as there are levels. [This method is never used.]
 */
-void OrientedGraph::levelPartition(bits::Partition& dest) const
+bits::Partition OrientedGraph::level_partition() const
 {
+  containers::vector<Ulong> classify(size(),Ulong(-1));
+  Ulong count = 0; // count elements encountered
+  Ulong cur_level=0;
 
-  bitmap::BitMap removed(size()), cur_sinks(size());
-
-  bits::Partition pi(size());
-  Ulong count = 0;
-
-  do // since |size()>0|
+  do // run at least once, since |size()>0|
   {
-    cur_sinks.reset(); // actually, not doing this would make no difference
     for (bits::SetElt x = 0; x < size(); ++x)
     {
-      if (removed.is_member (x))
+      if (classify[x]<cur_level)
 	continue;
       const EdgeList e = d_edge[x];
       for (Ulong j = 0; j < e.size(); ++j)
-	if (not removed.is_member(e[j]))
-	  goto next_x;
+	if (classify[e[j]]>=cur_level)
+	  goto next_x; // |x| not a sink when removing lower levels
 
       // if we get here, |x| is at the current level
-      pi[x] = pi.classCount();
-      cur_sinks.insert(x);
+      classify[x] = cur_level;
       ++count; // keep track of number of elements marked, for termination
     next_x:
       continue;
     } // |for(x)|
-    removed |= cur_sinks;
-    pi.incr_class_count();
+    ++cur_level; // this level is complete
   } while (count < size());
 
-  dest = pi;
+  return bits::Partition(std::move(classify),cur_level);
 } // |levelPartition|
 
 
@@ -461,7 +455,7 @@ void OrientedGraph::reset()
   This chapter contains some auxiliary functions for the main functions in
   this module. The following functions are defined :
 
-    - getClass(X,y,b) : gets the class of y in X, using the bitmap b;
+    - get_class(X,y,b) : gets the class of y in X, using the bitmap b;
 
  ****************************************************************************/
 
@@ -469,15 +463,20 @@ namespace {
 
 
 /*
+  This is an auxiliary to (strong component) |OrientedGraph::cells|.
+
   After the element y has been identified as minimal among the elements not
   already marked in b, this function marks off the equivalence class of y;
   these are just the elements visible from y and not already marked in b.
-  The class is also written as a new class in pi, and in |P| if non-null.
-*/
-void getClass(const OrientedGraph& X, const Vertex& y, bitmap::BitMap& seen,
-	      bits::Partition& pi, OrientedGraph* P)
-{
+  The class is written as a new class into |pi|, and induced edges of the
+  quotient graph on string componentns are added to |P|, if it is non-null.
 
+  This function modifies |pi| by direct access to its components; that should be
+  avoided, but this function will go away when Tarjan gets inported from Atlas.
+*/
+void get_class(const OrientedGraph& X, const Vertex& y, bitmap::BitMap& seen,
+	       bits::Partition& pi, OrientedGraph* P)
+{
   const Ulong cc = pi.classCount();
   pi[y] = cc;
   if (P!=nullptr)
@@ -512,7 +511,7 @@ void getClass(const OrientedGraph& X, const Vertex& y, bitmap::BitMap& seen,
   } while (not q.empty());
 
   pi.incr_class_count();
-} // |getClass|
+} // |get_class|
 
   }; // |namespace|
 }; // |namespace wgraph|

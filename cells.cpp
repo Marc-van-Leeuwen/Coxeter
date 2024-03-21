@@ -109,56 +109,37 @@ template<char side> // one of 'l', 'r'
 
   bits::Partition pi = descent_partition<side>(p);
 
-  Ulong prev_count; // high water mark to measure progress; must be outside loop
+  bool go_on; // stupid C++ rule requires a declaration outside |do..while();|
   do
   {
-    prev_count = pi.classCount(); // base value for |do...while(...)| loop body
-
     bits::Permutation v = pi.inverse_standardization();
     containers::vector<unsigned> class_size(pi.classCount(),0);
     for (Ulong j = 0; j < pi.size(); ++j)
       ++class_size[pi[j]]; // count each class of |pi|
 
     Ulong i = 0;
-    const auto n_classes = pi.classCount(); // fix this since loop increases it
-    for (Ulong c=0; c<n_classes; i += class_size[c], ++c) // handle class |c|
+    containers::vector<bits::Partition> refinements;
+    refinements.reserve(pi.classCount());
+
+    for (Ulong c=0; c<pi.classCount(); i += class_size[c], ++c) // do class |c|
     {
-      const coxtypes::CoxNbr x = v[i]; // first element in class
+      const auto* star = p.star_base<side>(v[i]); // for first element in class
 
       bitmap::BitMap star_set(p.nStarOps());
       for (Ulong r = 0; r < p.nStarOps(); ++r)
-	star_set.set_to(r,p.in_context(p.star_base<side>(x)[r]));
+	star_set.set_to(r,p.in_context(star[r]));
 
-      containers::vector<Ulong> pi_x_stars;
-      pi_x_stars.reserve(star_set.size());
-      for (Ulong r : star_set)
-	pi_x_stars.push_back(pi(p.star_base<side>(x)[r]));
-
-      containers::multimap<containers::vector<Ulong>,Ulong> star_values
-	{ std::make_pair(pi_x_stars,x) };
-      for (Ulong j = 1; j < class_size[c]; ++j)
-      {
-	const coxtypes::CoxNbr xx = v[i+j];
-	assert(pi[x]==pi[xx]); // we traverse the |pi|-class of |x|
-	const auto* xx_star_base = p.star_base<side>(xx);
-
-	pi_x_stars.clear(); // we can reuse this vector
-	for (Ulong r : star_set)
-	  pi_x_stars.push_back(pi(xx_star_base[r]));
-	star_values.insert(std::make_pair(pi_x_stars,xx));
-      }
-
-      // loop over pairs for class members |xx| not having minimal |pi[xx*]|s
-      for (auto it = star_values.upper_bound(star_values.begin()->first);
-	   it != star_values.end(); // increasing |it| happens in loop body
-	   pi.incr_class_count() ) // traverse any new subclasses to split off
-	for (auto key = it->first;
-	     it != star_values.end() and it->first==key;
-	     ++it)
-	  pi[it->second] = pi.classCount(); // give |xx| new classifier value
-    } // |for(c)| (loop over classes for |pi| as at entry)
-
-  } while(pi.classCount() > prev_count); // whether to do another iteration
+      auto star_view = // what the values of |pi| look like one- *-op away
+	[&,i] (unsigned j) -> containers::vector<Ulong>
+        { containers::vector<Ulong> result;
+	  for (Ulong r : star_set)
+	    result.push_back(pi(p.star_base<side>(v[i+j])[r]));
+	  return result;
+	};
+      refinements.emplace_back(class_size[c],star_view);
+    } // |for(c)| loop over classes for |pi|
+    go_on = pi.refine(refinements);
+  } while(go_on); // whether to do another iteration
 
   return pi;
 } // |generalized_tau|

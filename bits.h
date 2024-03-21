@@ -226,7 +226,7 @@ private:
   SubSet class_of(Ulong x) const { return class_nr(classifier[x]); }
   containers::vector<Ulong> class_sizes() const;
 /* modifiers */
-  void refine(const containers::vector<Partition>& L);
+  bool refine(const containers::vector<Partition>& L);
   void incr_class_count() { ++d_classCount; }
   Ulong& operator[] (Ulong j)     { return classifier[j]; }
   Partition& normalize() { return *this = Partition(size(),*this); }

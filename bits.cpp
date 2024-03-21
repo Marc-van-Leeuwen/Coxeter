@@ -658,33 +658,36 @@ Permutation Partition::standardization() const
   return result;
 }
 
-void Partition::refine(const containers::vector<Partition>& L)
+bool Partition::refine(const containers::vector<Partition>& L)
 {
   assert(L.size()==classCount());
   containers::vector<Ulong> class_counter(d_classCount,0);
   for (Ulong class_nr=0; class_nr<L.size(); ++class_nr)
-    for (auto sub_class : L[class_nr].classifier)
-      if (sub_class>0) // count elements in new classes
-	++class_counter[class_nr];
+    class_counter[class_nr] += L[class_nr].classCount()-1; // count new classes
+
   // now cumulate those values starting from |classCount()|
   Ulong sum=classCount();
   for (auto& entry : class_counter)
   { std::swap(sum,entry); // store value of |sum| before addition
     sum += entry;
   }
-  d_classCount = sum; // prepare for new classes to be created
+  if (sum==classCount())
+    return false; // no actual refinement
 
   containers::vector<Ulong> class_index(d_classCount,0); // class-relative pos
+  d_classCount = sum; // prepare for new classes to be created
+
   for (Ulong& class_nr : classifier)
   { const auto i = class_index[class_nr]++;
     auto sub_class = L[class_nr].classifier[i];
     if (sub_class>0)
-      class_nr = class_counter[class_nr]++; // assigne new class (using old)
+      class_nr = class_counter[class_nr] + sub_class-1; // assign new class
   }
-  assert(class_counter.back()==classCount());
+
   assert(std::all_of(class_index.begin(),class_index.end(),
-		     [&L,&class_index](const Ulong& index)
+		     [&L,&class_index](const Ulong& index) -> bool
 		     { return L[&index-&class_index[0]].size()==index; }));
+  return true;
 }
 
 /*
