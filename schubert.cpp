@@ -1307,19 +1307,20 @@ void printBitMap(FILE* file, const bits::BitMap& b, const SchubertContext& p,
   fprintf(file,"}");
 }
 
-void printPartition(FILE* file, const bits::Partition& pi, const SchubertContext& p,
-		    const interface::Interface& I)
 
 /*
   This function prints the partition pi, assumed to hold a partition of the
   context p.
 */
 
+void printPartition
+  (FILE* file, const bits::Partition& pi, const SchubertContext& p,
+   const interface::Interface& I)
 {
   Ulong count = 0;
 
-  for (bits::PartitionIterator i(pi); i; ++i) {
-    const Set& c = i();
+  for (bits::PartitionIterator pit(pi); pit; ++pit) {
+    const Set& c = pit();
     fprintf(file,"%lu(%lu):{",count,c.size());
     for (Ulong j = 0; j < c.size(); ++j) {
       coxtypes::CoxWord g(0);
@@ -1336,9 +1337,7 @@ void printPartition(FILE* file, const bits::Partition& pi, const SchubertContext
 }
 
 
-/*
-  Prints the partition pi restricted to the subset flagged by b.
-*/
+// Print the partition pi restricted to the subset flagged by b.
 void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b,
 		    const SchubertContext& p, const interface::Interface& I)
 {
@@ -1347,8 +1346,8 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
 
   Ulong count = 0;
 
-  for (bits::PartitionIterator i(pi_b); i; ++i) {
-    const Set& c = i();
+  for (bits::PartitionIterator pit(pi_b); pit; ++pit) {
+    const Set& c = pit();
     fprintf(file,"%lu(%lu):{",count,c.size());
     for (Ulong j = 0; j < c.size(); ++j) {
       coxtypes::CoxWord g(0);

@@ -181,6 +181,8 @@ class bits::SubSet {
   { return std::lower_bound(row.begin(),row.end(),x)-row.begin(); }
   bool is_member(Ulong n) const { return d_bitmap.is_member(n); }
   Ulong size() const { return row.size(); }
+  containers::vector<Ulong>::const_iterator begin() const { return row.begin(); }
+  containers::vector<Ulong>::const_iterator end() const {return row.end(); }
 /* modifiers */
   Ulong& operator[] (Ulong j) { return row[j]; }
   void add(Ulong n); // add |n| to bitmap and list, unless present
@@ -203,7 +205,6 @@ private:
 /* class definitions */
   typedef Ulong result_type;
 /* constructors and destructors */
-  Partition() : Partition(0) {}
   Partition(Ulong n) : classifier(n,0), d_classCount(0) {}
   Partition(containers::vector<Ulong>&& v, Ulong cc) // trust the caller
     : classifier(std::move(v)), d_classCount(cc) {}

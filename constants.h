@@ -32,7 +32,7 @@ namespace constants {
   static constexpr unsigned long baseShift = // typically 6
     aux::BaseShift<longBits>::value;
 
-   const Ulong CHARFLAGS = ((Ulong)1 << CHAR_BIT)-1; // |0xFF| as |Ulong|
+  const Ulong CHARFLAGS = ((Ulong)1 << CHAR_BIT)-1; // |0xFF| as |Ulong|
 
   extern Ulong *eq_mask; // bit position |==i| masks, for |i<BITS(Ulong)|
   extern Ulong *lt_mask; // bit position |<i| masks, for |i<=BITS(Ulong)|
@@ -41,6 +41,7 @@ namespace constants {
   extern unsigned *lastbit; // |2^CHAR_BIT| "highest set bit" positions
 
   void initConstants(); // set up pointers above, pointing into static arrays
+  unsigned first_bit(Ulong f); // position first set bit, assumed to exist
   unsigned firstBit(Ulong f); // first set bit, or |BITS(Ulong)| if none
   unsigned lastBit(Ulong f); // last set bit, or |BITS(Ulong)| if none
 

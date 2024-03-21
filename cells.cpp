@@ -76,7 +76,7 @@ template<char side> // one of 'l', 'r'
   bits::Partition descent_partition(const schubert::SchubertContext& p)
 {
   auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
-    { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
+  { return p.descent_set<side>(x); };
 
   return bits::Partition(p.size(),desc);
 } // |descent_partition|
@@ -186,9 +186,6 @@ template<char side> // one of 'l', 'r',
   constexpr char opposite_side = 'l' + 'r' - side;
   bits::Partition pi = generalized_tau<opposite_side>(p);
 
-  auto op_desc = [&p](unsigned x) -> GenSet
-    { return side=='l' ? p.rdescent(x) : p.ldescent(x) ; };
-
   for (coxtypes::CoxNbr x = 0; x < p.size(); ++x)
   {
     if (seen.is_member(x))
@@ -197,9 +194,8 @@ template<char side> // one of 'l', 'r',
     bits::SubSet gen_tau_class = pi.class_of(x);
 
     // compute Wgraph for the class, then find its strong components (cells)
-    bits::Partition qcells(0); // will represent the strong components
-    wgraph::WGraph X = W_graph<side>(gen_tau_class,kl);
-    X.graph().cells(qcells,nullptr); // get classes |qcells|, no induced graph
+    bits::Partition qcells =
+      W_graph<side>(gen_tau_class,kl).graph().cells(); // no induced graph needed
 
     /* the fifo-list orbit is used to traverse the *-orbit of the first
        element of the current generalized-tau class */
@@ -243,7 +239,7 @@ template<char side> // one of 'l', 'r',
 	if (seen.is_member(zj))
 	  continue;
 
-	GenSet d = op_desc(zj);
+	GenSet d = p.descent_set<opposite_side>(zj);
 
 	// mark start of new cell packet that will be added to |seen| below
 	orbit.push(seen.size()); // index of next-to-add packet leader
@@ -253,7 +249,7 @@ template<char side> // one of 'l', 'r',
 	{
 	  coxtypes::CoxNbr y = seen[c+i];
 	  coxtypes::CoxNbr yj = p.star_base<opposite_side>(y)[j];
-	  assert(op_desc(yj)==d);
+	  assert(p.descent_set<opposite_side>(yj)==d);
 	  seen.add(yj);
 	}
 
@@ -280,11 +276,7 @@ template bits::Partition cells<'r'> (kl::KLContext& kl);
 template<> bits::Partition cells<'b'>(kl::KLContext& kl)
 {
   kl.fillMu();
-
-  bits::Partition pi;
-  wgraph::WGraph X = cells::W_graph<'b'>(kl);
-  X.graph().cells(pi); // partition graph into strong components
-  return pi;
+  return cells::W_graph<'b'>(kl).graph().cells(); // strong components partition
 }
 
 /*
@@ -298,9 +290,6 @@ template<> bits::Partition cells<'b'>(kl::KLContext& kl)
 template<char side> // one of 'l', 'r'
   bits::Partition string_equiv(const schubert::SchubertContext& p)
 {
-  auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
-    { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
-
   containers::vector<Ulong> classify(p.size(),Ulong(-1));
   Ulong count = 0; // value that will caracterize next orbit
 
@@ -320,8 +309,8 @@ template<char side> // one of 'l', 'r'
 	  coxtypes::CoxNbr y = side=='l' ? p.lshift(x,s) : p.rshift(x,s);
 	  if (classify[y]<=count) // either an old element or already in orbit
 	    continue; // don't even try to see if this is in same orbit
-	  const GenSet dx =  desc(x), ay = ~desc(y);
-	  if ((dx & ay)!=0 and ~(dx | ay)!=0) // inclusion neither way
+	  const GenSet dx = p.descent_set<side>(x), dy = p.descent_set<side>(y);
+	  if ((dx & dy)!=dx and (dx & dy)!=dy) // inclusion neither way
 	  {
 	    classify[y] = count; // we flag |y| as part of the current orbit
 	    orbit.push(y); // and record it for inspection of its neighbours
@@ -348,53 +337,48 @@ template<char side> // one of 'l', 'r'
   bits::Partition string_equiv
     (const bits::SubSet& q, const schubert::SchubertContext& p)
 {
-  auto desc =  [&p](coxtypes::CoxNbr x) -> GenSet
-    { return side=='r' ? p.rdescent(x) : p.ldescent(x); };
+  containers::vector<Ulong> classify(q.size(),Ulong(-1));
+  auto q_index = [&q](coxtypes::CoxNbr x) -> Ulong
+  { return std::lower_bound(q.begin(),q.end(),x)-q.begin(); };
 
-  bitmap::BitMap seen(p.size());
-
-  bits::Partition pi(q.size());
   Ulong count = 0;
 
-  for (Ulong j = 0; j < q.size(); ++j)
-  {
-    const coxtypes::CoxNbr x = q[j];
-    if (not seen.is_member(x))
-    {
-      seen.insert(x);
-      pi[j] = count;
-      containers::queue<coxtypes::CoxNbr> orbit { x };
+  for (Ulong i=0; i<q.size(); ++i)
+    if (classify[i]>=count)
+    { // now |q[i]| will start a new orbit
+      classify[i] = count; // this is the first orbit element
+      containers::queue<coxtypes::CoxNbr> orbit
+	{ static_cast<coxtypes::CoxNbr>(q[i]) };
       do
       {
-	coxtypes::CoxNbr z = orbit.front();
+	coxtypes::CoxNbr x = orbit.front();
 	orbit.pop();
-	for (coxtypes::Generator s = 0; s < p.rank(); ++s)
+	assert(classify[q_index(x)]==count); // older orbits should not occur
+
+	for (coxtypes::Generator s = 0; s < p.rank(); ++s) // visit neighbours
 	{
-	  coxtypes::CoxNbr sz = side=='l' ? p.lshift(z,s) : p.rshift(z,s);
-	  if (seen.is_member(sz))
-	    continue;
-	  GenSet fz = desc(z);
-	  GenSet fsz = desc(sz);
-	  GenSet f = fz & fsz;
-	  if (f != fz and f != fsz) // inclusion neither way
+	  coxtypes::CoxNbr y = side=='l' ? p.lshift(x,s) : p.rshift(x,s);
+	  const GenSet dx = p.descent_set<side>(x), dy = p.descent_set<side>(y);
+	  const GenSet common = dx & dy;
+	  if (common != dx and common != dy) // inclusion neither way
           {
-	    if (not q.is_member(sz))
-	    { // q is not stable! this shouldn't happen
+	    if (not q.is_member(y))
+	    { // we found that |q| is not stable! this shouldn't happen
 	      error::ERRNO = error::ERROR_WARNING;
-	      return pi;
+	      return bits::Partition(0);
 	    }
-	    seen.insert(sz);
-	    pi[sz] = pi.classCount();
-	    orbit.push(sz);
+	    classify[q_index(y)] = count; // mark |y| as in the current orbit
+	    orbit.push(y); // and record it for inspection of its neighbours
 	  }
 	} // |for(s)||
       } while (not orbit.empty());
-      pi.incr_class_count();
-      count++;
-    } // |if(not seen)|
-  } // |for(x)|
+      ++count; // pass to a next orbit
+    } // |for(x)| |if(not seen)|
 
-  return pi;
+  assert(std::all_of(classify.begin(),classify.end(),
+		     [count,&classify]
+		     (coxtypes::CoxNbr x){ return classify[x]<count;}));
+  return bits::Partition(std::move(classify),count);
 } // |string_equiv|
 
 template bits::Partition string_equiv<'l'>
@@ -420,10 +404,6 @@ template<char side> // one of 'l', 'r', 'b'
 {
   const schubert::SchubertContext& p = kl.schubert();
 
-  auto desc =  [&p](coxtypes::CoxNbr x)
-    { return side=='r' ? p.rdescent(x) : side=='l' ? p.ldescent(x)
-      : p.descent(x); };
-
   wgraph::OrientedGraph X(kl.size());
 
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
@@ -431,18 +411,19 @@ template<char side> // one of 'l', 'r', 'b'
     for (Ulong j = 0; j < mu.size(); ++j) {
       if (mu[j].mu != 0) {
 	coxtypes::CoxNbr x = mu[j].x;
-	if (desc(x) != desc(y)) /* make an edge from x to y */
-	  X.edge(x).append(y);
+	if (p.descent_set<side>(x) != p.descent_set<side>(y))
+	  X.edge(x).append(y); // add an edge from |x| to |y|
       }
     }
   }
 
   for (coxtypes::CoxNbr y = 0; y < kl.size(); ++y) {
     const schubert::CoxNbrList& c = p.hasse(y);
-    for (Ulong j = 0; j < c.size(); ++j) {
-      if ((desc(c[j])&desc(y)) != desc(c[j]))
+    for (Ulong j = 0; j < c.size(); ++j)
+    { const Lflags dx = p.descent_set<side>(c[j]), dy=p.descent_set<side>(y);
+      if ((dx&dy) != dx)
 	X.edge(c[j]).append(y);
-      if ((desc(c[j])&desc(y)) != desc(y))
+      if ((dx&dy) != dy)
 	X.edge(y).append(c[j]);
     }
   }

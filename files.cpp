@@ -1007,8 +1007,7 @@ void printCellOrder(FILE* file, const OrientedGraph& X,
 		    PosetTraits& traits)
 {
   OrientedGraph P(0);
-  bits::Partition pi(0);
-  X.cells(pi,&P);
+  bits::Partition pi = X.cells(&P);
   posets::Poset Q(P);
   OrientedGraph H(0);
   Q.hasseDiagram(H);

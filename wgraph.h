@@ -29,7 +29,8 @@ namespace wgraph {
 #include "bits.h"
 #include "interface.h"
 
-class wgraph::OrientedGraph {
+class wgraph::OrientedGraph
+{
  private:
   list::List<EdgeList> d_edge;
  public:
@@ -40,20 +41,21 @@ class wgraph::OrientedGraph {
   OrientedGraph(const Ulong &n):d_edge(n) {};
   ~OrientedGraph();
 /* accessors */
-  void cells(bits::Partition& pi, OrientedGraph* P = nullptr) const;
-  const EdgeList& edge(const Vertex& x) const;                 /* inlined */
+  bits::Partition cells(OrientedGraph* P = nullptr) const;
+  const EdgeList& edge(const Vertex& x) const { return d_edge[x]; }
   Vertex firstMinimal(const bits::BitMap& b) const;
   void levelPartition(bits::Partition& pi) const;
   void print(FILE* file) const;
-  Ulong size() const;                                          /* inlined */
+  Ulong size() const {return d_edge.size(); }
 /* modifiers */
-  EdgeList& edge(const Vertex& x);                             /* inlined */
+  EdgeList& edge(const Vertex& x) { return d_edge[x]; }
   void permute(const bits::Permutation& a);
   void reset();
-  void setSize(const Ulong& n);                                /* inlined */
-};
+  void setSize(const Ulong& n) { d_edge.setSize(n); }
+}; // |class wgraph::OrientedGraph|
 
-class wgraph::WGraph {
+class wgraph::WGraph
+{
  private:
   OrientedGraph* d_graph;
   list::List<CoeffList> d_coeff;
@@ -80,7 +82,7 @@ class wgraph::WGraph {
   void setSize(const Ulong& n);
 /* input/output */
   void print(FILE* file, const interface::Interface& I) const;
-};
+}; // |class wgraph::WGraph|
 
 namespace wgraph {
 
@@ -95,11 +97,6 @@ namespace wgraph {
   inline Ulong WGraph::size() const {return d_graph->size();}
 
   inline GenSet& WGraph::descent(const Vertex& x) {return d_descent[x];}
-  inline const EdgeList& OrientedGraph::edge(const Vertex& x) const
-    {return d_edge[x];}
-  inline Ulong OrientedGraph::size() const {return d_edge.size();}
-  inline EdgeList& OrientedGraph::edge(const Vertex& x) {return d_edge[x];}
-  inline void OrientedGraph::setSize(const Ulong& n) {d_edge.setSize(n);}
 
 };
 

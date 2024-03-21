@@ -183,16 +183,25 @@ public:
 
   Lflags descent(coxtypes::CoxNbr x) const
      {return d_descent[x];}
-  Lflags ascent(coxtypes::CoxNbr x) const
-    { return ~d_descent[x]&constants::lt_mask[2*d_rank]; }
   GenSet rdescent(coxtypes::CoxNbr x) const
     {return d_descent[x] & constants::lt_mask[d_rank];}
-  GenSet rascent(coxtypes::CoxNbr x) const
-    {return ~rdescent(x)&constants::lt_mask[d_rank];}
   GenSet ldescent(coxtypes::CoxNbr x) const
     { return d_descent[x] >> d_rank; } // left descents as (neutral) generators
+  template<char side> Lflags descent_set(coxtypes::CoxNbr x) const
+    { return side=='l' ? ldescent(x) : side=='r' ? rdescent(x) : descent(x); }
+
+  Lflags ascent(coxtypes::CoxNbr x) const
+    { return ~d_descent[x]&constants::lt_mask[2*d_rank]; }
+  GenSet rascent(coxtypes::CoxNbr x) const
+    {return ~rdescent(x)&constants::lt_mask[d_rank];}
   GenSet lascent(coxtypes::CoxNbr x) const
     { return ~ldescent(x)&constants::lt_mask[d_rank]; }
+  template<char side> Lflags ascent_set(coxtypes::CoxNbr x) const
+    { return side=='l' ? lascent(x) : side=='r' ? rascent(x) : ascent(x); }
+
+  template<char side>
+    coxtypes::Generator first_descent(coxtypes::CoxNbr x) const
+    { return constants::first_bit(descent_set<side>(x)); }
   coxtypes::Generator firstDescent(coxtypes::CoxNbr x) const
     { return constants::firstBit(descent(x));}
   coxtypes::Generator firstLDescent(coxtypes::CoxNbr x) const

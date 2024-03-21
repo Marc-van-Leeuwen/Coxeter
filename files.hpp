@@ -511,8 +511,9 @@ void printLCOrder(FILE* file, KL& kl, const interface::Interface& I, OutputTrait
 }
 
 template <class KL>
-void printLCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
-		 OutputTraits& traits)
+void printLCells
+  (FILE* file, const bits::Partition& lp, KL& kl,
+   const interface::Interface& I, OutputTraits& traits)
 
 {
   // print out cells
@@ -561,8 +562,9 @@ void printLRCOrder(FILE* file, KL& kl, const interface::Interface& I,
 }
 
 template <class KL>
-void printLRCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
-		  OutputTraits& traits)
+void printLRCells
+  (FILE* file, const bits::Partition& lp, KL& kl,
+   const interface::Interface& I, OutputTraits& traits)
 
 {
   // print out cells
@@ -790,9 +792,9 @@ void printRCOrder
 }
 
 template <class KL>
-void printRCells(FILE* file, const bits::Partition& lp, KL& kl, const interface::Interface& I,
-		 OutputTraits& traits)
-
+void printRCells
+  (FILE* file, const bits::Partition& lp, KL& kl,
+   const interface::Interface& I, OutputTraits& traits)
 {
   // print out cells
 

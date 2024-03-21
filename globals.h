@@ -14,7 +14,7 @@
 
 // these definitions are in the global namspace
 // so it suffices to #include this file to have them
-using Ulong = unsigned long;
+using Ulong = std::uint64_t; // used to be |unsigned long|, in practice is same
 
 using Lflags = std::uint64_t; // can hold two bits per Coxeter genertor
 using GenSet = std::uint32_t; // can hold one bit per Coxeter generator

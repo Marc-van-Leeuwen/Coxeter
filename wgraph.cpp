@@ -257,7 +257,7 @@ OrientedGraph::~OrientedGraph()
   of x not already dealt with. We then move to the parent of x and continue
   the process there.
 */
-void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
+bits::Partition OrientedGraph::cells(OrientedGraph* P) const // by Tarjan
 {
   static bits::Permutation a(0);
   static list::List<Vertex> v(1);
@@ -323,9 +323,8 @@ void OrientedGraph::cells(bits::Partition& dest, OrientedGraph* P) const
 
   }
 
-  dest = pi;
-  return;
-}
+  return pi;
+} // |OrientedGraph::cells|
 
 
 /*
@@ -368,13 +367,11 @@ void OrientedGraph::levelPartition(bits::Partition& dest) const
   } while (count < size());
 
   dest = pi;
-  return;
-}
+} // |levelPartition|
 
-void OrientedGraph::permute(const bits::Permutation& a)
 
 /*
-  This function permutes the graph according to the permutation a, according
+  Permute the graph according to the permutation a, according
   to the usual rule : the edges of a(x) should be the image under a of the
   edge set of x.
 
@@ -382,9 +379,9 @@ void OrientedGraph::permute(const bits::Permutation& a)
   elements in the various edgelists. Permuting ranges is trickier, because
   it involves a^-1.
 
-  It is assumed of course that a holds a permutation of size size().
+  It is assumed of course that |a| holds a permutation of size |size()|.
 */
-
+void OrientedGraph::permute(const bits::Permutation& a)
 {
   static bits::BitMap b(0);
   static EdgeList e_buf(0);
@@ -422,14 +419,11 @@ void OrientedGraph::permute(const bits::Permutation& a)
     }
     b.setBit(x);
   }
-}
+} // |OrientedGraph::permute|
 
+
+// Print out the graph on |file|
 void OrientedGraph::print(FILE* file) const
-
-/*
-  Does a printout of the graph on the file.
-*/
-
 {
   fprintf(file,"size : %lu\n\n",size());
 
@@ -448,22 +442,15 @@ void OrientedGraph::print(FILE* file) const
   }
 
   fprintf(file,"\n");
+} // |print|
 
-  return;
-}
 
+// Reset the structure to hold an edge-less graph of the same size.
 void OrientedGraph::reset()
-
-/*
-  Resets the structure to hold a edge-less graph of the same size.
-*/
-
 {
   for (Ulong j = 0; j < size(); ++j) {
     d_edge[j].setSize(0);
   }
-
-  return;
 }
 
 
@@ -525,9 +512,7 @@ void getClass(const OrientedGraph& X, const Vertex& y, bitmap::BitMap& seen,
   } while (not q.empty());
 
   pi.incr_class_count();
-
-  return;
-}
+} // |getClass|
 
   }; // |namespace|
 }; // |namespace wgraph|

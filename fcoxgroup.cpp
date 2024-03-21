@@ -137,16 +137,28 @@ namespace fcoxgroup {
 
 /******** constructor *******************************************************/
 
+
 FiniteCoxGroup::FiniteCoxGroup(const type::Type& x, const coxtypes::Rank& l)
-  :CoxGroup(x,l)
-
-/*
-  Constructor for FiniteCoxGroup.
-*/
-
+  : CoxGroup(x,l)
+  , d_longest_coxarr()
+  , d_longest_coxword()
+  , d_maxlength()
+  , d_order()
+  , d_transducer(new transducer::Transducer(graph()))
+  , d_ldescent(0)
+  , d_rdescent(0)
+  , d_ltau(0)
+  , d_rtau(0)
+  , d_lstring(0)
+  , d_rstring(0)
+  , d_lcell(0)
+  , d_rcell(0)
+  , d_lrcell(0)
+  , d_luneqcell(0)
+  , d_runeqcell(0)
+  , d_lruneqcell(0)
+  , d_duflo()
 {
-  d_transducer = new transducer::Transducer(graph());
-
   workspace().setSize(l);
   for (coxtypes::Rank j = 0; j < rank(); ++j)
     transducer(j)->fill(graph());
@@ -514,9 +526,9 @@ const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
 
     /* find Duflo involution in each cell */
 
-    for (bits::PartitionIterator i(pi); i; ++i)
+    for (bits::PartitionIterator pit(pi); pit; ++pit)
     {
-      const auto& c = i();
+      const auto& c = pit();
       if (c.size() == 1) { /* cell has single involution */
 	d_duflo.append(q[c[0]]);
 	continue;
@@ -564,9 +576,9 @@ template<char side> // 'l' or 'r' or 'b'
   auto& our_cell   = side=='l' ? d_lcell : side=='r' ? d_rcell : d_lrcell;
   auto& their_cell = side=='l' ? d_rcell : side=='r' ? d_lcell : d_lrcell;
 
-  if (our_cell.classCount()>0) // partition was already computed
+  if (our_cell.size()>0) // partition was already computed
     return our_cell;
-  else if (their_cell.classCount()>0) // we can use the opposite side
+  else if (their_cell.size()>0) // we can use the opposite side
   { auto f = [this,&their_cell](coxtypes::CoxNbr x)-> Ulong
              { return their_cell(CoxGroup::inverse(x)); };
     return our_cell = bits::Partition(their_cell.size(),f); // normalizes order
@@ -594,22 +606,24 @@ template const bits::Partition& FiniteCoxGroup::cell<'l'>();
 template const bits::Partition& FiniteCoxGroup::cell<'r'>();
 template const bits::Partition& FiniteCoxGroup::cell<'b'>();
 
-/*
-  Return the partition of the group in right cells for unequal parameters.
-
-  NOTE : to be on the safe side, we allow this function to respond only
-  for the full group context. If the context is not full, it extends it
-  first to the full group.
-
-  NOTE : because this is a potentially very expensive operation, the
-  partition is computed on request.
-*/
-const bits::Partition& FiniteCoxGroup::rUneqCell()
+template<char side> // 'l' or 'r' or 'b'
+  const bits::Partition& FiniteCoxGroup::uneq_cell()
 {
-  if (d_runeqcell.classCount()) /* partition was already computed */
-    return d_runeqcell;
+  auto& our_cell
+    = side=='l' ? d_luneqcell : side=='r' ? d_runeqcell : d_lruneqcell;
+  auto& their_cell
+    = side=='l' ? d_runeqcell : side=='r' ? d_luneqcell : d_lruneqcell;
 
-  if (!isFullContext()) {
+  if (our_cell.size()>0) // partition was already computed
+    return our_cell;
+  else if (their_cell.size()>0) // we can use the opposite side
+  { auto f = [this,&their_cell](coxtypes::CoxNbr x)-> Ulong
+             { return their_cell(CoxGroup::inverse(x)); };
+    return our_cell = bits::Partition(their_cell.size(),f); // normalizes order
+  }
+
+  if (not isFullContext())
+  {
     fullContext();
     if (error::ERRNO)
       goto abort;
@@ -619,68 +633,22 @@ const bits::Partition& FiniteCoxGroup::rUneqCell()
   if (error::ERRNO)
     goto abort;
 
-  {
-    wgraph::OrientedGraph Y = cells::graph<'r'>(uneqkl());
-    Y.cells(d_runeqcell);
-    d_runeqcell.normalize();
-  }
-
-  return d_runeqcell;
+  return our_cell = cells::graph<side>(uneqkl()).cells().normalize();
 
  abort:
   error::Error(error::ERRNO);
   return d_runeqcell;
-} // |rUneqCell|
+} // |uneq_cell|
 
-/*
-  Return the partition in left cells for unequal parameters. The partition
-  is gotten from the right one, by inversing.
-*/
-const bits::Partition& FiniteCoxGroup::lUneqCell()
-{
-  if (d_luneqcell.classCount()>0) // partition was already computed
-    return d_luneqcell;
-
-  const bits::Partition& r = rUneqCell();
-  auto f = [this,&r](coxtypes::CoxNbr x)-> Ulong
-    { return r(CoxGroup::inverse(x)); };
-  return d_luneqcell = bits::Partition(r.size(),f); // normalizes order |f(x)|'s
-} // |lUneqCell|
-
-// Similar to |lUneqCell|, but for two-sided cells.
-const bits::Partition& FiniteCoxGroup::lrUneqCell()
-{
-  if (d_lruneqcell.classCount()>0) // partition was already computed
-    return d_lruneqcell;
-
-  if (!isFullContext()) {
-    fullContext();
-    if (error::ERRNO)
-      goto abort;
-    uneqkl().fillMu();
-    if (error::ERRNO)
-      goto abort;
-  }
-
-  {
-    wgraph::OrientedGraph X = cells::graph<'b'>(uneqkl());
-    X.cells(d_lruneqcell);
-  }
-
-  return d_lruneqcell;
-
- abort:
-  error::Error(error::ERRNO);
-  return d_lruneqcell;
-} // |lrUneqCell|
-
-
+template const bits::Partition& FiniteCoxGroup::uneq_cell<'l'>();
+template const bits::Partition& FiniteCoxGroup::uneq_cell<'r'>();
+template const bits::Partition& FiniteCoxGroup::uneq_cell<'b'>();
 
 
 
 
 /*
-  Returns the partition of the group in left descent classes, where two
+  Return the partition of the group in left descent classes, where two
   elements are equivalent iff they have the same left descent set (this is
   the non-generalized tau-invariant of Vogan.)
 
@@ -689,7 +657,7 @@ const bits::Partition& FiniteCoxGroup::lrUneqCell()
 template<char side> const bits::Partition& FiniteCoxGroup::descent()
 {
   auto& desc = side=='l' ? d_ldescent : d_rdescent;
-  if (desc.classCount()>0) /* partition was already computed */
+  if (desc.size()>0) /* partition was already computed */
     return desc;
 
   if (not isFullContext())
@@ -709,74 +677,15 @@ template<char side> const bits::Partition& FiniteCoxGroup::descent()
 template const bits::Partition& FiniteCoxGroup::descent<'l'>();
 template const bits::Partition& FiniteCoxGroup::descent<'r'>();
 
-const bits::Partition& FiniteCoxGroup::lString()
-
-/*
-  Returns the partition of the group in "left string classes" : the smallest
-  subsets C with the property that for each x in C, and for each pair of
-  non-commuting generators {s,t} such that L(x) contains exactly one of s,t,
-  say s, and the order m(s,t) of st is finite, the whole {s,t}-string
-
-         ... < tsx < sx < x < tx < stx ...
-
-  (the number of elements is m-1) passing through x is contained in C (see
-  the INTRO file for more details.) It is known (and easy to see) that this
-  partition is finer than the one by left cells.
-*/
-
-{
-  if (d_lstring.classCount()) /* partition was already computed */
-    return d_lstring;
-
-  if (!isFullContext()) { /* x is not the longest element */
-    fullContext();
-    if (error::ERRNO)
-      goto abort;
-  }
-
-  d_lstring = cells::string_equiv<'l'>(schubert());
-
-  return d_lstring;
-
- abort:
-  error::Error(error::ERRNO);
-  return d_lstring;
-}
-
-const bits::Partition& FiniteCoxGroup::rString()
-
-/*
-  The same as lString(), but on the right. Finer than the partition by right
-  cells.
-*/
-
-{
-  if (d_rstring.classCount()) /* partition was already computed */
-    return d_rstring;
-
-  if (!isFullContext()) { /* x is not the longest element */
-    fullContext();
-    if (error::ERRNO)
-      goto abort;
-  }
-
-  d_rstring = cells::string_equiv<'r'>(schubert());
-
-  return d_rstring;
-
- abort:
-  error::Error(error::ERRNO);
-  return d_rstring;
-}
 template<char side> // 'l' or 'r'
   const bits::Partition& FiniteCoxGroup::tau()
 {
   auto& our_tau   = side=='l' ? d_ltau : d_rtau;
   auto& their_tau = side=='l' ? d_rtau : d_ltau;
 
-  if (our_tau.classCount()>0)
+  if (our_tau.size()>0)
     return our_tau;
-  else if (their_tau.classCount()>0)
+  else if (their_tau.size()>0)
   {
     auto f = [this,&their_tau](coxtypes::CoxNbr x)-> Ulong
              { return their_tau(CoxGroup::inverse(x)); };
@@ -799,6 +708,47 @@ template<char side> // 'l' or 'r'
 
 template const bits::Partition& FiniteCoxGroup::tau<'l'>();
 template const bits::Partition& FiniteCoxGroup::tau<'r'>();
+
+
+/*
+  Return the partition of the group in "left/right string classes" : the
+  classes for the equivalence relation generated by the relations, for any
+  finite edge {s,t} of the Coxeter graph, between elements of a left
+  respectively right {s,t} string. That string contains, within the left or
+  right coset of the dihedreal group generated by {s,t}, elements whose
+  left/right descent set contains exactly one of {s,t} and are linked by left
+  respectively right shifts; for instance the left string through x with
+  left_descents(x)&{s,t}=s looks like
+
+         ... < tsx < sx < x < tx < stx ...
+
+  excluding at the extremities both the minimal and maximal length elements in
+  the coset, and therfore containin $m_{s,t}-1$ elements (see the INTRO file for
+  more details). It is known (and easy to see) that this partition is finer than
+  the one by left cells.
+*/
+template<char side> const bits::Partition& FiniteCoxGroup::string()
+{
+  auto& str = side=='l' ? d_lstring : d_rstring;
+
+  if (str.size()>0) // partition was already computed
+    return str;
+
+  if (not isFullContext()) {
+    fullContext();
+    if (error::ERRNO)
+      goto abort;
+  }
+
+  return str = cells::string_equiv<side>(schubert());
+
+ abort:
+  error::Error(error::ERRNO);
+  return str;
+}
+template const bits::Partition& FiniteCoxGroup::string<'l'>();
+template const bits::Partition& FiniteCoxGroup::string<'r'>();
+
 
 };
 
@@ -1187,28 +1137,26 @@ coxtypes::CoxSize order(FiniteCoxGroup *W)
 
  ****************************************************************************/
 
-bool fcoxgroup::isFiniteType(coxgroup::CoxGroup *W)
 
 /*
-  Recognizes the type of a finite group. Non-irreducible types are
-  allowed; they are words in the irreducible types. This function
-  defines the class of groups that will be treated as finite groups
-  in this program; the i/o setup is flexible enough that there is
-  no reason that a finite group should be entered otherwise.
+  Recognize the type of a finite group. Non-irreducible types are allowed; they
+  are words in the irreducible types. This function defines the class of groups
+  that will be treated as finite groups in this program; the i/o setup is
+  flexible enough that there is no reason that a finite group should be entered
+  otherwise.
 */
-
+bool fcoxgroup::isFiniteType(coxgroup::CoxGroup *W)
 {
   return isFiniteType(W->type());
 }
 
 
-coxtypes::Rank fcoxgroup::maxSmallRank(const type::Type& x)
 
 /*
-  Returns the smallest rank for which a CoxNbr holds the given element.
+  Return the smallest rank for which a CoxNbr holds the given element.
   It is assumed that x is one of the finite types A-I.
 */
-
+coxtypes::Rank fcoxgroup::maxSmallRank(const type::Type& x)
 {
   coxtypes::Rank l;
   unsigned long c;

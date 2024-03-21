@@ -57,18 +57,18 @@ class FiniteCoxGroup : public coxgroup::CoxGroup
   coxtypes::Length d_maxlength;
   coxtypes::CoxSize d_order;
   transducer::Transducer *d_transducer;
-  bits::Partition d_lcell;
-  bits::Partition d_rcell;
-  bits::Partition d_lrcell;
-  bits::Partition d_luneqcell;
-  bits::Partition d_runeqcell;
-  bits::Partition d_lruneqcell;
   bits::Partition d_ldescent;
   bits::Partition d_rdescent;
   bits::Partition d_ltau;
   bits::Partition d_rtau;
   bits::Partition d_lstring;
   bits::Partition d_rstring;
+  bits::Partition d_lcell;
+  bits::Partition d_rcell;
+  bits::Partition d_lrcell;
+  bits::Partition d_luneqcell;
+  bits::Partition d_runeqcell;
+  bits::Partition d_lruneqcell;
   list::List<coxtypes::CoxNbr> d_duflo;
 
  public:
@@ -124,20 +124,19 @@ class FiniteCoxGroup : public coxgroup::CoxGroup
 
 /* kazhdan-lusztig cells and realted partitions */
 
-  template<char side> // 'l' or 'r' or 'b'
-    const bits::Partition& cell();
-  const list::List<coxtypes::CoxNbr>& duflo();
-  const bits::Partition& lUneqCell();
-  const bits::Partition& lrUneqCell();
-  const bits::Partition& rUneqCell();
   template<char side> // 'l' or 'r'
     const bits::Partition& descent();
-  const bits::Partition& lString();
-  const bits::Partition& rString();
   template<char side> // 'l' or 'r'
     const bits::Partition& tau();
+  template<char side> // 'l' or 'r'
+    const bits::Partition& string();
+  template<char side> // 'l' or 'r' or 'b'
+    const bits::Partition& cell();
+  template<char side> // 'l' or 'r' or 'b'
+    const bits::Partition& uneq_cell();
 
-};
+  const list::List<coxtypes::CoxNbr>& duflo();
+}; // |class FiniteCoxGroup|
 
 class FiniteBigRankCoxGroup : public FiniteCoxGroup {
  public:

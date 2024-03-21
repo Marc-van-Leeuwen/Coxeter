@@ -2238,12 +2238,9 @@ void klbasis_f()
   files::printAsBasisElt(file.f(),h,W->schubert(),W->interface(),traits);
 }
 
+
+// Print out the left cells in the group.
 void lcells_f()
-
-/*
-  This function prints out the left cells in the group.
-*/
-
 {
   if (not fcoxgroup::isFiniteType(W)) {
     io::printFile(stderr,"lcells.mess",directories::MESSAGE_DIR);
@@ -2268,7 +2265,7 @@ void lcells_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::lCellsH,traits);
-  printLCells(file.f(),Wf->lUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
+  printLCells(file.f(),Wf->uneq_cell<'l'>(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
 void lcorder_f()
@@ -2370,7 +2367,8 @@ void lrcells_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::lrCellsH,traits);
-  printLRCells(file.f(),Wf->lrUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
+  printLRCells(file.f(),Wf->uneq_cell<'b'>(),Wf->uneqkl(),
+	       Wf->interface(),traits);
 }
 
 void mu_f()
@@ -2525,7 +2523,7 @@ void rcells_f()
   files::OutputTraits& traits = Wf->outputTraits();
 
   printHeader(file.f(),files::rCellsH,traits);
-  printRCells(file.f(),Wf->rUneqCell(),Wf->uneqkl(),Wf->interface(),traits);
+  printRCells(file.f(),Wf->uneq_cell<'r'>(),Wf->uneqkl(),Wf->interface(),traits);
 }
 
 void rcorder_f()
