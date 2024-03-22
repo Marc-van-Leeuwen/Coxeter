@@ -9,6 +9,7 @@
 #define WGRAPH_H
 
 #include "globals.h"
+#include "containers.h"
 #include "list.h"
 
 /******** type declarations *************************************************/
@@ -21,7 +22,7 @@ namespace wgraph {
   typedef unsigned short Coeff;
   typedef list::List<Coeff> CoeffList;
   typedef Vertex Edge;
-  typedef list::List<Edge> EdgeList;
+  typedef containers::vector<Edge> EdgeList;
 };
 
 /******** type definitions **************************************************/
@@ -32,14 +33,13 @@ namespace wgraph {
 class wgraph::OrientedGraph
 {
  private:
-  list::List<EdgeList> d_edge;
+  containers::vector<EdgeList> d_edge;
  public:
 /* constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(OrientedGraph));}
-  OrientedGraph(const Ulong &n):d_edge(n) {};
-  ~OrientedGraph();
+  OrientedGraph(const Ulong &n):d_edge(n) {}
 /* accessors */
   bits::Partition cells(OrientedGraph* P = nullptr) const;
   const EdgeList& edge(const Vertex& x) const { return d_edge[x]; }
@@ -49,9 +49,11 @@ class wgraph::OrientedGraph
   Ulong size() const {return d_edge.size(); }
 /* modifiers */
   EdgeList& edge(const Vertex& x) { return d_edge[x]; }
+  template<typename I> void add_source_vertex(I begin,I end)
+  { d_edge.push_back(EdgeList(begin,end)); }
   void permute(const bits::Permutation& a);
   void reset();
-  void setSize(const Ulong& n) { d_edge.setSize(n); }
+  void setSize(const Ulong& n) { d_edge.resize(n); } // no new edges yet
 }; // |class wgraph::OrientedGraph|
 
 class wgraph::WGraph

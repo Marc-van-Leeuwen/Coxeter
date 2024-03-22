@@ -27,7 +27,7 @@ namespace posets {
 namespace posets {
 
 class Poset {
-  list::List<bits::BitMap> d_closure;
+  containers::vector<bitmap::BitMap> d_closure;
  public:
 /* constructors and destructors */
   void operator delete(void* ptr, size_t size)
@@ -35,13 +35,13 @@ class Poset {
   Poset();
   Poset(const Ulong &n);
   Poset(const wgraph::OrientedGraph& G);
-  ~Poset();
 /* manipulators */
 /* accessors */
   void findMaximals(const bits::BitMap& D, bits::Set& a) const;
+  containers::vector<Ulong> maxima_within(bitmap::BitMap D) const;
   bool isTriangular() const;
   Ulong size() const;
-  void hasseDiagram(wgraph::OrientedGraph& H);
+  void hasseDiagram(wgraph::OrientedGraph& H) const;
 /* input/output */
 };
 

@@ -393,7 +393,7 @@ template<char side> // one of 'l', 'r', 'b'
       if (mu[j].mu != 0) {
 	coxtypes::CoxNbr x = mu[j].x;
 	if (p.descent_set<side>(x) != p.descent_set<side>(y))
-	  X.edge(x).append(y); // add an edge from |x| to |y|
+	  X.edge(x).push_back(y); // add an edge from |x| to |y|
       }
     }
   }
@@ -403,9 +403,9 @@ template<char side> // one of 'l', 'r', 'b'
     for (Ulong j = 0; j < c.size(); ++j)
     { const Lflags dx = p.descent_set<side>(c[j]), dy=p.descent_set<side>(y);
       if ((dx&dy) != dx)
-	X.edge(c[j]).append(y);
+	X.edge(c[j]).push_back(y);
       if ((dx&dy) != dy)
-	X.edge(y).append(c[j]);
+	X.edge(y).push_back(c[j]);
     }
   }
 
@@ -519,12 +519,12 @@ template<char side>
 	{ /* found a hasse edge */
 	  if ((desc(x)&desc(y)) != desc(x))
 	  {
-	    Y.edge(pos).append(j);
+	    Y.edge(pos).push_back(j);
 	    X.coeffList(pos).append(1);
 	  }
 	  if ((desc(x)&desc(y)) != desc(y))
 	  {
-	    Y.edge(j).append(pos);
+	    Y.edge(j).push_back(pos);
 	    X.coeffList(j).append(1);
 	  }
 	  continue;
@@ -534,7 +534,7 @@ template<char side>
 
 	if (mu != 0 and desc(x) != desc(y))
 	{
-	  Y.edge(pos).append(j);
+	  Y.edge(pos).push_back(j);
 	  X.coeffList(pos).append(mu);
 	}
       } // |for(pos)|
@@ -563,52 +563,50 @@ template wgraph::WGraph W_graph<'b'>(const bits::SubSet& q, kl::KLContext& kl);
  *****************************************************************************/
 
 /*
-  Return the left/right/two-sided graph corresponding to the edges in the
-  context. It is assumed that the mu-table has been filled.
+  Return the left/right/two-sided graph as mentioned above, corresponding to
+  the edges within the context. It is assumed that the mu-table has been filled.
 */
 template<char side>
   wgraph::OrientedGraph graph(uneqkl::KLContext& kl)
 {
   const schubert::SchubertContext& p = kl.schubert();
-  wgraph::OrientedGraph X(kl.size());
-  const Lflags S = constants::lt_mask[kl.rank()];
 
-  if (side=='b')
-    X = graph<'r'>(kl); // start with right edges
-  else // reset X
-    for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-      wgraph::EdgeList& e = X.edge(y);
-      e.setSize(0);
-    }
+  auto X = side=='b' ? graph<'r'>(kl) : wgraph::OrientedGraph(kl.size());
+
 
   // make edges (on the left when two-sided)
-  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
+  for (coxtypes::CoxNbr y = 0; y < X.size(); ++y)
+  {
     coxtypes::CoxNbr yi = side=='r' ? y : kl.inverse(y);
-    for (GenSet f = ~p.rdescent(y) & S; f; f &= (f-1)) {
-      coxtypes::Generator s = constants::firstBit(f);
+    for (GenSet f = p.rascent(y); f!=0; f &= (f-1))
+    {
+      coxtypes::Generator s = constants::first_bit(f);
       const uneqkl::MuRow& muRow = kl.muList(s,y);
-      for (Ulong j = 0; j < muRow.size(); ++j) {
+      for (const uneqkl::MuData& mud : muRow)
+      {
 	wgraph::EdgeList& e =
-	  X.edge(side=='r' ? muRow[j].x : kl.inverse(muRow[j].x));
-	if (side=='b')
-	  insert(e,wgraph::Edge(yi));
-	else
-	  e.append(yi);
+	  X.edge(side=='r' ? mud.x : kl.inverse(mud.x));
+	if (side=='r') // then list starts empty, and the |yi| are increasing
+	  e.push_back(yi);
+	else // the list starts empty only if |side=='l'|, then |yi| unordered
+	{
+	  auto it = std::lower_bound(e.begin(),e.end(),yi);
+	  if (side=='l' or (it!=e.end() and *it!=yi))
+	    e.insert(it,yi);
+	}
       }
-      wgraph::Vertex sy  = kl.inverse(p.shift(y,s));
-      wgraph::EdgeList& e = X.edge(sy);
-      if (side=='b')
-	insert(e,wgraph::Edge(yi));
-      else
-	e.append(yi);
+      wgraph::EdgeList& e =
+	X.edge(side=='r' ? p.shift(y,s) : kl.inverse(p.shift(y,s)));
+      if (side=='r') // then list starts empty, and the |yi| are increasing
+	e.push_back(yi);
+      else // the list starts empty only if |side=='l'|, then |yi| unordered
+      {
+	auto it = std::lower_bound(e.begin(),e.end(),yi);
+	if (side=='l' or (it!=e.end() and *it!=yi))
+	  e.insert(it,yi);
+      }
     }
   }
-
-  if (side=='l') // then we must sort edgelists
-    for (coxtypes::CoxNbr y = 0; y < X.size(); ++y) {
-      wgraph::EdgeList& e = X.edge(y);
-      e.sort();
-    }
 
   return X;
 }

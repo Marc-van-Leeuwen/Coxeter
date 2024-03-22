@@ -6,6 +6,7 @@
 */
 
 #include "posets.h"
+#include "sl_list.h"
 
 /****************************************************************************
 
@@ -17,11 +18,12 @@
 
  ****************************************************************************/
 
+namespace posets {
+
 namespace {
 
-  using namespace posets;
-
-  PosetElt firstMinimal(const wgraph::OrientedGraph& G, const bits::BitMap& b);
+  PosetElt first_sink_in
+    (const wgraph::OrientedGraph& G, const bitmap::BitMap& b);
 
 }
 
@@ -55,82 +57,58 @@ namespace {
 
  ****************************************************************************/
 
-namespace posets {
 
 Poset::Poset()
 
 {}
 
-Poset::Poset(const Ulong& n):d_closure(n)
 
 /*
   Constructs a Poset structure capable of accomodating a Poset of size n.
 */
+Poset::Poset(const Ulong& n)
+  : d_closure(n,bitmap::BitMap(n)) // start with |n| empty bitmaps
+{}
 
-{
-  d_closure.setSizeValue(n);
-
-  for (Ulong j = 0; j < n; ++j) {
-    new(d_closure.ptr()+j) bits::BitMap(n);
-  }
-}
-
-Poset::Poset(const wgraph::OrientedGraph& G):d_closure(G.size())
 
 /*
-  Constructs the poset defined by the graph G, assumed to be acyclic; i.e.,
+  Construct the poset defined by the graph G, assumed to be acyclic; i.e.,
   the underlying set is the vertex set of G, and x <= y iff there is an
   oriented path in G from y to x (we assume that G describes dominance
   relations, as a matter of convention.)
 */
-
+Poset::Poset(const wgraph::OrientedGraph& G)
+  : d_closure(G.size(),bitmap::BitMap(G.size()))
 {
-  static bits::BitMap b(0);
+  bitmap::BitMap candidates(size());
+  candidates.fill();
 
-  d_closure.setSizeValue(G.size());
-
-  for (Ulong j = 0; j < size(); ++j) {
-    new(d_closure.ptr()+j) bits::BitMap(size());
-  }
-
-  /* set the bitmaps */
-
-  b.setSize(size());
-  b.reset();
-
-  for (Ulong j = 0; j < size(); ++j) {
-    PosetElt x = firstMinimal(G,b);
-    b.setBit(x);
-    const wgraph::EdgeList& e = G.edge(x);
-    d_closure[x].setBit(x);
-    for (Ulong i = 0; i < e.size(); ++i) {
-      d_closure[x] |= d_closure[e[i]];
+  while (not candidates.empty())
+  {
+    PosetElt x = first_sink_in(G,candidates);
+    d_closure[x].insert(x);
+    for (auto y : G.edge(x))
+    {
+      assert(not candidates.is_member(y));
+      d_closure[x] |= d_closure[y];
     }
+    candidates.remove(x); // |candidates.andnot(d_closure[x])| wouldn't do more
   }
 }
-
-Poset::~Poset()
-
-/*
-  Automatic destruction of the components is enough.
-*/
-
-{}
 
 /******** manipulators ******************************************************/
 
 /******** accessors *********************************************************/
 
-void Poset::findMaximals(const bits::BitMap& D, bits::Set& a) const
 
 /*
-  This function writes in a the maximal elements of D. It assumes that
+  Write in a the maximal elements of D. It assumes that
   the poset is in triangular form.
 
   The algorithm is as follows. The largest element z in D is certainly
   maximal. Then remove cl(z) from D, and iterate until reaching the empty set.
 */
-
+void Poset::findMaximals(const bits::BitMap& D, bits::Set& a) const
 {
   static bits::BitMap b(0);
 
@@ -142,43 +120,47 @@ void Poset::findMaximals(const bits::BitMap& D, bits::Set& a) const
   }
 }
 
-bool Poset::isTriangular() const
+containers::vector<Ulong> Poset::maxima_within(bitmap::BitMap D) const
+{
+  containers::sl_list<Ulong> result;
+  Ulong elt = D.capacity();
+  while (D.back_up(elt))
+  {
+    result.push_front(elt);
+    D.andnot(d_closure[elt]);
+  }
+
+  return result.to_vector();
+}
+
 
 /*
-  This function checks whether the poset is enumerated in a way compatible
-  with the ordering, viz. s.t. x <= y in the poset implies x <= y as numbers.
-  If not, it is always possible to permute the poset in order to get such
-  an enumeration.
+  Check whether the poset is enumerated in a way compatible with the ordering.
+  The condition is that x <= y in the poset implies x <= y as numbers. If not,
+  it is always possible to permute the poset in order to get such an
+  enumeration.
 */
-
+bool Poset::isTriangular() const
 {
-  for (PosetElt x = 0; x < size(); ++x) {
-    if (!d_closure[x].isEmpty(x+1))
+  for (PosetElt x = 0; x < size()-1; ++x)
+  { Ulong n = size();
+    d_closure[x].back_up(n); // for side effect; it always returns |true|
+    if (n>x)
       return false;
   }
   return true;
 }
 
-void Poset::hasseDiagram(wgraph::OrientedGraph& H)
-
-/*
-  This function returns in H the Hasse diagram of the poset, i.e. for each
-  y the elements x which lie immediately under y.
-*/
-
+void Poset::hasseDiagram(wgraph::OrientedGraph& H) const
 {
   H.setSize(size());
 
-  for (PosetElt x = 0; x < size(); ++x) {
-    d_closure[x].clearBit(x);
-    findMaximals(d_closure[x],H.edge(x));
-    d_closure[x].setBit(x);
-  }
+  for (PosetElt x = 0; x < size(); ++x)
+    H.edge(x) = maxima_within(bitmap::BitMap(d_closure[x]).remove(x));
 }
 
 /******** input/output ******************************************************/
 
-};
 
 /*****************************************************************************
 
@@ -186,43 +168,22 @@ void Poset::hasseDiagram(wgraph::OrientedGraph& H)
 
   This chapter defines some auxiliary functions used in this module :
 
-    - firstMinimal(G,b) : return the first x in G minimal in the complement
-      of b;
+    - first_sink_in(G,b) : return the first minimal |x| in subset |b| of |G|
 
  *****************************************************************************/
 
 namespace {
 
-PosetElt firstMinimal(const wgraph::OrientedGraph& G, const bits::BitMap& b)
-
-/*
-  This function is an auxiliary to Poset(G). Given a bitmap b, which is
-  assumed to hold a certain subset of the vertex set of G, it returns the
-  first element x in G which is not in b, but all the edges of which go
-  to elements in b.
-
-  Returns the value G.size() if no such element is found, which should
-  happen iff b holds the full set.
-*/
-
+PosetElt first_sink_in(const wgraph::OrientedGraph& G, const bitmap::BitMap& b)
 {
-  Ulong x = 0;
+  auto outside_b = [&b](Ulong y) { return not b.is_member(y); };
+  for (PosetElt x : b)
+    if (std::all_of(G.edge(x).begin(),G.edge(x).end(),outside_b))
+      return x;
 
-  for (; x < G.size(); ++x) {
-    if (b.getBit(x))
-      continue;
-    const wgraph::EdgeList& e = G.edge(x);
-    for (Ulong i = 0; i < e.size(); ++i) {
-      if (!b.getBit(e[i]))
-	goto nextx;
-    }
-  /* if we reach this point our element is found */
-    break;
-  nextx:
-    continue;
-  }
-
-  return x;
+  return G.size(); // not found indication
 }
 
-};
+
+}; // |namespace|
+}; // |namespace posets|

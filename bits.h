@@ -106,7 +106,7 @@ class bits::BitMap {
   Ulong bitCount() const;
   Lflags chunk(Ulong m) const { return d_map[m]; }
   Ulong firstBit() const;
-  bool isEmpty(Ulong m) const;
+  bool isEmpty(Ulong m) const; // whether empty from |m| upwards
   Ulong lastBit() const;
   Lflags lastchunk() const
     { return constants::leq_mask[(size()-1)%BITS(Lflags)]; }

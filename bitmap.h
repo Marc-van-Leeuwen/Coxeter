@@ -202,32 +202,53 @@ class BitMap
     Set the bit at position |n| (that is, inserts the value |n| into the set);
     this makes |isMember(n)| hold.
   */
-  void insert(size_t n)
+  void insert(size_t n)&
   {
     assert(n<d_capacity);
     d_map[n >> baseShift] |= constants::eq_mask[n & posBits];
+  }
+
+  BitMap&& insert(size_t n)&&
+  {
+    assert(n<d_capacity);
+    d_map[n >> baseShift] |= constants::eq_mask[n & posBits];
+    return std::move(*this);
   }
 
   /*
     Clear the bit at position |n| (that is, removes that element of the set);
     this makes |isMember(n)| false.
   */
-  void remove(size_t n)
+  void remove(size_t n)&
   {
     assert(n<d_capacity);
     d_map[n >> baseShift] &= ~constants::eq_mask[n & posBits];
+  }
+
+  BitMap&& remove(size_t n)&&
+  {
+    assert(n<d_capacity);
+    d_map[n >> baseShift] &= ~constants::eq_mask[n & posBits];
+    return std::move(*this);
+  }
+
+  void flip(size_t n)&
+  {
+    assert(n<d_capacity);
+    d_map[n >> baseShift] ^= constants::eq_mask[n & posBits];
+  }
+
+  BitMap&& flip(size_t n)&&
+  {
+    assert(n<d_capacity);
+    d_map[n >> baseShift] ^= constants::eq_mask[n & posBits];
+    return std::move(*this);
   }
 
   bool set_to(size_t n,bool b)
   { if (b) insert(n); else remove(n); return b; }
 
   bool set_mod2(size_t n, unsigned v) { return set_to(n,(v&1)!=0); }
-
-  void flip(size_t n)
-  {
-    assert(n<d_capacity);
-    d_map[n >> baseShift] ^= constants::eq_mask[n & posBits];
-  }
 
 
  void fill(); // set all bits

@@ -252,13 +252,9 @@ Ulong BitMap::firstBit() const
   return first + constants::firstBit(f);
 }
 
+
+// Whether the bitmap has no set bits in positions >= m
 bool BitMap::isEmpty(Ulong m) const
-
-/*
-  This function checks whether the intersection of the bitmap with the
-  interval [m,size[ is empty
-*/
-
 {
   Ulong lsize = d_size/BITS(Lflags)+(bool)(d_size%BITS(Lflags));
 
