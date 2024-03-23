@@ -217,7 +217,7 @@ private:
 /* accessors */
   // the next method allows treating the Partition as a (classifying) function
   Ulong operator() (Ulong j) const { return classifier[j]; }
-  Ulong classCount() const {return d_classCount;}
+  Ulong class_count() const {return d_classCount;}
   Ulong size() const { return classifier.size(); }
 
   Permutation standardization() const; // standardization of |classifier|
@@ -227,11 +227,9 @@ private:
   containers::vector<Ulong> class_sizes() const;
 /* modifiers */
   bool refine(const containers::vector<Partition>& L);
-  void incr_class_count() { ++d_classCount; }
-  Ulong& operator[] (Ulong j)     { return classifier[j]; }
   Partition& normalize() { return *this = Partition(size(),*this); }
-  void permute(const Permutation& a);
-  void permuteRange(const Permutation& a);
+  void permute_base(const Permutation& a);
+  void permute_range(const Permutation& a);
 }; // |bits::Partition|
 
 class bits::PartitionIterator {

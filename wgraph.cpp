@@ -292,7 +292,7 @@ namespace {
   not be detected as component before the sink 6 is removed as singleton
   component, while at this point that vertex has not even been visited.
 */
-bits::Partition OrientedGraph::cells(OrientedGraph* P) const // by Tarjan
+bits::Partition OrientedGraph::cells(OrientedGraph* P) const // by incorrect Tarjan
 {
   struct stack_record { Vertex v; const EdgeList* elist; Ulong ecount; };
   containers::vector<stack_record> active; // like a |stack|, but we need |size()|
@@ -472,23 +472,24 @@ void get_class(const OrientedGraph& X, const Vertex& x0, bitmap::BitMap& recorde
   vertices not younger than $c$.
 */
 
-using seqno = Vertex; // sequence number in depth-first traversal
-using work_addr = unsigned; // reference to an active vertex by stack location
-
-struct info
+bits::Partition OrientedGraph::cells(OrientedGraph* gr) const // Tarjan's algorithm
 {
-  Vertex v;    // identification of vertex in the graph
-  work_addr parent; // location of parent in depth-first traversal
-  unsigned next_edge; // index in edge list of next edge to consider
-  seqno min;        // minimal rank of vertex reachable as indicated above
+  using seqno = Vertex; // sequence number in depth-first traversal
+  using work_addr = unsigned; // reference to an active vertex by stack location
 
-  // constructor
-  info (const Vertex x, work_addr p, seqno rank)
-    : v(x), parent(p), next_edge(0), min(rank) { }
-};
+  struct info
+  {
+    Vertex v;    // identification of vertex in the graph
+    work_addr parent; // location of parent in depth-first traversal
+    unsigned next_edge; // index in edge list of next edge to consider
+    seqno min;        // minimal rank of vertex reachable as indicated above
 
-bits::Partition OrientedGraph::cells(OrientedGraph* gr) const
-{
+    // constructor
+    info (const Vertex x, work_addr p,
+	  containers::vector<seqno>& rank, seqno& counter)
+      : v(x), parent(p), next_edge(0), min(rank[x]=counter++) { }
+  };
+
   containers::vector<seqno> rank(size(),0);
 
   const work_addr nil= size(); // impossible index into |active|
@@ -508,8 +509,7 @@ bits::Partition OrientedGraph::cells(OrientedGraph* gr) const
     if (rank[x0]<limit)
     {
       seqno count=1;
-      rank[x0]=count++;
-      active.push_back(info(x0,nil,rank[x0])); // x0 has no parent
+      active.push_back(info(x0,nil,rank,count)); // x0 has no parent
       work_addr cur_pos=0; // point current position to x0
 
       while(cur_pos!=nil)
@@ -523,8 +523,7 @@ bits::Partition OrientedGraph::cells(OrientedGraph* gr) const
 	  if (rank[y]==0) // y is a fresh vertex
 	  {
 	    work_addr y_pos = active.size();
-	    rank[y] = count++;
-	    active.push_back(info(y,cur_pos,rank[y]));
+	    active.push_back(info(y,cur_pos,rank,count));
 	    cur_pos = y_pos; // and |continue| the |while| loop from there
 	  }
 	  else // |y| was seen before (cross edge), or |y| is settled

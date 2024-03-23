@@ -1022,7 +1022,7 @@ void printCellOrder(FILE* file, const OrientedGraph& X,
 
   io::print(file,traits.prefix);
 
-  for (Ulong j = 0; j < pi.classCount(); ++j) {
+  for (Ulong j = 0; j < pi.class_count(); ++j) {
     if (traits.printNode) {
       io::print(file,traits.nodePrefix);
       fprintf(file,"%lu",j+traits.nodeShift);
@@ -1037,7 +1037,7 @@ void printCellOrder(FILE* file, const OrientedGraph& X,
     }
     io::print(file,traits.edgePostfix);
 
-    if (j+1 < pi.classCount()) // there is more to come
+    if (j+1 < pi.class_count()) // there is more to come
       io::print(file,traits.separator);
   }
 
@@ -1329,7 +1329,7 @@ schubert::CoxNbrList minimal_class_reps
   (const bits::Partition& pi, schubert::NFCompare& c)
 {
   schubert::CoxNbrList result;
-  result.reserve(pi.classCount());
+  result.reserve(pi.class_count());
   for (bits::PartitionIterator pit(pi); pit; ++pit)
   {
     const bits::Set& pi_class = pit();
@@ -1428,9 +1428,10 @@ void sortLists(list::List<list::List<coxtypes::CoxNbr> >& lc, schubert::NFCompar
 /*
   Write out in lc the various classes of the partition pi.
 */
-void writeClasses(list::List<list::List<coxtypes::CoxNbr> >& lc, const bits::Partition& pi)
+void writeClasses
+  (list::List<list::List<coxtypes::CoxNbr> >& lc, const bits::Partition& pi)
 {
-  lc.setSize(pi.classCount());
+  lc.setSize(pi.class_count());
   Ulong j = 0;
 
   for (bits::PartitionIterator pit(pi); pit; ++pit) {

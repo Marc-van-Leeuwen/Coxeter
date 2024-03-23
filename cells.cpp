@@ -113,15 +113,15 @@ template<char side> // one of 'l', 'r'
   do
   {
     bits::Permutation v = pi.inverse_standardization();
-    containers::vector<unsigned> class_size(pi.classCount(),0);
+    containers::vector<unsigned> class_size(pi.class_count(),0);
     for (Ulong j = 0; j < pi.size(); ++j)
-      ++class_size[pi[j]]; // count each class of |pi|
+      ++class_size[pi(j)]; // count each class of |pi|
 
     Ulong i = 0;
     containers::vector<bits::Partition> refinements;
-    refinements.reserve(pi.classCount());
+    refinements.reserve(pi.class_count());
 
-    for (Ulong c=0; c<pi.classCount(); i += class_size[c], ++c) // do class |c|
+    for (Ulong c=0; c<pi.class_count(); i += class_size[c], ++c) // do class |c|
     {
       const auto* star = p.star_base<side>(v[i]); // for first element in class
 
@@ -182,7 +182,7 @@ template<char side> // one of 'l', 'r',
        element of the current generalized-tau class */
     containers::queue<Ulong> orbit { seen.size() }; // start with next-to-add
     containers::vector<Ulong> comp_sizes;
-    comp_sizes.reserve(qcells.classCount());
+    comp_sizes.reserve(qcells.class_count());
 
     // get cell sizes and record their members; they fill |x|'s |gen_tau_class|
     for (bits::PartitionIterator pit(qcells); pit; ++pit)
@@ -642,7 +642,7 @@ coxtypes::CoxNbr checkClasses
 
   Ulong i = 0;
 
-  for (Ulong j = 0; j < pi.classCount(); ++j) {
+  for (Ulong j = 0; j < pi.class_count(); ++j) {
     q.reset();
     for (; pi(v[i]) == j; ++i) {
       q.add(v[i]);

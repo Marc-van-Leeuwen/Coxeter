@@ -656,18 +656,18 @@ Permutation Partition::standardization() const
 
 bool Partition::refine(const containers::vector<Partition>& L)
 {
-  assert(L.size()==classCount());
+  assert(L.size()==class_count());
   containers::vector<Ulong> class_counter(d_classCount,0);
   for (Ulong class_nr=0; class_nr<L.size(); ++class_nr)
-    class_counter[class_nr] += L[class_nr].classCount()-1; // count new classes
+    class_counter[class_nr] += L[class_nr].class_count()-1; // count new classes
 
-  // now cumulate those values starting from |classCount()|
-  Ulong sum=classCount();
+  // now cumulate those values starting from |class_count()|
+  Ulong sum=class_count();
   for (auto& entry : class_counter)
   { std::swap(sum,entry); // store value of |sum| before addition
     sum += entry;
   }
-  if (sum==classCount())
+  if (sum==class_count())
     return false; // no actual refinement
 
   containers::vector<Ulong> class_index(d_classCount,0); // class-relative pos
@@ -736,7 +736,7 @@ SubSet Partition::class_nr(Ulong n) const
   Permute set underlying the partition according to |a| (i.e., apply |a| to the
   elements of each part of the partition)
 */
-void Partition::permute(const Permutation& a)
+void Partition::permute_base(const Permutation& a)
 {
   bitmap::BitMap seen(size());
 
@@ -753,7 +753,7 @@ void Partition::permute(const Permutation& a)
 
 
 // Apply the permutation |a| to the values of the classifying function.
-void Partition::permuteRange(const Permutation& a)
+void Partition::permute_range(const Permutation& a)
 {
   for (SetElt x = 0; x < size(); ++x)
     classifier[x] = a[classifier[x]];
@@ -778,7 +778,7 @@ void Partition::setClassCount()
 
 containers::vector<Ulong> Partition::class_sizes() const
 {
-  containers::vector<Ulong> result(classCount(),0);
+  containers::vector<Ulong> result(class_count(),0);
   for (Ulong nr : classifier)
     ++result[nr];
   return result;
