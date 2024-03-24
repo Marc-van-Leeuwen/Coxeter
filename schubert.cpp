@@ -1321,13 +1321,13 @@ void printPartition
 
   for (bits::Partition::iterator pit=pi.begin(); pit; ++pit)
   {
-    const Set& c = *pit;
-    fprintf(file,"%lu(%lu):{",count,c.size());
-    for (Ulong j = 0; j < c.size(); ++j) {
+    auto range = *pit;
+    fprintf(file,"%lu(%lu):{",count,range.size());
+    for (const auto& elt : range) {
       coxtypes::CoxWord g(0);
-      p.append(g,c[j]);
+      p.append(g,elt);
       I.print(file,g);
-      if (j+1 < c.size()) /* there is more to come */
+      if (&elt+1 != &*range.end()) /* there is more to come */
 	fprintf(file,",");
     }
     fprintf(file,"}\n");
@@ -1349,7 +1349,7 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
 
   for (bits::Partition::iterator pit=pi_b.begin(); pit; ++pit)
   {
-    const Set& c = *pit;
+    const auto c = *pit;
     fprintf(file,"%lu(%lu):{",count,c.size());
     for (Ulong j = 0; j < c.size(); ++j) {
       coxtypes::CoxWord g(0);

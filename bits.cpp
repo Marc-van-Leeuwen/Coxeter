@@ -63,28 +63,24 @@
 
 namespace bits {
 
-Permutation::Permutation():List<Ulong>()
-
+  Permutation::Permutation() : containers::vector<Ulong>()
 {}
 
 Permutation::Permutation(Ulong n)
-  : List<Ulong>()
+  : containers::vector<Ulong>()
 { identity(n);
 }
 
 
+
+// Set |*this| to the identity permutation of [0,n[.
 Permutation& Permutation::identity(Ulong n)
-
-/*
-  Sets the permutation to the identity permutation of [0,n[.
-*/
-
 {
-  setSize(n);
+  clear();
+  reserve(n);
 
-  for (Ulong j = 0; j < size(); ++j) {
-    d_ptr[j] = j;
-  }
+  for (Ulong i = 0; i < n; ++i)
+    push_back(i);
 
   return *this;
 }
@@ -103,37 +99,33 @@ Permutation Permutation::inverse() const
   return result;
 }
 
-Permutation& Permutation::rightCompose(const Permutation& a)
 
 /*
-  Increments the current permutation by composition on the right with a :
+  Compose |*this| on the right with |a|: |(*this) *= a|
   new(x) = old(a(x)). The same problem occurs as with inverse.
 */
 
+Permutation& Permutation::rightCompose(const Permutation& a)
 {
-  static Permutation c(0);
-
-  c.setSize(size());
+  Permutation c; c.reserve(size());
   Permutation& t = *this;
 
   for (SetElt x = 0; x < size(); ++x)
-    c[x] = t[a[x]];
+    c.push_back(t[a[x]]);
 
-  t.assign(c);
-
-  return t;
+  return t = std::move(c);
 }
 
-Permutation& Permutation::compose(const Permutation& a)
 
 /*
-  Increments the current permutation by composition on the left with a :
+  Compose |*this| on the left with |a|: |(*this) = a*(*this)|
   new(x) = a(old(x)).
 */
-
+Permutation& Permutation::compose(const Permutation& a)
 {
+  Permutation& t = *this;
   for (SetElt x = 0; x < size(); ++x)
-    operator[](x) = a[operator[](x)];
+    t[x] = a[t[x]];
 
   return *this;
 }
@@ -615,9 +607,13 @@ BitMap::Iterator BitMap::end() const
 
 namespace bits {
 
-
 /******* accessors **********************************************************/
 
+Partition::Partition(containers::vector<Ulong>&& v, Ulong class_count)
+: classifier(std::move(v))
+, inv_stnd() // filled by below
+, cum_class_sizes() // set by |set_inverse_standardization|
+{ set_inverse_standardization(class_count); }
 
 /*
   Return the permutation vector to a partition with the same class sizes, but
@@ -631,10 +627,9 @@ namespace bits {
   We do this by counting each class, then putting each element directly
   in its right place in a.
 */
-
 Permutation Partition::standardization() const
 {
-  containers::vector<Ulong> class_counter(d_classCount,0);
+  containers::vector<Ulong> class_counter(class_count(),0);
 
   for (Ulong class_nr : classifier)
     ++class_counter[class_nr];
@@ -654,10 +649,43 @@ Permutation Partition::standardization() const
   return result;
 }
 
+/*
+  Compute the inverse standardization permutation into |inv_stnd|, while setting
+  |cum_class_sizes| to the cumulative lass sizes (entry |i| being up to and
+  including calls |i|). This permutation being more useful tham its inverse,
+  which is the standardization the, |Partition| these dedicated fields to store
+  those values; they allow easy traversal of each individial class.
+
+  Here $new[j] = old[a[j]]$ for the same |old| and |new| as in |standardization|.
+  The implementation is the same as for |standardization|, except for the body
+  of the final loop, where we interchange index to |result| and assigned value.
+*/
+void Partition::set_inverse_standardization(Ulong class_count)
+{
+  cum_class_sizes.assign(class_count,0);
+  for (Ulong class_nr : classifier)
+    ++cum_class_sizes[class_nr];
+
+  // cumulate left-to-right, giving starting index of each class (for now)
+  Ulong sum=0;
+  for (Ulong& count : cum_class_sizes)
+  { std::swap(count,sum); // current sum replaces count
+    sum += count; // which get added to sum
+  }
+
+  if (inv_stnd.size()!=classifier.size())
+    inv_stnd.assign(classifier.size(),-1);
+  // traverse |classifier| advancing each class individually
+  for (Ulong j = 0; j < size(); ++j)
+    inv_stnd[cum_class_sizes[classifier[j]]++] = j;
+  // now |cum_class_sizes| entries indicate end index of each class
+  assert(class_count==0 or cum_class_sizes.back()==sum);
+} // ||
+
 bool Partition::refine(const containers::vector<Partition>& L)
 {
   assert(L.size()==class_count());
-  containers::vector<Ulong> class_counter(d_classCount,0);
+  containers::vector<Ulong> class_counter(class_count(),0);
   for (Ulong class_nr=0; class_nr<L.size(); ++class_nr)
     class_counter[class_nr] += L[class_nr].class_count()-1; // count new classes
 
@@ -670,8 +698,7 @@ bool Partition::refine(const containers::vector<Partition>& L)
   if (sum==class_count())
     return false; // no actual refinement
 
-  containers::vector<Ulong> class_index(d_classCount,0); // class-relative pos
-  d_classCount = sum; // prepare for new classes to be created
+  containers::vector<Ulong> class_index(class_count(),0); // class-relative pos
 
   for (Ulong& class_nr : classifier)
   { const auto i = class_index[class_nr]++;
@@ -683,49 +710,14 @@ bool Partition::refine(const containers::vector<Partition>& L)
   assert(std::all_of(class_index.begin(),class_index.end(),
 		     [&L,&class_index](const Ulong& index) -> bool
 		     { return L[&index-&class_index[0]].size()==index; }));
+  set_inverse_standardization(sum); // just reconstructing is easiest
   return true;
 }
 
-/*
-  Return the inverse standardization permutation directly. This is in fact more
-  often useful then the standardization, because the inverse standardization
-  permutation permits easy traversal of all values in weakly increasing order,
-  for instance finding the classes of indices with equal values in a partition.
 
-  Now $new[j] = old[a[j]]$ for the same |old| and |new| as in |standardization|.
-  The implementation is the same as for |standardization|, except for the body
-  of the final loop, where we interchange index to |result| and assigned value.
-*/
-Permutation Partition::inverse_standardization() const
+SubSet Partition::class_nr(Ulong i) const
 {
-  containers::vector<Ulong> class_counter(d_classCount,0);
-
-  for (Ulong class_nr : classifier)
-    ++class_counter[class_nr];
-
-  // cumulate left-to-right
-  Ulong sum=0;
-  for (Ulong& count : class_counter)
-  { std::swap(count,sum); // current sum replaces count
-    sum += count; // which get added to sum
-  }
-
-  Permutation result(size());
-
-  for (Ulong j = 0; j < size(); ++j)
-    result[class_counter[classifier[j]]++] = j;
-
-  return result;
-} // |inverse_standardization|
-
-SubSet Partition::class_nr(Ulong n) const
-{
-  SubSet result(size());
-  for (Ulong j = 0; j < size(); ++j)
-    if (classifier[j] == n)
-      result.add(j);
-
-  return result;
+  return SubSet(containers::vector<Ulong>(class_bound(i),class_bound(i+1)),size());
 }
 
 
@@ -738,19 +730,17 @@ SubSet Partition::class_nr(Ulong n) const
 */
 void Partition::permute_base(const Permutation& a)
 {
-  bitmap::BitMap seen(size());
+  // modifying |inv_stnd| is straightforward (modulo order withing classes)
+  for (auto& entry : inv_stnd)
+    entry = a[entry];
 
-  for (SetElt x = 0; x < size(); ++x)
-  {
-    if (not seen.is_member(x))
-      for (SetElt y = a[x]; y != x; y = a[y])
-      { std::swap(classifier[x],classifier[x]);
-	seen.insert(y);
-      }
-    // we can do without |seen.insert(x)|: we cannot come here again
+  // sort each class, and now adapt |classifier| to permuted positions
+  for (Ulong i=0; i<class_count(); ++i)
+  { std::sort(class_bound(i),class_bound(i+1));
+    for (auto it=class_bound(i); it!=class_bound(i+1); ++i)
+      classifier[*it] = i;
   }
 }
-
 
 // Apply the permutation |a| to the values of the classifying function.
 void Partition::permute_range(const Permutation& a)
@@ -758,78 +748,18 @@ void Partition::permute_range(const Permutation& a)
   for (SetElt x = 0; x < size(); ++x)
     classifier[x] = a[classifier[x]];
 
-  return;
+  set_inverse_standardization(class_count());
 }
 
-#if 0 // this only works if |classifier| values are without gaps
-void Partition::setClassCount()
-{
-  Ulong count = 0;
-
-  for (Ulong j = 0; j < size(); ++j)
-    if (classifier[j] >= count)
-      count = classifier[j]+1;
-
-  d_classCount = count;
-}
-#endif
-
-/******** input/output ******************************************************/
 
 containers::vector<Ulong> Partition::class_sizes() const
 {
-  containers::vector<Ulong> result(class_count(),0);
-  for (Ulong nr : classifier)
-    ++result[nr];
+  containers::vector<Ulong> result; result.reserve(class_count());
+  for (Ulong i=0; i<class_count(); ++i)
+    result.push_back(class_size(i));
   return result;
 }
 
-
-/****************************************************************************
-
-        Chapter V -- The Partition::iterator class.
-
-  This class is intended for the convenient traversal of a partition. At
-  each iteration, a new class is provided as a list (maybe this should
-  become a SubSet ?). To do this conveniently, a permutation d_a is used
-  to sort the partition by contiguous classes. The current class is
-  kept in d_class.
-
- ****************************************************************************/
-
-Partition::iterator::iterator(const Partition& pi)
-  : d_pi(&pi)
-  , d_a(pi.size())
-  , d_class(0)
-  , d_valid(true)
-{
-  d_a = pi.inverse_standardization();
-
-  /* load first class */
-
-  ;
-  for (Ulong j = 0; j < d_a.size() and pi(d_a[j]) == pi(d_a[d_base]); ++j)
-      d_class.append(d_a[j]);
-} // |Partition::iterator::iterator|
-
-
-void Partition::iterator::operator++ ()
-{
-  d_base += d_class.size();
-
-  if (d_base == d_pi->size()) {
-    d_valid = false;
-    return;
-  }
-
-  d_class.setSize(0); // reuse the memory
-
-  for (Ulong j=d_base; j<d_a.size() and (*d_pi)(d_a[j])==(*d_pi)(d_a[d_base]); ++j)
-    d_class.append(d_a[j]);
-
-}
-
-};
 
 /****************************************************************************
 
@@ -865,9 +795,6 @@ void Partition::iterator::operator++ ()
 
 
  *****************************************************************************/
-
-
-namespace bits {
 
 
 /*
@@ -1036,12 +963,12 @@ namespace bits {
 
 bool isRefinement(const Partition& pi1, const Partition& pi2)
 {
-  for (Partition::iterator it=pi1.begin(); it; ++it)
+  for (Partition::iterator it=pi1.begin(); it!=pi1.end(); ++it)
   {
-    const Set& l = *it;
-    Ulong a = pi2(l[0]);
-    for (Ulong j = 1; j < l.size(); ++j)
-      if (pi2(l[j]) != a)
+    const auto range = *it;
+    Ulong a = pi2(*range.begin());
+    for (auto jt=range.begin()+1; jt!=range.end(); ++jt)
+      if (pi2(*jt) != a)
 	return false;
   }
 

@@ -154,26 +154,23 @@ void insert (std::vector<std::string>& sorted_list, const std::string& val)
 // Construct the default interface (see the introduction.)
 
 Interface::Interface(const type::Type& x, const coxtypes::Rank& l)
-  :d_order(l),
-   d_beginGroup("("),
-   d_endGroup(")"),
-   d_longest("*"),
-   d_inverse("!"),
-   d_power("^"),
-   d_contextNbr("%"),
-   d_denseArray("#"),
-   d_parseEscape("?"),
-   d_reserved(0),
-   d_rank(l)
-
+  : d_order(l) // identity
+  , d_symbolTree()
+  , d_tokenAut(nullptr)
+  , d_in(new GroupEltInterface(l))
+  , d_out(new GroupEltInterface(l))
+  , d_descent(new DescentSetInterface)
+  , d_beginGroup("(")
+  , d_endGroup(")")
+  , d_longest("*")
+  , d_inverse("!")
+  , d_power("^")
+  , d_contextNbr("%")
+  , d_denseArray("#")
+  , d_parseEscape("?")
+  , d_reserved()
+  , d_rank(l)
 {
-  d_order = identityOrder(l);
-
-  d_in = new GroupEltInterface(l);
-  d_out = new GroupEltInterface(l);
-
-  d_descent = new DescentSetInterface;
-
   insert(d_reserved,d_beginGroup);
   insert(d_reserved,d_endGroup);
   insert(d_reserved,d_longest);
@@ -877,23 +874,6 @@ const std::string* twohexSymbols(Ulong n)
   return list.ptr();
 }
 
-const bits::Permutation& identityOrder(Ulong n)
-
-{
-  static bits::Permutation list(0);
-  static Ulong valid_range = 0;
-
-  if (n > valid_range) { /* enlarge the list */
-    Ulong prev_size = valid_range;
-    list.setSize(n);
-    for (Ulong j = prev_size; j < n; ++j)
-      list[j] = j;
-    valid_range = n;
-  }
-
-  list.setSize(n);
-  return list;
-}
 
 };
 

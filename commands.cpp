@@ -2636,7 +2636,7 @@ void interf::default_f()
   W->interface().setIn(*in_buf);
   W->interface().setOut(*in_buf);
 
-  W->interface().setOrder(interface::identityOrder(W->rank()));
+  W->interface().setOrder(bits::Permutation(W->rank()));
   W->interface().setDescent(io::Default());
   W->setOutputTraits(io::Pretty());
 }
@@ -2727,7 +2727,7 @@ void interf::permutation_f()
   WA->setPermutationInput(true);
   WA->setPermutationOutput(true);
 
-  W->interface().setOrder(interface::identityOrder(W->rank()));
+  W->interface().setOrder(bits::Permutation(W->rank()));
   W->interface().setDescent(io::Default());
   W->setOutputTraits(io::Pretty());
 }
@@ -2963,7 +2963,7 @@ void interf::out::bourbaki_f()
   if (!isFiniteType(x))
     return;
   if (!(isTypeB(x) || isTypeD(x))) {
-    W->setOrdering(interface::identityOrder(W->rank()));
+    W->setOrdering(bits::Permutation(W->rank()));
     return;
   }
 
@@ -3001,7 +3001,7 @@ void interf::out::decimal_f()
 void interf::out::default_f()
 {
   in_buf.reset(new interface::GroupEltInterface(W->rank()));
-  W->setOrdering(interface::identityOrder(W->rank()));
+  W->setOrdering(bits::Permutation(W->rank()));
 
   W->setOutputTraits(io::Pretty());
 }
@@ -3013,7 +3013,7 @@ void interf::out::default_f()
 void interf::out::gap_f()
 {
   in_buf.reset(new interface::GroupEltInterface(W->rank(),io::GAP()));
-  W->setOrdering(interface::identityOrder(W->rank()));
+  W->setOrdering(bits::Permutation(W->rank()));
   out::bourbaki_f();
 
   W->interface().setDescent(io::GAP());
@@ -3053,7 +3053,7 @@ void interf::out::permutation_f()
 
   WA->setPermutationOutput(true);
 
-  W->interface().setOrder(interface::identityOrder(W->rank()));
+  W->interface().setOrder(bits::Permutation(W->rank()));
   W->interface().setDescent(io::Default());
   W->setOutputTraits(io::Pretty());
 

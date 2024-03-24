@@ -58,12 +58,15 @@ namespace bits {
 
 
 class Permutation
-  : public Set
+  : public containers::vector<Ulong>
 {
  public:
 /* constructors and destructors */
   Permutation();
+  Permutation(containers::vector<Ulong> v)
+    : containers::vector<Ulong>(std::move(v)) {}
   Permutation(Ulong n); // identity of size |n|
+  Permutation(Ulong n, Ulong val) : containers::vector<Ulong>(n,val) {}
 /* manipulators */
   Permutation& identity(Ulong n); // assign identity to |*this| (returned)
   Permutation inverse() const;
@@ -170,6 +173,9 @@ class SubSet
 /* constructors and destructors */
   SubSet() {};
   SubSet(Ulong n) : d_bitmap(n), row() {}
+  SubSet(containers::vector<Ulong>&& row,Ulong n)
+    : d_bitmap(n), row(std::move(row))
+  { for (Ulong entry : row) d_bitmap.insert(entry); }
   SubSet(const SubSet& q):d_bitmap(q.d_bitmap), row(q.row) {}
 /* accessors */
   const containers::vector<Ulong>& elements() const { return row; }
@@ -198,30 +204,32 @@ class Partition
 {
 private:
   containers::vector<Ulong> classifier;
-  Ulong d_classCount;
+  Permutation inv_stnd; // inverse standardization
+  containers::vector<size_t> cum_class_sizes; // cumulative class sizes
  public:
 /* class definitions */
   typedef Ulong result_type;
 /* constructors and destructors */
-  Partition() : classifier(0), d_classCount(0) {}
-  Partition(containers::vector<Ulong>&& v, Ulong cc) // trust the caller
-    : classifier(std::move(v)), d_classCount(cc) {}
+  Partition() : classifier(0), inv_stnd(0), cum_class_sizes() {}
+  Partition(containers::vector<Ulong>&& v, Ulong cc); // trust the caller
   // Partition(const Partition& a, const BitMap& b); // partition of subset
   template <class F> Partition(Ulong n, const F& property);
   template <class I, class F> Partition
     (const I& first, const I& last, const F& f);
-  template <class I> Partition
+  template <class I> Partition // from segments of input iteration
     (I first, Ulong count, const containers::vector<Ulong>& class_sizes);
 /* accessors */
   // the next method allows treating the Partition as a (classifying) function
   Ulong operator() (Ulong j) const { return classifier[j]; }
-  Ulong class_count() const {return d_classCount;}
+  Ulong class_count() const {return cum_class_sizes.size();}
   Ulong size() const { return classifier.size(); }
 
   Permutation standardization() const; // standardization of |classifier|
-  Permutation inverse_standardization() const; // its inverse
-  SubSet class_nr(Ulong n) const; // equivalence class with label |n|
+  const Permutation& inverse_standardization() const { return inv_stnd; }
+  SubSet class_nr(Ulong i) const; // equivalence class with label |n|
   SubSet class_of(Ulong x) const { return class_nr(classifier[x]); }
+  Ulong class_size(Ulong i) const
+  { return i==0 ? cum_class_sizes[0] : cum_class_sizes[i]-cum_class_sizes[i-1]; }
   containers::vector<Ulong> class_sizes() const;
 /* modifiers */
   bool refine(const containers::vector<Partition>& L);
@@ -229,30 +237,41 @@ private:
   void permute_base(const Permutation& a);
   void permute_range(const Permutation& a);
 
+  using iter = containers::vector<Ulong>::iterator;
+  using citer = containers::vector<Ulong>::const_iterator;
+  struct range
+  { citer a,b;
+    citer begin() const { return a; }
+    citer end() const { return b; }
+    size_t size() const { return b-a; }
+    Ulong operator[] (Ulong i) const { return *(a+i); }
+  }; // |struct range|
+
   class iterator
   {
-    const Partition* d_pi;
-    Permutation d_a;
-    Set d_class;
-    Ulong d_base; // internal index into |d_a| needed to set |d_class| in |++|
-    bool d_valid;
+    const Partition& parent;
+    Ulong class_nr; // a class number
   public:
 /* constructors and destructors */
-    iterator() : d_pi(nullptr), d_a(),d_class(),d_base(-1),d_valid(false) {}
-    iterator(const Partition& pi);
+    iterator(const Partition& pi,Ulong i) : parent(pi), class_nr(i) {}
 /* iterator operations */
-    operator bool() const { return d_valid; }
-    bool operator!= (const iterator& e) const
-    { return e ? d_base!=e.d_base : d_valid; }
-    bool operator== (const iterator& e) const
-    { return e ? d_base==e.d_base : d_valid; }
-    void operator++();
-    const Set& operator*() const { return d_class; }
-    const Set* operator->() const { return &d_class; }
+    operator bool() const { return class_nr<parent.class_count(); }
+    bool operator!= (const iterator& e) const { return class_nr!=e.class_nr; }
+    bool operator== (const iterator& e) const { return class_nr==e.class_nr; }
+    void operator++() { ++class_nr; }
+    range operator*() const
+    { return range{parent.class_bound(class_nr),parent.class_bound(class_nr+1)}; }
   }; // |iterator|
 
-  iterator begin() const { return iterator(*this); }
-  iterator end() const { return iterator(); }
+  iterator begin() const { return iterator(*this,0); }
+  iterator end() const { return iterator(*this,class_count()); }
+
+private:
+  citer class_bound(Ulong i) const // where |0<=i<=class_count()|
+  { return inv_stnd.cbegin()+(i==0 ? 0 : cum_class_sizes[i-1]); }
+  iter class_bound(Ulong i) // where |0<=i<=class_count()|
+  { return inv_stnd.begin()+(i==0 ? 0 : cum_class_sizes[i-1]); }
+  void set_inverse_standardization(Ulong class_count);
 }; // |Partition|
 
 
@@ -268,17 +287,19 @@ private:
   the function insert may be applied.)
 */
 template <class F> Partition::Partition
-  (Ulong n, const F& property) : classifier(), d_classCount(0)
+  (Ulong n, const F& property) : classifier(), inv_stnd(), cum_class_sizes()
 {
   std::map<decltype(property(0)),Ulong> renumber;
 
+  Ulong class_count = 0;
   for (Ulong i=0; i<n; ++i)
-    if (renumber.insert(std::make_pair(property(i),d_classCount)).second)
-      ++d_classCount; // |property(i)| was inserted (new key); consolidate value
+    if (renumber.insert(std::make_pair(property(i),class_count)).second)
+      ++class_count; // |property(i)| was inserted (new key); consolidate value
 
   classifier.reserve(n);
   for (Ulong i=0; i<n; ++i)
     classifier.push_back(renumber[property(i)]);
+  set_inverse_standardization(class_count);
 }
 
 
@@ -291,7 +312,8 @@ template <class F> Partition::Partition
   are attributed in the order of the values of f on the range.
 */
 template <class I, class F> Partition::Partition
-  (const I& first, const I& last, const F& f) : classifier(), d_classCount(0)
+  (const I& first, const I& last, const F& f)
+    : classifier(), inv_stnd(), cum_class_sizes()
 {
   std::map<decltype(f(*first)),Ulong> renumber;
 
@@ -299,23 +321,41 @@ template <class I, class F> Partition::Partition
   for (auto it=first; it!=last; ++it,++size)
     renumber.insert(std::make_pair(f(*it),0)); // form |renumber| as a mere set
 
+  Ulong class_count=0;
   for (auto& p : renumber)
-    p.second = d_classCount++; // fill in values increasingly
+    p.second = class_count++; // fill in class numbering, increasingly
 
   classifier.reserve(size);
   for (auto it=first; it!=last; ++it)
     classifier.push_back(renumber[f(*it)]);
+  set_inverse_standardization(class_count);
 }
 
 template <class I> Partition::Partition
   (I first, Ulong count, const containers::vector<Ulong>& class_sizes)
     : classifier(count,-1)
-  , d_classCount(class_sizes.size())
+    , inv_stnd(count,-1)
+    , cum_class_sizes(class_sizes)
 {
+  // cumulate left-to-right, giving starting index of each class (for now)
+  Ulong sum=0;
+  for (Ulong& count : cum_class_sizes)
+  { std::swap(count,sum); // current sum replaces count
+    sum += count; // which get added to sum
+  }
+
   classifier.reserve(count);
-  for (Ulong class_nr = 0; class_nr<d_classCount; ++class_nr)
+  for (Ulong class_nr = 0; class_nr<class_sizes.size(); ++class_nr)
+  {
+    auto& index = cum_class_sizes[class_nr]; // index into |inv_stnd.| to use
     for (Ulong i = 0; i<class_sizes[class_nr]; ++i)
+    {
       classifier[*first++]=class_nr;
+      inv_stnd[index++] = class_nr;
+    }
+    assert(class_nr+1==class_sizes.size() or index==cum_class_sizes[class_nr+1]);
+  }
+
   assert(classifier.size()==count); // check that |count| is sum of class sizes
 }
 

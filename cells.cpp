@@ -187,7 +187,7 @@ template<char side> // one of 'l', 'r',
     // get cell sizes and record their members; they fill |x|'s |gen_tau_class|
     for (bits::Partition::iterator pit = qcells.begin(); pit; ++pit)
     {
-      const bits::Set& comp = *pit; // a strongly connected component (cell)
+      const auto comp = *pit; // a strongly connected component (cell)
       comp_sizes.push_back(comp.size());
       // mark all elements of these cells as seen
       for (coxtypes::CoxNbr y : comp)

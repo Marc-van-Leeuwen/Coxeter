@@ -256,8 +256,8 @@ containers::vector<HeckeMonomial<P> > singular_stratification
   containers::vector<HeckeMonomial<P> > result; // final size cannot be predicted
   for (bits::Partition::iterator pit=pi.begin(); pit; ++pit)
   {
-    const bits::Set& pi_class = *pit;
-    Ulong m = pi_class[0];
+    const auto pi_class = *pit;
+    Ulong m = *pi_class.begin();
     if (h[m].pol().deg() == 0) // polynomial is one
       continue;
     containers::vector<coxtypes::CoxNbr> c;
