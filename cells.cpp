@@ -185,9 +185,9 @@ template<char side> // one of 'l', 'r',
     comp_sizes.reserve(qcells.class_count());
 
     // get cell sizes and record their members; they fill |x|'s |gen_tau_class|
-    for (bits::PartitionIterator pit(qcells); pit; ++pit)
+    for (bits::Partition::iterator pit = qcells.begin(); pit; ++pit)
     {
-      const bits::Set& comp = pit(); // a strongly connected component (cell)
+      const bits::Set& comp = *pit; // a strongly connected component (cell)
       comp_sizes.push_back(comp.size());
       // mark all elements of these cells as seen
       for (coxtypes::CoxNbr y : comp)
@@ -346,7 +346,7 @@ template<char side> // one of 'l', 'r'
 	    if (not q.is_member(y))
 	    { // we found that |q| is not stable! this shouldn't happen
 	      error::ERRNO = error::ERROR_WARNING;
-	      return bits::Partition(0);
+	      return bits::Partition();
 	    }
 	    classify[q_index(y)] = count; // mark |y| as in the current orbit
 	    orbit.push(y); // and record it for inspection of its neighbours
@@ -633,10 +633,7 @@ template wgraph::OrientedGraph graph<'b'>(uneqkl::KLContext& kl);
 coxtypes::CoxNbr checkClasses
   (const bits::Partition& pi, const schubert::SchubertContext& p)
 {
-  static bits::Partition pi_q(0);
-  static bits::SubSet q(0);
-
-  q.setBitMapSize(p.size());
+  bits::SubSet q(p.size());
 
   bits::Permutation v = pi.inverse_standardization();
 
@@ -647,7 +644,7 @@ coxtypes::CoxNbr checkClasses
     for (; pi(v[i]) == j; ++i) {
       q.add(v[i]);
     }
-    pi_q=string_equiv<'l'>(q,p);
+    bits::Partition pi_q=string_equiv<'l'>(q,p);
     if (error::ERRNO) {
       printf("error in class #%lu\n",j);
       return q[0];

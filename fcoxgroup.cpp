@@ -145,18 +145,18 @@ FiniteCoxGroup::FiniteCoxGroup(const type::Type& x, const coxtypes::Rank& l)
   , d_maxlength()
   , d_order()
   , d_transducer(new transducer::Transducer(graph()))
-  , d_ldescent(0)
-  , d_rdescent(0)
-  , d_ltau(0)
-  , d_rtau(0)
-  , d_lstring(0)
-  , d_rstring(0)
-  , d_lcell(0)
-  , d_rcell(0)
-  , d_lrcell(0)
-  , d_luneqcell(0)
-  , d_runeqcell(0)
-  , d_lruneqcell(0)
+  , d_ldescent()
+  , d_rdescent()
+  , d_ltau()
+  , d_rtau()
+  , d_lstring()
+  , d_rstring()
+  , d_lcell()
+  , d_rcell()
+  , d_lrcell()
+  , d_luneqcell()
+  , d_runeqcell()
+  , d_lruneqcell()
   , d_duflo()
 {
   workspace().setSize(l);
@@ -526,9 +526,9 @@ const list::List<coxtypes::CoxNbr>& FiniteCoxGroup::duflo()
 
     /* find Duflo involution in each cell */
 
-    for (bits::PartitionIterator pit(pi); pit; ++pit)
+    for (bits::Partition::iterator pit=pi.begin(); pit; ++pit)
     {
-      const auto& c = pit();
+      const auto& c = *pit;
       if (c.size() == 1) { /* cell has single involution */
 	d_duflo.append(q[c[0]]);
 	continue;

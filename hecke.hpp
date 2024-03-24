@@ -254,9 +254,9 @@ containers::vector<HeckeMonomial<P> > singular_stratification
 
   // find maximal elements in each class
   containers::vector<HeckeMonomial<P> > result; // final size cannot be predicted
-  for (bits::PartitionIterator pit(pi); pit; ++pit)
+  for (bits::Partition::iterator pit=pi.begin(); pit; ++pit)
   {
-    const bits::Set& pi_class = pit();
+    const bits::Set& pi_class = *pit;
     Ulong m = pi_class[0];
     if (h[m].pol().deg() == 0) // polynomial is one
       continue;

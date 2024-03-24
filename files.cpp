@@ -1330,9 +1330,9 @@ schubert::CoxNbrList minimal_class_reps
 {
   schubert::CoxNbrList result;
   result.reserve(pi.class_count());
-  for (bits::PartitionIterator pit(pi); pit; ++pit)
+  for (bits::Partition::iterator pit = pi.begin(); pit; ++pit)
   {
-    const bits::Set& pi_class = pit();
+    const bits::Set& pi_class = *pit;
     coxtypes::CoxNbr x = *std::min_element(pi_class.begin(),pi_class.end(),c);
     result.push_back(x);
   }
@@ -1434,8 +1434,8 @@ void writeClasses
   lc.setSize(pi.class_count());
   Ulong j = 0;
 
-  for (bits::PartitionIterator pit(pi); pit; ++pit) {
-    new(&lc[j]) list::List<coxtypes::CoxNbr>(pit().begin(),pit().end());
+  for (bits::Partition::iterator pit=pi.begin(); pit; ++pit) {
+    new(&lc[j]) list::List<coxtypes::CoxNbr>(pit->begin(),pit->end());
     ++j;
   }
 

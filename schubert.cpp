@@ -1319,8 +1319,9 @@ void printPartition
 {
   Ulong count = 0;
 
-  for (bits::PartitionIterator pit(pi); pit; ++pit) {
-    const Set& c = pit();
+  for (bits::Partition::iterator pit=pi.begin(); pit; ++pit)
+  {
+    const Set& c = *pit;
     fprintf(file,"%lu(%lu):{",count,c.size());
     for (Ulong j = 0; j < c.size(); ++j) {
       coxtypes::CoxWord g(0);
@@ -1346,8 +1347,9 @@ void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b
 
   Ulong count = 0;
 
-  for (bits::PartitionIterator pit(pi_b); pit; ++pit) {
-    const Set& c = pit();
+  for (bits::Partition::iterator pit=pi_b.begin(); pit; ++pit)
+  {
+    const Set& c = *pit;
     fprintf(file,"%lu(%lu):{",count,c.size());
     for (Ulong j = 0; j < c.size(); ++j) {
       coxtypes::CoxWord g(0);

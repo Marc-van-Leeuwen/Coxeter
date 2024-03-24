@@ -20,25 +20,22 @@
 #include "containers.h"
 #include "list.h"
 #include "bitmap.h"
+#include "io.h"
+#include "constants.h"
 
 /******** type declarations *************************************************/
 
 namespace bits {
   class BitMap;
   class Partition;
-  class PartitionIterator;
   class Permutation;
   class SubSet;
   typedef unsigned char Flags;
   typedef Ulong SetElt;
   typedef list::List<SetElt> Set;
-};
 
 /******** function declarations *********************************************/
 
-#include "io.h"
-
-namespace bits {
   unsigned bitCount(const Lflags& f);
   bool isRefinement(const Partition& pi1, const Partition& pi2);
   void memSet(void *dest, void *source, Ulong size, Ulong count);
@@ -56,13 +53,12 @@ namespace bits {
     (const containers::vector<T>& r, C& less);
   template <class T, class F> void sortI_f
     (const containers::vector<T>& r, F& f, Permutation& a);
-};
 
 /******** type definitions **************************************************/
 
-#include "constants.h"
 
-class bits::Permutation:public Set
+class Permutation
+  : public Set
 {
  public:
 /* constructors and destructors */
@@ -73,9 +69,10 @@ class bits::Permutation:public Set
   Permutation inverse() const;
   Permutation& compose(const Permutation& a);
   Permutation& rightCompose(const Permutation& a);
-};
+}; // |class Permutation|
 
-class bits::BitMap {
+class BitMap
+{
  private:
   list::List<Lflags> d_map;
   Ulong d_size;
@@ -164,7 +161,8 @@ class bits::BitMap {
   }; // |class ReverseIterator|
 }; // |class BitMap|
 
-class bits::SubSet {
+class SubSet
+{
  private:
   bitmap::BitMap d_bitmap;
   containers::vector<Ulong> row;
@@ -193,10 +191,10 @@ class bits::SubSet {
   void setBitMapSize(Ulong n) { d_bitmap.set_capacity(n); }
   void setListSize(Ulong n) { row.resize(n); }
   void sortList() { return std::sort(row.begin(),row.end()); }
-}; // |bits::SubSet|
+}; // |SubSet|
 
 
-class bits::Partition
+class Partition
 {
 private:
   containers::vector<Ulong> classifier;
@@ -205,7 +203,7 @@ private:
 /* class definitions */
   typedef Ulong result_type;
 /* constructors and destructors */
-  Partition(Ulong n) : classifier(n,0), d_classCount(0) {}
+  Partition() : classifier(0), d_classCount(0) {}
   Partition(containers::vector<Ulong>&& v, Ulong cc) // trust the caller
     : classifier(std::move(v)), d_classCount(cc) {}
   // Partition(const Partition& a, const BitMap& b); // partition of subset
@@ -230,28 +228,37 @@ private:
   Partition& normalize() { return *this = Partition(size(),*this); }
   void permute_base(const Permutation& a);
   void permute_range(const Permutation& a);
-}; // |bits::Partition|
 
-class bits::PartitionIterator {
-  const Partition& d_pi;
-  Permutation d_a;
-  Set d_class;
-  Ulong d_base;
-  bool d_valid;
- public:
+  class iterator
+  {
+    const Partition* d_pi;
+    Permutation d_a;
+    Set d_class;
+    Ulong d_base; // internal index into |d_a| needed to set |d_class| in |++|
+    bool d_valid;
+  public:
 /* constructors and destructors */
-  PartitionIterator(const Partition& pi);
+    iterator() : d_pi(nullptr), d_a(),d_class(),d_base(-1),d_valid(false) {}
+    iterator(const Partition& pi);
 /* iterator operations */
-  operator bool() const { return d_valid; }
-  void operator++();
-  const Set& operator()() const { return d_class; }
-}; // |bits::PartitionIterator|
+    operator bool() const { return d_valid; }
+    bool operator!= (const iterator& e) const
+    { return e ? d_base!=e.d_base : d_valid; }
+    bool operator== (const iterator& e) const
+    { return e ? d_base==e.d_base : d_valid; }
+    void operator++();
+    const Set& operator*() const { return d_class; }
+    const Set* operator->() const { return &d_class; }
+  }; // |iterator|
+
+  iterator begin() const { return iterator(*this); }
+  iterator end() const { return iterator(); }
+}; // |Partition|
+
 
 /**** Inline implementations **********************************************/
 
 /******** template definitions ***********************************************/
-
-namespace bits {
 
 
 /*
@@ -530,6 +537,6 @@ template <class T, class F> void sortI_f
   return;
 } // |sortI_f|
 
-};
+}; // |namespace bits|
 
 #endif

@@ -784,11 +784,10 @@ containers::vector<Ulong> Partition::class_sizes() const
   return result;
 }
 
-};
 
 /****************************************************************************
 
-        Chapter V -- The PartitionIterator class.
+        Chapter V -- The Partition::iterator class.
 
   This class is intended for the convenient traversal of a partition. At
   each iteration, a new class is provided as a list (maybe this should
@@ -798,46 +797,36 @@ containers::vector<Ulong> Partition::class_sizes() const
 
  ****************************************************************************/
 
-namespace bits {
-
-PartitionIterator::PartitionIterator(const Partition& pi)
-  : d_pi(pi)
+Partition::iterator::iterator(const Partition& pi)
+  : d_pi(&pi)
   , d_a(pi.size())
   , d_class(0)
-  , d_base(0)
-  , d_valid(pi.size()!=0)
+  , d_valid(true)
 {
-  if (d_valid)
-  {
-    d_a = pi.inverse_standardization();
+  d_a = pi.inverse_standardization();
 
-    /* load first class */
+  /* load first class */
 
-    Ulong j = 0;
-
-    for (; (j < d_a.size()) && (d_pi(d_a[j]) == d_pi(d_a[d_base])); ++j) {
+  ;
+  for (Ulong j = 0; j < d_a.size() and pi(d_a[j]) == pi(d_a[d_base]); ++j)
       d_class.append(d_a[j]);
-    }
-  }
-} // |PartitionIterator::PartitionIterator|
+} // |Partition::iterator::iterator|
 
 
-void PartitionIterator::operator++ ()
-
+void Partition::iterator::operator++ ()
 {
   d_base += d_class.size();
 
-  if (d_base == d_pi.size()) {
+  if (d_base == d_pi->size()) {
     d_valid = false;
     return;
   }
 
-  Ulong j = d_base;
-  d_class.setSize(0);
+  d_class.setSize(0); // reuse the memory
 
-  for (; (j < d_a.size()) && (d_pi(d_a[j]) == d_pi(d_a[d_base])); ++j) {
+  for (Ulong j=d_base; j<d_a.size() and (*d_pi)(d_a[j])==(*d_pi)(d_a[d_base]); ++j)
     d_class.append(d_a[j]);
-  }
+
 }
 
 };
@@ -1038,17 +1027,18 @@ void print(FILE* file, const BitMap& map)
 
 namespace bits {
 
-bool isRefinement(const Partition& pi1, const Partition& pi2)
 
 /*
-  Tells whether pi1 is a refinement of pi2. Both are assumed to be partitions
+  Whether pi1 is a refinement of pi2. Both are assumed to be partitions
   of the same range; the condition is that pi2 should be constant on the
   classes of pi1.
 */
 
+bool isRefinement(const Partition& pi1, const Partition& pi2)
 {
-  for (PartitionIterator i(pi1); i; ++i) {
-    const Set& l = i();
+  for (Partition::iterator it=pi1.begin(); it; ++it)
+  {
+    const Set& l = *it;
     Ulong a = pi2(l[0]);
     for (Ulong j = 1; j < l.size(); ++j)
       if (pi2(l[j]) != a)
