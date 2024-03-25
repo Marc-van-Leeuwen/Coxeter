@@ -42,7 +42,7 @@ namespace schubert {
   containers::sl_list<Ulong> indices_of_maxima
   (const SchubertContext& p, containers::vector<coxtypes::CoxNbr>& c);
   void select_maxima_for
-    (const SchubertContext& p, bitmap::BitMap& b, Lflags f);
+    (const SchubertContext& p, Lflags f, bitmap::BitMap& b);
   coxtypes::Generator first_flagged(GenSet f, const bits::Permutation& order);
   bool shortlex_leq(const SchubertContext& p, const bits::Permutation& order,
 		    coxtypes::CoxNbr x, coxtypes::CoxNbr y);
@@ -149,11 +149,9 @@ class AbstractSchubertContext {
 
 class SchubertContext
 {
- private:
-/* private class declaration */
   const graph::CoxGraph& d_graph;
   coxtypes::Rank d_rank;
-  coxtypes::Length d_maxlength;
+  coxtypes::Length d_maxlength; // maximal length
   coxtypes::CoxNbr d_size;
   containers::vector<coxtypes::Length> d_length;
   containers::vector<CoxNbrList> d_hasse;
@@ -177,7 +175,7 @@ public:
   coxtypes::Length length(coxtypes::CoxNbr x) const { return d_length[x]; }
   const bitmap::BitMap& parity(coxtypes::CoxNbr x) const
     { return d_parity[d_length[x]%2]; }
-  coxtypes::Length maxlength() const { return d_maxlength; }
+  coxtypes::Length max_length() const { return d_maxlength; }
 
   bool in_context(coxtypes::CoxNbr x) const { return x<size(); }
 
@@ -259,7 +257,7 @@ public:
   Ulong nStarOps() const { return d_graph.finite_edges().size(); }
 
   // manipulators
-  coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
+  coxtypes::CoxNbr extend_context(const coxtypes::CoxWord& g);
   coxtypes::CoxNbr star(coxtypes::CoxNbr x, Ulong r)
   { assert(x<size());
     if (d_star.nr_rows()<size())
@@ -309,11 +307,13 @@ class ClosureIterator {
     coxtypes::CoxNbr closure_size; // the size of that interval (for speed)
     coxtypes::CoxNbr current; // the current Coxeter element
     GenSet asc; // its not yet explored ascent set
+    node(Ulong capacity) : closure(capacity),closure_size(),current(),asc() {}
   };
   const SchubertContext& d_schubert;
-  containers::stack<node> state;
+  containers::vector<node> state;
+  Ulong sp; // state pointer (equals index of top |node|)
   CoxNbrList elements; // closure, for fast traversal
-  bitmap::BitMap d_visited; // everything seen so far
+  bitmap::BitMap visited; // everything seen so far
  public:
 /* constructors and destructors */
   ClosureIterator(const SchubertContext& p);
@@ -322,8 +322,8 @@ class ClosureIterator {
   operator bool() const { return not state.empty(); }
   void operator++();
 // accessors (only valid if not past the end)
-  coxtypes::CoxNbr current() const { return state.top().current; }
-  const bitmap::BitMap& closure() const { return state.top().closure; }
+  coxtypes::CoxNbr current() const { return state[sp].current; }
+  const bitmap::BitMap& closure() const { return state[sp].closure; }
 }; // |class ClosureIterator|
 
 }; // |namespace schubert|

@@ -96,7 +96,7 @@ class MuFilter {
  public:
   MuFilter(const schubert::SchubertContext& p, const coxtypes::Length& l);
   MuFilter(const schubert::SchubertContext& p, const coxtypes::CoxNbr& y);
-  ~MuFilter();
+
   bool operator() (const coxtypes::CoxNbr& x) const
   { coxtypes::Length d = d_l-d_p.length(x); return d%2!=0 and d > 1; }
 };

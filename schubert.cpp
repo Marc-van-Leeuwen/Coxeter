@@ -413,7 +413,7 @@ Lflags SchubertContext::twoDescent(coxtypes::CoxNbr x) const
   s in g, we add the elements in [e,hs] not already in the context, and we
   update everything.
 */
-coxtypes::CoxNbr SchubertContext::extendContext
+coxtypes::CoxNbr SchubertContext::extend_context
   (const coxtypes::CoxWord& g)
 {
   coxtypes::CoxNbr y = 0;
@@ -1038,11 +1038,20 @@ namespace schubert {
 ClosureIterator::ClosureIterator(const SchubertContext& p)
   : d_schubert(p)
   , state()
+  , sp(0) // there will be one state entry to start
   , elements{0}
-  , d_visited(p.size())
+  , visited(p.size())
 {
-  d_visited.insert(0);
-  state.push(node{p.closure(0), 1, coxtypes::CoxNbr(0), p.rascent(0)});
+  visited.insert(0);
+  state.reserve(p.max_length()+1);
+  for (unsigned i=0; i<=p.max_length(); ++i)
+    state.push_back(p.size()); // create all bitmaps to avoid later (de)allocations
+  state[0].closure.insert(0);
+  state[0].closure_size=1;
+  state[0].current = coxtypes::CoxNbr(0);
+  state[0].asc = p.rascent(0);
+
+  elements.reserve(p.size()); // ensure, vitally, no reallocation will occur
 }
 
 
@@ -1065,45 +1074,46 @@ ClosureIterator::ClosureIterator(const SchubertContext& p)
 void ClosureIterator::operator++()
 {
   const SchubertContext& p = d_schubert;
-  elements.reserve(p.size()); // ensure, vitally, no reallocation will occur
 
   // find right ascents of |d_current|, possible extensions of the current word
-  while(true) // loop exists by |return|, whether past the end or not
+  while(true) // loop exits by |return|, whether past the end or not
   { // |not state.empty()| is loop invariant
-    auto& asc = state.top().asc;
-    while (asc!=0) // there are candidates right ascents for |current()| left
+    auto& asc = state[sp].asc;
+    while (asc!=0) // there are still candidate right ascents for |current()|
     {
-      coxtypes::Generator s = constants::firstBit(asc);
+      coxtypes::Generator s = constants::first_bit(asc);
       asc &= asc-1; // clear the bit for |s|, whether or not it is productive
       coxtypes::CoxNbr x = p.shift(current(),s);
-      if (x == coxtypes::undef_coxnbr) // don't leave the current context
-	continue;
-      if (d_visited.is_member(x)) // nor visit an element already visited
+      if (not p.in_context(x) or visited.is_member(x))
 	continue;
 
       // now |x| is new and obtained by extending |current()| on the right by |s|
-      d_visited.insert(x);
+      visited.insert(x);
       const auto& prev_closure = closure(); // read this from old |state|
-      state.push(node{prev_closure,0,x,p.rascent(x)}); // closure starts a copy
-      auto& new_closure = state.top().closure;
+      assert(sp+1<state.size()); // we shoudld not run out of |state| s[ace
+      state[++sp].current = x; // push a new node on stack (filled below)
+      auto& new_closure = state[sp].closure = prev_closure; // intially copy memory
+      state[sp].asc = p.rascent(x);
       const auto end = elements.end(); // must fix current high water mark
       for (auto it = elements.begin(); it<end; ++it) // iterate over old part
       { auto ys = p.rshift(*it,s);
 	if (not prev_closure.is_member(ys)) // avoid elements that are not new
-	  { // all others will be added as new, and distinct
-	    elements.push_back(ys); // no realloc, |it| and |end| still valid
-	    new_closure.insert(ys);
-	  }
+	{ // all others will be added as new, and distinct
+	  elements.push_back(ys); // no realloc, |it| and |end| still valid
+	  new_closure.insert(ys);
+	}
       }
-      state.top().closure_size = elements.size();
+      state[sp].closure_size = elements.size();
       return; // we're done incrementing, and still valid
     } // |for(s)|
 
     // if we get here, there are no extensions of the current word
-    state.pop();
-    if (state.empty())
+    if (sp==0)
+    { state.clear(); // this signals iteration has terminated
       return; // our iterator is past the end
-    elements.resize(state.top().closure_size); // drop no longer present elements
+    }
+    --sp; // otherwise, pop stack and drop the no longer present |elements|
+    elements.erase(elements.begin()+state[sp].closure_size,elements.end());
   } // |while(true)|
 }
 
@@ -1147,11 +1157,11 @@ bool is_involution(const SchubertContext& p,coxtypes::CoxNbr x)
 
 
 void select_maxima_for
-  (const SchubertContext& p, bitmap::BitMap& b, Lflags f)
+  (const SchubertContext& p, Lflags f, bitmap::BitMap& b)
 {
   while(f!=0)
   {
-    coxtypes::Generator s = constants::firstBit(f); // either on right or left
+    coxtypes::Generator s = constants::first_bit(f); // either on right or left
     b &= p.down_set(s); // retain elements for which |s| is a descent
     f &= f-1;
   }
@@ -1211,7 +1221,7 @@ namespace schubert {
 void print(FILE* file, SchubertContext& p)
 {
   fprintf(file,"size : %lu  maxlength : %lu",static_cast<Ulong>(p.size()),
-	  static_cast<Ulong>(p.maxlength()));
+	  static_cast<Ulong>(p.max_length()));
   fprintf(file,"\n\n");
 
   for (coxtypes::CoxNbr x = 0; x < p.size(); ++x) {

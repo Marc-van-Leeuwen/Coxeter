@@ -1229,7 +1229,7 @@ void KLContext::KLHelper::mu_correct_row
 
     coxtypes::CoxNbr z = row[j].x;
     bitmap::BitMap b = p.closure(z);
-    schubert::select_maxima_for(p,b,p.descent(y));
+    schubert::select_maxima_for(p,p.descent(y),b);
 
     Ulong i = 0;
 
@@ -1374,7 +1374,7 @@ void KLContext::KLHelper::add_second_terms
   coxtypes::CoxNbr ys = p.rshift(y,s);
 
   bitmap::BitMap b = p.closure(ys);
-  schubert::select_maxima_for(p,b,p.descent(y));
+  schubert::select_maxima_for(p,p.descent(y),b);
 
   Ulong i = 0;
   const klsupport::ExtrRow& e = extrList(y);

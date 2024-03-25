@@ -740,7 +740,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
     auto b = p.closure(y);
     if (ERRNO)
       return;
-    schubert::select_maxima_for(p,b,p.descent(y));
+    schubert::select_maxima_for(p,p.descent(y),b);
     BI first(b.begin(),b.end(),f);
     BI last(b.end(),b.end(),f);
     e.assign(first,last);
@@ -783,63 +783,49 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 */
 void KLContext::KLHelper::allocMuTable()
 {
-  using I = iterator::FilteredIterator<Ulong,bitmap::BitMap::iterator,MuFilter>;
-
   const schubert::SchubertContext& p = schubert();
+  klsupport::ExtrRow buffer;
 
-  for (schubert::ClosureIterator cl(p); cl; ++cl)
+  for (schubert::ClosureIterator cit(p); cit; ++cit)
   {
-    coxtypes::CoxNbr y = cl.current();
+    coxtypes::CoxNbr y = cit.current();
     if (inverse(y) < y)
       continue;
     if (isMuAllocated(y))
       continue;
 
+    const coxtypes::Length ly = p.length(y);
     /* find extremal list */
-    bitmap::BitMap b = cl.closure();
+    bitmap::BitMap b = cit.closure();
     if (ERRNO) {
       printf("error! y = %lu\n",static_cast<Ulong>(y));
-      goto abort;
+      Error(ERRNO);
+      ERRNO = ERROR_WARNING;
+      return;
     }
 
-    schubert::select_maxima_for(p,b,p.descent(y));
+    schubert::select_maxima_for(p,p.descent(y),b);
 
-    MuFilter f(p,y);
-    I first(b.begin(),b.end(),f);
-    I last(b.end(),b.end(),f);
-
-    klsupport::ExtrRow e(first,last);
-    if (ERRNO) {
-      goto abort;
+    buffer.clear();
+    for (coxtypes::CoxNbr x : b)
+    { coxtypes::Length dl = ly-p.length(x);
+      if (dl%2!=0 and dl!=1)
+	buffer.push_back(x);
     }
 
     /* transfer to muList */
 
-    coxtypes::Length ly = p.length(y);
     mu_Table[y].reset(new MuRow);
     auto& dest = mu_row(y);
-    dest.reserve(e.size());
+    dest.reserve(buffer.size());
 
-    for (Ulong j = 0; j < e.size(); ++j)
-    {
-      coxtypes::CoxNbr x = e[j];
-      coxtypes::Length lx = p.length(x);
-      dest.emplace_back(x,klsupport::undef_klcoeff,(ly-lx-1)/2);
-      if (ERRNO)
-	goto abort;
-    } // |for(j)|
+    for (coxtypes::CoxNbr x : buffer)
+      dest.emplace_back(x,klsupport::undef_klcoeff,(ly-p.length(x))/2); // round down
 
     d_stats.murows++;
-    d_stats.munodes += e.size();
-  } // |for(cl)|
-
-  return;
-
- abort:
-  Error(ERRNO);
-  ERRNO = ERROR_WARNING;
-  return;
-}
+    d_stats.munodes += dest.size();
+  } // |for(cit)|
+} // |KLHelper::acclocMuTable|
 
 
 
@@ -1276,7 +1262,7 @@ void KLContext::KLHelper::add_second_terms
   auto b = p.closure(ys); // Bruhat interval [e,ys]
 
   // retain two-sided extrema for |y| only
-  schubert::select_maxima_for(p,b,p.descent(y));
+  schubert::select_maxima_for(p,p.descent(y),b);
 
   Ulong i = 0;
   const klsupport::ExtrRow& e = extrList(y);
@@ -1322,7 +1308,7 @@ void KLContext::KLHelper::mu_correct_row
       continue;
 
     auto b = p.closure(z);
-    schubert::select_maxima_for(p,b,p.descent(y));
+    schubert::select_maxima_for(p,p.descent(y),b);
 
     Ulong i = 0;
 
@@ -1364,7 +1350,7 @@ void KLContext::KLHelper::coatom_correct_row
       continue;
 
     bitmap::BitMap b = p.closure(z);
-    schubert::select_maxima_for(p,b,p.descent(y));
+    schubert::select_maxima_for(p,p.descent(y),b);
 
     Ulong i = 0;
 
@@ -2003,27 +1989,19 @@ void KLContext::KLHelper::writeMuRow
         Chapter III -- The MuFilter class
 
   The MuFilter class is a small functor, useful for adapting iterators
-  when constructing mu-lists. It filters out elements according to length
-  parity and length difference (the intention is to use it with the
-  FilteredIterator adaptor.)
+  when constructing mu-lists. It filters away elements according with even
+  length difference (with respect to supplied length), or length difference 1.
+  The intention is to use it with the FilteredIterator adaptor.
 
  ****************************************************************************/
 
 
 MuFilter::MuFilter(const schubert::SchubertContext& p, const coxtypes::Length& l)
   :d_p(p), d_l(l)
-
 {}
 
 MuFilter::MuFilter(const schubert::SchubertContext& p, const coxtypes::CoxNbr& y)
-  :d_p(p)
-
-{
-  d_l = d_p.length(y);
-}
-
-MuFilter::~MuFilter()
-
+  :d_p(p), d_l(p.length(y))
 {}
 
 
@@ -2757,7 +2735,7 @@ void genericSingularities(HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl)
   const schubert::SchubertContext& p = kl.schubert();
 
   auto b = p.closure(y);
-  schubert::select_maxima_for(p,b,p.descent(y));
+  schubert::select_maxima_for(p,p.descent(y),b);
 
   h.clear();
 

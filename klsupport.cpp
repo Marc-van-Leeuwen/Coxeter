@@ -148,7 +148,7 @@ void KLSupport::generate_extr_list(coxtypes::CoxNbr y)
   const schubert::SchubertContext& p = schubert();
   bitmap::BitMap b = p.closure(y); // select the Bruhat interval up to |y|
 
-  schubert::select_maxima_for(p,b,p.descent(y));
+  schubert::select_maxima_for(p,p.descent(y),b);
 
   d_extrList[y].reset // fill with the "contents" of the |BitMap b|, increasingly
     (new ExtrRow(b.begin(),b.end()));
@@ -195,7 +195,7 @@ void KLSupport::ensure_extr_rows_for(coxtypes::CoxNbr y)
       auto b = q; // make a working copy of interval $[e,x]$
 
       // find (double sided) extremal element in interval
-      schubert::select_maxima_for(p,b,p.descent(x));
+      schubert::select_maxima_for(p,p.descent(x),b);
       d_extrList[x].reset(new ExtrRow(b.begin(),b.end()));
 
       /* go over to inverses if necessary */
@@ -240,7 +240,7 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
   coxtypes::CoxNbr prev_size = size();
   schubert::SchubertContext& p = *d_schubert;
 
-  coxtypes::CoxNbr x = p.extendContext(g); // this increases |size()|
+  coxtypes::CoxNbr x = p.extend_context(g); // this increases |size()|
 
   if (error::ERRNO) /* error::ERRNO is EXTENSION_FAIL */
     return coxtypes::undef_coxnbr;

@@ -7,8 +7,8 @@ dependencies := $(patsubst %.cpp,%.d,$(wildcard *.cpp))
 
 globals = globals.h
 
-pflags = $(includedirs) -pg -O
-oflags = $(includedirs) -O -Wall
+pflags = $(includedirs) -pg -O3
+oflags = $(includedirs) -O3 -Wall
 gflags = $(includedirs) -Wall -ggdb
 
 cflags = $(gflags) # the default setting
