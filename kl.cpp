@@ -564,13 +564,13 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
   }
 
   // permute ranges
-  bits::BitMap b(a.size());
+  bitmap::BitMap seen(a.size());
 
   for (coxtypes::CoxNbr x = 0; x < size(); ++x) {
-    if (b.getBit(x))
+    if (seen.is_member(x))
       continue;
     if (a[x] == x) {
-      b.setBit(x);
+      seen.insert(x);
       continue;
     }
 
@@ -586,10 +586,10 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
       KL_table[x] = std::move(kl_buf);
       mu_Table[x] = std::move(mu_buf);
       /* set bit*/
-      b.setBit(y);
+      seen.insert(y);
     }  // |for(y)|
 
-    b.setBit(x);
+    seen.insert(x);
   } // |for(x)|
 } // |KLContext::KLHelper::permute|
 

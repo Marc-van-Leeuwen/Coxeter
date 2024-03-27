@@ -645,18 +645,16 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
 
 
 /*
-  This function does the memory allocation for the computation of a full row
-  in the context. Since this means that we have to fill all rows for z <= y,
-  all these are allocated.
+  Allocate memory for the computation of a full row in the context. Since this
+  means that we have to fill all rows for |z <= y|, all these are allocated.
 
   For now, this is implemented in a straightforward manner.
 */
 void KLContext::KLHelper::allocRowComputation(const coxtypes::CoxNbr& y)
 {
   const schubert::SchubertContext& p = schubert();
-  bits::BitMap b =  p.closure(y);
 
-  for (coxtypes::CoxNbr z : b)
+  for (coxtypes::CoxNbr z : p.closure(y))
   {
     if (inverse(z) < z)
       continue;

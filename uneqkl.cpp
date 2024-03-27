@@ -548,11 +548,11 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
   }
 
   // permute ranges
-  bits::BitMap seen(a.size());
+  bitmap::BitMap seen(a.size());
 
   for (coxtypes::CoxNbr x = 0; x < size(); ++x)
   {
-    if (seen.getBit(x))
+    if (seen.is_member(x))
       continue;
     // now |x| starts an as yet unseen nontrivial cycle in |a|
     containers::vector<MuRowPtr> mu_buf(mu_Tables.size()); // Coxeter rank
@@ -580,10 +580,10 @@ void KLContext::KLHelper::permute(const bits::Permutation& a)
 	MuTable& t = mu_Tables[s];
 	t[x] = std::move(mu_buf[s]);
       }
-      seen.setBit(y);
+      seen.insert(y);
     }  // |for(y)|
 
-    seen.setBit(x);
+    seen.insert(x);
   } // |for(x)|
 } // |KLContext::KLHelper::permute|
 

@@ -25,7 +25,6 @@
 /******** type declarations *************************************************/
 
 namespace bits {
-  class BitMap;
   class Partition;
   class Permutation;
   class SubSet;
@@ -35,7 +34,6 @@ namespace bits {
 
   unsigned bitCount(const Lflags& f);
   bool isRefinement(const Partition& pi1, const Partition& pi2);
-  void print(FILE* file, const BitMap& map);
   template <class T> void rightRangePermute
     (list::List<T>& r, const Permutation& a);
   template <class T> void sortI(const list::List<T>& r, Permutation& a);
@@ -70,95 +68,6 @@ class Permutation
   Permutation& rightCompose(const Permutation& a);
 }; // |class Permutation|
 
-class BitMap
-{
- private:
-  list::List<Lflags> d_map;
-  Ulong d_size;
- public:
-/* constructors and destructors */
-  BitMap() {};
-  BitMap(Ulong n);
-  BitMap(const BitMap& map): d_map(map.d_map), d_size(map.d_size) {}
-  BitMap(const bitmap::BitMap& bm); // convert format fast
-  ~BitMap(); /* standard destructor */
-/* modifiers */
-  BitMap& operator=(const BitMap& map) { return assign(map); }
-  BitMap& assign(const BitMap& map);
-  void clearBit(Ulong n)
-    { d_map[n/BITS(Lflags)] &= ~(constants::eq_mask[n%BITS(Lflags)]); }
-  void permute(Permutation& q);
-  void reset() { d_map.setZero(); }
-  void setBit(Ulong n)
-    { d_map[n/BITS(Lflags)] |= constants::eq_mask[n%BITS(Lflags)]; }
-  void setBit(Ulong n, bool t) { if (t) setBit(n); else clearBit(n); }
-  void setSize(Ulong n);
-/* operations */
-  void operator~ ();
-  void operator&= (const BitMap& map);
-  void operator|= (const BitMap& map);
-  void andnot(const BitMap& map);
-/* accessors */
-  Ulong bitCount() const;
-  Lflags chunk(Ulong m) const { return d_map[m]; }
-  Ulong firstBit() const;
-  bool isEmpty(Ulong m) const; // whether empty from |m| upwards
-  Ulong lastBit() const;
-  Lflags lastchunk() const
-    { return constants::leq_mask[(size()-1)%BITS(Lflags)]; }
-  bool getBit(Ulong n) const
-    { return d_map[n/BITS(Lflags)] & constants::eq_mask[n%BITS(Lflags)]; }
-  Ulong size() const { return d_size; }
-/* iterator */
-  class Iterator;
-  class ReverseIterator;
-  friend class Iterator;
-  Iterator begin() const;
-  Iterator end() const;
-  ReverseIterator rbegin() const { return ReverseIterator(end()); }
-  ReverseIterator rend() const   { return ReverseIterator(begin()); }
-
-  class Iterator :
-    public std::iterator<std::forward_iterator_tag, Ulong>
-  { /* is really a constant iterator */
-  private:
-    static const Lflags posBits = BITS(Lflags) - 1;  /* BITS(Lflags) should be a
-							power of two */
-    static const Lflags baseBits = ~posBits;
-    const BitMap* d_b;
-    const Lflags* d_chunk;
-    Ulong d_bitAddress;
-  public:
-    Iterator();
-    Iterator(const BitMap& b);
-    ~Iterator() = default;
-    Ulong bitPos() const     { return d_bitAddress&posBits; }
-    Ulong operator* () const { return d_bitAddress; }
-    Iterator& operator++ ();
-    Iterator& operator-- ();
-    bool operator== (const Iterator& i) const
-      { return d_bitAddress == i.d_bitAddress; }
-    bool operator!= (const Iterator& i) const
-      { return d_bitAddress != i.d_bitAddress; }
-
-  /* friend declaration */
-  friend Iterator BitMap::end() const;
-  }; // |class Iterator|
-
-  class ReverseIterator {
-  private:
-    Iterator d_i;
-  public:
-    ReverseIterator() {};
-    explicit ReverseIterator(const Iterator& i):d_i(i) {};
-    ~ReverseIterator() {};
-    Ulong operator* () const { Iterator tmp(d_i); --tmp; return *tmp; }
-    ReverseIterator& operator++ () { --d_i; return *this; }
-    ReverseIterator& operator-- () { ++d_i; return *this; }
-    bool operator== (const ReverseIterator& i) const { return d_i == i.d_i; }
-    bool operator!= (const ReverseIterator& i) const { return d_i != i.d_i; }
-  }; // |class ReverseIterator|
-}; // |class BitMap|
 
 class SubSet
 {
@@ -366,27 +275,27 @@ template <class I> Partition::Partition
 template <class T> void rightRangePermute
   (list::List<T>& r, const Permutation& a)
 {
-  BitMap b(r.size());
+  bitmap::BitMap b(r.size());
 
   for (Ulong j = 0; j < a.size(); ++j) {
 
-    if (b.getBit(j))
+    if (b.is_member(j))
       continue;
 
     if (a[j] == j) {
-      b.setBit(j);
+      b.insert(j);
       continue;
     }
 
     Ulong k = j;
-    b.setBit(j);
+    b.insert(j);
 
     for (Ulong i = a[j]; i != j; i = a[i]) {
       T buf = r[k];
       r[k] = r[i];
       r[i] = buf;
       k = i;
-      b.setBit(i);
+      b.insert(i);
     }
   }
 } // |rightRangePermute|

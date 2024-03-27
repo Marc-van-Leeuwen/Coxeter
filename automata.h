@@ -39,7 +39,7 @@ class Automaton {
 class ExplicitAutomaton:public Automaton {
  private:
   State **d_table;
-  bits::BitMap d_accept;
+  bitmap::BitMap d_accept;
   State d_failure;
   State d_initial;
   Ulong d_rank;
@@ -68,7 +68,7 @@ class ExplicitAutomaton:public Automaton {
 
 namespace automata {
 
-  inline void ExplicitAutomaton::setAccept(State x) {d_accept.setBit(x);}
+  inline void ExplicitAutomaton::setAccept(State x) {d_accept.insert(x);}
   inline void ExplicitAutomaton::setFailure(State x) {d_failure = x;}
   inline void ExplicitAutomaton::setInitial(State x) {d_initial = x;}
   inline void ExplicitAutomaton::setTable(State x, Letter a, State xa)
@@ -78,7 +78,7 @@ namespace automata {
     {return d_table[x][a];}
   inline State ExplicitAutomaton::initialState() const {return d_initial;}
   inline bool ExplicitAutomaton::isAccept(State x) const
-    {return d_accept.getBit(x);}
+    {return d_accept.is_member(x);}
   inline bool ExplicitAutomaton::isFailure(State x) const
     {return x == d_failure;}
   inline Ulong ExplicitAutomaton::rank() const {return d_rank;}

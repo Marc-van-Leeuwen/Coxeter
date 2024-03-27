@@ -325,13 +325,13 @@ void KLSupport::permute(const bits::Permutation& a)
 
   /* permute ranges */
 
-  bits::BitMap b(a.size());
+  bitmap::BitMap seen(a.size());
 
   for (coxtypes::CoxNbr x = 0; x < size(); ++x) {
-    if (b.getBit(x))
+    if (seen.is_member(x))
       continue;
     if (a[x] == x) {
-      b.setBit(x);
+      seen.insert(x);
       continue;
     }
     for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y]) {
@@ -350,10 +350,10 @@ void KLSupport::permute(const bits::Permutation& a)
       d_last[x] = last_buf;
       d_involution.set_to(x,involution_buf);
       /* set bit*/
-      b.setBit(y);
+      seen.insert(y);
     }
 
-    b.setBit(x);
+    seen.insert(x);
   }
 } // |KLSupport::permute|
 

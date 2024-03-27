@@ -43,7 +43,6 @@ class wgraph::OrientedGraph
 /* accessors */
   bits::Partition cells(OrientedGraph* P = nullptr) const;
   const EdgeList& edge(const Vertex& x) const { return d_edge[x]; }
-  Vertex firstMinimal(const bits::BitMap& b) const;
   bits::Partition level_partition() const;
   void print(FILE* file) const;
   Ulong size() const {return d_edge.size(); }

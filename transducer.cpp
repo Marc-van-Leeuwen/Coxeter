@@ -412,26 +412,25 @@ coxtypes::Generator SubQuotient::firstDescent(const coxtypes::ParNbr& x) const
 }
 
 
-void SubQuotient::schubertClosure(Sub_set& Q, coxtypes::ParNbr x)
 
 /*
   This function returns in Q the set of all z in X such that z <= x in the
   Bruhat order, resizing Q if necessary.
 */
-
+void SubQuotient::schubertClosure(Sub_set& Q, coxtypes::ParNbr x)
 {
-  static bits::BitMap f;  /* should become bitmap type */
-  static coxtypes::CoxWord g;
-
-  f.setSize(size());
-  f.reset();
-  f.setBit(0);
 
   Q.setSize(1);
   Q[0] = 0;
 
   Ulong prev_size = 1;
+  coxtypes::CoxWord g;
   reduced(g,x);
+
+  bitmap::BitMap seen(size());
+  seen.insert(0);
+
+
 
   for (Ulong j = 0; j < g.length(); ++j) {
 
@@ -441,7 +440,7 @@ void SubQuotient::schubertClosure(Sub_set& Q, coxtypes::ParNbr x)
     for (Ulong z = 0; z < prev_size; ++z) { /* count new elements */
       if (shift(z,s) > undef_parnbr)  /* undef_parnbr is impossible */
 	continue;
-      if (!f.getBit(shift(z,s)))
+      if (not seen.is_member(shift(z,s)))
 	++c;
     }
 
@@ -451,16 +450,14 @@ void SubQuotient::schubertClosure(Sub_set& Q, coxtypes::ParNbr x)
     for (Ulong z = 0; z < prev_size; ++z) {
       if (shift(z,s) > undef_parnbr)
 	continue;
-      if (!f.getBit(shift(z,s))) {  /* add new element */
-	f.setBit(shift(z,s));
+      if (not seen.is_member(shift(z,s))) {  /* add new element */
+	seen.insert(shift(z,s));
 	Q[firstfree] = shift(z,s);
 	++firstfree;
       }
     }
     prev_size += c;
-  }
-
-  return;
+  } // |for(j)|
 }
 
 coxtypes::CoxWord& SubQuotient::reduced

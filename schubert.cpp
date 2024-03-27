@@ -207,32 +207,6 @@ coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) cons
   return x;
 }
 
-#if 0
-/*
-  Put into |b| the subset $[e,x]$ of |p|. It is assumed that |b|
-  is capable of holding a subset of |p|.
-
-  Forwards the error MEMORY_WARNING if CATCH_MEMORY_OVERFLOW is set.
-
-*/
-void SchubertContext::extractClosure
-  (bits::BitMap& b, coxtypes::CoxNbr x) const
-{
-  bits::SubSet q(d_size);
-  q.reset();
-  q.add(0);
-
-  for (coxtypes::CoxNbr x1 = x; x1;) {
-    coxtypes::Generator s = firstLDescent(x1);
-    extendSubSet(q,s);
-    x1 = lshift(x1,s); // remove leftmost generator
-  }
-
-  b = q.bitMap();
-
-  return;
-}
-#endif
 
 // the following function uses a double representation |q|,|elements| for speed
 // iteration is over (initial) elements, (old) membership is tested though |q|
@@ -1206,9 +1180,7 @@ bool shortlex_leq(const SchubertContext& p, const bits::Permutation& order,
   This section defines the input/output functions declared in schubert.h :
 
    - print(file,p) : prints the context on a file;
-   - printBitMap(file,b,p,I) : prints a BitMap;
    - printPartition(file,pi,p,I) : prints a partition;
-   - printPartition(file,pi,b,p,I) : prints a partition restricted to a BitMap;
 
  ****************************************************************************/
 
@@ -1291,32 +1263,6 @@ void print(FILE* file, SchubertContext& p)
   return;
 }
 
-void printBitMap(FILE* file, const bits::BitMap& b, const SchubertContext& p,
-		    const interface::Interface& I)
-
-/*
-  This function prints the elements of the bitmap (assumed to hold a subset
-  of the context) on the file.
-*/
-
-{
-  bool first = true;
-
-  fprintf(file,"{");
-
-  for (bits::BitMap::Iterator i = b.begin(); i != b.end(); ++i) {
-    if (first)
-      first = false;
-    else
-      fprintf(file,",");
-    coxtypes::CoxWord g(0);
-    p.append(g,*i);
-    I.print(file,g);
-  }
-
-  fprintf(file,"}");
-}
-
 
 /*
   This function prints the partition pi, assumed to hold a partition of the
@@ -1347,33 +1293,6 @@ void printPartition
   return;
 }
 
-
-// Print the partition pi restricted to the subset flagged by b.
-void printPartition(FILE* file, const bits::Partition& pi, const bits::BitMap& b,
-		    const SchubertContext& p, const interface::Interface& I)
-{
-  list::List<Ulong> q(b.begin(),b.end()); // replaces readBitMap
-  bits::Partition pi_b(b.begin(),b.end(),pi);
-
-  Ulong count = 0;
-
-  for (bits::Partition::iterator pit=pi_b.begin(); pit; ++pit)
-  {
-    const auto c = *pit;
-    fprintf(file,"%lu(%lu):{",count,c.size());
-    for (Ulong j = 0; j < c.size(); ++j) {
-      coxtypes::CoxWord g(0);
-      p.append(g,q[c[j]]);
-      I.print(file,g);
-      if (j+1 < c.size()) /* there is more to come */
-	fprintf(file,",");
-    }
-    fprintf(file,"}\n");
-    ++count;
-  }
-
-  return;
-}
 
 };
 
@@ -1446,20 +1365,6 @@ coxtypes::Generator first_flagged(GenSet f, const bits::Permutation& order)
   return BITS(Ulong); // better assert(false) or throw an error
 }
 
-
-void read_bitmap(CoxNbrList& c, const bits::BitMap& b)
-{
-  c.reserve(b.bitCount());
-  c.clear();
-
-  bits::BitMap::Iterator i =  b.begin();
-
-  for (Ulong j = 0; j < c.size(); ++j)
-  {
-    c.push_back(*i);
-    ++i;
-  }
-}
 
 Ulong sum(const Homology& h)
 {

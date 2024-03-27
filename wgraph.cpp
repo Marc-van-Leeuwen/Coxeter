@@ -628,9 +628,6 @@ bits::Partition OrientedGraph::level_partition() const
 */
 void OrientedGraph::permute(const bits::Permutation& a)
 {
-  static bits::BitMap b(0);
-  static EdgeList e_buf(0);
-
   /* permute values */
 
   for (bits::SetElt x = 0; x < size(); ++x) {
@@ -642,19 +639,18 @@ void OrientedGraph::permute(const bits::Permutation& a)
 
   /* permute ranges */
 
-  b.setSize(size());
-  b.reset();
+  bitmap::BitMap seen(size());
 
   for (bits::SetElt x = 0; x < size(); ++x) {
-    if (b.getBit(x))
+    if (seen.is_member(x))
       continue;
     if (a[x] == x) { /* fixed point */
-      b.setBit(x);
+      seen.insert(x);
       continue;
     }
     for (bits::SetElt y = a[x]; y != x; y = a[y])
       std::swap(d_edge[x],d_edge[y]);
-    b.setBit(x);
+    seen.insert(x);
   }
 } // |OrientedGraph::permute|
 

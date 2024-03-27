@@ -49,16 +49,11 @@ namespace schubert {
   Ulong sum(const Homology& h);
 
   void print(FILE* file, SchubertContext& p);
-  void printBitMap(FILE* file, const bits::BitMap& pi, const SchubertContext& p,
-		   const interface::Interface& I);
   void printList
    (FILE* file, const list::List<coxtypes::CoxNbr>& v, const SchubertContext& p,
     const interface::Interface& I);
   void printPartition
     (FILE* file, const bits::Partition& pi,
-     const SchubertContext& p, const interface::Interface& I);
-  void printPartition
-    (FILE* file, const bits::Partition& pi, const bits::BitMap& b,
      const SchubertContext& p, const interface::Interface& I);
 
 };
@@ -245,7 +240,6 @@ public:
   coxtypes::CoxWord& append(coxtypes::CoxWord& g, coxtypes::CoxNbr x) const;
   coxtypes::CoxNbr contextNumber(const coxtypes::CoxWord& g) const;
   void extendSubSet(bits::SubSet& q, coxtypes::Generator s) const;
-  void extractClosure(bits::BitMap& b, coxtypes::CoxNbr x) const;
   Lflags twoDescent(coxtypes::CoxNbr x) const;
   bool inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const;
   bool isSuperExtremal(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const;

@@ -635,28 +635,23 @@ in the current situation. They are :
 
 namespace {
 
-void checkCoxElement(coxgroup::CoxGroup *W, coxtypes::CoxWord g)
 
 /*
-  Checks if g is a reduced expression of a Coxeter element in W --- in other
+  Check if |g| is a reduced expression of a Coxeter element in W --- in other
   words, if it is a permutation of the generators.
 */
-
+void checkCoxElement(coxgroup::CoxGroup *W, coxtypes::CoxWord g)
 {
-  static bits::BitMap CCE_map(W->rank());
-
-  CCE_map.reset();
+  bitmap::BitMap CCE_map(W->rank()); // we allow for very large ranks here
 
   for (coxtypes::Length j = 0; g[j]; ++j) {
     coxtypes::Generator s = g[j] - 1;
-    if (CCE_map.getBit(s)) { /* error */
+    if (CCE_map.is_member(s)) { /* error */
       ERRNO = NOT_COXELT;
       return;
     }
-    CCE_map.setBit(s);
+    CCE_map.insert(s);
   }
-
-  return;
 }
 
 
