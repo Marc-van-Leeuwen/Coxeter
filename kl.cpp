@@ -187,7 +187,7 @@ struct KLContext::KLHelper
   void clear_mu_filled() { d_stats.flags &= ~KLStats::mu_done;}
 
   HeckeElt KL_row_as_HeckeElt(coxtypes::CoxNbr y);
-  void move_KL_row_to_inverse(coxtypes::CoxNbr x);
+  void move_KL_row_from_inverse(coxtypes::CoxNbr x);
   void permute(const bits::Permutation& a);
 }; // |struct KLContext::KLHelper|
 
@@ -497,15 +497,15 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
 
 
 /*
-  Exchange rows for |x| and |inverse(x)| in |KL_table|. It is assumed that the
-  boths rows are within the bounds of |KL_table|.
+  Move row from |inverse(x)| to |x| in |KL_table|, assuming that the boths rows
+  are within the bounds of |KL_table|. The row is unchanged (!)
 */
 void KLContext::applyInverse(const coxtypes::CoxNbr& x)
-{ d_help->move_KL_row_to_inverse(x);
+{ d_help->move_KL_row_from_inverse(x);
 }
 
-// this function moes in the opposite direction of what its name suggests!
-void KLContext::KLHelper::move_KL_row_to_inverse(coxtypes::CoxNbr x)
+// this function moes in the direction of what its name suggests!
+void KLContext::KLHelper::move_KL_row_from_inverse(coxtypes::CoxNbr x)
 {
   coxtypes::CoxNbr xi = inverse(x);
   KL_table[x] = std::move(KL_table[xi]);

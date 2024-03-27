@@ -119,7 +119,7 @@ struct KLContext::KLHelper
   const KLPol& klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y);
   const MuPol mu
     (coxtypes::Generator s, coxtypes::CoxNbr x, coxtypes::CoxNbr y);
-  void move_KL_row_to_inverse(coxtypes::CoxNbr x);
+  void move_KL_row_from_inverse(coxtypes::CoxNbr x);
   void apply_inverse_permutation
     (coxtypes::CoxNbr y, const bits::Permutation& a);
   HeckeElt KL_row_as_HeckeElt(coxtypes::CoxNbr y);
@@ -507,10 +507,10 @@ void KLContext::KLHelper::shrink(const Ulong& n)
   for |inverse(x)| is allocated.
 */
 void KLContext::applyInverse(const coxtypes::CoxNbr& x)
-{ d_help->move_KL_row_to_inverse(x);
+{ d_help->move_KL_row_from_inverse(x);
 }
 
-void KLContext::KLHelper::move_KL_row_to_inverse(coxtypes::CoxNbr x)
+void KLContext::KLHelper::move_KL_row_from_inverse(coxtypes::CoxNbr x)
 {
   coxtypes::CoxNbr xi = inverse(x);
   KL_table[x] = std::move(KL_table[xi]);

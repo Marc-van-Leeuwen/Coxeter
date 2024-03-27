@@ -18,7 +18,6 @@
 #include <map>
 
 #include "containers.h"
-#include "list.h"
 #include "bitmap.h"
 #include "io.h"
 #include "constants.h"
@@ -30,15 +29,12 @@ namespace bits {
   class Partition;
   class Permutation;
   class SubSet;
-  typedef unsigned char Flags;
-  typedef Ulong SetElt;
-  typedef list::List<SetElt> Set;
+  using SetElt = Ulong;
 
 /******** function declarations *********************************************/
 
   unsigned bitCount(const Lflags& f);
   bool isRefinement(const Partition& pi1, const Partition& pi2);
-  void memSet(void *dest, void *source, Ulong size, Ulong count);
   void print(FILE* file, const BitMap& map);
   template <class T> void rightRangePermute
     (list::List<T>& r, const Permutation& a);

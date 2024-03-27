@@ -866,47 +866,6 @@ unsigned bits::bitCount(const Lflags& d_f)
 
 /*****************************************************************************
 
-        Chapter VIII -- Copying memory.
-
-  This section contains functions for copying memory between bitmaps :
-
-  - MemSet(dest,source,size,count) : copies into dest count repetitions
-    of the pattern made up by the first size bits in source;
-
- *****************************************************************************/
-
-
-void bits::memSet(void *dest, void *source, Ulong size, Ulong count)
-
-/*
-  Copies into dest count repetitions of the pattern made up by the first size
-  bits in source.
-*/
-
-{
-  Ulong c;
-
-  if (count == 0)
-    return;
-
-  memmove(dest,source,size);
-  source = dest;
-  dest = (void *)((char *)dest + size);
-
-  for (c = 1; c <= count/2; c *= 2)
-    {
-      memmove(dest,source,c*size);
-      dest = (void *)((char *)dest + c*size);
-    }
-
-  memmove(dest,source,(count-c)*size);
-
-  return;
-}
-
-
-/*****************************************************************************
-
         Chapter IX -- Input/Output.
 
   This section contains i/o functions for the classes defined in this

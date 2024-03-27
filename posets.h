@@ -20,7 +20,6 @@ namespace posets {
 /******** type definitions **************************************************/
 
 #include "bits.h"
-#include "list.h"
 #include "memory.h"
 #include "wgraph.h"
 
@@ -37,7 +36,6 @@ class Poset {
   Poset(const wgraph::OrientedGraph& G);
 /* manipulators */
 /* accessors */
-  void findMaximals(const bits::BitMap& D, bits::Set& a) const;
   containers::vector<Ulong> maxima_within(bitmap::BitMap D) const;
   bool isTriangular() const;
   Ulong size() const;

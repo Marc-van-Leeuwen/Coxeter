@@ -12,7 +12,6 @@
 #include "globals.h"
 
 #include "coxtypes.h"
-#include "list.h"
 #include "bitmap.h" // for |bitmap::BitMap|
 #include "polynomials.h"
 #include "schubert.h"

@@ -12,6 +12,7 @@
 
 #include "globals.h"
 #include "coxtypes.h"
+#include "containers.h"
 #include "klsupport.h"
 #include "hecke.h"
 #include "polynomials.h"
@@ -153,7 +154,7 @@ class KLContext {
   void revertSize(const Ulong& n);
 
   // manipulators that drastically alter the state
-  void applyInverse(const coxtypes::CoxNbr& y);
+  void applyInverse(const coxtypes::CoxNbr& y); // more row of |x| to its inverse
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
   void permute(const bits::Permutation& a);
 
@@ -162,8 +163,6 @@ class KLContext {
 /******** function declarations *********************************************/
 
   HeckeElt cBasis(coxtypes::CoxNbr y, KLContext& kl);
-  void extractDufloInvolutions(const KLContext& kl, const bits::Partition& pi,
-			       bits::BitMap& b);
   void genericSingularities
     (HeckeElt& h, coxtypes::CoxNbr y, KLContext& kl);
   schubert::Homology ihBetti(coxtypes::CoxNbr y, KLContext& kl);

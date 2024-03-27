@@ -50,7 +50,7 @@ namespace {
 
     - accessors :
 
-      - findMaximals(D,a) : writes the maximal elements of D in a;
+      - maxima_within(D) : the maximal elements of D in a;
       - hasseDiagram(H) : writes the Hasse diagram in H;
       - isTriangular() : checks if the poset is triangular;
       - size(); (inlined)
@@ -102,24 +102,11 @@ Poset::Poset(const wgraph::OrientedGraph& G)
 
 
 /*
-  Write in a the maximal elements of D. It assumes that
-  the poset is in triangular form.
+  Return the maximal elements of |D|. Assumes that the poset is in triangular form.
 
-  The algorithm is as follows. The largest element z in D is certainly
+  The algorithm is as follows. The largest element |elt| in |D| is certainly
   maximal. Then remove cl(z) from D, and iterate until reaching the empty set.
 */
-void Poset::findMaximals(const bits::BitMap& D, bits::Set& a) const
-{
-  static bits::BitMap b(0);
-
-  b.assign(D);
-
-  for (PosetElt x = b.lastBit(); x < b.size(); x = b.lastBit()) {
-    insert(a,x);
-    b.andnot(d_closure[x]);
-  }
-}
-
 containers::vector<Ulong> Poset::maxima_within(bitmap::BitMap D) const
 {
   containers::sl_list<Ulong> result;
