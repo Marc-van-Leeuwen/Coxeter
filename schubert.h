@@ -15,8 +15,6 @@
 #include "bitmap.h"
 #include "sl_list.h"
 #include "io.h"
-#include "list.h"
-#include "stack.h"
 #include "bits.h"
 #include "interface.h"
 
@@ -49,9 +47,6 @@ namespace schubert {
   Ulong sum(const Homology& h);
 
   void print(FILE* file, SchubertContext& p);
-  void printList
-   (FILE* file, const list::List<coxtypes::CoxNbr>& v, const SchubertContext& p,
-    const interface::Interface& I);
   void printPartition
     (FILE* file, const bits::Partition& pi,
      const SchubertContext& p, const interface::Interface& I);
@@ -73,74 +68,6 @@ struct NFCompare {
   { return shortlex_leq(p,order,x,y); }
 };
 
-class AbstractSchubertContext {
-  friend class ClosureIterator;
- public:
-  void* operator new(size_t size) {return memory::arena().alloc(size);}
-  void operator delete(void* ptr)
-    {return memory::arena().free(ptr,sizeof(AbstractSchubertContext));}
-  virtual ~AbstractSchubertContext() {};
-/* accessors */
-  virtual coxtypes::CoxWord& append
-    (coxtypes::CoxWord& g, coxtypes::CoxNbr x) const = 0;
-  virtual Lflags ascent(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::CoxNbr contextNumber(const coxtypes::CoxWord& g) const = 0;
-  virtual Lflags descent(coxtypes::CoxNbr x) const = 0;
-  virtual const bitmap::BitMap& down_set(coxtypes::Generator s) const = 0;
-  virtual void extendSubSet(bits::SubSet& q, coxtypes::Generator s) const = 0;
-  virtual coxtypes::Generator firstDescent(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::Generator firstLDescent(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::Generator firstRDescent(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::Generator firstDescent
-    (coxtypes::CoxNbr x, const bits::Permutation& order) const = 0;
-  virtual coxtypes::Generator firstLDescent
-    (coxtypes::CoxNbr x, const bits::Permutation& order) const = 0;
-  virtual coxtypes::Generator firstRDescent
-    (coxtypes::CoxNbr x, const bits::Permutation& order) const = 0;
-  virtual const CoxNbrList& hasse(coxtypes::CoxNbr x) const = 0;
-  virtual bool inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const = 0;
-  virtual bool isDescent(coxtypes::CoxNbr x, coxtypes::Generator s) const = 0;
-  virtual GenSet lascent(coxtypes::CoxNbr x) const = 0;
-  virtual GenSet ldescent(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::Length length(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::CoxNbr lshift
-    (coxtypes::CoxNbr x, coxtypes::Generator s) const = 0;
-  virtual coxtypes::CoxNbr maximize
-    (coxtypes::CoxNbr x, const Lflags& f) const = 0;
-  virtual coxtypes::Length maxlength() const = 0;
-  virtual coxtypes::CoxNbr minimize
-    (coxtypes::CoxNbr x, const Lflags& f) const = 0;
-  virtual coxtypes::CoxWord& normalForm
-    (coxtypes::CoxWord& g, coxtypes::CoxNbr x,
-     const bits::Permutation& order) const = 0;
-  virtual Ulong nStarOps() const = 0;
-  virtual const bitmap::BitMap& parity(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::Rank rank() const = 0;
-  virtual GenSet rascent(coxtypes::CoxNbr x) const = 0;
-  virtual GenSet rdescent(coxtypes::CoxNbr x) const = 0;
-  virtual coxtypes::CoxNbr rshift
-    (coxtypes::CoxNbr x, coxtypes::Generator s) const = 0;
-  virtual GenSet S() const = 0;
-  virtual coxtypes::CoxNbr shift
-    (coxtypes::CoxNbr x, coxtypes::Generator s) const = 0;
-  virtual coxtypes::CoxNbr size() const = 0;
-  virtual coxtypes::CoxNbr star
-    (coxtypes::CoxNbr x, const Ulong& r) const = 0;
-  virtual Lflags twoDescent(coxtypes::CoxNbr x) const = 0;
-  virtual const type::Type& type() const = 0;
-/* modifiers */
-  virtual coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g) = 0;
-  virtual void permute(const bits::Permutation& a) = 0;
-  virtual void revertSize(Ulong n) = 0;
-  virtual void setSize(Ulong n) = 0;
-/* input-output */
-  virtual std::string& append(std::string&, coxtypes::CoxNbr x) const = 0;
-  virtual std::string& append
-    (std::string&, coxtypes::CoxNbr x, const interface::Interface& I) const = 0;
-  virtual void print(FILE* file, coxtypes::CoxNbr x) const = 0;
-  virtual void print
-    (FILE* file, coxtypes::CoxNbr x, const interface::Interface& I) const = 0;
-};
 
 class SchubertContext
 {
