@@ -14,7 +14,7 @@
 #include <iterator> // for |std::distance|
 #include <stdexcept>
 
-#include "constants.h" // for |first_bit|, |lastBit|
+#include "constants.h" // for |first_bit|, |last_bit|
 #include "bits.h" // for |bitCount|
 
 #include <cassert>
@@ -193,16 +193,18 @@ size_t BitMap::position(size_t n) const
 */
 bool BitMap::contains(const BitMap& b) const
 {
-  if (b.capacity()>capacity()) // then test for above-our-capacity entries
+  size_t limit = b.d_map.size();
+  if (limit>d_map.size()) // then test for above-our-capacity entries
   {
     size_t n = b.last();
     if (n==b.capacity())
       return true; // since |b.empty()|
     if (n>=capacity())
       return false; // since |not is_member(n)|
+    limit = (n >> index_shift)+1;
   }
 
-  for (size_t j = 0; j < d_map.size(); ++j)
+  for (size_t j = 0; j < limit; ++j)
     if ((b.d_map[j] & ~d_map[j])!=0)
       return false; // since we found a bit set in |b| but not in |*this|
 
@@ -222,137 +224,30 @@ bool BitMap::disjoint(const BitMap& b) const
 
 
 
-
-/*
-  Return |r| bits from position |n| as a |chunk_type| value
-
-  Precondition: |(n+r-1)%chunk_bits == n%chunk_bits + (r-1)|, in other words
-  no multiples $m$ of |chunk_bits| satisfy $n<m<n+r$. This is
-  ensured for instance when |r| divides both |chunk_bits| and |n|.
-
-  Thus the bits extracted are found in single element of |d_map|.
-
-  It is required that |n<capacity()|, but not that |n+r<=capacity()|; if the
-  latter fails, the return value is padded out with (leading) zero bits.
-*/
-auto BitMap::range(size_t n, unsigned r) const -> chunk_type
-{
-  size_t m = n >> index_shift; // index where data is stored
-
-  return (d_map[m] >> (n & position_bits)) & constants::lt_mask[r];
-
-}
-
 /******** manipulators *******************************************************/
 
 /*
-  Replace a bitmap by its complement
+  Set the capacity of the bitmap to |n|, shrinking |d_map| if possible
 
-  We are careful about the last chunk, leaving the unused bits equal to zero.
+  Does not modify the contents up to the previous size, at least if n is
+  larger. The new elements are initialized to zero.
 */
-BitMap& BitMap::take_complement ()
+void BitMap::set_capacity(size_t n)
 {
-  for (chunk_type& chunk : d_map)
-    chunk = ~chunk;
-
-  if ((d_capacity&position_bits)!=0) // N.B. also makes |capacity()==0| safe (MvL)
-    d_map.back() &= constants::lt_mask[d_capacity&position_bits];
-
-  return *this;
+  if (n<d_capacity and (n&position_bits)!=0)
+    d_map[n>>index_shift] &= constants::lt_mask[n&position_bits]; // 0 partial
+  d_map.resize((n+position_bits) >> index_shift,0); // grow zeroing or shrink
+  if (d_map.size()<d_map.capacity()) // |d_map| has become too large
+    d_map.shrink_to_fit(); // shrink-wrap vector |d_map|
+  d_capacity = n;
 }
 
-// Intersect the current bitmap with |b|, return whether result is non-empty.
-bool BitMap::operator&= (const BitMap& b)
+// Add one more place to bitmap (amortised efficiently), set it to value |b|
+void BitMap::extend_capacity(bool b)
 {
-  assert(b.capacity()<=capacity());
-  bool any=false;
-  for (size_t j = 0; j < b.d_map.size(); ++j)
-    if ((d_map[j] &= b.d_map[j])!=0) any=true;
-
-  // don't forget to clear out everything beyond the end of |b|!
-  for (size_t j = b.d_map.size(); j<d_map.size(); ++j)
-    d_map[j] = 0;
-
-  return any;
-}
-
-// Unite |b| into the current bitmap.
-BitMap& BitMap::operator|= (const BitMap& b)
-{
-  assert(b.capacity()<=capacity());
-  for (size_t j = 0; j < b.d_map.size(); ++j)
-    d_map[j] |= b.d_map[j];
-
-  return *this;
-}
-
-// Perform exclusive or (XOR) of |b| into the current bitmap.
-BitMap& BitMap::operator^= (const BitMap& b)
-{
-  assert(b.capacity()<=capacity());
-  for (size_t j = 0; j < b.d_map.size(); ++j)
-    d_map[j] ^= b.d_map[j];
-
-  return *this;
-}
-
-/*
-  Take the current bitmap into its set-difference with |b|, i.e.,
-  remove from our bitmap any elements appearing in |b|; the latter should not
-  exceed the size of the current bitmap (but may be smaller).
-  Return whether any bits remain in the result.
-*/
-BitMap& BitMap::andnot(const BitMap& b)
-{
-  assert(b.capacity()<=capacity());
-  for (size_t j = 0; j < b.d_map.size(); ++j)
-    d_map[j] &= ~b.d_map[j];
-
-  return *this;
-}
-
-BitMap& BitMap::operator<<= (size_t delta) // increase position values by |delta|
-{
-  size_t delta_rem = delta & position_bits;
-  delta >>= index_shift; // we must move |delta| words, and then |delta_rem| bits
-  if (delta>0) // shifting by |0| is useless, and undefined behavior too
-  {
-    std::copy_backward(d_map.begin(),d_map.end()-delta,d_map.end());
-    std::fill(d_map.begin(),d_map.begin()+delta,0ul);
-  }
-  if (delta_rem>0 and not d_map.empty())
-  {
-    chunk_iterator it;
-    for (it=d_map.end(); --it!=d_map.begin(); ) // reverse loop, omit initial
-    {
-      *it <<= delta_rem; // shift bits up
-      *it |= *(it-1) >> (constants::longBits-delta_rem); // bits shifted in
-    }
-    *it <<= delta_rem; // shift bits up
-  }
-  return *this;
-}
-
-BitMap& BitMap::operator>>= (size_t delta) // decrease values by |delta|
-{
-  size_t delta_rem = delta & position_bits;
-  delta >>= index_shift; // we must move |delta| words, and then |delta_rem| bits
-  if (delta>0) // shifting by |0| is useless, and undefined behavior too
-  {
-    std::copy(d_map.begin()+delta,d_map.end(),d_map.begin());
-    std::fill(d_map.end()-delta,d_map.end(),0ul);
-  }
-  if (delta_rem>0 and not d_map.empty())
-  {
-    chunk_iterator it;
-    for (it=d_map.begin(); it+1!=d_map.end(); ++it)
-    {
-      *it >>= delta_rem; // shift bits down (to the right) inside the word
-      *it |= *(it+1) << (constants::longBits-delta_rem); // left part from next
-    }
-    *it <<= delta_rem; // shift last bits down internally
-  }
-  return *this;
+  if ((d_capacity&position_bits) == 0)
+    d_map.push_back(0); // allocate space; |std::vector| handles efficiency
+  set_to(d_capacity++,b);
 }
 
 /*
@@ -362,18 +257,20 @@ BitMap& BitMap::operator>>= (size_t delta) // decrease values by |delta|
 */
 void BitMap::fill()
 {
-  d_map.assign(d_map.size(),~0ul); // (last word will be overwritten)
+  d_map.assign(d_map.size(),~0ul); // (last word may be overwritten next)
 
-  if ((d_capacity&position_bits)!=0) // N.B. also makes |capacity()=0| safe (MvL)
-    d_map.back() = constants::lt_mask[d_capacity&position_bits];
+  size_t remainder = d_capacity&position_bits;
+  if (remainder!=0) // N.B. also makes |capacity()=0| safe (MvL)
+    d_map.back() = constants::lt_mask[remainder];
 }
 
 // Set all the bits in positions |i| with |start<=i<stop|.
 void BitMap::fill(size_t start, size_t stop)
 {
+  assert(start<=capacity() and stop<=capacity()); // do not try to grow us
   if (start>=stop) return;
-  size_t begin = start >> index_shift;
-  size_t end   = stop >> index_shift;
+  size_t begin = start >> index_shift;    // chunk index of first bit to set
+  size_t end   = (stop-1) >> index_shift; // chunk index of last bit to set
   if (begin==end) // then only one word is affected
     d_map[begin] |= constants::lt_mask[stop-start] << (start&position_bits);
   else
@@ -381,8 +278,7 @@ void BitMap::fill(size_t start, size_t stop)
     d_map[begin] |= ~constants::lt_mask[start&position_bits];
     for (size_t i=begin+1; i<end; ++i)
       d_map[i] = ~0ul;
-    if ((stop&position_bits)!=0) // protect against out-of-bounds setting of 0 bits
-      d_map[end] |= constants::lt_mask[stop&position_bits];
+    d_map[end] |= constants::lt_mask[stop&position_bits];
   }
 }
 
@@ -419,27 +315,158 @@ template<typename I> void BitMap::insert(I first, I last)
 
 
 /*
-  Set the capacity of the bitmap to |n|, shrinking |d_map| if possible
+  Replace a bitmap by its complement
 
-  Does not modify the contents up to the previous size, at least if n is
-  larger. The new elements are initialized to zero.
+  We are careful about the last chunk, leaving the unused bits equal to zero.
 */
-void BitMap::set_capacity(size_t n)
+BitMap& BitMap::take_complement ()
 {
-  if (n<d_capacity and (n&position_bits)!=0)
-    d_map[n>>index_shift] &= constants::lt_mask[n&position_bits]; // clear partial
-  d_map.resize((n+position_bits) >> index_shift,0); // grow zeroing or shrink
-  if (d_map.size()<d_map.capacity()) // |d_map| has become too large
-    d_map.shrink_to_fit(); // shrink-wrap vector |d_map|
-  d_capacity = n;
+  for (chunk_type& chunk : d_map)
+    chunk = ~chunk;
+
+  if ((d_capacity&position_bits)!=0) // also makes |capacity()==0| safe here
+    d_map.back() &= constants::lt_mask[d_capacity&position_bits];
+
+  return *this;
 }
 
-// Add one more place to bitmap (amortised efficiently), set it to value |b|
-void BitMap::extend_capacity(bool b)
+// Intersect the current bitmap with |b|, return whether result is non-empty.
+BitMap& BitMap::operator&= (const BitMap& b)
 {
-  if (d_capacity == (d_map.size()<<index_shift))
-    d_map.push_back(0); // allocate space; |std::vector| handles efficiency
-  set_to(d_capacity++,b);
+  if (b.capacity()<capacity())
+  {
+    d_capacity=b.capacity();
+    d_map.erase(d_map.begin()+b.d_map.size(),d_map.end());
+  }
+  for (size_t i = 0; i < d_map.size(); ++i)
+    d_map[i] &= b.d_map[i];
+
+  return *this;
+}
+
+/*
+  Take the current bitmap into its set-difference with |b|, i.e.,
+  remove from our bitmap any elements appearing in |b|.
+*/
+BitMap& BitMap::andnot(const BitMap& b)
+{
+  size_t limit = std::min(d_map.size(),b.d_map.size());
+  for (size_t i = 0; i < limit; ++i)
+    d_map[i] &= ~b.d_map[i];
+
+  return *this;
+}
+
+// Unite |b| into the current bitmap (which may thereby grow its capacity)
+BitMap& BitMap::operator|= (const BitMap& b)
+{
+  size_t limit = b.d_map.size();
+  if (b.capacity()>capacity())
+  {
+    limit = d_map.size();
+    d_capacity=b.capacity();
+    d_map.insert(d_map.end(),&b.d_map[limit],&*b.d_map.end());
+  }
+  for (size_t i = 0; i < limit; ++i)
+    d_map[i] |= b.d_map[i];
+
+  return *this;
+}
+
+// Perform exclusive or (XOR) of |b| into the current bitmap.
+BitMap& BitMap::operator^= (const BitMap& b)
+{
+  size_t limit = b.d_map.size();
+  if (b.capacity()>capacity())
+  {
+    limit = d_map.size();
+    d_capacity=b.capacity();
+    d_map.insert(d_map.end(),&b.d_map[limit],&*b.d_map.end());
+  }
+  for (size_t i = 0; i < limit; ++i)
+    d_map[i] ^= b.d_map[i];
+
+  return *this;
+}
+
+
+BitMap& BitMap::operator<<= (size_t delta) // increase position values by |delta|
+{
+  d_capacity += delta;
+  d_map.resize((d_capacity+position_bits)>>index_shift,0);
+
+  size_t delta_rem = delta & position_bits;
+  delta >>= index_shift; // must move by |delta| words, and then |delta_rem| bits
+  chunk_iterator start=d_map.begin(); // cannot be const_iterator; guess why
+  if (delta>0) // useless shifting |0| violates |std::copy_backward| requirements
+    start = std::copy_backward(d_map.begin(),d_map.end()-delta,d_map.end());
+  if (delta_rem>0 and not d_map.empty())
+  {
+    chunk_iterator it=d_map.end();
+    while (--it!=start) // reverse loop, omit initial
+    {
+      *it <<= delta_rem; // shift bits up
+      *it |= *(it-1) >> (chunk_bits-delta_rem); // bits shifted in
+    }
+    assert(it==start);
+    *it <<= delta_rem; // shift bits up in lowest copied word
+  }
+  std::fill(d_map.begin(),start,0ul);
+  return *this;
+}
+
+BitMap& BitMap::operator>>= (size_t delta) // decrease values by |delta|
+{
+  if (delta>=capacity())
+    return *this = BitMap(); // clear |d_capacity| and |d_map|
+  assert(not d_map.empty()); // since |capacity()>0| implies this
+  const size_t old_rem = d_capacity & position_bits;
+  d_capacity -= delta;
+  size_t delta_rem = delta & position_bits;
+  delta >>= index_shift; // must move by |delta| words, and then |delta_rem| bits
+  chunk_const_iterator stop=d_map.end();
+  if (delta>0) // useless shifting by |0| violates |std::copy| requirements
+    stop = std::copy(d_map.begin()+delta,d_map.end(),d_map.begin());
+  if (delta_rem>0)
+  {
+    --stop; // we need to stop
+    chunk_iterator it;
+    for (it=d_map.begin(); it!=stop; ++it)
+    {
+      *it >>= delta_rem; // shift bits down (to the right) inside the word
+      *it |= *(it+1) << (chunk_bits-delta_rem); // left part from next
+    }
+    assert(it==stop);
+    if (old_rem>delta_rem)
+    {
+      *it >>= delta_rem; // shift last bits down internally
+      ++stop; // not all infomation was shifted out of |*stop|, keep it
+    } // else we've already moved all its bits down, do drop |*tstop|
+  }
+  d_map.erase(stop,d_map.end());
+  return *this;
+}
+
+
+
+/*
+  Return |r| bits from position |n| as a |chunk_type| value
+
+  Precondition: |(n+r-1)%chunk_bits == n%chunk_bits + (r-1)|, in other words
+  no multiples $m$ of |chunk_bits| satisfy $n<m<n+r$. This is
+  ensured for instance when |r| divides both |chunk_bits| and |n|.
+
+  Thus the bits extracted are found in single element of |d_map|.
+
+  It is required that |n<capacity()|, but not that |n+r<=capacity()|; if the
+  latter fails, the return value is padded out with (leading) zero bits.
+*/
+auto BitMap::range(size_t n, unsigned r) const -> chunk_type
+{
+  size_t m = n >> index_shift; // index where data is stored
+
+  return (d_map[m] >> (n & position_bits)) & constants::lt_mask[r];
+
 }
 
 /*
@@ -467,14 +494,14 @@ void BitMap::set_range(size_t n, unsigned r, chunk_type a)
   Because of the nature of a bitmap, only constant iterators make sense (just
   like for iterators into |std::set|); one cannot "change the value" of an
   element at a given position because the position is determined by the value
-  (values are always increasing; in fact a small value-change could be
-  realised by swapping a set bit with neighboring unset bits, but that is of
-  course not what a non-constant iterator should allow doing). On the other
-  hand we may modify our bitmap |M| using this iterator |it|, notably to clear
-  the set bit |it| points at by |M.remove(*it)|. Unlike the situation for
-  |std::set|, such a removal does not invalidate the iterator |it| itself, so
-  it is not an invariant of the |BitMap::iterator| class that it always points
-  at a set bit.
+  (values are always increasing; in fact a small value-change could be realised
+  by swapping a set bit with neighboring unset bits, but that is of course not
+  what a non-constant iterator should allow doing). On the other hand we may
+  modify our bitmap |M| using this iterator |it|, notably to clear the set bit
+  |it| points at by |it.remove_target()|, which has the same effect as
+  |M.remove(*it)|. Unlike the situation for |std::set|, such a removal does not
+  invalidate the iterator |it| itself, so it is not an invariant of the
+  |BitMap::iterator| class that it always points at a set bit.
 
   It is well defined what happens when one inserts new elements into a |BitMap|
   while iterating with an iterator |it|: if the value inserted is greater than
@@ -493,35 +520,6 @@ void BitMap::set_range(size_t n, unsigned r, chunk_type a)
 ******************************************************************************/
 
 /*
-  Return an iterator pointing to the first set bit in the bitmap.
-
-  If the bitset is empty, this is will be equal to |end()|.
-*/
-auto BitMap::begin() const -> iterator
-{
-  size_t n=first(); // look up the first set bit
-  return iterator(d_map.begin()+(n>>index_shift),n,capacity());
-}
-
-/*
-  Return the past-the-end iterator for the bitmap.
-
-  This is only needed to allow using these iterators in generic algorithms
-  which typically do |for (iterator it=x.begin(), it!=x.end(); ++it)|. In code
-  that knows which kind of iterator this is, using |it()| as second clause is
-  to be preferred.
-
-  Note that only the middle argument |d_capacity| is of any importance, since
-  the only thing one can meaningfully do with end() is test for (in)equality.
-  The operator |++| below does not in fact advance to |d_chunk==d_map.end()|!
-*/
-auto BitMap::end() const -> iterator
-{
-  return iterator(d_map.end(),capacity(),capacity());
-}
-
-
-/*
   The address of the first member (set bit) of the bitmap,
   or past-the-end indicator |d_capacity| if there is no such.
 */
@@ -535,7 +533,7 @@ size_t BitMap::first() const
     }
 
   return capacity(); // signal that we are empty
-}
+} // |first|
 
 
 // We don't do reverse iterators, however reverse interation is easy
@@ -546,10 +544,10 @@ size_t BitMap::last () const
   size_t i = d_map.size();
   while (i-->0)
     if (chunk_type m=d_map[i]) // whether chunk is nonzero
-      return (i<<index_shift)+constants::lastBit(m);
+      return (i<<index_shift)+constants::last_bit(m);
 
   return capacity(); // signal that we are empty
-}
+} // |last|
 
 /*
   Decrement |n| until it points to a member of the bitset,
@@ -570,10 +568,10 @@ bool BitMap::back_up(size_t& n) const
     m=d_map[--i];
 
   if (m==0) return false;
-  n = (i<<index_shift)+constants::lastBit(m);
+  n = (i<<index_shift)+constants::last_bit(m);
 
   return true;
-}
+} // |back_up|
 
 
 /*
@@ -586,34 +584,34 @@ bool BitMap::back_up(size_t& n) const
   a bit when it should have halted at |d_capacity|.
 */
 
-auto BitMap::iterator::operator++ () -> iterator&
+auto BitMap::const_iterator::operator++ () -> const_iterator&
 {
-  const auto cur_pos = d_bitAddress & position_bits;
+  const auto cur_pos = bit_index & position_bits;
   chunk_type f = // current chunk masked to bits after current bit
-    *d_chunk & ~constants::leq_mask[cur_pos];
+    *chunk_it & ~constants::leq_mask[cur_pos];
 
   if (f!=0) { // if there is still some bit set in this chunk, jump to it
-    d_bitAddress += constants::first_bit(f)-cur_pos;
+    bit_index += constants::first_bit(f)-cur_pos;
     return *this;
   }
 
-  // if not, we're done with this chunk; we'll advance |d_chunk| at least once
-  d_bitAddress &= chunk_index_bits;  // prepare to advance by multiples of |longBits|
+  // if not, we're done with this chunk; we'll advance |chunk_it| at least once
+  bit_index &= chunk_index_bits; // prepare to advance by whole chunks
 
-  const auto old_chunk = d_chunk;
-  const auto limit = d_chunk + // offset to beyond-the-end of vector
-    ((d_capacity+position_bits-d_bitAddress) >> index_shift);
+  const auto old_chunk = chunk_it;
+  const auto limit = chunk_it + // offset to beyond-the-end of |d_map|
+    ((at_end+position_bits-bit_index) >> index_shift);
 
   do
-    if (++d_chunk==limit) // advance, test
-    { // we've run out of chunks, the value of |d_chunk| no longer matters
-      d_bitAddress = d_capacity; // so set beyond-the-end indication
+    if (++chunk_it==limit) // advance, test
+    { // we've run out of chunks, the value of |chunk_it| no longer matters
+      bit_index = at_end; // so set beyond-the-end indication
       return *this;
     }
-  while ((f=*d_chunk)==0); // pick up next chunck, repeat if it is entirely 0
+  while ((f=*chunk_it)==0); // pick up next chunck, repeat if it is entirely 0
 
   // now the bit to advance to is in the current chunk, and not out of bounds
-  d_bitAddress += ((d_chunk-old_chunk) << index_shift) + constants::first_bit(f);
+  bit_index += ((chunk_it-old_chunk) << index_shift) + constants::first_bit(f);
   return *this;
 }
 
@@ -623,33 +621,33 @@ auto BitMap::iterator::operator++ () -> iterator&
   incrementation. This operator can mostly by avoided, as |M.remove(*it++)|
   can safely be replaced by |M.remove(*it),++it|
 */
-auto BitMap::iterator::operator++ (int) -> iterator
+auto BitMap::const_iterator::operator++ (int) -> const_iterator
 {
-  BitMap::iterator tmp = *this;
+  auto tmp = *this;
   ++(*this);
   return tmp;
 }
 
-auto BitMap::iterator::operator-- () -> iterator&
+auto BitMap::const_iterator::operator-- () -> const_iterator&
 {
-  unsigned rem = d_bitAddress & position_bits;
-  d_bitAddress &= chunk_index_bits;
-  auto m = rem==0 ? 0 // avoid dereferencing |d_chunk|
-    : *d_chunk & constants::lt_mask[rem]; // masks out bit |rem| and larger
+  unsigned rem = bit_index & position_bits;
+  bit_index &= chunk_index_bits;
+  auto m = rem==0 ? 0 // avoid dereferencing |chunk_it|
+    : *chunk_it & constants::lt_mask[rem]; // masks out bit |rem| and larger
 
   if (m==0) // if not we can spare out some work
   {
-    const auto limit = d_chunk - (d_bitAddress >> index_shift);
-    while (m==0 and d_chunk>limit)
-      m=*--d_chunk;
+    const auto limit = chunk_it - (bit_index >> index_shift);
+    while (m==0 and chunk_it>limit)
+      m=*--chunk_it;
 
     if (m==0)
       throw std::runtime_error("BitMap iterator underflow");
-    d_bitAddress = (d_chunk - limit) << index_shift;
+    bit_index = (chunk_it - limit) << index_shift;
   }
-  d_bitAddress += constants::lastBit(m);
+  bit_index += constants::last_bit(m);
   return *this;
-}
+} // |operator--|
 
 
 // Instantiations

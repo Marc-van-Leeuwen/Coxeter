@@ -36,12 +36,13 @@ namespace constants {
 
   extern Ulong *eq_mask; // bit position |==i| masks, for |i<BITS(Ulong)|
   extern Ulong *lt_mask; // bit position |<i| masks, for |i<=BITS(Ulong)|
-  extern Ulong *leq_mask; // same for bit position |<=i| masks
+  extern Ulong *leq_mask; // bit position |<=i| masks, for |i<BITS(Ulong)|
   extern unsigned *firstbit; // |2^CHAR_BIT| "lowest set bit" positions
   extern unsigned *lastbit; // |2^CHAR_BIT| "highest set bit" positions
 
   void initConstants(); // set up pointers above, pointing into static arrays
   unsigned first_bit(Ulong f); // position first set bit, assumed to exist
+  unsigned last_bit(Ulong f); // position last set bit, assumed to exist
   unsigned firstBit(Ulong f); // first set bit, or |BITS(Ulong)| if none
   unsigned lastBit(Ulong f); // last set bit, or |BITS(Ulong)| if none
 

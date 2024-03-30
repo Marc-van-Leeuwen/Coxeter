@@ -724,7 +724,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   using EI = iterator::FilteredIterator
     <coxtypes::CoxNbr,klsupport::ExtrRow::const_iterator,MuFilter>;
   using BI = iterator::FilteredIterator
-    <Ulong,bitmap::BitMap::iterator,MuFilter>;
+    <Ulong,bitmap::BitMap::const_iterator,MuFilter>;
 
   const schubert::SchubertContext& p = schubert();
   klsupport::ExtrRow e;

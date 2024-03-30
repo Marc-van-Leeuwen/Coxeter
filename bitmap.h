@@ -76,8 +76,8 @@ class BitMap
   using size_type = size_t; // container capacity same type as |value_type|
 
 // iterators
+  class const_iterator;
   class iterator;
-  using const_iterator = iterator;
 
 // constructors and destructors
  BitMap() : d_capacity(0), d_map() {} // create a bitmap without capacity
@@ -161,13 +161,17 @@ class BitMap
 
   BitMap operator~ () const { return BitMap(*this).take_complement(); }
 
-  BitMap operator& (const BitMap& other) && { operator&=(other); return *this; }
+  BitMap operator& (const BitMap& other) && { return operator&=(other); }
 
   BitMap operator| (const BitMap& other) && { return operator|=(other); }
 
   BitMap operator^ (const BitMap& other) && { return operator^=(other); }
 
-  // bitwise cannot exploit |BitMap&& other|, as |other| allowed to be shorter
+  BitMap operator& (BitMap&& other) const & { return other &= *this; }
+
+  BitMap operator| (BitMap&& other) const & { return other &= *this; }
+
+  BitMap operator^ (BitMap&& other) const & { return other ^= *this; }
 
   BitMap operator& (const BitMap& other) const &
   { BitMap result(*this); result&=other; return result; }
@@ -187,7 +191,7 @@ class BitMap
   void extend_capacity(bool b); // extend capacity by |1|, adding member if |b|
 
   void fill(); // set all bits
-  void reset() { d_map.assign(d_map.size(),0ul);  } // clear all bits
+  void reset() { d_map.assign(d_map.size(),0ul); } // clear all bits
   void fill(size_t start,size_t stop); // set consecutive range of bits
   void clear(size_t start,size_t stop); // clear consecutive range of bits
   /*
@@ -246,17 +250,20 @@ class BitMap
 
   BitMap& take_complement ();
 
- // these operators allow argument to have less capacity than |*this|
-  bool operator&= (const BitMap&); // return whether result is non-empty
+  // these operators allow argument to have different capacity than |*this|
+  // in that case the capacity may change as indicated
 
-  BitMap& operator|= (const BitMap&);
+  BitMap& operator&= (const BitMap& b); // change capacity to |b|'s if smaller
 
-  BitMap& operator^= (const BitMap&);
+  BitMap& operator|= (const BitMap& b); // change capacity to |b|'s if greater
 
-  BitMap& andnot(const BitMap& b); // remove bits of |b|
+  BitMap& operator^= (const BitMap& b); // change capacity to |b|'s is smaller
 
-  BitMap& operator>>= (size_t delta); // shift right (decrease)
-  BitMap& operator<<= (size_t delta); // shift left (increase)
+  BitMap& andnot(const BitMap& b); // remove bits of |b|, keep capacity
+
+  // the following two adjust the capacity by |-delta| respectively |+delta|
+  BitMap& operator>>= (size_t delta); // shift bits right (decrease values)
+  BitMap& operator<<= (size_t delta); // shift bits left (increase values)
 
 // low level chunk access operations for speed
 
@@ -277,11 +284,6 @@ class BitMap
   // decrement |n| (at least once) until it points to a member; whether success
   bool back_up(size_t& n) const;
 
-  iterator begin() const;
-  iterator end() const;
-
-}; // |class BitMap|
-
   /* Iterator to traverse the \emph{set} bits (members present) of a BitMap.
 
   Because of the nature of a bitmap, only constant iterators make sense (just
@@ -301,43 +303,79 @@ class BitMap
   is no such. Therefore we included the data for the end of the bitmap in the
   iterator. This also allows the |operator()| internal test for exhaustion.
   */
-class BitMap::iterator // is really a const_iterator
-  : public std::iterator<std::forward_iterator_tag, size_t>
-{
-  chunk_const_iterator d_chunk; // point to current chunk
-  size_t d_bitAddress; // value returned if dereferenced
-  size_t d_capacity; // beyond-the-end bit-address, normally constant
+  class const_iterator
+    : public std::iterator<std::forward_iterator_tag, size_t>
+  {
+    chunk_const_iterator chunk_it; // point to current chunk
+    size_t bit_index; // value returned if dereferenced
+    size_t at_end; // beyond-the-end bit-address, normally constant
 
- public:
-// constructors and destructors
+   public:
+  // constructors and destructors
 
-  iterator(const iterator &j) = default; // copy constructor
+    const_iterator
+      (const chunk_const_iterator& p, size_t n, size_t c) // from raw data
+      : chunk_it(p)
+      , bit_index(n)
+      , at_end(c)
+    {}
 
-  iterator(const chunk_const_iterator& p, size_t n, size_t c) // from raw data
-    : d_chunk(p)
-    , d_bitAddress(n)
-    , d_capacity(c)
-  {}
+  // accessors
+    bool operator== (const const_iterator& i) const
+      { return bit_index == i.bit_index; } //  |chunk_it| is ignored!
+    bool operator!= (const const_iterator& i) const
+      { return bit_index != i.bit_index; } //  |chunk_it| is ignored!
+    bool operator() () const { return bit_index != at_end; }
 
-// assignment
-  iterator& operator= (const iterator& i) = default;
+    const value_type& operator* () const { return bit_index; }
 
-// accessors
-  bool operator== (const iterator& i) const
-    { return d_bitAddress == i.d_bitAddress; } //  |d_chunk| is ignored!
-  bool operator!= (const iterator& i) const
-    { return d_bitAddress != i.d_bitAddress; } //  |d_chunk| is ignored!
-  bool operator() () const { return d_bitAddress != d_capacity; }
+  // manipulators
+    const_iterator& operator++ ();
+    const_iterator operator++ (int);
 
-  const value_type& operator* () const { return d_bitAddress; }
+    const_iterator& operator-- (); // provided, but less useful than |++|
 
-// manipulators
-  iterator& operator++ ();
-  iterator operator++ (int);
+  protected:
+    chunk_type& target_chunk () const
+    { return const_cast<chunk_type&>(*chunk_it); }
 
-  iterator& operator-- ();
+  }; // |class const_iterator|
 
-}; // |class BitMap::iterator|
+  const_iterator begin() const { return iterator_at(first()); }
+  const_iterator end() const
+  { return const_iterator(d_map.end(),capacity(),capacity()); }
+
+  const_iterator iterator_at(size_t n) const
+  { return const_iterator(d_map.begin()+(n>>index_shift),n,capacity()); }
+
+  class iterator : public const_iterator
+  {
+  public:
+    using const_iterator::const_iterator; // use the same constuctor(s)
+  // accessors
+    bool operator== (const iterator& i) const
+    { return const_iterator::operator==(i); }
+    bool operator!= (const iterator& i) const
+    { return const_iterator::operator!=(i); }
+
+  // manipulators
+    iterator& operator++ () { const_iterator::operator++(); return *this; }
+    iterator operator++ (int) { auto tmp=*this; ++(*this); return tmp; }
+
+    iterator& operator-- () { const_iterator::operator--(); return *this; }
+
+    void remove_target() const
+    { target_chunk() &=	~constants::eq_mask[*(*this)&position_bits]; }
+  }; // |class iterator|
+
+  iterator begin() { return iterator_at(first()); }
+  iterator end() { return iterator(d_map.end(),capacity(),capacity()); }
+
+  iterator iterator_at(size_t n)
+  { return iterator(d_map.begin()+(n>>index_shift),n,capacity()); }
+
+}; // |class BitMap|
+
 
 } // |namespace bitmap|
 

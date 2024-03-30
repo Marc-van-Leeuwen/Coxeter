@@ -91,19 +91,26 @@ unsigned firstBit(Ulong f) // bit position of the first set bit in |f|
 }
 
 
+// get first 'set' bit position in cases where it is known to exist
+unsigned last_bit(Ulong f) // bit position of the first set bit in |f|
+{
+  assert(f!=0);
+  unsigned shift = 0;
+  if ((f&0xFFFFFFFF00000000)!=0)
+    shift=32,f>>=32;
+  if ((f&0xFFFF0000)!=0)
+    shift+=16,f>>=16;
+  if ((f&0xFF00)!=0)
+    shift+=8,f>>=8;
+  return shift + lastbit[f&0xFF];
+}
+
 unsigned lastBit(Ulong f) // bit position of the first set bit in |f|
 {
   if (f == 0)
     return BITS(Ulong); // "out of range" value: no such set bit
 
-  unsigned shifted = 0;
-  while ((f&~CHARFLAGS)!=0)
-  {
-    shifted += CHAR_BIT;
-    f >>= CHAR_BIT;
-  }
-
-  return shifted + lastbit[f];
+  return last_bit(f);
 }
 
 };
