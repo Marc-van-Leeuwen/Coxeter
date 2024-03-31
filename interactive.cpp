@@ -123,7 +123,8 @@ OutputFile::~OutputFile()
     interactively (type Y);
   - getCoxFileName(s) : gets a filename from the user, presumably
     containing the data for the coxeter matrix;
-  - getCoxWord(W) : gets a coxword from the user;
+  - getCoxWord(W) : gets a CoxWord from the user;
+  - getCox_word(W) : gets a Cox_word from the user;
   - getGenerator(W) : gets a generator from the user;
   - getLength(kl) : gets lengths for unequal parameters;
   - getRank(W) : gets the rank of the Coxeter group;
@@ -291,14 +292,13 @@ void getCoxFileName(std::string& str)
 
 namespace interactive {
 
-const coxtypes::CoxWord& getCoxWord(coxgroup::CoxGroup *W)
 
 /*
   This function gets a coxword from the user. If the input is not
   acceptable, it points at the first mistake and asks for better
   input.
 */
-
+const coxtypes::CoxWord& getCoxWord(coxgroup::CoxGroup *W)
 {
   static interface::ParseInterface P;
 
@@ -321,6 +321,31 @@ const coxtypes::CoxWord& getCoxWord(coxgroup::CoxGroup *W)
   while (ERRNO);
 
   return P.a[0];
+}
+
+coxtypes::Cox_word getCox_word(coxgroup::CoxGroup *W)
+{
+  interface::ParseInterface P;
+
+  do
+  {
+    if (ERRNO)
+    {
+      P.str[P.offset] = '\0';
+      Error(ERRNO,P.str.c_str());
+    }
+    getInput(stdin,P.str,P.offset);
+    if (P.str[P.offset] == '?') {
+      ERRNO = ABORT;
+      return coxtypes::Cox_word();
+    }
+    W->parse(P);
+    if (P.offset != P.str.length())
+      ERRNO = PARSE_ERROR;
+  }
+  while (ERRNO);
+
+  return P.first_word();
 }
 
 

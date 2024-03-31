@@ -104,6 +104,7 @@ class KLSupport {
   void applyIPermutation(coxtypes::CoxNbr y, const bits::Permutation& a)
     { bits::right_permute (*d_extrList[y],a); }
   coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
+  coxtypes::CoxNbr extend_context(const coxtypes::Cox_word& g);
   void permute(const bits::Permutation& a);
   void revertSize(const Ulong& n);
 

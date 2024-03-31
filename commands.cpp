@@ -1116,29 +1116,24 @@ void coatoms_f()
   }
 }
 
+
+//  Get an element from the user, and prints out its normal form.
 void compute_f()
-
-/*
-  Gets an element from the user, and prints out its normal form.
-*/
-
 {
-  static coxtypes::CoxWord g(0);
-
   printf("enter your element (finish with a carriage return) :\n");
-  g = interactive::getCoxWord(W);
+  coxtypes::Cox_word g = interactive::getCox_word(W);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
-  W->normalForm(g);
+  W->to_normal_form(g);
   W->print(stdout,g);
   if (auto* Ws = dynamic_cast<fcoxgroup::SmallCoxGroup*> (W)) {
     coxtypes::CoxNbr x = 0;
     Ws->prodD(x,g);
     printf(" (#%lu)",static_cast<Ulong>(x));
   }
-  coxtypes::CoxNbr x = W->contextNumber(g);
+  coxtypes::CoxNbr x = W->context_number(g);
   if (x != coxtypes::undef_coxnbr)
     printf(" (%s%lu)","%",static_cast<Ulong>(x));
   printf("\n");
@@ -1299,31 +1294,30 @@ void interface_f()
 
 void interval_f()
 {
-  coxtypes::CoxWord g(0);
-  coxtypes::CoxWord h(0);
 
   fprintf(stdout,"first : ");
-  g = interactive::getCoxWord(W);
+  coxtypes::Cox_word g = interactive::getCox_word(W);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
   fprintf(stdout,"second : ");
-  h = interactive::getCoxWord(W);
+  coxtypes::Cox_word h = interactive::getCox_word(W);
   if (ERRNO) {
     Error(ERRNO);
     return;
   }
 
-  if (not W->inOrder(g,h)) {
+  if (not W->Bruhat_leq(g,h))
+  {
     fprintf(stderr,"the two elements are not in order\n");
     return;
   }
 
-  W->extendContext(h);
+  W->extend_context(h);
 
-  coxtypes::CoxNbr x = W->contextNumber(g);
-  coxtypes::CoxNbr y = W->contextNumber(h);
+  coxtypes::CoxNbr x = W->context_number(g);
+  coxtypes::CoxNbr y = W->context_number(h);
 
   interactive::OutputFile file;
 

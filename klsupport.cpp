@@ -291,7 +291,65 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
   revertSize(prev_size);
 
   return coxtypes::undef_coxnbr;
-}
+} // |extendContext|
+
+coxtypes::CoxNbr KLSupport::extend_context(const coxtypes::Cox_word& g)
+{
+  coxtypes::CoxNbr prev_size = size();
+  schubert::SchubertContext& p = *d_schubert;
+
+  coxtypes::CoxNbr x = p.extend_context(g); // this increases |size()|
+
+  if (error::ERRNO) /* error::ERRNO is EXTENSION_FAIL */
+    return coxtypes::undef_coxnbr;
+
+  error::CATCH_MEMORY_OVERFLOW = true;
+
+  d_extrList.resize(size()); // extend with values |std::unique_ptr<>(nullptr)|
+  if (error::ERRNO)
+    goto revert;
+  d_inverse.resize(size(),coxtypes::undef_coxnbr);
+  if (error::ERRNO)
+    goto revert;
+  d_last.resize(size(),coxtypes::undef_generator);
+  if (error::ERRNO)
+    goto revert;
+  d_involution.set_capacity(size());
+  if (error::ERRNO)
+    goto revert;
+  recursively_allocated.set_capacity(size());
+
+  error::CATCH_MEMORY_OVERFLOW = false;
+
+  // extend the list of inverses in the old part
+  for (coxtypes::CoxNbr x = 0; x < size(); ++x)
+    if (inverse(x) == coxtypes::undef_coxnbr) // old: maybe, new: certain
+    { // try to extend to |x|
+      coxtypes::Generator s = p.firstRDescent(x);
+      coxtypes::CoxNbr xs = p.rshift(x,s);
+      if (inverse(xs) != coxtypes::undef_coxnbr)
+      {
+	d_inverse[x] = p.lshift(inverse(xs),s);
+	d_involution.set_to(x,x == d_inverse[x]);
+      }
+    }
+
+  // extend list of last letters in standard (ShortLex minimal) word
+  for (coxtypes::CoxNbr x = prev_size; x < size(); ++x)
+  {
+    coxtypes::Generator s = p.firstLDescent(x);
+    coxtypes::CoxNbr sx = p.lshift(x,s);
+    d_last[x] = sx==0 ? s : d_last[sx];
+  }
+
+  return x;
+
+ revert:
+  error::CATCH_MEMORY_OVERFLOW = false;
+  revertSize(prev_size);
+
+  return coxtypes::undef_coxnbr;
+} // |extend_context|
 
 
 /*

@@ -1133,12 +1133,8 @@ std::string& appendTwosided(std::string& str, const Lflags& f, const Interface& 
   return str;
 }
 
+// Print the CoxWord g to the file in GI's format.
 void print(FILE *file, const coxtypes::CoxWord& g, const GroupEltInterface& GI)
-
-/*
-  Prints the CoxWord g to the file in GI's format.
-*/
-
 {
   io::print(file,GI.prefix);
 
@@ -1146,6 +1142,21 @@ void print(FILE *file, const coxtypes::CoxWord& g, const GroupEltInterface& GI)
     coxtypes::Generator s = g[j]-1;
     io::print(file,GI.symbol[s]);
     if (j+1 < g.length())  /* more to come */
+      io::print(file,GI.separator);
+  }
+
+  io::print(file,GI.postfix);
+}
+
+void print(FILE *file,
+	   const coxtypes::Cox_word& g, const GroupEltInterface& GI)
+{
+  io::print(file,GI.prefix);
+
+  for (const coxtypes::CoxLetter& s : g)
+  {
+    io::print(file,GI.symbol[s]);
+    if (&s!=&g.back())  // there is more to come
       io::print(file,GI.separator);
   }
 

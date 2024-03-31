@@ -34,7 +34,7 @@ namespace fcoxgroup {
   class GeneralFSRCoxGroup;
   class SmallCoxGroup;
   class GeneralSCoxGroup;
-  typedef coxtypes::CoxNbr DenseArray;
+  using DenseArray = coxtypes::CoxNbr;
 };
 
 /******** function declarations *********************************************/
@@ -117,6 +117,7 @@ class FiniteCoxGroup : public coxgroup::CoxGroup
     (coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const;
   int prodArr(coxtypes::CoxArr& a, coxtypes::Generator s) const;
   int prodArr(coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const;
+  int prodArr(coxtypes::CoxArr& a, const coxtypes::Cox_word& g) const;
 
 // manipulators
 
@@ -215,10 +216,12 @@ class SmallCoxGroup : public FiniteSmallRankCoxGroup {
 /* accessors */
   const coxtypes::CoxArr& assign(coxtypes::CoxArr& a, const DenseArray& x) const;
   void assign(DenseArray& x, const coxtypes::CoxArr& a) const;
+  DenseArray compress(const coxtypes::CoxArr& a) const;
   bool parseDenseArray(interface::ParseInterface& P) const;
   virtual bool parseGroupElement(interface::ParseInterface& P) const;
   int prodD(coxtypes::CoxWord& g, const DenseArray& x) const;
   int prodD(DenseArray& x, const coxtypes::CoxWord& g) const;
+  int prodD(DenseArray& x, const coxtypes::Cox_word& g) const;
 };
 
  class GeneralSCoxGroup : public SmallCoxGroup { /* leaf class */

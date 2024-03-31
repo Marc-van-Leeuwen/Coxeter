@@ -138,7 +138,10 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
   virtual int insert(coxtypes::CoxWord& g, const coxtypes::Generator& s) const;      /* inlined */
   virtual const coxtypes::CoxWord& inverse(coxtypes::CoxWord& g) const;              /* inlined */
-  virtual const coxtypes::CoxWord& normalForm(coxtypes::CoxWord& g) const;           /* inlined */
+  virtual const coxtypes::CoxWord& normalForm(coxtypes::CoxWord& g) const
+  { return mintable().normalForm(g,interface().order()); }
+  coxtypes::Cox_word& to_normal_form(coxtypes::Cox_word& g) const
+  { return mintable().normal_form(g,interface().order()); }
   virtual const coxtypes::CoxWord& power(coxtypes::CoxWord& g, const Ulong& m) const;
                                                                  /* inlined */
   virtual int prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const;        /* inlined */
@@ -154,11 +157,15 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
 /******** Chapter II : Schubert context **************************************/
 
-  virtual coxtypes::CoxNbr contextNumber(const coxtypes::CoxWord& g) const;           /* inlined */
+  virtual coxtypes::CoxNbr context_number(const coxtypes::CoxWord& g) const
+  { return schubert().context_number(g); }
+  virtual coxtypes::CoxNbr context_number(const coxtypes::Cox_word& g) const
+  { return schubert().context_number(g); }
   coxtypes::CoxNbr contextSize() const;                                     /* inlined */
   coxtypes::Length length(const coxtypes::CoxNbr& x) const;                           /* inlined */
 
   virtual coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
+  virtual coxtypes::CoxNbr extend_context(const coxtypes::Cox_word& g);
   virtual void permute(const bits::Permutation& a);
 
   virtual Lflags descent(const coxtypes::CoxNbr& x) const;                  /* inlined */
@@ -181,10 +188,17 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
     { return schubert().hasse(x); }
   virtual bitmap::BitMap closure(const coxtypes::CoxNbr& x) const
     { return schubert().closure(x); }
-  virtual bool inOrder(const coxtypes::CoxWord& h, const coxtypes::CoxWord& g) const; /* inlined */
-  virtual bool inOrder(list::List<coxtypes::Length>& a, const coxtypes::CoxWord& h, const coxtypes::CoxWord& g)
-    const;                                                        /* inlined */
-  virtual bool inOrder(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) const;   /* inlined */
+  virtual bool inOrder(const coxtypes::CoxWord& h, const coxtypes::CoxWord& g)
+    const { return mintable().inOrder(g,h); }
+  virtual bool Bruhat_leq(const coxtypes::Cox_word& h,
+			  const coxtypes::Cox_word& g)
+    const { return mintable().Bruhat_leq(g,h); }
+  virtual bool inOrder(list::List<coxtypes::Length>& a,
+		       const coxtypes::CoxWord& h,
+		       const coxtypes::CoxWord& g) const
+   { return mintable().inOrder(a,g,h); }
+  virtual bool inOrder(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+    const  { return schubert().inOrder(x,y); }
   virtual bool isDihedral(const coxtypes::CoxWord& g) const;
 
 /******** Chapter IV : Kazhdan-Lusztig functions *****************************/
@@ -222,7 +236,10 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
   std::string& append(std::string& str, const GenSet& f) const;            /* inlined */
 
   void printSymbol(FILE* file, const coxtypes::Generator& s) const;        /* inlined */
-  void print(FILE* file, const coxtypes::CoxWord& g) const;                /* inlined */
+  void print(FILE* file, const coxtypes::CoxWord& g) const
+  { return interface().print(file,g); }
+  void print(FILE* file, const coxtypes::Cox_word& g) const
+  { return interface().print(file,g); }
   void print(FILE* file, const coxtypes::CoxNbr& x) const;                 /* inlined */
   void printFlags(FILE* file, const GenSet& f) const;            /* inlined */
 
@@ -273,8 +290,6 @@ inline int CoxGroup::insert(coxtypes::CoxWord& g, const coxtypes::Generator& s) 
  {return mintable().insert(g,s,ordering());}
 inline const coxtypes::CoxWord& CoxGroup::inverse(coxtypes::CoxWord& g) const
  {return mintable().inverse(g);}
-inline const coxtypes::CoxWord& CoxGroup::normalForm(coxtypes::CoxWord& g) const
- {return mintable().normalForm(g,interface().order());}
 
 inline const coxtypes::CoxWord& CoxGroup::power(coxtypes::CoxWord& g, const Ulong& m) const
  {return mintable().power(g,m);}
@@ -294,8 +309,6 @@ inline GenSet CoxGroup::rdescent(const coxtypes::CoxWord& g) const
 
 /* Chapter II */
 
-inline coxtypes::CoxNbr CoxGroup::contextNumber(const coxtypes::CoxWord& g) const
- {return schubert().contextNumber(g);}
 inline coxtypes::CoxNbr CoxGroup::contextSize() const
  {return d_klsupport.size();}
 inline coxtypes::Length CoxGroup::length(const coxtypes::CoxNbr& x) const
@@ -316,14 +329,6 @@ inline int CoxGroup::lprod(coxtypes::CoxNbr& x, const coxtypes::Generator& s) co
 
 /* Chapter III */
 
-inline bool CoxGroup::inOrder(const coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const
- {return mintable().inOrder(g,h);}
-inline bool CoxGroup::inOrder(list::List<coxtypes::Length>& a,
-			      const coxtypes::CoxWord& g,
-			      const coxtypes::CoxWord& h) const
- {return mintable().inOrder(a,g,h);}
-inline bool CoxGroup::inOrder(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) const
- {return schubert().inOrder(x,y);}
 
 /* Chapter V */
 
@@ -339,8 +344,6 @@ inline std::string& CoxGroup::append(std::string& str, const GenSet& f) const
 
 inline void CoxGroup::printSymbol(FILE* file, const coxtypes::Generator& s)
   const {return interface::printSymbol(file,s,interface());}
-inline void CoxGroup::print(FILE* file, const coxtypes::CoxWord& g) const
- {return interface().print(file,g);}
 inline void CoxGroup::print(FILE* file, const coxtypes::CoxNbr& x) const
  {return schubert().print(file,x,interface());}
 inline void CoxGroup::printFlags(FILE* file, const GenSet& f) const

@@ -48,14 +48,17 @@ namespace {
   groups. There are two representations of group elements which are more
   compact than the CoxWord representation.
 
-  The first one, which will work for any rank <= 255, represents the elements
-  as arrays of rank coxtypes::ParNbr's. The computations in this representation are
-  made through a cascade of small transducers. The drawback of this
-  representation is that the size of the automata depends strongly on the
-  choice of ordering (as opposed to the minimal root machine, which is
-  completely canonical.)
+  The first one, which will work for any rank <= 255, represents the elements as
+  arrays of |rank| |coxtypes::ParNbr|'s. The computations in this representation
+  are made through a cascade of small transducers. The drawback of this
+  representation is that the size of the automata depends strongly on the choice
+  of ordering (as opposed to the minimal root machine, which is completely
+  canonical.)
 
-  ...
+  [Fokko never came around to mention the second representation. Maybe he wanted
+  to mention |DenseArray| which is a mixed-radix interpretation of the above
+  array of small numbers, packing them all into a single |unsigned int| value.
+ ...
 
   Our allocation of workspace avoids having to check the sizes at each
   operation; it is not so clear however if this really makes a difference.
@@ -367,17 +370,26 @@ int FiniteCoxGroup::prodArr(coxtypes::CoxArr& a, coxtypes::Generator s) const
 }
 
 
-int FiniteCoxGroup::prodArr(coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const
 
-/*
-  Shifts a by the whole string g. Returns the increase in length.
-*/
-
+// Shifts |a| by the whole string |g|. Returns the increase in length.
+int FiniteCoxGroup::prodArr
+  (coxtypes::CoxArr& a, const coxtypes::CoxWord& g) const
 {
   int l = 0;
 
   for (coxtypes::Length j = 0; g[j]; ++j)
     l += prodArr(a,g[j]-1);
+
+  return l;
+}
+
+int FiniteCoxGroup::prodArr
+  (coxtypes::CoxArr& a, const coxtypes::Cox_word& g) const
+{
+  int l = 0;
+
+  for (auto s : g)
+    l += prodArr(a,s);
 
   return l;
 }
@@ -893,12 +905,10 @@ GeneralSCoxGroup::~GeneralSCoxGroup()
 
 {}
 
-const coxtypes::CoxArr& SmallCoxGroup::assign(coxtypes::CoxArr& a, const DenseArray& d_x) const
 
-/*
-  Unpacks the DenseArray x into a.
-*/
-
+// Unpacks the |DenseArray x| into |a|.
+const coxtypes::CoxArr& SmallCoxGroup::assign
+  (coxtypes::CoxArr& a, const DenseArray& d_x) const
 {
   const transducer::Transducer& T = d_transducer[0];
   DenseArray x = d_x;
@@ -912,12 +922,9 @@ const coxtypes::CoxArr& SmallCoxGroup::assign(coxtypes::CoxArr& a, const DenseAr
   return a;
 }
 
+
+// Packs the array |a| into |x|.
 void SmallCoxGroup::assign(DenseArray& x, const coxtypes::CoxArr& a) const
-
-/*
-  Packs the array a into x.
-*/
-
 {
   x = 0;
 
@@ -926,6 +933,19 @@ void SmallCoxGroup::assign(DenseArray& x, const coxtypes::CoxArr& a) const
     x += a[X->rank()-1];
   }
 }
+
+DenseArray SmallCoxGroup::compress(const coxtypes::CoxArr& a) const
+{
+  DenseArray x = 0;
+
+  for (const transducer::FiltrationTerm* X = transducer(); X; X = X->next())
+  {
+    x *= X->size();
+    x += a[X->rank()-1];
+  }
+  return x;
+}
+
 
 bool SmallCoxGroup::parseDenseArray(interface::ParseInterface& P) const
 
@@ -1052,14 +1072,11 @@ int SmallCoxGroup::prodD(coxtypes::CoxWord& g, const DenseArray& d_x) const
   return l;
 }
 
+
+  // Mulitply |x| by |g|
 int SmallCoxGroup::prodD(DenseArray& x, const coxtypes::CoxWord& g) const
-
-/*
-  Does the multiplication of x by g.
-*/
-
 {
-  static list::List<coxtypes::ParNbr> al(0);
+  static list::List<coxtypes::ParNbr > al(0);
 
   al.setSize(rank());
   coxtypes::CoxArr a = al.ptr();
@@ -1069,6 +1086,18 @@ int SmallCoxGroup::prodD(DenseArray& x, const coxtypes::CoxWord& g) const
 
   return l;
 }
+
+int SmallCoxGroup::prodD(DenseArray& x, const coxtypes::Cox_word& g) const
+{
+  containers::vector<coxtypes::ParNbr> buf(rank());
+  coxtypes::CoxArr a = &buf[0];
+  assign(a,x); // expand into |buf|
+  int l = prodArr(a,g);
+  x = compress(a);
+
+  return l;
+}
+
 
 };
 

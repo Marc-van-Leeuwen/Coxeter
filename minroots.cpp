@@ -6,6 +6,7 @@
 */
 
 #include "minroots.h"
+#include "sl_list.h"
 
 namespace {
   using namespace minroots;
@@ -1036,6 +1037,7 @@ void InitMinTable::newMinRoot(const graph::CoxGraph& G, MinNbr r, coxtypes::Gene
   - inverse(g) : transforms g into its inverse;
   - isDescent(g,s) : tels whether or not gs < g;
   - normalForm(g,order) : transforms g into the shortlex normal form for order;
+  - normal_form(g,order): transforms g into the shortlex normal form for order;
   - prod(g,s),prod(g,h) : transforms g into gs (gh);
   - reduced(g,h) : writes in g a reduced expression for the string h;
 
@@ -1159,8 +1161,6 @@ void MinTable::fill(const graph::CoxGraph& G)
   T->fillMinTable(G);
 }
 
-int MinTable::insert(coxtypes::CoxWord& g, const coxtypes::Generator& s,
-		     const bits::Permutation& order) const
 
 /*
   This function is like prod below, except that it is now assumed that
@@ -1179,6 +1179,8 @@ int MinTable::insert(coxtypes::CoxWord& g, const coxtypes::Generator& s,
   As below, the return value is +1 if gs is reduced, -1 otherwise.
 */
 
+int MinTable::insert(coxtypes::CoxWord& g, const coxtypes::Generator& s,
+		     const bits::Permutation& order) const
 {
   MinNbr r = s;
   coxtypes::Generator i = s;
@@ -1212,7 +1214,40 @@ int MinTable::insert(coxtypes::CoxWord& g, const coxtypes::Generator& s,
   return 1;
 }
 
-bool MinTable::inOrder(const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_h) const
+int MinTable::insert(back_word& rev_word,
+		     const coxtypes::Generator& s,
+		     const bits::Permutation& order) const
+{
+  coxtypes::Generator i = s;
+  auto pos = rev_word.begin();
+
+  for (auto it = rev_word.begin(); not rev_word.at_end(it); ++it)
+  {
+    MinNbr r = min(r,*it);
+
+    if (r == not_positive) { /* reduction */
+      rev_word.erase(it);
+      return -1;
+    }
+
+    if (r < rank() and order[r] < order[*it])
+    {
+      // record possible insertion |r| before our letter, so reversed after |it|
+      i = r;
+      pos = std::next(it);
+    }
+
+    if (r == not_minimal) // no better insertions to come
+      break;
+  } // |for(j)|
+
+  // if we get here g.s is reduced
+
+  rev_word.insert(pos,i);
+
+  return 1;
+}
+
 
 /*
   This function tells whether g <= h using the well-known elementary
@@ -1221,7 +1256,7 @@ bool MinTable::inOrder(const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_
 
   As always, it is assumed that g and h are reduced expressions.
 */
-
+bool MinTable::inOrder(const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_h) const
 {
   coxtypes::CoxWord g(d_g);
   coxtypes::CoxWord h(d_h);
@@ -1235,6 +1270,25 @@ bool MinTable::inOrder(const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_
    h.erase(h.length()-1);
 
    return inOrder(g,h);
+}
+
+bool MinTable::Bruhat_leq
+  (const coxtypes::Cox_word& g, const coxtypes::Cox_word& h) const
+{
+  back_word bw;
+  for (coxtypes::Generator s : g)
+    bw.push_front(s);
+
+  auto l=h.size();
+  while (l>0)
+  {
+    if (bw.size()>l)
+      return false; // no hope for relation
+    coxtypes::Generator s = h[--l]; // last effective term of h
+    if (is_descent(bw,s))
+      multiply(bw,s);
+  }
+  return bw.empty();
 }
 
 
@@ -1299,9 +1353,7 @@ const coxtypes::CoxWord& MinTable::inverse(coxtypes::CoxWord& g) const
 
 
 
-/*
-  Returns true if s is a descent generator of g, false otherwise.
-*/
+// Whether |s| is a descent generator of |g|.
 bool MinTable::isDescent
   (const coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 {
@@ -1323,15 +1375,32 @@ bool MinTable::isDescent
   return false;
 }
 
+bool MinTable::is_descent (const back_word& bw, coxtypes::Generator s) const
+{
+  MinNbr r = s;
+
+  for (coxtypes::Generator t : bw)
+  {
+    r = min(r,t);
+    if (r == not_positive) // found reduction
+      return true;
+    if (r == not_minimal) // no reduction
+      return false;
+  }
+
+  // if we get here $g.s$ is reduced
+  return false;
+}
+
+
+
+/*
+  Transform |g| into its shortlex normal form (collating by |order|) by a
+  sequence of insertions. As always, it is assumed that |g| is reduced.
+*/
 
 const coxtypes::CoxWord& MinTable::normalForm
   (coxtypes::CoxWord& g, const bits::Permutation& order) const
-
-/*
-  Transforms g into its shortlex normal form (as defined by order) by a
-  sequence of insertions. As always, it is assumed that g is reduced.
-*/
-
 {
   Ulong p = g.length();
 
@@ -1342,6 +1411,18 @@ const coxtypes::CoxWord& MinTable::normalForm
   for (Ulong j = 0; j < p; ++j)
     insert(g,g[j+1]-1,order);
 
+  return g;
+}
+
+coxtypes::Cox_word& MinTable::normal_form
+  (coxtypes::Cox_word& g, const bits::Permutation& order) const
+{
+  back_word rev_word;
+  for (auto s : g)
+    insert(rev_word,s,order);
+
+  static_cast< containers::vector<coxtypes::Generator>& >(g) =
+    std::move(rev_word).reversed().to_vector();
   return g;
 }
 
@@ -1378,14 +1459,12 @@ const coxtypes::CoxWord& MinTable::power(coxtypes::CoxWord& g, const Ulong& m) c
   return g;
 }
 
-int MinTable::prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 
 /*
-  This is the fundamental function provided by the mintable structure. It
-  takes as input a coxword g, assumed to be reduced, as all words in
-  this program, an transforms it into gs by doing an appropriate insertion
-  or deletion. It returns +1 if the length goes up, -1 if the length
-  goes down.
+  The fundamental method provided by the mintable structure. It takes as input a
+  coxword g, assumed to be reduced, as all words in this program, an transforms
+  it into gs by doing an appropriate insertion or deletion. It returns +1 if the
+  length goes up, -1 if the length goes down.
 
   As we are not concerned about normal forms, we always insert at the
   end --- this is a bit more efficient. To insert into a normal form,
@@ -1401,7 +1480,7 @@ int MinTable::prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const
   --- the main theorem in B&H --- is that when we reach a value not_minimal
   in the mintable, we can stop altogether : the word is reduced.
 */
-
+int MinTable::prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const
 {
   MinNbr r = s;
   coxtypes::Length p = g.length();
@@ -1424,6 +1503,28 @@ int MinTable::prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const
   g.setLength(p+1);
   g[p] = s+1;
   g[p+1] = '\0';
+  return 1;
+}
+
+int MinTable::multiply (back_word& g, const coxtypes::Generator& s) const
+{
+  MinNbr r = s;
+
+  for (auto it=g.begin(); not g.at_end(it); ++it)
+    {
+      coxtypes::Generator t = *it;
+      r = min(r,t);
+      if (r == not_positive)
+      { // found reduction
+	g.erase(it);
+	return -1;
+      }
+      if (r == not_minimal) // no reduction
+	break;
+    }
+
+  // if we get here $g.s$ is reduced
+  g.push_front(s);
   return 1;
 }
 

@@ -84,16 +84,16 @@ CoxWord& CoxWord::erase(const Length& j)
   return *this;
 }
 
-CoxWord& CoxWord::insert(const Length& j, const CoxLetter& a)
 
 /*
-  Inserts a at the j-th place in g.
+  Insert |a| at the j-th place in g.
 
   NOTE : care should be exercised in applying this function, that the result
   be reduced; otherwise we would violate the basic principle that only
   reduced words enter the program.
 */
 
+CoxWord& CoxWord::insert(const Length& j, const CoxLetter& a)
 {
   d_list.setSize(d_list.size()+1);
   d_list.setData(d_list.ptr()+j,j+1,d_list.size()-1-j);

@@ -148,16 +148,14 @@ namespace schubert {
 */
 SchubertContext::SchubertContext(const graph::CoxGraph& G)
   : d_graph(G)
-  , d_rank(G.rank())
-  , d_maxlength(0)
-  , d_size(1)
   , d_length(1,0)
   , d_hasse(1,CoxNbrList())
   , d_descent(1,Lflags())
-  , d_shift(1,2*d_rank,coxtypes::undef_coxnbr)
+  , d_shift(1,2*rank(),coxtypes::undef_coxnbr)
   , d_star(0,2*nStarOps()) // rows are filled on demand
-  , d_downset(2*d_rank,bitmap::BitMap(1))
+  , d_downset(2*rank(),bitmap::BitMap(1))
   , d_parity{bitmap::BitMap(1),bitmap::BitMap(1)}
+  , d_maxlength(0)
 {
   d_parity[0].insert(0);
 }
@@ -165,26 +163,51 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
 
 /******** accessors ********************************************************/
 
-
-/*
-  Append to |g| the ShortLex normal form of x. The normal form is
-  easily obtained using the left descent sets.
-
-  NOTE : it is the programmer's responsibilty when using this function, to
-  guarantee that the result is reduced. Otherwise, use "prod".
-*/
-coxtypes::CoxWord& SchubertContext::append
-  (coxtypes::CoxWord& g, coxtypes::CoxNbr d_x) const
+bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
 {
-  coxtypes::CoxNbr x = d_x;
+  assert(x<size());
+  bitmap::BitMap result(size()); // full size probably needed by callers
+  result.insert(0);
+  CoxNbrList elements {0}; // enumeration of |result| for faster iteration
 
-  while (x>0) {
-    coxtypes::Generator s = firstLDescent(x);
-    g.append(s+1);
+  for (auto s : word(x))
+    spread_subset(result,elements,s);
+
+  return result;
+}
+
+// |q| and |elements| get updated in parallel, as in |bits::SubSet|, for speed
+void SchubertContext::spread_subset
+  (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s) const
+{
+  // ensure, vitally, that no reallocation will occur
+  elements.reserve(q.capacity());
+  const auto initial_end = elements.end(); // so this iterator remains valid.
+
+  for (auto it = elements.begin(); it!=initial_end; ++it) // visit old elements
+  {
+    const coxtypes::CoxNbr candidate = rshift(*it,s);
+    if (not q.is_member(candidate)) // actually only excludes old elements
+    {
+      q.insert(candidate); // may or may not be new
+      elements.push_back(candidate);
+    }
+  }
+}
+
+// The ShortLex normal form of |x|
+coxtypes::Cox_word SchubertContext::word (coxtypes::CoxNbr x) const
+{
+  coxtypes::Cox_word result; result.reserve(length(x));
+
+  while (x>0)
+  {
+    coxtypes::Generator s = first_descent<'l'>(x);
+    result.push_back(s);
     x = lshift(x,s);
   }
 
-  return g;
+  return result;
 }
 
 
@@ -192,7 +215,8 @@ coxtypes::CoxWord& SchubertContext::append
   This functions returns the number corresponding to g in the current
   context; returns coxtypes::undef_coxnbr if g is not in the context.
 */
-coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) const
+coxtypes::CoxNbr SchubertContext::context_number
+  (const coxtypes::CoxWord& g) const
 {
   coxtypes::CoxNbr x = 0;
 
@@ -207,50 +231,21 @@ coxtypes::CoxNbr SchubertContext::contextNumber(const coxtypes::CoxWord& g) cons
   return x;
 }
 
-
-// the following function uses a double representation |q|,|elements| for speed
-// iteration is over (initial) elements, (old) membership is tested though |q|
-void SchubertContext::spread_subset
-  (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s) const
+coxtypes::CoxNbr SchubertContext::context_number
+  (const coxtypes::Cox_word& g) const
 {
-  elements.reserve(q.capacity()); // ensure, vitally, that no reallocation will occur
-  const auto initial_end = elements.end(); // so that this iterator remains valid.
-  for (auto it = elements.begin(); it!=initial_end; ++it) // don't visit new elements
+  coxtypes::CoxNbr x = 0;
+
+  for (coxtypes::Generator s : g)
   {
-    const coxtypes::CoxNbr candidate = rshift(*it,s);
-    if (not q.is_member(candidate)) // actually only excludes old elements
-    {
-      q.insert(candidate); // may or may not be new
-      elements.push_back(candidate);
-    }
+    x = rshift(x,s);
+    if (not in_context(x))
+      return coxtypes::undef_coxnbr;
   }
+
+  return x;
 }
 
-containers::sl_list<coxtypes::Generator>
-  SchubertContext::word (coxtypes::CoxNbr x) const
-{
-  containers::sl_list<coxtypes::Generator> result;
-  while (x>0)
-  {
-    coxtypes::Generator s = firstLDescent(x);
-    result.push_back(s);
-    x = lshift(x,s);
-  }
-  return result;
-}
-
-bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
-{
-  assert(x<size());
-  bitmap::BitMap result(size()); // full size probably needed by callers
-  result.insert(0);
-  CoxNbrList elements {0}; // enumeration of |result| for faster iteration
-
-  for (auto s : word(x))
-    spread_subset(result,elements,s);
-
-  return result;
-}
 
 
 /*
@@ -391,7 +386,7 @@ coxtypes::CoxNbr SchubertContext::extend_context
   (const coxtypes::CoxWord& g)
 {
   coxtypes::CoxNbr y = 0;
-  bitmap::BitMap q(d_size);
+  bitmap::BitMap q(size());
   q.insert(0);
   CoxNbrList elements {0};
 
@@ -428,7 +423,44 @@ coxtypes::CoxNbr SchubertContext::extend_context
   Error(ERRNO);
   ERRNO = EXTENSION_FAIL;
   return(coxtypes::undef_coxnbr);
-}
+} // |extend_context|
+
+coxtypes::CoxNbr SchubertContext::extend_context
+  (const coxtypes::Cox_word& g)
+{
+  coxtypes::CoxNbr y = 0;
+  bitmap::BitMap q(size());
+  q.insert(0);
+  CoxNbrList elements {0};
+
+
+  CATCH_MEMORY_OVERFLOW = true;
+
+  coxtypes::Length max_l=0;
+  for (coxtypes::Generator s : g)
+  {
+    if (in_context(y=rshift(y,s)))
+      spread_subset(q,elements,s);
+    else
+      extend_context(q,elements,s); // adapts tables and enlarges |q|, |elements|
+    if (ERRNO)
+      goto error_handling;
+    ++max_l;
+  }
+
+  CATCH_MEMORY_OVERFLOW = false;
+
+  if (max_l > d_maxlength)
+    d_maxlength = max_l; // keep the high water mark
+  return y;
+
+ error_handling:
+  if (max_l > d_maxlength)
+    d_maxlength = max_l; // keep the high water mark
+  Error(ERRNO);
+  ERRNO = EXTENSION_FAIL;
+  return(coxtypes::undef_coxnbr);
+} // |extend_context|
 
 
 
@@ -484,8 +516,8 @@ void SchubertContext::permute(const bits::Permutation& a)
     for (auto& elt : c)
       elt = a[elt];
 
-  for (coxtypes::CoxNbr x = 0; x < d_size; ++x)
-    for (coxtypes::Generator s = 0; s < 2*d_rank; ++s)
+  for (coxtypes::CoxNbr x = 0; x < size(); ++x)
+    for (coxtypes::Generator s = 0; s < 2*rank(); ++s)
     { auto& xs = d_shift.entry(x,s);
       if (xs != coxtypes::undef_coxnbr)
 	xs = a[xs];
@@ -597,8 +629,6 @@ void SchubertContext::increase_size(Ulong n)
 
     d_parity[0].set_capacity(n);
     d_parity[1].set_capacity(n);
-
-    d_size = n;
   }
   catch(...)
   {
@@ -701,7 +731,7 @@ void SchubertContext::print(FILE* file, coxtypes::CoxNbr x,
 void SchubertContext::fill_Hasse(Ulong first, coxtypes::Generator s)
 {
 
-  for (coxtypes::CoxNbr x = first; x < d_size; ++x)
+  for (coxtypes::CoxNbr x = first; x < size(); ++x)
   {
     coxtypes::CoxNbr xs = shift(x,s);
     assert(xs<x);
@@ -744,7 +774,7 @@ void SchubertContext::fill_shifts_and_descents
   // only the initial new element |first| might have length 1; check this case
   if (length(x) == 1)
   { assert(x==shift(0,s)); // we allow it to be on the left or right
-    coxtypes::Generator t = (s + d_rank) % two_r; // |s| from opposite side
+    coxtypes::Generator t = (s + rank()) % two_r; // |s| from opposite side
     d_shift.entry(0,t) = x;
     d_shift.entry(x,t) = 0;
     d_descent[x] |= constants::eq_mask[t];
@@ -752,7 +782,7 @@ void SchubertContext::fill_shifts_and_descents
     ++x; // don't treat this case in next loop
   }
 
-  for (; x < d_size; ++x)
+  for (; x < size(); ++x)
   {
     const CoxNbrList& coatoms = d_hasse[x]; // this was already computed
 
@@ -761,7 +791,7 @@ void SchubertContext::fill_shifts_and_descents
       const coxtypes::CoxNbr xs = shift(x,s);
 
       coxtypes::Generator t = // the other dihedral group generator, same side
-	s < d_rank ? firstRDescent(xs) : firstLDescent(xs) + d_rank;
+	s < rank() ? firstRDescent(xs) : firstLDescent(xs) + rank();
 
       coxtypes::CoxNbr z = // the coatom of |x| that is not |xs|
 	 coatoms[0]+coatoms[1]-xs;
@@ -881,7 +911,7 @@ void SchubertContext::fill_star_table()
   const containers::vector<GenSet>& ops = d_graph.finite_edges();
   assert(d_star.nr_cols()==2*ops.size());
 
-  for (coxtypes::CoxNbr x = old_size; x < d_size; ++x)
+  for (coxtypes::CoxNbr x = old_size; x < size(); ++x)
     for (coxtypes::StarOp j = 0; j < ops.size(); ++j)
     {
       auto y = falling_star<false>(x,ops[j]);
@@ -940,16 +970,16 @@ void SchubertContext::extend_context
       );
 
   /* check for size overflow */
-  if (c > coxtypes::COXNBR_MAX - d_size) { // overflow predicited
+  if (c > coxtypes::COXNBR_MAX - size()) { // overflow predicited
     ERRNO = COXNBR_OVERFLOW;
     return;
   }
 
   /* resize context */
 
-  coxtypes::CoxNbr prev_size = d_size;
-  increase_size(d_size+c); // enlarge capacity of internal tables; do not fill
-  q.set_capacity(d_size+c);
+  coxtypes::CoxNbr prev_size = size();
+  increase_size(prev_size+c); // enlarge capacity of internal tables; do not fill
+  q.set_capacity(prev_size+c);
 
   // fill in lengths, and shifts by |s|
   for (coxtypes::CoxNbr x : elements)
@@ -1279,9 +1309,9 @@ void printPartition
   {
     auto range = *pit;
     fprintf(file,"%lu(%lu):{",count,range.size());
-    for (const auto& elt : range) {
-      coxtypes::CoxWord g(0);
-      p.append(g,elt);
+    for (const auto& elt : range)
+    {
+      coxtypes::Cox_word g = p.word(elt);
       I.print(file,g);
       if (&elt+1 != &*range.end()) /* there is more to come */
 	fprintf(file,",");
@@ -1339,9 +1369,9 @@ containers::sl_list<Ulong> indices_of_maxima
   containers::sl_list<Ulong> result(p. size());
 
   for (auto it=c.rbegin(); it!=c.rend(); ++it)
-  { coxtypes::CoxNbr x = *it;
+  { const coxtypes::CoxNbr& x = *it;
     if (not seen.is_member(x))
-    { result.push_front(&*it-&c[0]);
+    { result.push_front(&x-&c[0]);
       seen |= p.closure(x);
     }
   }

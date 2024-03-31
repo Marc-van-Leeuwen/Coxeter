@@ -632,7 +632,47 @@ coxtypes::CoxNbr CoxGroup::extendContext(const coxtypes::CoxWord& g)
     d_invkl->revertSize(prev_size);
   error::ERRNO = error::ERROR_WARNING;
   return coxtypes::undef_coxnbr;
+} // |extendContext|
+
+coxtypes::CoxNbr CoxGroup::extend_context(const coxtypes::Cox_word& g)
+{
+  Ulong prev_size = contextSize();
+  coxtypes::CoxNbr x = d_klsupport.extend_context(g);
+
+  if (error::ERRNO) {
+    goto revert;
+  }
+
+  if (d_kl) {
+    d_kl->setSize(contextSize());
+  if (error::ERRNO)
+    goto revert;
+  }
+  if (d_uneqkl) {
+    d_uneqkl->setSize(contextSize());
+  if (error::ERRNO)
+    goto revert;
+  }
+  if (d_invkl) {
+    d_invkl->setSize(contextSize());
+  if (error::ERRNO)
+    goto revert;
+  }
+
+  return x;
+
+ revert:
+  d_klsupport.revertSize(prev_size);
+  if (d_kl)
+    d_kl->revertSize(prev_size);
+  if (d_uneqkl)
+    d_uneqkl->revertSize(prev_size);
+  if (d_invkl)
+    d_invkl->revertSize(prev_size);
+  error::ERRNO = error::ERROR_WARNING;
+  return coxtypes::undef_coxnbr;
 }
+
 
 
 /*

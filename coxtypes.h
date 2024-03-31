@@ -16,6 +16,8 @@
 
 #include "globals.h"
 #include "constants.h"
+#include "containers.h"
+
 #include "io.h"
 #include <limits.h>
 
@@ -30,12 +32,12 @@ namespace coxtypes {
   typedef unsigned short Rank;
   typedef Ulong CoxSize;         /* should hold at least 32 bits */
   typedef Ulong BettiNbr;        /* should hold at least 32 bits */
-  typedef unsigned CoxNbr;         /* should fit into a CoxSize */
+  using CoxNbr = unsigned int;   /* should fit into a CoxSize */
   typedef CoxNbr ParSize;          /* this should not be changed */
   typedef unsigned short ParNbr;   /* should fit into a CoxNbr */
-  typedef ParNbr *CoxArr;
-  typedef unsigned char CoxLetter; /* for string representations */
-  typedef CoxLetter Generator;     /* internal representation of generators*/
+  using CoxArr = ParNbr*; // points to an array of knwon size located somewhere
+  using CoxLetter = unsigned char; /* for string representations */
+  using Generator = CoxLetter;     /* internal representation of generators*/
   typedef unsigned short Length;
   typedef Ulong StarOp;          /* for numbering star operations */
 
@@ -82,6 +84,12 @@ namespace coxtypes {
 
 namespace coxtypes {
 
+struct Cox_word : public containers::vector<CoxLetter>
+{
+  using Base = containers::vector<CoxLetter>;
+  using Base::Base;
+}; // |class Cox_word|
+
 class CoxWord {
  private:
   list::List<CoxLetter> d_list;
@@ -93,19 +101,26 @@ class CoxWord {
   CoxWord(const Ulong& n);
   ~CoxWord();
 /* accessors */
-  const CoxLetter& operator[] (const Length& j) const;        /* inlined */
-  Length length() const;                                      /* inlined */
+  const CoxLetter& operator[] (const Length& j) const { return d_list[j]; }
+  Length length() const { return d_list.size()-1; }
 /* modifiers */
-  CoxWord& operator= (const CoxWord& h);                      /* inlined */
-  CoxLetter& operator[] (const Length& j);                    /* inlined */
+  CoxWord& operator= (const CoxWord& h)
+  { d_list.assign(h.d_list); return *this; }
+  CoxLetter& operator[] (const Length& j) { return d_list[j]; }
   CoxWord& append(const CoxLetter& a);
   CoxWord& append(const CoxWord& h);
   CoxWord& erase(const Length& j);
   CoxWord& insert(const Length& j, const CoxLetter& a);
   CoxWord& reset();
-  void setLength(Length n);                                   /* inlined */
+  void setLength(Length n) { d_list.setSize(n+1); }
   CoxWord& setSubWord(const CoxWord& h, const Length& first,
 		      const Length& r);
+  Cox_word word () const
+  { coxtypes::Cox_word result(d_list.begin(),d_list.end());
+    for (auto& letter : result)
+      --letter; // undo weird off-by-one encoding
+    return result;
+  }
 };
 
 };
@@ -118,14 +133,7 @@ namespace coxtypes {
 
   /* class CoxWord */
 
-  inline const CoxLetter& CoxWord::operator[] (const Length& j) const
-    {return d_list[j];}
-  inline Length CoxWord::length() const {return d_list.size()-1;}
 
-  inline CoxWord& CoxWord::operator=(const CoxWord & h)
-    {d_list.assign(h.d_list); return *this;}
-  inline CoxLetter& CoxWord::operator[] (const Length& j) {return d_list[j];}
-  inline void CoxWord::setLength(Length n) {d_list.setSize(n+1);}
 };
 
 #endif

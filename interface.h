@@ -83,8 +83,11 @@ namespace interface {
   bool isModifier(const Token& tok);
   bool isPower(const Token& tok);
   void print(FILE *file, const coxtypes::CoxWord& g, const GroupEltInterface& I);
+  void print(FILE *file,
+	     const coxtypes::Cox_word& g, const GroupEltInterface& I);
   void print(FILE *file, const GenSet& f, const Interface& I);
-  void print(FILE *file, const GenSet& f, const DescentSetInterface& DI,
+  void print(FILE *file,
+	     const GenSet& f, const DescentSetInterface& DI,
 	     const GroupEltInterface& GI);
   void printSymbol(FILE *file, const coxtypes::Generator& s, const Interface& I);
   void printTwosided(FILE *file, const Lflags& f,
@@ -112,6 +115,7 @@ struct ParseInterface {
   ParseInterface();
   ~ParseInterface();
   void reset();
+  coxtypes::Cox_word first_word() const { return a[0].word(); }
 };
 
 struct TokenCell {
@@ -201,6 +205,7 @@ struct ReservedSymbols {
   ReservedSymbols(io::Default);
   ~ReservedSymbols();
 };
+
 class Interface {
  protected:
   bits::Permutation d_order;
@@ -265,10 +270,13 @@ class Interface {
   const TokenTree& symbolTree() const;
 // i/o
   virtual std::string& append(std::string& str, const coxtypes::CoxWord& g) const;
-  virtual void print(FILE* file, const coxtypes::CoxWord& g) const;
-};
+  virtual void print(FILE* file, const coxtypes::CoxWord& g) const
+  { interface::print(file,g,*d_out); }
+  void print(FILE* file, const coxtypes::Cox_word& g) const
+  { interface::print(file,g,*d_out); }
+}; // |class Interface|
 
-};
+}; // |namespace interface|
 
 /******** inline implementations *******************************************/
 
@@ -328,8 +336,6 @@ inline void Interface::setOutSymbol(const coxtypes::Generator& s, const std::str
 
 inline std::string& Interface::append(std::string& str, const coxtypes::CoxWord& g) const
   {return interface::append(str,g,*d_out);}
-inline void Interface::print(FILE* file, const coxtypes::CoxWord& g) const
-  {interface::print(file,g,*d_out);}
 
 };
 

@@ -10,6 +10,7 @@
 
 #include <limits.h>
 #include "globals.h"
+#include "sl_list.h"
 #include "graph.h"
 #include "list.h"
 #include "memory.h"
@@ -17,19 +18,21 @@
 /******** type declarations *************************************************/
 
 namespace minroots {
-  typedef unsigned MinNbr;
-  typedef char DotProduct;
+
+  using MinNbr = unsigned;
+  using DotProduct = char;
+  using back_word = containers::sl_list<coxtypes::Generator>;
   class MinTable;
 };
 
 /* constants */
 
 namespace minroots {
-  const MinNbr MINNBR_MAX = UINT_MAX-4;  /* top values are reserved */
-  const MinNbr MINROOT_MAX = MINNBR_MAX; /* should not exceed MINNBR_MAX */
-  const MinNbr undef_minnbr = MINNBR_MAX + 1;
-  const MinNbr not_minimal = MINNBR_MAX + 2;
-  const MinNbr not_positive = MINNBR_MAX + 3;
+  constexpr MinNbr MINNBR_MAX = UINT_MAX-4;  /* top values are reserved */
+  constexpr MinNbr MINROOT_MAX = MINNBR_MAX; /* should not exceed MINNBR_MAX */
+  constexpr MinNbr undef_minnbr = MINNBR_MAX + 1;
+  constexpr MinNbr not_minimal = MINNBR_MAX + 2;
+  constexpr MinNbr not_positive = MINNBR_MAX + 3;
 };
 
 /******** function declarations *********************************************/
@@ -76,18 +79,27 @@ class minroots::MinTable {
   int insert
     (coxtypes::CoxWord& g, const coxtypes::Generator& s,
      const bits::Permutation& order) const;
+  int insert
+   (back_word& rev_word,
+    const coxtypes::Generator& s, const bits::Permutation& order) const;
   const coxtypes::CoxWord& inverse(coxtypes::CoxWord& g) const;
   bool inOrder(const coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
+  bool Bruhat_leq(const coxtypes::Cox_word& g,
+		  const coxtypes::Cox_word& h) const;
   bool inOrder
     (list::List<coxtypes::Length>& a,
      const coxtypes::CoxWord& g, const coxtypes::CoxWord& h)
     const;
   bool isDescent(const coxtypes::CoxWord& g, const coxtypes::Generator& s) const;
+  bool is_descent(const back_word& g, coxtypes::Generator s) const;
   GenSet ldescent(const coxtypes::CoxWord& g) const;
   const coxtypes::CoxWord& normalForm
     (coxtypes::CoxWord& g, const bits::Permutation& order) const;
+  coxtypes::Cox_word& normal_form
+    (coxtypes::Cox_word& g, const bits::Permutation& order) const;
   MinNbr min(MinNbr r, coxtypes::Generator s) const { return d_min[r][s]; }
   int prod(coxtypes::CoxWord& g, const coxtypes::Generator& s) const;
+  int multiply(back_word& g, const coxtypes::Generator& s) const;
   int prod
     (coxtypes::CoxWord& g, coxtypes::CoxLetter *const h, const Ulong& n) const;
   int prod(coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
