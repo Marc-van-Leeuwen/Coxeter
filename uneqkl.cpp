@@ -1570,8 +1570,7 @@ HeckeElt cBasis(const coxtypes::CoxNbr& y, KLContext& kl)
 
   bitmap::BitMap b = p.closure(y);
 
-  HeckeElt result(b.size());
-
+  HeckeElt result; result.reserve(b.size());
 
   for (coxtypes::CoxNbr x : b)
     result.emplace_back(x,&kl.klPol(x,y));

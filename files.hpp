@@ -255,7 +255,7 @@ void printAsBasisElt(FILE* file, const H& h, const schubert::SchubertContext& p,
   I.setOut(GI);
 
   return;
-}
+} // |printAsBasisElt|
 
 template <class KL>
 void printClosure(FILE* file, const coxtypes::CoxNbr& y, KL& kl, const interface::Interface& I,
