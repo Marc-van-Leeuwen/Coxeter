@@ -870,7 +870,7 @@ void KLContext::KLHelper::coatom_correct_KL_pol
     if (p.shift(z,s) > z) /* z is not considered */
       continue;
 
-    if (!p.inOrder(x,z)) /* z is not in [x,ys] */
+    if (not p.Bruhat_leq(x,z)) /* z is not in [x,ys] */
       continue;
 
     /* at this point we have to do an actual subtraction */
@@ -948,9 +948,8 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
   if (ERRNO)
     goto abort;
 
-  /* check if x <= ys */
-
-  if (!p.inOrder(x,ys)) { /* value is found */
+  if (not p.Bruhat_leq(x,ys)) // check whether x <= ys
+  { // if not, value $\mu=0$ is found
     d_stats.mucomputed++;
     if (r1 == 0)
       d_stats.muzero++;
@@ -1577,7 +1576,7 @@ const KLPol* KLContext::KLHelper::compute_KL_pol
   coxtypes::CoxNbr xs = p.shift(x,s);
 
   // unless $x<ys$, we simply have $P(x,y)=P(xs,ys)$, a single recursive call
-  if (not p.inOrder(x,ys))
+  if (not p.Bruhat_leq(x,ys))
   { d_stats.klcomputed++; // count that call as one extra computation
     return &klPol(xs,ys); // recursion is (or may be) here, one call down
   }
@@ -1720,7 +1719,7 @@ void KLContext::KLHelper::mu_correct_KL_pol
 
 	if (p.shift(z,s) > z)
 	  continue;
-	if (!p.inOrder(x,z))
+	if (not p.Bruhat_leq(x,z))
 	  continue;
 
 	/* compute the mu-coefficient if it was not already computed */
@@ -1786,7 +1785,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu
   if (ERRNO)
     goto abort;
 
-  if (!p.inOrder(x,ys)) { /* value is found */
+  if (not p.Bruhat_leq(x,ys)) { /* value is found */
     d_stats.mucomputed++;
     if (r == 0)
       d_stats.muzero++;
@@ -1848,7 +1847,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu
 	continue;
       if (p.shift(z,s) > z)
 	continue;
-      if (!p.inOrder(x,z))
+      if (not p.Bruhat_leq(x,z))
 	continue;
 
       /* fill in the mu-coefficient if it was not already computed */
@@ -1891,7 +1890,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu
       coxtypes::CoxNbr zs = p.shift(z,s);
       if (zs > z)
 	continue;
-      if (!p.inOrder(x,z))
+      if (not p.Bruhat_leq(x,z))
 	continue;
       klsupport::KLCoeff r1 = mu(x,z);
       if (ERRNO)
@@ -2178,7 +2177,7 @@ void showKLPol
     coxtypes::CoxNbr xs = p.shift(x,s);
     coxtypes::CoxNbr ys = p.shift(y,s);
 
-    if (!p.inOrder(x,ys)) { /* easy case */
+    if (not p.Bruhat_leq(x,ys)) { /* easy case */
       if (s < kl.rank())
 	{ // action is on the right
 	fprintf(file,"x not comparable to ys for s = %d\n",s+1);
@@ -2271,7 +2270,7 @@ void showKLPol
       coxtypes::CoxNbr z = c[j];
       if (p.shift(z,s) > z)
 	continue;
-      if (!p.inOrder(x,z))
+      if (not p.Bruhat_leq(x,z))
 	continue;
       coatomcorrection = true;
       buf.clear();
@@ -2296,7 +2295,7 @@ void showKLPol
       coxtypes::CoxNbr z = m[j].x;
       if (p.shift(z,s) > z)
 	continue;
-      if (!p.inOrder(x,z))
+      if (not p.Bruhat_leq(x,z))
 	continue;
       if (m[j].mu) {
 	mucorrection = true;
@@ -2428,7 +2427,7 @@ void showRecursiveMu(FILE* file, KLContext& kl,
   coxtypes::CoxNbr xs = p.shift(x,s);
   coxtypes::CoxNbr ys = p.shift(y,s);
 
-  if (!p.inOrder(x,ys)) { // mu(x,y) = mu(xs,ys)
+  if (not p.Bruhat_leq(x,ys)) { // mu(x,y) = mu(xs,ys)
     if (s < kl.rank()) { // action is on the right
       fprintf(file,"x not comparable to ys for s = %d\n",s+1);
       buf.clear();
@@ -2518,7 +2517,7 @@ void showRecursiveMu(FILE* file, KLContext& kl,
       coxtypes::CoxNbr z = c[j];
       if (p.shift(z,s) > z)
 	continue;
-      if (!p.inOrder(x,z))
+      if (not p.Bruhat_leq(x,z))
 	continue;
       coatomcorrection = true;
       buf.clear();
@@ -2544,7 +2543,7 @@ void showRecursiveMu(FILE* file, KLContext& kl,
      coxtypes::CoxNbr z = m[j].x;
      if (p.shift(z,s) > z)
        continue;
-     if (!p.inOrder(x,z))
+     if (not p.Bruhat_leq(x,z))
        continue;
 
      // fill in the mu-coefficient if it was not already computed

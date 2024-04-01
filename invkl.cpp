@@ -551,7 +551,7 @@ void KLContext::KLHelper::addCorrection
 
   for (coxtypes::CoxNbr z : b)
   {
-    if (not p.inOrder(x,z))
+    if (not p.Bruhat_leq(x,z))
       continue;
     if (p.length(z)-p.length(x) == 1) { // x is a coatom of z
       const KLPol& p_zys = klPol(z,ys);
@@ -830,7 +830,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
   if (error::ERRNO)
     goto abort;
 
-  if (!p.inOrder(x,ys)) { /* value is found */
+  if (not p.Bruhat_leq(x,ys)) { /* value is found */
     status().mucomputed++;
     if (r1 == 0)
       status().muzero++;
@@ -918,7 +918,7 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x, const cox
 
   /* check if x is comparable to ys */
 
-  if (!p.inOrder(x,ys)) { /* return the answer recursively */
+  if (not p.Bruhat_leq(x,ys)) { /* return the answer recursively */
     status().klcomputed++;
     return &klPol(xs,ys);
   }
@@ -1329,7 +1329,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& x,
   if (error::ERRNO)
     goto abort;
 
-  if (!p.inOrder(x,ys)) { /* value is found */
+  if (not p.Bruhat_leq(x,ys)) { /* value is found */
     status().mucomputed++;
     if (mu_xy == 0)
       status().muzero++;
@@ -1344,7 +1344,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& x,
 
     for (coxtypes::CoxNbr z : b)
     {
-      if (not p.inOrder(x,z))
+      if (not p.Bruhat_leq(x,z))
 	continue;
       if (p.length(z)-p.length(x) == 1)
       { // x is a coatom of z

@@ -211,6 +211,7 @@ coxtypes::Cox_word SchubertContext::word (coxtypes::CoxNbr x) const
 }
 
 
+#if 0
 /*
   This functions returns the number corresponding to g in the current
   context; returns coxtypes::undef_coxnbr if g is not in the context.
@@ -230,6 +231,7 @@ coxtypes::CoxNbr SchubertContext::context_number
 
   return x;
 }
+#endif
 
 coxtypes::CoxNbr SchubertContext::context_number
   (const coxtypes::Cox_word& g) const
@@ -255,6 +257,7 @@ coxtypes::CoxNbr SchubertContext::context_number
 
   NOTE : this function is not intended for heavy use!
 */
+#if 0
 bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
 {
   if (x == 0)
@@ -274,6 +277,23 @@ bool SchubertContext::inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
   else /* xs > x */
     return inOrder(x,ys);
 }
+#endif
+
+bool SchubertContext::Bruhat_leq(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
+{
+  if (length(x) >= length(y))
+    return x == y;
+  while (y > 0)
+  { // invariant |length(x)<length(y)|
+    coxtypes::Generator s = first_descent<'r'>(y);
+    y = rshift(y,s);
+    if (is_descent<'r'>(x,s))
+      x = rshift(x,s);
+    else if (length(x) == length(y))
+      return x == y;
+  }
+  assert(false); // cannot have |y==0 and legth(x)<length(y)|
+} // |Bruhat_leq|
 
 
 /*

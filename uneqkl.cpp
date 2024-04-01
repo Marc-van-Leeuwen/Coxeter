@@ -794,7 +794,7 @@ const KLPol* KLContext::KLHelper::compute_KL_pol
 
   /* check if x is comparable to ys */
 
-  if (!p.inOrder(x,ys)) { /* return the answer immediately */
+  if (not p.Bruhat_leq(x,ys)) { /* return the answer immediately */
     d_stats.klcomputed++;
     const auto& eL = extrList(y);
     Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
@@ -968,7 +968,7 @@ const MuPol* KLContext::KLHelper::compute_mu
   for (auto it = std::next(loc_x); it!=row.end(); ++it)
   {
     coxtypes::CoxNbr z = it->x;
-    if (not p.inOrder(x,z))
+    if (not p.Bruhat_leq(x,z))
       continue;
     const KLPol& pol = klPol(x,z);
     if (error::ERRNO) {
@@ -1275,7 +1275,7 @@ void KLContext::KLHelper::mu_correct_KL_pol
     for (Ulong j = 0; j < row.size(); ++j) {
 
       coxtypes::CoxNbr z = row[j].x;
-      if (!p.inOrder(x,z))
+      if (not p.Bruhat_leq(x,z))
 	continue;
 
       const MuPol mp = mu(s,z,ys);

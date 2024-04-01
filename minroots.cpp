@@ -1272,24 +1272,29 @@ bool MinTable::inOrder(const coxtypes::CoxWord& d_g, const coxtypes::CoxWord& d_
    return inOrder(g,h);
 }
 
+// test Bruhat order between reduced words
 bool MinTable::Bruhat_leq
   (const coxtypes::Cox_word& g, const coxtypes::Cox_word& h) const
 {
-  back_word bw;
+  if (g.size() > h.size()) // test can be made because both are reduced
+    return false;
+
+  back_word bw; // prepare a representation adapted to insertion/deletion
   for (coxtypes::Generator s : g)
     bw.push_front(s);
 
   auto l=h.size();
   while (l>0)
-  {
-    if (bw.size()>l)
-      return false; // no hope for relation
+  { // invariant |bw.size() <= l|
     coxtypes::Generator s = h[--l]; // last effective term of h
     if (is_descent(bw,s))
-      multiply(bw,s);
+      multiply(bw,s); // which decreases |bw.size()|
+    else if (bw.size()>l)
+      return false; // no hope left for Bruhat relation
   }
-  return bw.empty();
-}
+  assert(bw.empty()); // since |bw.size() <= 0|
+  return true;
+} // |Bruhat_leq|
 
 
 /*

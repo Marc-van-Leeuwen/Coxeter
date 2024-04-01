@@ -135,10 +135,14 @@ public:
     (coxtypes::CoxNbr x, const bits::Permutation& order) const
     { return first_flagged(rdescent(x),order); }
 
+  template<char side>
+    coxtypes::Generator is_descent
+    (coxtypes::CoxNbr x, coxtypes::Generator s) const
+    { return (descent_set<side>(x)&constants::eq_mask[s])!=0; }
   bool isDescent(coxtypes::CoxNbr x, coxtypes::Generator s) const
-    { return (d_descent[x]&constants::eq_mask[s])!=0; } // whether Right descent
+    { return (d_descent[x]&constants::eq_mask[s])!=0; } // whether |s| is descent
   bool is_ascent(coxtypes::CoxNbr x, coxtypes::Generator s) const
-    {  return (d_descent[x]&constants::eq_mask[s])==0; } // whether (right) ascent
+    { return (d_descent[x]&constants::eq_mask[s])==0; } // whether |s| is ascent
 
   coxtypes::CoxNbr shift(coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return d_shift.entry(x,s); } // left or right shift
@@ -165,7 +169,7 @@ public:
   coxtypes::CoxNbr context_number(const coxtypes::Cox_word& g) const;
   void extendSubSet(bits::SubSet& q, coxtypes::Generator s) const;
   Lflags twoDescent(coxtypes::CoxNbr x) const;
-  bool inOrder(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const;
+  bool Bruhat_leq(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const;
   bool isSuperExtremal(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const;
   coxtypes::CoxNbr maximize(coxtypes::CoxNbr x, const Lflags& f) const;
   coxtypes::CoxNbr minimize(coxtypes::CoxNbr x, const Lflags& f) const;

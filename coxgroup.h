@@ -157,8 +157,10 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
 /******** Chapter II : Schubert context **************************************/
 
+#if 0
   virtual coxtypes::CoxNbr context_number(const coxtypes::CoxWord& g) const
   { return schubert().context_number(g); }
+#endif
   virtual coxtypes::CoxNbr context_number(const coxtypes::Cox_word& g) const
   { return schubert().context_number(g); }
   coxtypes::CoxNbr contextSize() const;                                     /* inlined */
@@ -190,15 +192,14 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
     { return schubert().closure(x); }
   virtual bool inOrder(const coxtypes::CoxWord& h, const coxtypes::CoxWord& g)
     const { return mintable().inOrder(g,h); }
-  virtual bool Bruhat_leq(const coxtypes::Cox_word& h,
-			  const coxtypes::Cox_word& g)
-    const { return mintable().Bruhat_leq(g,h); }
+  bool Bruhat_leq(const coxtypes::Cox_word& h, const coxtypes::Cox_word& g) const
+    { return mintable().Bruhat_leq(g,h); }
   virtual bool inOrder(list::List<coxtypes::Length>& a,
 		       const coxtypes::CoxWord& h,
 		       const coxtypes::CoxWord& g) const
    { return mintable().inOrder(a,g,h); }
   virtual bool inOrder(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
-    const  { return schubert().inOrder(x,y); }
+    const  { return schubert().Bruhat_leq(x,y); }
   virtual bool isDihedral(const coxtypes::CoxWord& g) const;
 
 /******** Chapter IV : Kazhdan-Lusztig functions *****************************/
