@@ -19,7 +19,7 @@
 
 namespace minroots {
 
-  using MinNbr = unsigned;
+  using MinNbr = unsigned; // strictly includes |coxtypes::Generator| range
   using DotProduct = char;
   using back_word = containers::sl_list<coxtypes::Generator>;
   class MinTable;
@@ -80,8 +80,8 @@ class minroots::MinTable {
     (coxtypes::CoxWord& g, const coxtypes::Generator& s,
      const bits::Permutation& order) const;
   int insert
-   (back_word& rev_word,
-    const coxtypes::Generator& s, const bits::Permutation& order) const;
+   (back_word& rev_word, coxtypes::Generator s,
+    const bits::Permutation& order) const;
   const coxtypes::CoxWord& inverse(coxtypes::CoxWord& g) const;
   bool inOrder(const coxtypes::CoxWord& g, const coxtypes::CoxWord& h) const;
   bool Bruhat_leq(const coxtypes::Cox_word& g,

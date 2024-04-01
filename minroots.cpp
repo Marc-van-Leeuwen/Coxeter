@@ -1215,15 +1215,16 @@ int MinTable::insert(coxtypes::CoxWord& g, const coxtypes::Generator& s,
 }
 
 int MinTable::insert(back_word& rev_word,
-		     const coxtypes::Generator& s,
+		     coxtypes::Generator s,
 		     const bits::Permutation& order) const
 {
   coxtypes::Generator i = s;
+  MinNbr r = s;
   auto pos = rev_word.begin();
 
   for (auto it = rev_word.begin(); not rev_word.at_end(it); ++it)
   {
-    MinNbr r = min(r,*it);
+    r = min(r,*it);
 
     if (r == not_positive) { /* reduction */
       rev_word.erase(it);
