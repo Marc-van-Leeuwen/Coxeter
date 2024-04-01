@@ -924,7 +924,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
     return recursiveMu(x,y,last(y));
   }
 
-  coxtypes::Generator s, t;
+  coxtypes::Generator s=-1, t=-1; // init silences compiler warnings
 
   /* choose s s.t. LR(ys) not contained in LR(x) */
   Lflags desc;
@@ -939,7 +939,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
       break;
     }
   }
-  assert(desc!=0); // suppresses optimizer warning about unset |s| and/or |t|
+  assert(desc!=0);
 
   coxtypes::CoxNbr xs = p.shift(x,s);
   coxtypes::CoxNbr ys = p.shift(y,s);
@@ -2599,7 +2599,7 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
   const schubert::SchubertContext& p = kl.schubert();
   unsigned long ls = io::LINESIZE;
 
-  coxtypes::Generator s,t;
+  coxtypes::Generator s=-1,t=-1; // init silences compiler warnings
   Lflags desc;
   for (desc = p.descent(y); desc; desc &= desc-1) {
     coxtypes::Generator u = constants::firstBit(desc);
@@ -2611,7 +2611,7 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
       break;
     }
   }
-  assert(desc!=0); // suppresses optimizer warning about unset |s| and/or |t|
+  assert(desc!=0);
 
   fprintf(file,"using descent s = %lu and ascent t = %lu\n\n",
 	  static_cast<Ulong>(s+1),static_cast<Ulong>(t+1));
@@ -2701,7 +2701,7 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
   }
 
   return;
-}
+} // |showSimpleMu|
 
 }; // |namespace|
 

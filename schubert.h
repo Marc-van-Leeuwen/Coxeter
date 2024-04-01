@@ -45,6 +45,7 @@ namespace schubert {
   bool shortlex_leq(const SchubertContext& p, const bits::Permutation& order,
 		    coxtypes::CoxNbr x, coxtypes::CoxNbr y);
   Ulong sum(const Homology& h);
+  bitmap::BitMap closure(const SchubertContext& p,coxtypes::CoxNbr x);
 
   void print(FILE* file, SchubertContext& p);
   void printPartition

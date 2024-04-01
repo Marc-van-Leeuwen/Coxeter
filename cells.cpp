@@ -220,8 +220,6 @@ template<char side> // one of 'l', 'r',
 	if (seen.is_member(zj))
 	  continue;
 
-	GenSet d = p.descent_set<opposite_side>(zj);
-
 	// mark start of new cell packet that will be added to |seen| below
 	orbit.push(seen.size()); // index of next-to-add packet leader
 
@@ -230,7 +228,8 @@ template<char side> // one of 'l', 'r',
 	{
 	  coxtypes::CoxNbr y = seen[c+i];
 	  coxtypes::CoxNbr yj = p.star_base<opposite_side>(y)[j];
-	  assert(p.descent_set<opposite_side>(yj)==d);
+	  assert(p.descent_set<opposite_side>(yj)==
+		 p.descent_set<opposite_side>(zj));
 	  seen.add(yj);
 	}
 

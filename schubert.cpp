@@ -303,7 +303,8 @@ bool SchubertContext::Bruhat_leq(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
     else if (length(x) == length(y))
       return x == y;
   }
-  assert(false); // cannot have |y==0 and legth(x)<length(y)|
+  assert(false); // cannot have |y==0 and length(x)<length(y)|
+  return false;
 } // |Bruhat_leq|
 
 

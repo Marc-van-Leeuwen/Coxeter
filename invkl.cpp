@@ -805,7 +805,7 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
     return recursiveMu(x,y,last(y));
   }
 
-  coxtypes::Generator s, t;
+  coxtypes::Generator s=-1, t=-1;
 
   // choose |s| such that $LR(ys)$ not contained in $LR(x)$
   Lflags desc;

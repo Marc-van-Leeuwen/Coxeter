@@ -7,14 +7,13 @@ dependencies := $(patsubst %.cpp,%.d,$(wildcard *.cpp))
 
 globals = globals.h
 
-pflags = $(includedirs) -pg -O3
-oflags = $(includedirs) -O3 -Wall
+pflags = $(includedirs) -pg -O3 -DNDEBUG
+oflags = $(includedirs) -O3 -Wall -DNDEBUG
 gflags = $(includedirs) -Wall -ggdb
 
 cflags = $(gflags) # the default setting
 
 ifeq ($(optimize),true)
-	NDEBUG = true
 	cflags = $(oflags)
 endif
 
