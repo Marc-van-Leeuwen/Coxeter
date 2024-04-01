@@ -179,7 +179,7 @@ public:
   Ulong nStarOps() const { return d_graph.finite_edges().size(); }
 
   // manipulators
-  coxtypes::CoxNbr extend_context(const coxtypes::CoxWord& g);
+  coxtypes::CoxNbr extendContext(const coxtypes::CoxWord& g);
   coxtypes::CoxNbr extend_context(const coxtypes::Cox_word& g);
   coxtypes::CoxNbr star(coxtypes::CoxNbr x, Ulong r)
   { assert(x<size());

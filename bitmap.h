@@ -130,9 +130,16 @@ class BitMap
   size_t capacity() const { return d_capacity; }
   size_type size() const; // the number of bits that are set in the bitmap
 
-  bool operator< (const BitMap& b) const { return d_map < b.d_map; }
-  bool operator== (const BitMap& b) const { return d_map == b.d_map; }
-  bool operator!=(const BitMap& b) const { return d_map != b.d_map; }
+  // fast comparisons for containers and other standadrd library purposes
+  bool operator< (const BitMap& b) const
+  { return
+      d_capacity==b.d_capacity ? d_map < b.d_map : d_capacity<b.d_capacity ; }
+  bool operator== (const BitMap& b) const
+  { return d_capacity==b.d_capacity and d_map == b.d_map; }
+  bool operator!=(const BitMap& b) const
+  { return d_capacity!=b.d_capacity or d_map != b.d_map; }
+
+  bool equivalent (const BitMap& b) const; // inclusion both ways, no capacity
 
   bool empty() const; // whether |size()==0|
   bool full() const; // whether |size()==capacity()|

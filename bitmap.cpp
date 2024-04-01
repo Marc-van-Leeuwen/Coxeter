@@ -188,8 +188,8 @@ size_t BitMap::position(size_t n) const
 /*
   Whether the current bitmap contains |b|.
 
-  This would amount to |not b.andnot(*this)| if |b| were by-value rather
-  than reference, and if capacities were equal.
+  This would amount to |b.andnot(*this).empty()| if |b| were by-value rather
+  than by contant reference. Meanwhile, the code below is more efficient too.
 */
 bool BitMap::contains(const BitMap& b) const
 {
@@ -222,7 +222,16 @@ bool BitMap::disjoint(const BitMap& b) const
   return true;
 }
 
-
+bool BitMap::equivalent (const BitMap& b) const
+{
+  size_t m = std::min(d_map.size(),b.d_map.size());
+  for (size_t j = 0; j < m; ++j)
+    if (d_map[j] != b.d_map[j])
+      return false;
+  return m==d_map.size()
+    ? std::all_of(&b.d_map[m],&*b.d_map.end(),[](chunk_type c) { return c==0; })
+    : std::all_of(&d_map[m],&*d_map.end(),[](chunk_type c) { return c==0; });
+}
 
 /******** manipulators *******************************************************/
 

@@ -240,7 +240,7 @@ coxtypes::CoxNbr KLSupport::extendContext(const coxtypes::CoxWord& g)
   coxtypes::CoxNbr prev_size = size();
   schubert::SchubertContext& p = *d_schubert;
 
-  coxtypes::CoxNbr x = p.extend_context(g); // this increases |size()|
+  coxtypes::CoxNbr x = p.extendContext(g); // this increases |size()|
 
   if (error::ERRNO) /* error::ERRNO is EXTENSION_FAIL */
     return coxtypes::undef_coxnbr;
