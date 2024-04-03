@@ -1057,7 +1057,7 @@ void printCoatoms(FILE* file, const coxtypes::CoxNbr& y, const schubert::Schuber
   io::print(file,traits.coatomPrefix);
 
   for (Ulong j = 0; j < c.size(); ++j) {
-    p.print(file,c[j],I);
+    print(p,file,c[j],I);
     if (j+1 < c.size()) // there is more to come
       io::print(file,traits.coatomSeparator);
   }
@@ -1099,7 +1099,7 @@ void printEltData(FILE* file, const coxtypes::CoxNbr& y, const schubert::Schuber
 
   if (traits.printElt) {
     io::print(file,traits.eltPrefix);
-    p.print(file,y,I);
+    print(p,file,y,I);
     io::print(file,traits.eltPostfix);
   }
 
@@ -1170,14 +1170,11 @@ void printHomology(FILE* file, const schubert::Homology& h, OutputTraits& traits
   return;
 }
 
+
+// Print the classes of the partition, according to the given traits.
 void printPartition(FILE* file, const bits::Partition& pi,
 		    const schubert::SchubertContext& p,
 		    const interface::Interface& I, PartitionTraits& traits)
-
-/*
-  Prints out the classes of the partition, according to the given traits.
-*/
-
 {
   list::List<list::List<coxtypes::CoxNbr> > lc(0);
   writeClasses(lc,pi);
@@ -1198,7 +1195,7 @@ void printPartition(FILE* file, const bits::Partition& pi,
     }
     io::print(file,traits.classPrefix);
     for (Ulong i = 0; i < l.size(); ++i) {
-      p.print(file,l[i],I);
+      print(p,file,l[i],I);
       if (i+1 < l.size()) /* there is more to come */
 	io::print(file,traits.classSeparator);
     }

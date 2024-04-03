@@ -95,10 +95,10 @@ void appendHeckeMonomial
   if (hTraits.reversePrint) {
     appendPolynomial(str,m.pol(),pTraits,d,q);
     str.append(hTraits.monomialSeparator);
-    p.append(str,m.x(),I);
+    append(p,str,m.x(),I);
   }
   else {
-    p.append(str,m.x(),I);
+    append(p,str,m.x(),I);
     str.append(hTraits.monomialSeparator);
     appendPolynomial(str,m.pol(),pTraits,d,q);
   }
@@ -369,7 +369,7 @@ template <class KL>
     }
     const kl::KLPol& pol = kl.klPol(0,dl[a[j]]);
     io::print(file,traits.dufloPrefix);
-    p.print(file,dl[a[j]],I);
+    print(p,file,dl[a[j]],I);
     io::print(file,traits.dufloSeparator);
     printPolynomial(file,pol,traits.polTraits);
     io::print(file,traits.dufloPostfix);
@@ -616,7 +616,7 @@ template <class KL>
       fprintf(file,"%*lu",d,j);
       io::print(file,traits.eltNumberPostfix);
     }
-    kl.schubert().print(file,j,I);
+    print(kl.schubert(),file,j,I);
     if (j+1 < kl.size())  // there is more to come
       io::print(file,traits.eltListSeparator);
   }
@@ -664,7 +664,7 @@ template <class KL>
       fprintf(file,"%*lu",d,j);
       io::print(file,traits.eltNumberPostfix);
     }
-    kl.schubert().print(file,j,I);
+    print(kl.schubert(),file,j,I);
     if (j+1 < kl.size())  // there is more to come
       io::print(file,traits.eltListSeparator);
   }
@@ -845,7 +845,7 @@ template <class KL>
       fprintf(file,"%*lu",d,j);
       io::print(file,traits.eltNumberPostfix);
     }
-    kl.schubert().print(file,j,I);
+    print(kl.schubert(),file,j,I);
     if (j+1 < kl.size())  // there is more to come
       io::print(file,traits.eltListSeparator);
   }

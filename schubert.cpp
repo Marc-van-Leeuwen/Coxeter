@@ -166,24 +166,13 @@ SchubertContext::SchubertContext(const graph::CoxGraph& G)
 bitmap::BitMap SchubertContext::closure(coxtypes::CoxNbr x) const
 {
   assert(x<size());
-  bitmap::BitMap result(size()); // full size probably needed by callers
+  bitmap::BitMap result(x+1); // full size probably needed by callers
   result.insert(0);
   CoxNbrList elements {0}; // enumeration of |result| for faster iteration
 
   for (auto s : word(x))
     spread_subset(result,elements,s);
 
-  return result;
-}
-
-bitmap::BitMap closure(const SchubertContext& p,coxtypes::CoxNbr x)
-{
-  bitmap::BitMap result(x+1);
-  result.insert(x);
-  Ulong n = x+1;
-  while(result.back_up(n))
-    for (coxtypes::CoxNbr z : p.hasse(n))
-      result.insert(z);
   return result;
 }
 
@@ -200,7 +189,7 @@ void SchubertContext::spread_subset
     const coxtypes::CoxNbr candidate = rshift(*it,s);
     if (not q.is_member(candidate)) // actually only excludes old elements
     {
-      q.insert(candidate); // may or may not be new
+      q.insert(candidate); // necessarily a new element
       elements.push_back(candidate);
     }
   }
@@ -403,7 +392,7 @@ Lflags SchubertContext::twoDescent(coxtypes::CoxNbr x) const
   exixting one and the given g, i.e., the new context is the union of
   the old context and [e,g]. Apart from some previously undefined shifts
   becoming defined, this doesn't induce _any_ modification in the data
-  for the old context; the numb ers of the new elements come in at the top.
+  for the old context; the numbers of the new elements come in at the top.
 
   Sets the error |EXTENSION_FAIL| in case of failure.
 
@@ -895,9 +884,7 @@ void SchubertContext::increase_size(Ulong n)
 
 /******** input/output ****************************************************/
 
-std::string& SchubertContext::append(std::string& str, coxtypes::CoxNbr x)
-  const
-
+std::string& append(std::string& str, coxtypes::CoxNbr x)
 {
   if (x == coxtypes::undef_coxnbr)
     str.append(undef_str);
@@ -907,21 +894,20 @@ std::string& SchubertContext::append(std::string& str, coxtypes::CoxNbr x)
   return str;
 }
 
-std::string& SchubertContext::append
-  (std::string& str, coxtypes::CoxNbr x,
-   const interface::Interface& I) const
-
+std::string& append
+  (const SchubertContext& p, std::string& str, coxtypes::CoxNbr x,
+   const interface::Interface& I)
 {
   if (x == coxtypes::undef_coxnbr)
     return str.append(undef_str);
   else {
     coxtypes::CoxWord g(0);
-    normalForm(g,x,I.order());
+    p.normalForm(g,x,I.order());
     return I.append(str,g);
   }
 }
 
-void SchubertContext::print(FILE* file, coxtypes::CoxNbr x) const
+void print(FILE* file, coxtypes::CoxNbr x)
 
 {
   if (x == coxtypes::undef_coxnbr)
@@ -932,15 +918,15 @@ void SchubertContext::print(FILE* file, coxtypes::CoxNbr x) const
   return;
 }
 
-void SchubertContext::print(FILE* file, coxtypes::CoxNbr x,
-				    const interface::Interface& I) const
+void print(const SchubertContext& p, FILE* file, coxtypes::CoxNbr x,
+	   const interface::Interface& I)
 
 {
   if (x == coxtypes::undef_coxnbr)
     fprintf(file,"%s",undef_str);
   else {
     coxtypes::CoxWord g(0);
-    normalForm(g,x,I.order());
+    p.normalForm(g,x,I.order());
     I.print(file,g);
   }
 
@@ -1134,9 +1120,11 @@ void ClosureIterator::operator++()
       // now |x| is new and obtained by extending |current()| on the right by |s|
       visited.insert(x);
       const auto& prev_closure = closure(); // read this from old |state|
-      assert(sp+1<state.size()); // we shoudld not run out of |state| s[ace
+      assert(sp+1<state.size()); // we shoudld not run out of |state| space
       state[++sp].current = x; // push a new node on stack (filled below)
-      auto& new_closure = state[sp].closure = prev_closure; // intially copy memory
+      auto& new_closure =
+	state[sp].closure = prev_closure; // intially copy contents in-place
+      new_closure.set_capacity(x+1); // this will fit tightly
       state[sp].asc = p.rascent(x);
       const auto end = elements.end(); // must fix current high water mark
       for (auto it = elements.begin(); it<end; ++it) // iterate over old part
@@ -1148,7 +1136,7 @@ void ClosureIterator::operator++()
 	}
       }
       state[sp].closure_size = elements.size();
-      assert(closure().equivalent(schubert::closure(p,current())));
+      assert(closure().equivalent(p.closure(current())));
       return; // we're done incrementing, and still valid
     } // |for(s)|
 
@@ -1398,7 +1386,7 @@ Homology betti(coxtypes::CoxNbr y, const SchubertContext& p)
   Homology result(p.length(y)+1,0);
 
   for (auto it = cl.begin(); it(); ++it)
-    ++result[p.length(*it)]; // make length generating polynomial on closere set
+    ++result[p.length(*it)]; // make length generating polynomial on closure set
 
   return result;
 }

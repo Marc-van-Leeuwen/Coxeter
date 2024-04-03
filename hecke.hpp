@@ -108,7 +108,7 @@ void append(std::string& str, const HeckeMonomial<P>& m, const schubert::Schuber
 */
 
 {
-  p.append(str,m.x(),I);
+  append(p,str,m.x(),I);
   str.append(" : ");
   polynomials::append(str,m.pol(),"q");
 

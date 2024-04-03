@@ -45,12 +45,21 @@ namespace schubert {
   bool shortlex_leq(const SchubertContext& p, const bits::Permutation& order,
 		    coxtypes::CoxNbr x, coxtypes::CoxNbr y);
   Ulong sum(const Homology& h);
-  bitmap::BitMap closure(const SchubertContext& p,coxtypes::CoxNbr x);
 
+  void print(FILE* f, coxtypes::CoxNbr x); // never used; the following is:
+  void print(const SchubertContext& p,FILE* f, coxtypes::CoxNbr x,
+	     const interface::Interface& I);
   void print(FILE* file, SchubertContext& p);
   void printPartition
     (FILE* file, const bits::Partition& pi,
      const SchubertContext& p, const interface::Interface& I);
+
+  /* i/o */
+  std::string& append(std::string&, coxtypes::CoxNbr x);
+  std::string& append(const SchubertContext& p, std::string&,
+		      coxtypes::CoxNbr x,
+		      const interface::Interface& I);
+
 
 };
 
@@ -198,14 +207,7 @@ public:
 
   void revertSize(Ulong n);
   void permute(const bits::Permutation& a);
-/* i/o */
-  std::string& append(std::string&, coxtypes::CoxNbr x) const;
-  std::string& append(std::string&, coxtypes::CoxNbr x,
-		      const interface::Interface& I) const;
-  void print(FILE* file, coxtypes::CoxNbr x) const;
-  void print(FILE* file, coxtypes::CoxNbr x, const interface::Interface& I)
-    const;
-
+ 
 private:
   void extend_context
     (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s);

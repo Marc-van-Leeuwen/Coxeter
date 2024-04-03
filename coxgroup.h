@@ -343,12 +343,12 @@ inline std::string& CoxGroup::append(std::string& str, const coxtypes::CoxWord& 
 inline std::string& CoxGroup::append(std::string& str, const GenSet& f) const
  {return interface::append(str,f,interface());}
 
-inline void CoxGroup::printSymbol(FILE* file, const coxtypes::Generator& s)
-  const {return interface::printSymbol(file,s,interface());}
+inline void CoxGroup::printSymbol(FILE* file, const coxtypes::Generator& s) const
+  { return interface::printSymbol(file,s,interface()); }
 inline void CoxGroup::print(FILE* file, const coxtypes::CoxNbr& x) const
- {return schubert().print(file,x,interface());}
+  { return schubert::print(schubert(),file,x,interface()); }
 inline void CoxGroup::printFlags(FILE* file, const GenSet& f) const
- {return interface::print(file,f,interface());}
+  { return interface::print(file,f,interface()); }
 
 inline void CoxGroup::setInPostfix(const std::string& a)
   {interface().setInPostfix(a);}

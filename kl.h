@@ -49,10 +49,11 @@ class KLPol : public polynomials::Polynomial<klsupport::KLCoeff>
 {
 public:
   static klsupport::PolynomialType polType() {return klsupport::KLPOL;}
-  KLPol() {};
-  KLPol(const Ulong& n):Polynomial<klsupport::KLCoeff>(n) {};
-  KLPol(const klsupport::KLCoeff& c, const_tag):Polynomial<klsupport::KLCoeff>(c,const_tag()) {};
-  ~KLPol() {};
+  KLPol() {}
+  KLPol(const Ulong& n):Polynomial<klsupport::KLCoeff>(n) {}
+  KLPol(const klsupport::KLCoeff& c, const_tag)
+    : Polynomial<klsupport::KLCoeff>(c,const_tag()) {}
+
   // KLPol& add(const KLPol& p, const long& n);
   // KLPol& subtract(const KLPol& p, const MuPol& mp, const Ulong& n);
 };
@@ -80,7 +81,7 @@ struct MuData {
   klsupport::KLCoeff mu;
   coxtypes::Length height;
 /* constructors */
-  MuData(const coxtypes::CoxNbr& d_x,
+  MuData(coxtypes::CoxNbr d_x,
 	 const klsupport::KLCoeff& d_mu,
 	 const coxtypes::Length& d_h)
     :x(d_x), mu(d_mu), height(d_h)
@@ -96,9 +97,9 @@ class MuFilter {
   coxtypes::Length d_l;
  public:
   MuFilter(const schubert::SchubertContext& p, const coxtypes::Length& l);
-  MuFilter(const schubert::SchubertContext& p, const coxtypes::CoxNbr& y);
+  MuFilter(const schubert::SchubertContext& p, coxtypes::CoxNbr y);
 
-  bool operator() (const coxtypes::CoxNbr& x) const
+  bool operator() (coxtypes::CoxNbr x) const
   { coxtypes::Length d = d_l-d_p.length(x); return d%2!=0 and d > 1; }
 };
 
@@ -115,47 +116,46 @@ class KLContext {
 
   // relay methods
   const klsupport::KLSupport& klsupport() const; // uses reference in helper
-  const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
+  const klsupport::ExtrRow& extrList(coxtypes::CoxNbr y) const
   { return klsupport().extrList(y); }
-  coxtypes::Generator last(const coxtypes::CoxNbr& y) const
+  coxtypes::Generator last(coxtypes::CoxNbr y) const
   { return klsupport().last(y); }
-  coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& x) const
+  coxtypes::CoxNbr inverse(coxtypes::CoxNbr x) const
   { return klsupport().inverse(x); }
   const bitmap::BitMap& involution() const { return klsupport().involution(); }
   const schubert::SchubertContext& schubert() const
   { return klsupport().schubert(); }
 
-  // sometime we need non-const access to the |SchubertContext|
+  // sometimes we need non-const access to the support class or |SchubertContext|
   klsupport::KLSupport& klsupport(); // uses reference in helper
   schubert::SchubertContext& schubert() { return klsupport().schubert(); }
 
   void print
-    (FILE* file, const coxtypes::CoxNbr& x, const interface::Interface& I)
-    const
-  { schubert().print(file,x,I); }
+    (FILE* file, coxtypes::CoxNbr x, const interface::Interface& I) const
+  { schubert::print(schubert(),file,x,I); }
 
   const KLStats& stats() const;
 
   // accessors
   Ulong size() const;
   coxtypes::Rank rank() const { return klsupport().rank(); }
-  const KLRow& klList(const coxtypes::CoxNbr& y) const;
-  const MuRow& muList(const coxtypes::CoxNbr& y) const;
+  const KLRow& klList(coxtypes::CoxNbr y) const;
+  const MuRow& muList(coxtypes::CoxNbr y) const;
 
   // manipulators that may expand/shrink tables as only side effect
   const KLPol& klPol
     (coxtypes::CoxNbr x, coxtypes::CoxNbr y, coxtypes::Generator s);
   const KLPol& klPol (coxtypes::CoxNbr x, coxtypes::CoxNbr y);
-  klsupport::KLCoeff mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
-  void row(HeckeElt& h, const coxtypes::CoxNbr& y);
+  klsupport::KLCoeff mu(coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+  void row(HeckeElt& h, coxtypes::CoxNbr y);
   void fillKL();
   void fillMu();
   void setSize(const Ulong& n);
   void revertSize(const Ulong& n);
 
   // manipulators that drastically alter the state
-  void applyInverse(const coxtypes::CoxNbr& y); // more row of |x| to its inverse
-  void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a);
+  void applyInverse(coxtypes::CoxNbr y); // more row of |x| to its inverse
+  void applyIPermutation(coxtypes::CoxNbr y, const bits::Permutation& a);
   void permute(const bits::Permutation& a);
 
 }; // |class KLContext|

@@ -323,7 +323,7 @@ coxtypes::CoxNbr KLSupport::extend_context(const coxtypes::Cox_word& g)
 
   // extend the list of inverses in the old part
   for (coxtypes::CoxNbr x = 0; x < size(); ++x)
-    if (inverse(x) == coxtypes::undef_coxnbr) // old: maybe, new: certain
+    if (inverse(x) == coxtypes::undef_coxnbr) // if old: maybe, if new: certain
     { // try to extend to |x|
       coxtypes::Generator s = p.firstRDescent(x);
       coxtypes::CoxNbr xs = p.rshift(x,s);

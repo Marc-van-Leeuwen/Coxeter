@@ -23,52 +23,55 @@ namespace kl {
   Lusztig polynomials for W.
 
   Our storage class |KLContext| holds two main tables (actually, like all its
-  data, inside its helper class |KLHelper|), |KL_table| for the Kazhdan- Lusztig
+  data, inside its helper class |KLHelper|), |KL_table| for the Kazhdan-Lusztig
   polynomials $P(x,y)$ themselves, and |mu_Table| for the nonnegative integers
   $\mu(x,y)$ determined by them; in fact in both cases only a necessary part of
   all thes values are actually stored. The basic range is all pairs $(x,y)$ of
   Coceter group elements currently covered in the |schubert()| context for which
-  $x\leq y$ iin the Bruhat order. Each table is a |std::vector| indexed by |y|
-  of pointers to "rows" indexed by |x| (so they are actually columns in a sparse
-  matrix); their type are |KLRow| and a |MuRow| respectively). Resizing function
-  are provided so the new space can be added when the Schubert context grows.
+  $x\leq y$ iin the Bruhat order. Each table is a |containers::vector| indexed
+  by |y| of pointers to "rows" indexed by |x| (so they are actually columns in a
+  sparse matrix); their types are |KLRow| and a |MuRow| respectively). Resizing
+  functions are provided so that the new space can be added when the Schubert
+  context grows.
 
   The row |KL_table[y]|, when non null, contains one entry for each extremal
   $x\leq y$; the list of those |x| is available as |klsupport().extrList|, so
-  that these lists are shared among the different |KLContext| tbales. Each entry
+  that these lists are shared among the different |KLContext| tables. Each entry
   in |*KL_list[y]| is a non-owned pointer to a (constant) polynomial $P(x,y)$.
   The main complication is that I've (rightly or wrongly) decided to allocate
   |KL_table[y]| only if $y\leq inverse(y)$ (numerically); if not, the
-  polynomials $P(x,y)$ are looked up as $P(x^{-1},y^{-1}$; this saves space, but
-  makes lookup more complicated. More importantly though, systematically going
-  over to |inverse(y)| when it is smaller thatn |y|, seems to make the algorithm
-  quite a bit faster and leaner (in the sense that fewer rows need to be
-  computed); this, more than the memory saving, is my main reason for keeping
-  this complication in.
+  polynomials $P(x,y)$ are looked up as $P(x^{-1},y^{-1})$; this saves space,
+  but makes lookup more complicated. More importantly though, systematically
+  going over to |inverse(y)| when it is smaller thatn |y|, seems to make the
+  algorithm quite a bit faster and leaner (in the sense that fewer rows need to
+  be computed); this, more than the memory saving, is my main reason for keeping
+  this complication in. [Fokko]
 
   The situation for the |mu_Table| is a little bit more delicate. First of all,
   we do not here go over to inverses; we fill all the rows that are needed
-  (using the mu-value for the inverses if it is available.) Further, we only
+  (using the mu-value for the inverses if it is available). Further, we only
   look at pairs where the length difference is at least three (it not the $\mu$
-  vale is implied by the Bruhat comparison); it is known that in those cases the
-  nonzero $\mu$ only occur at extremal pairs. But in fact, even among extremal
-  pairs, most values are zero as well. So we do not necessarily allocate one
-  entry for each pair; what is guaranteed is that all entries correspond to
-  extremal pairs, and all non-zero mu-values have an entry. Ideally, we would
-  wish to allocate only the non-zero mu's; however, this would require computing
-  a full row as soon as one coefficient is needed, so we have refrained from
-  that. [What Fokko appears to imply here is that if were to maintain only
-  nonzero $\mu$ values, we would either have to compute a whole row at once to
-  decide which ones are nonzero, and then we can subsequently deduce that absent
-  values must be zero, or else insert nonzero values as we go, but this would
-  require growing the row continuously, and also would require recomputing the
-  values that are not found even if they turn out to be zero, because in this
-  scenario we cannot infer zeroness from absence. MvL] Anyway, to find out the
-  value for $\mu(x,y)$, we extremalize $x$, check that the length difference is
-  odd and at least 3, if so look x up in |*mu_Table[y]|, and return the
-  corresponding mu-value if a slot with a well defined value (which could be 0)
-  is found, compute the $\mu$ value if a slot is found with an undefined value,
-  and 0 if no slot is found at all (namely for non extrmal |x|).
+  value is implied by the Bruhat comparison); it is known that in those cases
+  the nonzero $\mu$ only occur at extremal pairs. But in fact, even among
+  extremal pairs, most values are zero as well. So we do not necessarily
+  allocate one entry for each pair; what is guaranteed is that all entries
+  correspond to extremal pairs, and all non-zero mu-values have an entry.
+  Ideally, we would wish to allocate only the non-zero mu's; however, this would
+  require computing a full row as soon as one coefficient is needed, so we have
+  refrained from that. [What Fokko appears to imply here is that if were to
+  maintain only nonzero $\mu$ values, we would either have to compute a whole
+  row at once to decide which ones are nonzero, and then we can subsequently
+  deduce that absent values must be zero, or else insert nonzero values as we
+  go, but this would require growing the row continuously, and also would
+  require recomputing the values that are not found even if they turn out to be
+  zero, because in this scenario we cannot infer zeroness from absence. MvL]
+  Anyway, to find out the value for $\mu(x,y)$, we check that $x$ is extremal
+  (if not, $\mu(x,y)=0$), and that the length difference is odd and at least 3,
+  if so look x up in |*mu_Table[y]|, and return the corresponding mu-value if a
+  slot with a well defined value (which could be 0) is found, compute (and then
+  store) the $\mu$ value if a slot is found with an undefined value. If looking
+  up |x| in |*muTable[y]| fails we return 0, but since it was already checked
+  that |x| is extremal for |y|, this really should not happen.
 
   The idea is to compute everything upon request: we compute exactly what
   is needed in the recursive computation of what is required.
@@ -112,11 +115,11 @@ struct KLContext::KLHelper
   coxtypes::Rank rank() const { return klsupport().rank();}
   const schubert::SchubertContext& schubert() const
     { return klsupport().schubert(); }
-  coxtypes::Generator last (const coxtypes::CoxNbr& x) const
+  coxtypes::Generator last (coxtypes::CoxNbr x) const
     { return klsupport().last(x); }
-  const klsupport::ExtrRow& extrList(const coxtypes::CoxNbr& y) const
+  const klsupport::ExtrRow& extrList(coxtypes::CoxNbr y) const
     { return klsupport().extrList(y); }
-  coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) const
+  coxtypes::CoxNbr inverse(coxtypes::CoxNbr y) const
     { return klsupport().inverse(y); }
 
 
@@ -129,7 +132,7 @@ struct KLContext::KLHelper
     { return KL_table[x] == nullptr; }
   void create_KL_row(coxtypes::CoxNbr y);
   bool row_is_incomplete(coxtypes::CoxNbr y);
-  void take_mu_row_from_inverse(const coxtypes::CoxNbr& y);
+  void take_mu_row_from_inverse(coxtypes::CoxNbr y);
   void ensure_correction_terms
     (coxtypes::CoxNbr y, coxtypes::Generator s, bitmap::BitMap* done);
   containers::vector<KLPol> initial_polys
@@ -144,29 +147,29 @@ struct KLContext::KLHelper
   const KLPol* compute_KL_pol
     (coxtypes::CoxNbr x, coxtypes::CoxNbr y, coxtypes::Generator s);
 
-  void allocMuRow(const coxtypes::CoxNbr& y);
+  void allocMuRow(coxtypes::CoxNbr y);
   void allocMuTable();
 
   bool mu_row_is_complete(coxtypes::CoxNbr y);
     klsupport::KLCoeff computeMu
-      (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
-    void fillMuRow(MuRow& row, const coxtypes::CoxNbr& y);
-  void writeKLRow(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pols);
-    bool isExtrAllocated(const coxtypes::CoxNbr& y)
+      (coxtypes::CoxNbr x, coxtypes::CoxNbr y);
+    void fillMuRow(MuRow& row, coxtypes::CoxNbr y);
+  void writeKLRow(coxtypes::CoxNbr y, containers::vector<KLPol>& pols);
+    bool isExtrAllocated(coxtypes::CoxNbr y)
       { return klsupport().isExtrAllocated(y); }
-  bool isMuAllocated(const coxtypes::CoxNbr& x) const
+  bool isMuAllocated(coxtypes::CoxNbr x) const
   { return mu_Table[x] != nullptr; }
-    void makeMuRow(const coxtypes::CoxNbr& y);
+    void makeMuRow(coxtypes::CoxNbr y);
   void mu_correct_KL_pol
-    (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+    (coxtypes::CoxNbr x, coxtypes::CoxNbr y,
      const coxtypes::Generator& s, KLPol& pol);
     klsupport::KLCoeff recursiveMu
-      (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+      (coxtypes::CoxNbr x, coxtypes::CoxNbr y,
        const coxtypes::Generator& s);
-    void writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y);
+    void writeMuRow(const MuRow& row, coxtypes::CoxNbr y);
 
   void coatom_correct_KL_pol
-    (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+    (coxtypes::CoxNbr x, coxtypes::CoxNbr y,
      const coxtypes::Generator& s,  KLPol& pol);
 
   void grow(Ulong prev, Ulong n);
@@ -199,7 +202,7 @@ namespace {
     const KLPol* operator()(const KLPol* pol) {return pol;}
   };
 
-  MuData* find(MuRow& row, const coxtypes::CoxNbr& x);
+  MuData* find(MuRow& row, coxtypes::CoxNbr x);
   KLPol& safeAdd(KLPol& p, const KLPol& q, const polynomials::Degree& n);
   KLPol& safeSubtract(KLPol& p, const KLPol& q, const klsupport::KLCoeff& mu,
 		      const coxtypes::Length& h);
@@ -261,9 +264,9 @@ const klsupport::KLSupport& KLContext::klsupport() const
 klsupport::KLSupport& KLContext::klsupport() { return d_help->d_klsupport; }
 const KLStats& KLContext::stats() const { return d_help->stats(); }
 Ulong KLContext::size() const { return d_help->size(); }
-const KLRow& KLContext::klList(const coxtypes::CoxNbr& y) const
+const KLRow& KLContext::klList(coxtypes::CoxNbr y) const
   { return *d_help->KL_table[y]; }
-const MuRow& KLContext::muList(const coxtypes::CoxNbr& y) const
+const MuRow& KLContext::muList(coxtypes::CoxNbr y) const
   { return *d_help->mu_Table[y]; }
 
 /******** manipulators *******************************************************/
@@ -412,7 +415,7 @@ const KLPol& KLContext::KLHelper::klPol
   value undef_klcoeff for mu.
 */
 klsupport::KLCoeff KLContext::mu
-  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+  (coxtypes::CoxNbr x, coxtypes::CoxNbr y)
 { return d_help->mu(x,y); }
 
 klsupport::KLCoeff KLContext::KLHelper::mu
@@ -458,7 +461,7 @@ klsupport::KLCoeff KLContext::KLHelper::mu
   This function returns in h the data for the full row of y in the K-L table,
   sorted in the context number order.
 */
-void KLContext::row(HeckeElt& h, const coxtypes::CoxNbr& y)
+void KLContext::row(HeckeElt& h, coxtypes::CoxNbr y)
 { h = d_help->KL_row_as_HeckeElt(y); }
 
 HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
@@ -500,7 +503,7 @@ HeckeElt KLContext::KLHelper::KL_row_as_HeckeElt(coxtypes::CoxNbr y)
   Move row from |inverse(x)| to |x| in |KL_table|, assuming that the boths rows
   are within the bounds of |KL_table|. The row is unchanged (!)
 */
-void KLContext::applyInverse(const coxtypes::CoxNbr& x)
+void KLContext::applyInverse(coxtypes::CoxNbr x)
 { d_help->move_KL_row_from_inverse(x);
 }
 
@@ -512,7 +515,7 @@ void KLContext::KLHelper::move_KL_row_from_inverse(coxtypes::CoxNbr x)
 }
 
 void KLContext::applyIPermutation
-  (const coxtypes::CoxNbr& y, const bits::Permutation& a)
+  (coxtypes::CoxNbr y, const bits::Permutation& a)
 { return right_permute(*d_help->KL_table[y],a); }
 
 /*
@@ -621,43 +624,43 @@ void KLContext::KLHelper::shrink(const Ulong& n)
 
   The following functions are defined :
 
-   - create_KL_row(const coxtypes::CoxNbr& y) : allocate row in the K-L list;
+   - create_KL_row(coxtypes::CoxNbr y) : allocate row in the K-L list;
    - initial_polys(coxtypes::CoxNbr y, coxtypes::Generator s):
      another preliminary to the computation of a row;
    - add_second_terms(containers::vector<KLPol>& pols, coxtypes::CoxNbr y) :
      incorporates the second terms P_{x,ys} in the computation of a full row;
    - mu_correct_row(containers::vector<KLPol>& pols,coxtypes::CoxNbr y):
      subtracts the non-coatom mu-part in the computation of a row;
-   - row_is_incomplete(const coxtypes::CoxNbr& y) : whether a K-L row is not
+   - row_is_incomplete(coxtypes::CoxNbr y) : whether a K-L row is not
      yet fully computed;
-   - allocMuRow(const coxtypes::CoxNbr& y) : allocate row in the mu list;
+   - allocMuRow(coxtypes::CoxNbr y) : allocate row in the mu list;
    - allocMuTable() : allocates the full mu-table;
    - coatom_correct_row( containers::vector<KLPol>& pol,coxtypes::CoxNbr y):
      subtractd the terms for coatoms in the mu-correction, for a full row;
-   - coatom_correct_KL_pol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
+   - coatom_correct_KL_pol(coxtypes::CoxNbr x, coxtypes::CoxNbr y, const coxtypes::Generator& s,
      containers::vector<KLPol>& pol, const Ulong& a) : same, for a single polynomial
-   - computeMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y) : computes a mu-coefficient;
-   - fillMuRow(MuRow& row, const coxtypes::CoxNbr& y) : fills a row in the mu-table;
-   - compute_KL_pol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s =
+   - computeMu(coxtypes::CoxNbr x, coxtypes::CoxNbr y) : computes a mu-coefficient;
+   - fillMuRow(MuRow& row, coxtypes::CoxNbr y) : fills a row in the mu-table;
+   - compute_KL_pol(coxtypes::CoxNbr x, coxtypes::CoxNbr y, const coxtypes::Generator& s =
      coxtypes::undef_generator) : fills in one polynomial, using s as descent;
    - compute_KL_row(coxtypes::CoxNbr y) : fills in one row in the K-L table;
-     coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) : returns the inverse of y;
-   - take_mu_row_from_inverse(const coxtypes::CoxNbr& y) :
+     coxtypes::CoxNbr inverse(coxtypes::CoxNbr y) : returns the inverse of y;
+   - take_mu_row_from_inverse(coxtypes::CoxNbr y) :
      construct the mu-row for y from that of the inverse of y;
-   - makeMuRow(const coxtypes::CoxNbr& y);
-   - mu_correct_KL_pol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
+   - makeMuRow(coxtypes::CoxNbr y);
+   - mu_correct_KL_pol(coxtypes::CoxNbr x, coxtypes::CoxNbr y, const coxtypes::Generator& s,
      containers::vector<KLPol>& pol, const Ulong& a) : subtracts the non-coatom mu-part,
      for the computation of a single polynomial;
-   - mu_row(const coxtypes::CoxNbr& y) : returns the row for y in muList;
+   - mu_row(coxtypes::CoxNbr y) : returns the row for y in muList;
    - ensure_correction_terms(coxtypes::CoxNbr y, coxtypes::Generator s,
            BitMap* done) : a preliminary to the computation of a row;
-   - copy_mu_row_from_KL(const coxtypes::CoxNbr& y) :
+   - copy_mu_row_from_KL(coxtypes::CoxNbr y) :
      fills in the mu-row from the K-L row;
-   - recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s) :
+   - recursiveMu(coxtypes::CoxNbr x, coxtypes::CoxNbr y, const coxtypes::Generator& s) :
      computes mu(x,y) using the general recursive formula;
-   - writeKLRow(const coxtypes::CoxNbr& y, containers::vector<KLPol>& pol) : transfers the
+   - writeKLRow(coxtypes::CoxNbr y, containers::vector<KLPol>& pol) : transfers the
      polynomials from |pol| to |KL_row(y)|;
-   - writeMuRow(const MuRow& row, const coxtypes::CoxNbr& y) transfers the
+   - writeMuRow(const MuRow& row, coxtypes::CoxNbr y) transfers the
      mu-coefficients from row to muList;
 
  ****************************************************************************/
@@ -686,7 +689,7 @@ KLContext::KLHelper::KLHelper(klsupport::KLSupport& kls,KLContext* kl)
 */
 void KLContext::KLHelper::create_KL_row(coxtypes::CoxNbr y)
 {
-  Ulong n = d_klsupport.extr_list(y).size(); // might generate that lsit
+  Ulong n = d_klsupport.extr_list(y).size(); // might generate that list
 
   KL_table[y].reset(new KLRow(n));
   d_stats.klnodes += n;
@@ -719,7 +722,7 @@ bool KLContext::KLHelper::row_is_incomplete(coxtypes::CoxNbr y)
   |create_KL_row|, this function is not designed for maximal efficiency; row
   allocations for big computations should be handled differently.
 */
-void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
+void KLContext::KLHelper::allocMuRow(coxtypes::CoxNbr y)
 {
   using EI = iterator::FilteredIterator
     <coxtypes::CoxNbr,klsupport::ExtrRow::const_iterator,MuFilter>;
@@ -856,7 +859,7 @@ bool KLContext::KLHelper::mu_row_is_complete(coxtypes::CoxNbr y)
 
 */
 void KLContext::KLHelper::coatom_correct_KL_pol
-  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+  (coxtypes::CoxNbr x, coxtypes::CoxNbr y,
    const coxtypes::Generator& s, KLPol& pol)
 {
   const schubert::SchubertContext& p = schubert();
@@ -911,7 +914,7 @@ void KLContext::KLHelper::coatom_correct_KL_pol
   underflow.)
 */
 klsupport::KLCoeff KLContext::KLHelper::computeMu
-  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+  (coxtypes::CoxNbr x, coxtypes::CoxNbr y)
 {
   if (inverse(y) < y)
     return computeMu(inverse(x),inverse(y));
@@ -1102,7 +1105,7 @@ void KLContext::KLHelper::copy_mu_row_from_KL(coxtypes::CoxNbr y)
   partial old row for |y|, since it is faster to reconstruct all its values
   from those of |inverse(y)| than to only extract those not yet present.
 */
-void KLContext::KLHelper::take_mu_row_from_inverse(const coxtypes::CoxNbr& y)
+void KLContext::KLHelper::take_mu_row_from_inverse(coxtypes::CoxNbr y)
 {
   coxtypes::CoxNbr yi = inverse(y);
   assert(mu_row_is_complete(yi));
@@ -1636,7 +1639,7 @@ const KLPol* KLContext::KLHelper::compute_KL_pol
   with odd length difference > 1 w.r.t. y, and at least one entry for each
   non-zero mu.)
 */
-void KLContext::KLHelper::fillMuRow(MuRow& row, const coxtypes::CoxNbr& y)
+void KLContext::KLHelper::fillMuRow(MuRow& row, coxtypes::CoxNbr y)
 {
   for (Ulong j = 0; j < row.size(); ++j) {
     if (row[j].mu == klsupport::undef_klcoeff) {
@@ -1651,7 +1654,7 @@ void KLContext::KLHelper::fillMuRow(MuRow& row, const coxtypes::CoxNbr& y)
 }
 
 
-void KLContext::KLHelper::makeMuRow(const coxtypes::CoxNbr& y)
+void KLContext::KLHelper::makeMuRow(coxtypes::CoxNbr y)
 
 /*
   This function makes a row in the mu-table from scratch (i.e., it is assumed
@@ -1692,7 +1695,7 @@ void KLContext::KLHelper::makeMuRow(const coxtypes::CoxNbr& y)
 
 */
 void KLContext::KLHelper::mu_correct_KL_pol
-  (const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& y,
+  (coxtypes::CoxNbr d_x, coxtypes::CoxNbr y,
    const coxtypes::Generator& d_s, KLPol& pol)
 {
   const schubert::SchubertContext& p = schubert();
@@ -1768,7 +1771,7 @@ void KLContext::KLHelper::mu_correct_KL_pol
   underflow.)
 */
 klsupport::KLCoeff KLContext::KLHelper::recursiveMu
-  (const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& y,
+  (coxtypes::CoxNbr d_x, coxtypes::CoxNbr y,
 			       const coxtypes::Generator& d_s)
 {
   const schubert::SchubertContext& p = schubert();
@@ -1928,7 +1931,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu
   reported, and ERROR_WARNING is set.
 */
 void KLContext::KLHelper::writeKLRow
-  (const coxtypes::CoxNbr& y, containers::vector<KLPol>& pol)
+  (coxtypes::CoxNbr y, containers::vector<KLPol>& pol)
 {
   KLRow& kl_row = KL_row(y);
 
@@ -1952,7 +1955,7 @@ void KLContext::KLHelper::writeKLRow
   Copy nonzero entries of |row| to the corresponding row in the mu-list.
 */
 void KLContext::KLHelper::writeMuRow
-  (const MuRow& row, const coxtypes::CoxNbr& y)
+  (const MuRow& row, coxtypes::CoxNbr y)
 {
   /* count non-zero entries */
 
@@ -1999,7 +2002,7 @@ MuFilter::MuFilter(const schubert::SchubertContext& p, const coxtypes::Length& l
   :d_p(p), d_l(l)
 {}
 
-MuFilter::MuFilter(const schubert::SchubertContext& p, const coxtypes::CoxNbr& y)
+MuFilter::MuFilter(const schubert::SchubertContext& p, coxtypes::CoxNbr y)
   :d_p(p), d_l(p.length(y))
 {}
 
@@ -2136,9 +2139,9 @@ void showKLPol
   std::string buf;
 
   buf.append("x = ");
-  p.append(buf,x,I);
+  append(p,buf,x,I);
   buf.append("; y = ");
-  p.append(buf,y,I);
+  append(p,buf,y,I);
   buf.append(" L:");
   append(buf,p.ldescent(y),I);
   buf.append(" R:");
@@ -2151,9 +2154,9 @@ void showKLPol
     y = kl.inverse(y);
     fprintf(file,"inverse(y) < y\n");
     fprintf(file,"new x : ");
-    p.print(file,x,I);
+    print(p,file,x,I);
     fprintf(file,"\nnew y : ");
-    p.print(file,y,I);
+    print(p,file,y,I);
     fprintf(file,"\n\n");
   }
 
@@ -2161,7 +2164,7 @@ void showKLPol
   x = p.maximize(x,f);
   if (x > x_orig) {
       fprintf(file,"x is not extremal w.r.t. y\nnew x: ");
-      p.print(file,x,I);
+      print(p,file,x,I);
       fprintf(file,"\n\n");
   }
 
@@ -2183,9 +2186,9 @@ void showKLPol
 	fprintf(file,"x not comparable to ys for s = %d\n",s+1);
 	buf.clear();
 	buf.append("xs = ");
-	p.append(buf,xs,I);
+	append(p,buf,xs,I);
 	buf.append("; ys = ");
-	p.append(buf,ys,I);
+	append(p,buf,ys,I);
 	io::foldLine(file,buf,ls,0,"y");
 	fprintf(file,"\n\n");
 	goto end;
@@ -2195,9 +2198,9 @@ void showKLPol
 	fprintf(file,"x not comparable to sy for s = %d\n",s+1-kl.rank());
 	buf.clear();
 	buf.append("sx = ");
-	p.append(buf,xs,I);
+	append(p,buf,xs,I);
 	buf.append("; sy = ");
-	p.append(buf,ys,I);
+	append(p,buf,ys,I);
 	io::foldLine(file,buf,ls,0,"s");
 	fprintf(file,"\n\n");
 	goto end;
@@ -2211,9 +2214,9 @@ void showKLPol
 	      s+1);
       buf.clear();
       buf.append("xs = ");
-      p.append(buf,xs,I);
+      append(p,buf,xs,I);
       buf.append("; ys = ");
-      p.append(buf,ys,I);
+      append(p,buf,ys,I);
       io::foldLine(file,buf,ls,0,"y");
       fprintf(file,"\n\n");
     }
@@ -2222,9 +2225,9 @@ void showKLPol
 	      s+1-kl.rank());
       buf.clear();
       buf.append("sx = ");
-      p.append(buf,xs,I);
+      append(p,buf,xs,I);
       buf.append("; sy = ");
-      p.append(buf,ys,I);
+      append(p,buf,ys,I);
       io::foldLine(file,buf,ls,0,"s");
       fprintf(file,"\n\n");
     }
@@ -2275,7 +2278,7 @@ void showKLPol
       coatomcorrection = true;
       buf.clear();
       buf.append("z = ");
-      p.append(buf,z,I);
+      append(p,buf,z,I);
       buf.append(" P_{x,z} = ");
       polynomials::append(buf,kl.klPol(x,z),"q");
       io::foldLine(file,buf,ls,4,"P+");
@@ -2301,7 +2304,7 @@ void showKLPol
 	mucorrection = true;
 	buf.clear();
 	buf.append("z = ");
-	p.append(buf,z,I);
+	append(p,buf,z,I);
 	io::pad(buf,l_ys+1); /* remember the four characters "z = " */
 	buf.append(" mu = ");
 	io::append(buf,m[j].mu);
@@ -2353,9 +2356,9 @@ void showMu(FILE* file, KLContext& kl,
   {
     unsigned long ls = io::LINESIZE;
     buf.append("x = ");
-    p.append(buf,x,I);
+    append(p,buf,x,I);
     buf.append("  y = ");
-    p.append(buf,y,I);
+    append(p,buf,y,I);
     buf.append(" L:");
     append(buf,p.ldescent(y),I);
     buf.append(" R:");
@@ -2432,9 +2435,9 @@ void showRecursiveMu(FILE* file, KLContext& kl,
       fprintf(file,"x not comparable to ys for s = %d\n",s+1);
       buf.clear();
       buf.append("xs = ");
-      p.append(buf,xs,I);
+      append(p,buf,xs,I);
       buf.append("; ys = ");
-      p.append(buf,ys,I);
+      append(p,buf,ys,I);
       io::foldLine(file,buf,ls,0,"y");
       fprintf(file,"\n\nresult : %lu\n\n",static_cast<Ulong>(r));
     }
@@ -2442,9 +2445,9 @@ void showRecursiveMu(FILE* file, KLContext& kl,
       fprintf(file,"x not comparable to sy for s = %d\n",s-kl.rank()+1);
       buf.clear();
       buf.append("sx = ");
-      p.append(buf,xs,I);
+      append(p,buf,xs,I);
       buf.append("; sy = ");
-      p.append(buf,ys,I);
+      append(p,buf,ys,I);
       io::foldLine(file,buf,ls,0,"s");
       fprintf(file,"\n\n");
       fprintf(file,"\n\nresult : %lu\n\n",static_cast<Ulong>(r));
@@ -2459,9 +2462,9 @@ void showRecursiveMu(FILE* file, KLContext& kl,
 	      s+1);
       buf.clear();
       buf.append("xs = ");
-      p.append(buf,xs,I);
+      append(p,buf,xs,I);
       buf.append("; ys = ");
-      p.append(buf,ys,I);
+      append(p,buf,ys,I);
       io::foldLine(file,buf,ls,0,"y");
       fprintf(file,"\n\n");
     }
@@ -2470,9 +2473,9 @@ void showRecursiveMu(FILE* file, KLContext& kl,
 	      s+1-kl.rank());
       buf.clear();
       buf.append("sx = ");
-      p.append(buf,xs,I);
+      append(p,buf,xs,I);
       buf.append("; sy = ");
-      p.append(buf,ys,I);
+      append(p,buf,ys,I);
       io::foldLine(file,buf,ls,0,"s");
       fprintf(file,"\n\n");
     }
@@ -2522,7 +2525,7 @@ void showRecursiveMu(FILE* file, KLContext& kl,
       coatomcorrection = true;
       buf.clear();
       buf.append("z = ");
-      p.append(buf,z,I);
+      append(p,buf,z,I);
       buf.append(" mu(x,z) = ");
       io::append(buf,kl.mu(x,z));
       io::foldLine(file,buf,ls,4," ");
@@ -2560,7 +2563,7 @@ void showRecursiveMu(FILE* file, KLContext& kl,
        mucorrection = true;
        buf.clear();
        buf.append("z = ");
-       p.append(buf,z,I);
+       append(p,buf,z,I);
        io::pad(buf,l_ys+1); // remember the four characters "z = "
        buf.append(" mu = ");
        io::append(buf,m[j].mu);
@@ -2628,13 +2631,13 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
   if (p.descent(xt) & constants::eq_mask[s]) { /* xts < xt */
 
     buf.append("xs = ");
-    p.append(buf,xs,I);
+    append(p,buf,xs,I);
     buf.append("  ys = ");
-    p.append(buf,ys,I);
+    append(p,buf,ys,I);
 
     if (p.descent(yst) & constants::eq_mask[s]) { /* ysts < yst */
       buf.append("  yst = ");
-      p.append(buf,yst,I);
+      append(p,buf,yst,I);
       io::foldLine(file,buf,ls,0,"xy");
       fprintf(file,"\n\n");
       fprintf(file,
@@ -2654,13 +2657,13 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
   else { /* xts > xt */
     if (p.descent(yst) & constants::eq_mask[s]) { /* ysts < yst */
       buf.append("xs = ");
-      p.append(buf,xs,I);
+      append(p,buf,xs,I);
       buf.append("  xt = ");
-      p.append(buf,xt,I);
+      append(p,buf,xt,I);
       buf.append("  ys = ");
-      p.append(buf,ys,I);
+      append(p,buf,ys,I);
       buf.append("  yst = ");
-      p.append(buf,yst,I);
+      append(p,buf,yst,I);
       io::foldLine(file,buf,ls,0,"xy");
       fprintf(file,"\n\n");
       fprintf(file,
@@ -2674,11 +2677,11 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
     else { /* ysts > yst */
       if (p.descent(xs) & constants::eq_mask[t]) {
 	buf.append("xs = ");
-	p.append(buf,xs,I);
+	append(p,buf,xs,I);
 	buf.append("  xt = ");
-	p.append(buf,xt,I);
+	append(p,buf,xt,I);
 	buf.append("  ys = ");
-	p.append(buf,ys,I);
+	append(p,buf,ys,I);
 	io::foldLine(file,buf,ls,0,"xy");
 	fprintf(file,"\n\n");
 	fprintf(file,"result is mu(xs,ys)+mu(xt,ys) = %lu + %lu = %lu\n\n",
@@ -2689,9 +2692,9 @@ void showSimpleMu(FILE* file, KLContext& kl, coxtypes::CoxNbr x,
       }
       else { /* mu(xs,ys) = 0 */
 	buf.append("xt = ");
-	p.append(buf,xt,I);
+	append(p,buf,xt,I);
 	buf.append("  ys = ");
-	p.append(buf,ys,I);
+	append(p,buf,ys,I);
 	io::foldLine(file,buf,ls,0,"xy");
 	fprintf(file,"\n\n");
 	fprintf(file,"result is mu(xt,ys) = %lu\n\n", static_cast<Ulong>(r));
@@ -2903,7 +2906,7 @@ namespace {
   Find |x| in |row| and return the address of the corresponding row.
   Returns null pointer if |x| is not found. Uses binary search.
 */
-MuData* find(MuRow& row, const coxtypes::CoxNbr& x)
+MuData* find(MuRow& row, coxtypes::CoxNbr x)
 {
   Ulong j0 = (Ulong)(-1);
 
