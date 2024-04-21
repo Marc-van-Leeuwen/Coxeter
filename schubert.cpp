@@ -148,9 +148,7 @@ namespace schubert {
 */
 SchubertContext::SchubertContext(const graph::CoxGraph& G)
   : d_graph(G)
-  , d_length(1,0)
-  , d_hasse(1,CoxNbrList())
-  , d_descent(1,Lflags())
+  , elt_data(1,data(0,Lflags()))
   , d_shift(1,2*rank(),coxtypes::undef_coxnbr)
   , d_star(0,2*nStarOps()) // rows are filled on demand
   , d_downset(2*rank(),bitmap::BitMap(1))
@@ -305,19 +303,18 @@ bool SchubertContext::Bruhat_leq(coxtypes::CoxNbr x, coxtypes::CoxNbr y) const
 coxtypes::CoxNbr SchubertContext::maximize
   (coxtypes::CoxNbr x, const Lflags& f)  const
 {
-  coxtypes::CoxNbr x1 = x;
-  Lflags g = f & ~d_descent[x1];
+  Lflags g = f & ~descent(x);
 
   while (g!=0)
   {
     coxtypes::Generator s = constants::firstBit(g);
-    x1 = shift(x1,s);
-    if (not in_context(x1))
+    x = shift(x,s);
+    if (not in_context(x))
       return coxtypes::undef_coxnbr;
-    g = f & ~d_descent[x1];
+    g = f & ~descent(x);
   }
 
-  return x1;
+  return x;
 }
 
 
@@ -329,17 +326,16 @@ coxtypes::CoxNbr SchubertContext::maximize
 coxtypes::CoxNbr SchubertContext::minimize
   (coxtypes::CoxNbr x, const Lflags& f) const
 {
-  coxtypes::CoxNbr x1 = x;
-  Lflags g = f & d_descent[x1];
+  Lflags g = f & descent(x);
 
   while (g!=0)
     {
       coxtypes::Generator s = constants::firstBit(g);
-      x1 = shift(x1,s);
-      g = f & d_descent[x1];
+      x = shift(x,s);
+      g = f & descent(x);
     }
 
-  return x1;
+  return x;
 }
 
 
@@ -508,7 +504,7 @@ void SchubertContext::extend_context
   /* check length overflow */
   coxtypes::CoxNbr y = elements.back(); /* most recent element in q */
 
-  if (d_length[y] == coxtypes::LENGTH_MAX) { /* overflow */
+  if (length(y) == coxtypes::LENGTH_MAX) { /* overflow */
     ERRNO = LENGTH_OVERFLOW;
     return;
   }
@@ -536,12 +532,11 @@ void SchubertContext::extend_context
   for (coxtypes::CoxNbr x : elements)
     if (shift(x,s) == coxtypes::undef_coxnbr)
     { // create new entry and fill in only very basic attributes
-      const coxtypes::CoxNbr xs = d_length.size();
-      d_length.push_back(d_length[x] + 1);
-      d_descent.push_back(constants::eq_mask[s]);
+      const coxtypes::CoxNbr xs = size();
+      elt_data.emplace_back(length(x) + 1,constants::eq_mask[s]);
       d_shift.entry( x,s) = xs;
       d_shift.entry(xs,s) = x;
-      d_parity[d_length[xs]%2].insert(xs);
+      d_parity[length(xs)%2].insert(xs);
       d_downset[s].insert(xs);
     }
 
@@ -590,7 +585,7 @@ void SchubertContext::fill_Hasse(Ulong first, coxtypes::Generator s)
 
     containers::sl_list<coxtypes::CoxNbr> c = {xs}; // start with this singleton
 
-    for (coxtypes::CoxNbr z : d_hasse[xs])
+    for (coxtypes::CoxNbr z : hasse(xs))
     {
       coxtypes::CoxNbr zs = shift(z,s);
       assert(in_context(zs));
@@ -598,8 +593,7 @@ void SchubertContext::fill_Hasse(Ulong first, coxtypes::Generator s)
 	c.push_back(zs);
     }
 
-    assert(d_hasse.size()==x);
-    d_hasse.push_back(c.to_vector()); // convert list tightly to vector
+    elt_data[x].coatoms=c.to_vector(); // convert list tightly to vector
   }
 }
 
@@ -629,14 +623,14 @@ void SchubertContext::fill_shifts_and_descents
     coxtypes::Generator t = (s + rank()) % two_r; // |s| from opposite side
     d_shift.entry(0,t) = x;
     d_shift.entry(x,t) = 0;
-    d_descent[x] |= constants::eq_mask[t];
+    elt_data[x].desc |= constants::eq_mask[t];
     d_downset[t].insert(x);
     ++x; // don't treat this case in next loop
   }
 
   for (; x < size(); ++x)
   {
-    const CoxNbrList& coatoms = d_hasse[x]; // this was already computed
+    const CoxNbrList& coatoms = elt_data[x].coatoms; // this was already computed
 
     if (coatoms.size() == 2) // treat the "dihedral case" separately
     {
@@ -652,21 +646,21 @@ void SchubertContext::fill_shifts_and_descents
 
       d_shift.entry(x,s_op) = z;
       d_shift.entry(z,s_op) = x;
-      d_descent[x] |= constants::eq_mask[s_op];
+      elt_data[x].desc |= constants::eq_mask[s_op];
       d_downset[s_op].insert(x);
 
       if (length(x)==d_graph.M(s%rank(),t%rank())) // |x| tops dihedral group?
       { // if so, |z| is also a descent of |x| (on the same side as |s|) by |t|
 	d_shift.entry(x,t) = z;
 	d_shift.entry(z,t) = x;
-	d_descent[x] |= constants::eq_mask[t];
+	elt_data[x].desc |= constants::eq_mask[t];
 	d_downset[t].insert(x);
 	// and |xs| is also opposite side descent of |x|, by complement of |s_op|
 	coxtypes::Generator t_op = // same side as |s_op| and different from it
 	  (two_r + s + t - s_op)%two_r; // uses of |two_r| to avoid underflow
 	d_shift.entry(x ,t_op) = xs;
 	d_shift.entry(xs,t_op) = x ;
-	d_descent[x] |= constants::eq_mask[t_op];
+	elt_data[x].desc |= constants::eq_mask[t_op];
 	d_downset[t_op].insert(x);
       }
     }
@@ -694,7 +688,7 @@ void SchubertContext::fill_shifts_and_descents
 	  */
 	  d_shift.entry(x,t) = z;
 	  d_shift.entry(z,t) = x;
-	  d_descent[x] |= constants::eq_mask[t];
+	  elt_data[x].desc |= constants::eq_mask[t];
 	  d_downset[t].insert(x);
 	next_t:
 	  continue; // (an empty statement would do the same)
@@ -738,10 +732,10 @@ void SchubertContext::extendSubSet
   Coxeter element |i| will henceforth have number |a[i]|. We have explained in
   kl.cpp how this should be done. The objects to be modified are the following :
 
-   - d_length : a table with range in the context;
-   - d_hasse : each row is a list with values in the context; the table itself
-     has range in the context; in addition the permuted rows should be sorted;
-   - d_descent : a table with range in the context;
+   - elt_data: a table of structs with range in the context; fields
+     . l: length
+     . coatoms: a list with values in the context sorted;
+     . desc: simple descents (right and left)
    - d_shift : a table with range in the context; each row has values in the
      context, or coxtypes::undef_coxnbr;
    - d_downset : a table of bitmaps ranging over the context;
@@ -752,8 +746,8 @@ void SchubertContext::permute(const bits::Permutation& a)
 
   /* permute values */
 
-  for (CoxNbrList& c : d_hasse)
-    for (auto& elt : c)
+  for (auto& d : elt_data)
+    for (auto& elt : d.coatoms)
       elt = a[elt];
 
   for (coxtypes::CoxNbr x = 0; x < size(); ++x)
@@ -777,21 +771,8 @@ void SchubertContext::permute(const bits::Permutation& a)
 
     for (coxtypes::CoxNbr y = a[x]; y != x; y = a[y])
     {
-      std::swap(d_length[x],d_length[y]);
-      std::swap(d_hasse[x],d_hasse[y]);
+      std::swap(elt_data[x],elt_data[y]);
       d_shift.swap_rows(x,y);
-
-      /* back up values for y */
-
-      Lflags descent_buf = d_descent[y];
-
-      /* put values for x in y */
-
-      d_descent[y] = d_descent[x];
-
-      /* store backup values in x */
-
-      d_descent[x] = descent_buf;
 
       // swap bits at |x| and |y| in all downsets
       for (coxtypes::Generator s = 0; s < 2*this->rank(); ++s)
@@ -830,9 +811,7 @@ void SchubertContext::permute(const bits::Permutation& a)
 */
 void SchubertContext::revertSize(Ulong n)
 {
-  d_length.resize(n);
-  d_hasse.resize(n);
-  d_descent.resize(n);
+  elt_data.erase(elt_data.begin()+n,elt_data.end());
 
   d_shift.shrink(n);
   for (Ulong j = 0; j < 2ul*rank(); ++j)
@@ -844,11 +823,10 @@ void SchubertContext::revertSize(Ulong n)
 }
 
 /*
-  Resize the various data structures to accomodate a context of size |n|.
-  This means that the vectors |d_length|, |d_hasse|, |d_descent| and |d_shift|
-  are reserved size |n|, and that memory is allocated for the new shift
-  tables; we cannot do this for coatom lists, since they are variable in
-  size.
+  Resize the various data structures to accomodate a context of size |n|. This
+  means that the vectors |elt_data| and matrix |d_shift| are reserved size |n|
+  (rows), and that memory is allocated for the new shift tables; we cannot do
+  this for coatom lists, since they are variable in size.
 
   It is assumed that n is greater than the current size.
 
@@ -860,9 +838,7 @@ void SchubertContext::increase_size(Ulong n)
   Ulong prev_size = size();
 
   try {
-    d_length.reserve(n);
-    d_hasse.reserve(n);
-    d_descent.reserve(n);
+    elt_data.reserve(n);
     d_shift.grow(n,coxtypes::undef_coxnbr); // extend with entirely undefined row
     for (Ulong j = 0; j < 2ul*rank(); ++j)
       d_downset[j].set_capacity(n);
@@ -965,7 +941,7 @@ template<bool left> coxtypes::CoxNbr SchubertContext::falling_star
 
   const Lflags sided_st = left ? static_cast<Lflags>(st) << rank() : st;
   const coxtypes::CoxNbr x_min = minimize(x,sided_st);
-  const coxtypes::Length dl = d_length[x] - d_length[x_min];
+  const coxtypes::Length dl = length(x) - length(x_min);
   coxtypes::Generator s = constants::firstBit(f0);
   coxtypes::Generator t = constants::firstBit(f1); // the _only_ bits
   const auto m = d_graph.M(s,t);

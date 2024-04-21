@@ -81,10 +81,12 @@ struct NFCompare {
 
 class SchubertContext
 {
+  struct data
+  { coxtypes::Length l; CoxNbrList coatoms; Lflags desc;
+    data(coxtypes::Length l, Lflags d) : l(l),coatoms(),desc(d) {}
+  };
   const graph::CoxGraph& d_graph;
-  containers::vector<coxtypes::Length> d_length;
-  containers::vector<CoxNbrList> d_hasse;
-  containers::vector<Lflags> d_descent;
+  containers::vector<data> elt_data;
   containers::matrix<coxtypes::CoxNbr> d_shift;
   containers::matrix<coxtypes::CoxNbr> d_star; // indexed by |CoxNbr,edge_nr|
   containers::vector<bitmap::BitMap> d_downset; // length |2*d_rank|
@@ -100,25 +102,25 @@ public:
 
   // inlined accessor methods
   coxtypes::Rank rank() const { return d_graph.rank(); }
-  coxtypes::CoxNbr size() const { return d_length.size(); }
-  coxtypes::Length length(coxtypes::CoxNbr x) const { return d_length[x]; }
+  coxtypes::CoxNbr size() const { return elt_data.size(); }
+  coxtypes::Length length(coxtypes::CoxNbr x) const { return elt_data[x].l; }
   const bitmap::BitMap& parity(coxtypes::CoxNbr x) const
-    { return d_parity[d_length[x]%2]; }
+  { return d_parity[length(x)%2]; }
   coxtypes::Length max_length() const { return d_maxlength; }
 
   bool in_context(coxtypes::CoxNbr x) const { return x<size(); }
 
   Lflags descent(coxtypes::CoxNbr x) const
-    { return d_descent[x]; }
+    { return elt_data[x].desc; }
   GenSet rdescent(coxtypes::CoxNbr x) const
-    { return d_descent[x] & constants::lt_mask[rank()]; }
+    { return descent(x) & constants::lt_mask[rank()]; }
   GenSet ldescent(coxtypes::CoxNbr x) const
-    { return d_descent[x] >> rank(); } // left descents as (neutral) generators
+    { return descent(x) >> rank(); } // left descents as (neutral) generators
   template<char side> Lflags descent_set(coxtypes::CoxNbr x) const
     { return side=='l' ? ldescent(x) : side=='r' ? rdescent(x) : descent(x); }
 
   Lflags ascent(coxtypes::CoxNbr x) const
-    { return ~d_descent[x]&constants::lt_mask[2*rank()]; }
+    { return ~descent(x)&constants::lt_mask[2*rank()]; }
   GenSet rascent(coxtypes::CoxNbr x) const
     {return ~rdescent(x)&constants::lt_mask[rank()];}
   GenSet lascent(coxtypes::CoxNbr x) const
@@ -150,9 +152,9 @@ public:
     (coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return (descent_set<side>(x)&constants::eq_mask[s])!=0; }
   bool isDescent(coxtypes::CoxNbr x, coxtypes::Generator s) const
-    { return (d_descent[x]&constants::eq_mask[s])!=0; } // whether |s| is descent
+    { return (descent(x)&constants::eq_mask[s])!=0; } // whether |s| is descent
   bool is_ascent(coxtypes::CoxNbr x, coxtypes::Generator s) const
-    { return (d_descent[x]&constants::eq_mask[s])==0; } // whether |s| is ascent
+    { return (descent(x)&constants::eq_mask[s])==0; } // whether |s| is ascent
 
   coxtypes::CoxNbr shift(coxtypes::CoxNbr x, coxtypes::Generator s) const
     { return d_shift.entry(x,s); } // left or right shift
@@ -163,7 +165,8 @@ public:
 
   const bitmap::BitMap& down_set(coxtypes::Generator s) const
     { return d_downset[s]; }
-  const CoxNbrList& hasse(coxtypes::CoxNbr x) const { return d_hasse[x]; }
+  const CoxNbrList& hasse(coxtypes::CoxNbr x) const
+    { return elt_data[x].coatoms; }
   const type::Type& type() const { return d_graph.type(); }
 
   Lflags S() const // mask for simple generators, to then restrict to |GenSet|
@@ -207,7 +210,7 @@ public:
 
   void revertSize(Ulong n);
   void permute(const bits::Permutation& a);
- 
+
 private:
   void extend_context
     (bitmap::BitMap& q, CoxNbrList& elements, coxtypes::Generator s);
