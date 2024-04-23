@@ -1427,7 +1427,7 @@ void invpol_f()
     return;
   }
 
-  const invkl::KLPol& pol = W->invklPol(x,y);
+  const kl::KLPol& pol = W->invklPol(x,y);
   if (ERRNO) {
     Error(ERRNO,x,y);
     return;

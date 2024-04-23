@@ -12,6 +12,7 @@
 #include "containers.h"
 #include "coxtypes.h"
 #include "klsupport.h"
+#include "kl.h"
 #include "hecke.h"
 #include "list.h"
 #include "polynomials.h"
@@ -23,22 +24,11 @@
 
 namespace invkl {
   class KLContext;
-  class KLPol;
-  struct KLStatus;
-  struct MuData;
   class MuFilter;
 
-  typedef list::List<const KLPol*> KLRow;
-  typedef list::List<MuData> MuRow;
-  using HeckeElt = containers::vector<hecke::HeckeMonomial<KLPol> >;
-};
-
-/******** function declarations *********************************************/
-
-namespace invkl {
-
-  const KLPol& one();
-
+  typedef list::List<const kl::KLPol*> KLRow;
+  typedef list::List<kl::MuData> MuRow;
+  using HeckeElt = containers::vector<hecke::HeckeMonomial<kl::KLPol> >;
 };
 
 /******** type definitions **************************************************/
@@ -46,56 +36,12 @@ namespace invkl {
 
 namespace invkl {
 
-class KLPol : public polynomials::Polynomial<klsupport::KLCoeff>
-{
-public:
-  static klsupport::PolynomialType polType() {return klsupport::INV_KLPOL;}
-  KLPol() {};
-  KLPol(const Ulong& n):Polynomial<klsupport::KLCoeff>(n) {};
-  KLPol(const klsupport::KLCoeff& c, const_tag):Polynomial<klsupport::KLCoeff>(c,const_tag()) {};
-  ~KLPol() {};
-  KLPol& add(const KLPol& p, const klsupport::KLCoeff& mu, const Ulong& n);
-  KLPol& subtract(const KLPol& p, const Ulong& n);
-};
-
-struct MuData {
-  coxtypes::CoxNbr x;
-  klsupport::KLCoeff mu;
-  coxtypes::Length height;
-/* constructors */
-  MuData() {};
-  MuData(const coxtypes::CoxNbr& d_x, const klsupport::KLCoeff& d_mu, const coxtypes::Length& d_h)
-    :x(d_x), mu(d_mu), height(d_h) {};
-  ~MuData() {};
-/* comparison */
-  bool operator> (const MuData& m) const;                        /* inlined */
-};
-
-struct KLStatus {
-  static const unsigned char kl_done = 1L;
-  static const unsigned char mu_done = (1L << 1);
-  Ulong klrows;
-  Ulong klnodes;
-  Ulong klcomputed;
-  Ulong murows;
-  Ulong munodes;
-  Ulong mucomputed;
-  Ulong muzero;
-  unsigned char flags;
-/* constructors and destructors */
-  void* operator new(size_t size) {return memory::arena().alloc(size);}
-  void operator delete(void* ptr)
-    {return memory::arena().free(ptr,sizeof(KLStatus));}
-  KLStatus();
-  ~KLStatus();
-};
-
 class KLContext {
   klsupport::KLSupport* d_klsupport;
   list::List<KLRow*> d_klList;
   list::List<MuRow*> d_muList;
-  search::BinaryTree<KLPol> d_klTree;
-  KLStatus* d_status;
+  search::BinaryTree<kl::KLPol> d_klTree;
+  kl::KLStats* d_status;
   struct KLHelper; /* provides helper functions */
   KLHelper* d_help;
   friend struct KLHelper;
@@ -123,7 +69,7 @@ class KLContext {
   const schubert::SchubertContext& schubert() const
   { return d_klsupport->schubert(); }
   Ulong size() const;                                         /* inlined */
-  const search::BinaryTree<KLPol>& tree() const;                /* inlined */
+  const search::BinaryTree<kl::KLPol>& tree() const;                /* inlined */
 /* manipulators */
   void applyInverse(const coxtypes::CoxNbr& y);
   void applyIPermutation(const coxtypes::CoxNbr& y, const bits::Permutation& a); /* inlined */
@@ -131,7 +77,7 @@ class KLContext {
   void clearFullMu();                                            /* inlined */
   void fillKL();
   void fillMu();
-  const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+  const kl::KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
 		     const coxtypes::Generator& s = coxtypes::undef_generator);
   klsupport::KLCoeff mu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
 	     const coxtypes::Generator& s = coxtypes::undef_generator);
@@ -149,8 +95,6 @@ class KLContext {
 
 namespace invkl {
 
-inline bool MuData::operator> (const MuData& m) const {return x > m.x;}
-
 inline const klsupport::ExtrRow& KLContext::extrList(const coxtypes::CoxNbr& y) const
   {return klsupport().extrList(y);}
 inline coxtypes::CoxNbr KLContext::inverse(const coxtypes::CoxNbr& x) const
@@ -158,9 +102,9 @@ inline coxtypes::CoxNbr KLContext::inverse(const coxtypes::CoxNbr& x) const
 inline bool KLContext::isExtrAllocated(const coxtypes::CoxNbr& x) const
   {return d_klsupport->isExtrAllocated(x);}
 inline bool KLContext::isFullKL() const
-  {return d_status->flags&KLStatus::kl_done;}
+{return d_status->flags&kl::KLStats::kl_done;}
 inline bool KLContext::isFullMu() const
-  {return d_status->flags&KLStatus::mu_done;}
+{return d_status->flags&kl::KLStats::mu_done;}
 inline bool KLContext::isKLAllocated(const coxtypes::CoxNbr& x) const
   {return d_klList[x] != 0;}
 inline bool KLContext::isMuAllocated(const coxtypes::CoxNbr& x) const
@@ -174,16 +118,16 @@ inline const MuRow& KLContext::muList(const coxtypes::CoxNbr& y) const
   {return *d_muList[y];}
 inline coxtypes::Rank KLContext::rank() const {return d_klsupport->rank();}
 inline Ulong KLContext::size() const {return d_klList.size();}
-inline const search::BinaryTree<KLPol>& KLContext::tree() const
+  inline const search::BinaryTree<kl::KLPol>& KLContext::tree() const
   {return d_klTree;}
 
 inline void KLContext::applyIPermutation(const coxtypes::CoxNbr& y,
 					 const bits::Permutation& a)
   {return rightRangePermute(*d_klList[y],a);}
-inline void KLContext::clearFullKL() {d_status->flags &= ~KLStatus::kl_done;}
-inline void KLContext::clearFullMu() {d_status->flags &= ~KLStatus::mu_done;}
-inline void KLContext::setFullKL() {d_status->flags |= KLStatus::kl_done;}
-inline void KLContext::setFullMu() {d_status->flags |= KLStatus::mu_done;}
+  inline void KLContext::clearFullKL() {d_status->flags &= ~kl::KLStats::kl_done;}
+  inline void KLContext::clearFullMu() {d_status->flags &= ~kl::KLStats::mu_done;}
+  inline void KLContext::setFullKL() {d_status->flags |= kl::KLStats::kl_done;}
+  inline void KLContext::setFullMu() {d_status->flags |= kl::KLStats::mu_done;}
 
 };
 

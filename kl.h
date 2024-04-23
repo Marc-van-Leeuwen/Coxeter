@@ -24,7 +24,6 @@
 
 namespace kl {
   class KLContext;
-  struct KLStatus;
   struct MuData;
   class MuFilter;
 
@@ -54,8 +53,8 @@ public:
   KLPol(const klsupport::KLCoeff& c, const_tag)
     : Polynomial<klsupport::KLCoeff>(c,const_tag()) {}
 
-  // KLPol& add(const KLPol& p, const long& n);
-  // KLPol& subtract(const KLPol& p, const MuPol& mp, const Ulong& n);
+  KLPol& add(const KLPol& p, const klsupport::KLCoeff mu, Ulong n);
+  KLPol& subtract(const KLPol& p, Ulong n);
 };
 
 struct KLStats {
@@ -81,10 +80,8 @@ struct MuData {
   klsupport::KLCoeff mu;
   coxtypes::Length height;
 /* constructors */
-  MuData(coxtypes::CoxNbr d_x,
-	 const klsupport::KLCoeff& d_mu,
-	 const coxtypes::Length& d_h)
-    :x(d_x), mu(d_mu), height(d_h)
+  MuData(coxtypes::CoxNbr x, klsupport::KLCoeff mu, coxtypes::Length h)
+    :x(x), mu(mu), height(h)
   {}
 /* comparison */
   bool operator< (const MuData& m) const { return x < m.x; }

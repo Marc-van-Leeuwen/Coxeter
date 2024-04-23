@@ -53,22 +53,23 @@ namespace invkl {
   void operator delete(void* ptr)
     {return memory::arena().free(ptr,sizeof(KLHelper));}
 /* member functions */
-    void addCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s,
-		       KLPol& pol);
+    void addCorrection(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+		       const coxtypes::Generator& s,
+		       kl::KLPol& pol);
     void allocKLRow(const coxtypes::CoxNbr& y);
     void allocMuRow(const coxtypes::CoxNbr& y);
     void allocRowComputation(const coxtypes::CoxNbr& y);
     bool checkKLRow(const coxtypes::CoxNbr& y);
     bool checkMuRow(const coxtypes::CoxNbr& y);
-    void coatomCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
+    void coatomCorrection(const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol);
     klsupport::KLCoeff computeMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
     const klsupport::ExtrRow& extrList
       (const coxtypes::CoxNbr& y) {return klsupport().extrList(y);}
-    const KLPol* fillKLPol
+    const kl::KLPol* fillKLPol
       (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
        const coxtypes::Generator& s = coxtypes::undef_generator);
     void fillKLRow(const coxtypes::CoxNbr& y);
-    void initWorkspace(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
+    void initWorkspace(const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol);
     coxtypes::CoxNbr inverse(const coxtypes::CoxNbr& y) {return klsupport().inverse(y);}
     void inverseMuRow(const coxtypes::CoxNbr& y);
     bool isExtrAllocated(const coxtypes::CoxNbr& y)
@@ -76,31 +77,31 @@ namespace invkl {
     bool isKLAllocated(const coxtypes::CoxNbr& y) {return d_kl->isKLAllocated(y);}
     bool isMuAllocated(const coxtypes::CoxNbr& y) {return d_kl->isMuAllocated(y);}
     KLRow& klList(const coxtypes::CoxNbr& y) {return *d_kl->d_klList[y];}
-    const KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+    const kl::KLPol& klPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
       {return d_kl->klPol(x,y);}
     klsupport::KLSupport& klsupport() {return d_kl->d_klsupport[0];}
-    search::BinaryTree<KLPol>& klTree() {return d_kl->d_klTree;}
+    search::BinaryTree<kl::KLPol>& klTree() {return d_kl->d_klTree;}
     coxtypes::Generator last(const coxtypes::CoxNbr& x) {return klsupport().last(x);}
-    void lastTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
+    void lastTerm(const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol);
     void makeKLRow(const coxtypes::CoxNbr& y);
-    void muCorrection(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
+    void muCorrection(const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol);
     MuRow& muList(const coxtypes::CoxNbr& y) {return *d_kl->d_muList[y];}
     coxtypes::Rank rank() {return d_kl->rank();}
     void readMuRow(const coxtypes::CoxNbr& y);
     klsupport::KLCoeff recursiveMu(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y, const coxtypes::Generator& s);
     const schubert::SchubertContext& schubert() {return klsupport().schubert();}
-    KLStatus& status() {return *d_kl->d_status;}
-    void writeKLRow(const coxtypes::CoxNbr& y, list::List<KLPol>& pol);
-  };
+    kl::KLStats& status() {return *d_kl->d_status;}
+    void writeKLRow(const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol);
+  }; // |KLContext::KLHelper|
 
-};
+}; // |namespace invkl|
 
 namespace {
 
   using namespace invkl;
 
-  MuData* find(MuRow& row, const coxtypes::CoxNbr& x);
-  const KLPol& zeroPol();
+  kl::MuData* find(MuRow& row, const coxtypes::CoxNbr& x);
+  const kl::KLPol& zeroPol();
 };
 
 /*****************************************************************************
@@ -141,13 +142,13 @@ KLContext::KLContext(klsupport::KLSupport* kls)
   :d_klsupport(kls), d_klList(kls->size()), d_muList(kls->size())
 
 {
-  d_status = new KLStatus;
+  d_status = new kl::KLStats;
   d_help = new KLHelper(this);
 
   d_klList.setSizeValue(kls->size());
   d_klList[0] = new KLRow(1);
   d_klList[0]->setSizeValue(1);
-  d_klList[0][0][0] = d_klTree.find(one());
+  d_klList[0][0][0] = d_klTree.find(kl::one());
 
   d_status->klnodes++;
   d_status->klrows++;
@@ -240,8 +241,9 @@ void KLContext::fillMu()
 
 {}
 
-const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& d_y,
-			      const coxtypes::Generator& s)
+const kl::KLPol& KLContext::klPol
+  (const coxtypes::CoxNbr& d_x, const coxtypes::CoxNbr& d_y,
+   const coxtypes::Generator& s)
 
 /*
   This function returns the Kazhdan-Lusztig polynomial P_{x,y}. It is
@@ -261,7 +263,7 @@ const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNb
   /* check for trivial cases */
 
   if (p.length(y) - p.length(x) < 3) { /* result is 1 */
-    return one();
+    return kl::one();
   }
 
   /* go to inverses if necessary */
@@ -283,7 +285,7 @@ const KLPol& KLContext::klPol(const coxtypes::CoxNbr& d_x, const coxtypes::CoxNb
 
   const auto& eL = extrList(y);
   Ulong m = std::lower_bound(eL.begin(),eL.end(),x)-eL.begin();
-  const KLPol*& pol = d_help->klList(y)[m];
+  const kl::KLPol*& pol = d_help->klList(y)[m];
 
   if (pol == nullptr) { /* we have to compute the polynomial */
     pol = d_help->fillKLPol(x,y,s);
@@ -335,7 +337,7 @@ klsupport::KLCoeff KLContext::mu
   /* find x in muList(y) */
 
   MuRow& m = d_help->muList(y);
-  MuData* md = find(m,x);
+  kl::MuData* md = find(m,x);
   if (md == 0)
     return 0;
 
@@ -365,7 +367,7 @@ void KLContext::permute(const bits::Permutation& a)
     MuRow& row = *d_muList[y];
     for (Ulong j = 0; j < row.size(); ++j)
       row[j].x = a[row[j].x];
-    row.sort();
+    std::sort(row.begin(),row.end());
   }
 
   /* permute ranges */
@@ -539,7 +541,7 @@ namespace invkl {
 
 void KLContext::KLHelper::addCorrection
   (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-   const coxtypes::Generator& s, KLPol& pol)
+   const coxtypes::Generator& s, kl::KLPol& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -554,7 +556,7 @@ void KLContext::KLHelper::addCorrection
     if (not p.Bruhat_leq(x,z))
       continue;
     if (p.length(z)-p.length(x) == 1) { // x is a coatom of z
-      const KLPol& p_zys = klPol(z,ys);
+      const kl::KLPol& p_zys = klPol(z,ys);
       if (error::ERRNO)
 	goto abort;
       pol.add(p_zys,1,1);
@@ -566,7 +568,7 @@ void KLContext::KLHelper::addCorrection
       goto abort;
     if (mu_xz == 0)
       continue;
-    const KLPol& p_zys = klPol(z,ys);
+    const kl::KLPol& p_zys = klPol(z,ys);
     if (error::ERRNO)
       goto abort;
     Ulong h = (p.length(z)-p.length(x)+1)/2;
@@ -638,7 +640,7 @@ void KLContext::KLHelper::allocMuRow(const coxtypes::CoxNbr& y)
   for (coxtypes::CoxNbr x : b)
   {
     coxtypes::Length h = (ly-p.length(x)-1)/2;
-    MuData md(x,klsupport::undef_klcoeff,h);
+    kl::MuData md(x,klsupport::undef_klcoeff,h);
     muList(y).append(md);
   }
 }
@@ -728,7 +730,7 @@ bool KLContext::KLHelper::checkMuRow(const coxtypes::CoxNbr& y)
   ordinary K-L polynomials, but I haven't a better idea just yet.
 */
 void KLContext::KLHelper::coatomCorrection
-  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
+  (const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -877,8 +879,9 @@ klsupport::KLCoeff KLContext::KLHelper::computeMu
   return klsupport::undef_klcoeff;
 }
 
-const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
-					    const coxtypes::Generator& d_s)
+const kl::KLPol* KLContext::KLHelper::fillKLPol
+  (const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y,
+   const coxtypes::Generator& d_s)
 
 /*
   This function fills in a single K-L polynomial. In this function our goal is
@@ -902,7 +905,7 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x, const cox
 
   if (l < 3) {
     status().klcomputed++;
-    return &(one());
+    return &(kl::one());
   }
 
   coxtypes::Generator s = d_s;
@@ -927,7 +930,7 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x, const cox
 
   /* initialize the workspace to P_{xs,ys} */
 
-  KLPol pol = klPol(xs,ys);
+  kl::KLPol pol = klPol(xs,ys);
   if (error::ERRNO)
     goto abort;
 
@@ -940,7 +943,7 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x, const cox
   /* subtract q.P_{x,ys} */
 
   {
-    const KLPol& p_xys = klPol(x,ys);
+    const kl::KLPol& p_xys = klPol(x,ys);
     if (error::ERRNO)
       goto abort;
     pol.subtract(p_xys,1);
@@ -949,7 +952,7 @@ const KLPol* KLContext::KLHelper::fillKLPol(const coxtypes::CoxNbr& x, const cox
   /* find address of polynomial */
 
   {
-    const KLPol* p_xy = klTree().find(pol);
+    const kl::KLPol* p_xy = klTree().find(pol);
     if (error::ERRNO)
       goto abort;
     return p_xy;
@@ -973,7 +976,7 @@ void KLContext::KLHelper::fillKLRow(const coxtypes::CoxNbr& d_y)
 */
 
 {
-  static list::List<KLPol> pol(0);
+  static list::List<kl::KLPol> pol(0);
   coxtypes::CoxNbr y = d_y;
 
   if (y == 0)
@@ -1016,7 +1019,8 @@ void KLContext::KLHelper::fillKLRow(const coxtypes::CoxNbr& d_y)
   return;
 }
 
-void KLContext::KLHelper::initWorkspace(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
+void KLContext::KLHelper::initWorkspace
+  (const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol)
 
 /*
   This function sets pol to a row of one polynomial for each x in klList(y),
@@ -1086,7 +1090,7 @@ void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
     m[j].x = inverse(m[j].x);
   }
 
-  m.sort();
+  std::sort(m.begin(),m.end());
 
   /* update status */
 
@@ -1106,7 +1110,8 @@ void KLContext::KLHelper::inverseMuRow(const coxtypes::CoxNbr& y)
   Subtract the term $qP_{x,ys}$ from the term pol[j] corresponding to x. We do
   this last, so that an alert can be given for negative coefficients.
 */
-void KLContext::KLHelper::lastTerm(const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
+void KLContext::KLHelper::lastTerm
+  (const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -1186,7 +1191,7 @@ void KLContext::KLHelper::makeKLRow(const coxtypes::CoxNbr& y)
   and if yes, do the corresponding addition.
 */
 void KLContext::KLHelper::muCorrection
-  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
+  (const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol)
 {
   const schubert::SchubertContext& p = schubert();
 
@@ -1253,13 +1258,13 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
       if ((ly-lx) == 1)
 	continue;
 
-      const KLPol& pol = *kl_row[j];
+      const kl::KLPol& pol = *kl_row[j];
 
       polynomials::Degree d = (ly-lx-1)/2;
       if (pol.deg() < d)
 	continue;
 
-      MuData m(x,pol[d],d);
+      kl::MuData m(x,pol[d],d);
       mu_buf.append(m);
       if (error::ERRNO)
 	goto abort;
@@ -1278,11 +1283,11 @@ void KLContext::KLHelper::readMuRow(const coxtypes::CoxNbr& y)
     MuRow& mu_row = muList(y);
 
     for (Ulong j = 0; j < muList(y).size(); ++j) {
-      MuData& mu = mu_row[j];
+      kl::MuData& mu = mu_row[j];
       coxtypes::CoxNbr x = mu.x;
       while(e_row[i] < x)
 	++i;
-      const KLPol& pol = *kl_row[i];
+      const kl::KLPol& pol = *kl_row[i];
       coxtypes::Length d = mu.height;
       if (pol.deg() == d)
 	mu.mu = pol[d];
@@ -1377,7 +1382,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& x,
   /* subtract term from P_{x,ys} */
 
   {
-    const KLPol& pol = klPol(x,ys);
+    const kl::KLPol& pol = klPol(x,ys);
     coxtypes::Length d = (l-1)/2 - 1;
     if (pol.deg() == d) {
       klsupport::safeSubtract(mu_xy,pol[d]);
@@ -1409,7 +1414,7 @@ klsupport::KLCoeff KLContext::KLHelper::recursiveMu(const coxtypes::CoxNbr& x,
   reported, and ERROR_WARNING is set.
 */
 void KLContext::KLHelper::writeKLRow
-  (const coxtypes::CoxNbr& y, list::List<KLPol>& pol)
+(const coxtypes::CoxNbr& y, list::List<kl::KLPol>& pol)
 {
   KLRow& kl_row = klList(y);
 
@@ -1430,95 +1435,14 @@ void KLContext::KLHelper::writeKLRow
 
 };
 
-/****************************************************************************
-        Chapter III -- KLStatus
-
-  This section defines the functions declared for the KLStatus structure :
-
-   - KLStatus() : constructor;
-   - ~KLStatus() : destructor;
-
- ****************************************************************************/
-
-namespace invkl {
-
-KLStatus::KLStatus()
-  :klrows(0), klnodes(0), klcomputed(0), murows(0), munodes(0), mucomputed(0),
-   muzero(0)
-
-{}
-
-KLStatus::~KLStatus()
-
-{}
-
-};
-
-/*****************************************************************************
-
-        Chapter III -- The KLPol class.
-
-  The KLPol class is derived form Polynomial<klsupport::KLCoeff>, because we
-  want to re-define the arithmetic operations so that overflow is carefully
-  checked. This makes them expensive, but arithmetic is only used when the
-  polynomials are defined, and there we have to check anyway.
-
-  The following functions are defined :
-
-    - add(p,mu,n) : adds to the current polynomial the product of p and mu,
-      shifted by n;
-    - subtract(p,n) : subtracts p shifted by n from the current polynomial;
-
- *****************************************************************************/
+#if 0
 
 namespace invkl {
 
 
-/*
-  Add the polynomial $\mu*p*X^n$ to the current polynomial. We don't test for
-  |p.isZero()| because a K-L polynomial is never zero, and we assume |mu!=0|.
-  We also assume that the coefficients are positive, so the degree will not fall
-  after the addition: no call to |snap_degree| is necessary.
-
-  Forwards the error KLCOEFF_OVERFLOW in case of error.
-*/
-KLPol& KLPol::add(const KLPol& p, const klsupport::KLCoeff& mu, const Ulong& n)
-{
-  ensure_degree(p.deg()+n); // make space
-
-  for (Ulong j = 0; j <= p.deg(); ++j) {
-    klsupport::safeAdd((*this)[j+n],p[j]*mu);
-    if (error::ERRNO)
-      return *this;
-  }
-
-  return *this;
-}
-
-
-/*
-  Subtract $q^n.p$ from the current polynomial, checking for underflow.
-
-  Sets the error KLCOEFF_UNDERFLOW in case of error.
-*/
-
-KLPol& KLPol::subtract(const KLPol& p, const Ulong& n)
-{
-  ensure_degree(p.deg()+n); // make sure degree accommodates computation
-
-  // do the subtraction
-  for (polynomials::Degree j = 0; j <= p.deg(); ++j) {
-    klsupport::safeSubtract((*this)[j+n],p[j]);
-    if (error::ERRNO)
-      return *this;
-  }
-
-  snap_degree();
-
-  return *this;
-}
 
 };
+#endif
 
 /****************************************************************************
 
@@ -1532,7 +1456,7 @@ KLPol& KLPol::subtract(const KLPol& p, const Ulong& n)
 
 namespace {
 
-MuData* find(MuRow& row, const coxtypes::CoxNbr& x)
+kl::MuData* find(MuRow& row, const coxtypes::CoxNbr& x)
 
 /*
   Finds x in the row and returns the address of the corresponding row.
@@ -1557,27 +1481,17 @@ MuData* find(MuRow& row, const coxtypes::CoxNbr& x)
 
 };
 
-namespace invkl {
-
-const KLPol& one()
-
-{
-  static KLPol p(1,KLPol::const_tag());
-  return p;
-}
-
-};
 
 namespace {
 
-const KLPol& zeroPol()
+  const kl::KLPol& zeroPol()
 
 /*
   Returns the zero polynomial (usually this indicates an error condition.)
 */
 
 {
-  static KLPol z(polynomials::undef_degree);
+  static kl::KLPol z(polynomials::undef_degree);
   return z;
 }
 

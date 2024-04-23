@@ -1986,6 +1986,66 @@ void KLContext::KLHelper::writeMuRow
 } // |KLHelper::writeMuRow|
 
 
+/*****************************************************************************
+
+        Chapter III -- The KLPol class.
+
+  The KLPol class is derived form Polynomial<klsupport::KLCoeff>, because we
+  want to re-define the arithmetic operations so that overflow is carefully
+  checked. This makes them expensive, but arithmetic is only used when the
+  polynomials are defined, and there we have to check anyway.
+
+  The following functions are defined :
+
+    - add(p,mu,n) : adds to the current polynomial the product of p and mu,
+      shifted by n;
+    - subtract(p,n) : subtracts p shifted by n from the current polynomial;
+
+ *****************************************************************************/
+/*
+  Add the polynomial $\mu*p*X^n$ to the current polynomial. We don't test for
+  |p.isZero()| because a K-L polynomial is never zero, and we assume |mu!=0|.
+  We also assume that the coefficients are positive, so the degree will not fall
+  after the addition: no call to |snap_degree| is necessary.
+
+  Forwards the error KLCOEFF_OVERFLOW in case of error.
+*/
+KLPol& KLPol::add(const KLPol& p, klsupport::KLCoeff mu, Ulong n)
+{
+  ensure_degree(p.deg()+n); // make space
+
+  for (Ulong j = 0; j <= p.deg(); ++j) {
+    klsupport::safeAdd((*this)[j+n],p[j]*mu);
+    if (error::ERRNO)
+      return *this;
+  }
+
+  return *this;
+}
+
+
+/*
+  Subtract $q^n.p$ from the current polynomial, checking for underflow.
+
+  Sets the error KLCOEFF_UNDERFLOW in case of error.
+*/
+
+KLPol& KLPol::subtract(const KLPol& p, Ulong n)
+{
+  ensure_degree(p.deg()+n); // make sure degree accommodates computation
+
+  // do the subtraction
+  for (polynomials::Degree j = 0; j <= p.deg(); ++j) {
+    klsupport::safeSubtract((*this)[j+n],p[j]);
+    if (error::ERRNO)
+      return *this;
+  }
+
+  snap_degree();
+
+  return *this;
+}
+
 /****************************************************************************
 
         Chapter III -- The MuFilter class
@@ -2005,6 +2065,7 @@ MuFilter::MuFilter(const schubert::SchubertContext& p, const coxtypes::Length& l
 MuFilter::MuFilter(const schubert::SchubertContext& p, coxtypes::CoxNbr y)
   :d_p(p), d_l(p.length(y))
 {}
+
 
 
 /****************************************************************************

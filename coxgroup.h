@@ -213,7 +213,7 @@ class coxgroup::CoxGroup { // has been declared in coxtypes.h
 
   virtual void fillIKL();
   virtual void fillIMu();
-  virtual const invkl::KLPol& invklPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
+  virtual const kl::KLPol& invklPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y);
   virtual void invklRow(invkl::HeckeElt& h, const coxtypes::CoxNbr& y);
 
   virtual void fillUEKL();

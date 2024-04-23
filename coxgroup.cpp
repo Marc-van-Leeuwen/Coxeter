@@ -759,7 +759,7 @@ void CoxGroup::fillUEMu()
   return;
 }
 
-const invkl::KLPol& CoxGroup::invklPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
+const kl::KLPol& CoxGroup::invklPol(const coxtypes::CoxNbr& x, const coxtypes::CoxNbr& y)
 
 /*
   Returns the inverse K-L polynomial Q_{x,y}, after activating the context
