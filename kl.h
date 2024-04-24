@@ -102,8 +102,8 @@ class MuFilter {
 
 class KLContext {
  private:
-  struct KLHelper; /* provides helper functions */
-  KLHelper* d_help;
+  struct KLHelper; // implements everything
+  KLHelper* d_help; // PIMPL paradigm
  public:
 /* constructors and destructors */
   void* operator new(size_t size) {return memory::arena().alloc(size);}
